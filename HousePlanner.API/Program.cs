@@ -67,6 +67,7 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddScoped<IFirebaseAuthService, FirebaseAuthService>();
 builder.Services.AddScoped<ICurrentUserContextService, CurrentUserContextService>();
 builder.Services.AddScoped<IPreDesignedPlanLayoutValidator, PreDesignedPlanLayoutValidator>();
+builder.Services.AddScoped<PreDesignedPlanSeeder>();
 builder.Services.AddHttpClient("AgenticService", client =>
 {
     client.BaseAddress = new Uri(builder.Configuration["AgenticService:BaseUrl"] ?? "http://localhost:8001");
@@ -139,6 +140,7 @@ using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     context.Database.Migrate();
+    await scope.ServiceProvider.GetRequiredService<PreDesignedPlanSeeder>().SeedAsync();
 }
 
 // 6. Register exception-handling middleware early in request pipeline
