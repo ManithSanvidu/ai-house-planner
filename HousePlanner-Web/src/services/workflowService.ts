@@ -66,6 +66,8 @@ export interface WorkflowStatusResponseDto {
 }
 
 export interface GenerateDesignRequest {
+  basePreDesignedPlanId?: string;
+  planSelectionMode?: 'use' | 'adapt';
   budgetLkr?: number;
   landSizePerches: number;
   manualTerrainType?: string;

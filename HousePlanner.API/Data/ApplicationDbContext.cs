@@ -59,11 +59,17 @@ namespace HousePlanner.API.Data
                 entity.HasIndex(e => e.SuitableTerrain);
             });
 
-            modelBuilder.Entity<HouseDesign>()
+        modelBuilder.Entity<HouseDesign>()
                 .HasOne(e => e.BasePreDesignedPlan)
                 .WithMany(e => e.DerivedDesigns)
                 .HasForeignKey(e => e.BasePreDesignedPlanId)
                 .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<LandSubmission>()
+            .HasOne(x => x.BasePreDesignedPlan)
+            .WithMany()
+            .HasForeignKey(x => x.BasePreDesignedPlanId)
+            .OnDelete(DeleteBehavior.SetNull);
         }
     }
 }

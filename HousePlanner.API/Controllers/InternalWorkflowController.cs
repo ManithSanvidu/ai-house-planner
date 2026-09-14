@@ -67,6 +67,8 @@ public class InternalWorkflowController : ControllerBase
                 existing.IsCurrent = false;
             }
 
+            var basePlanId = await _context.LandSubmissions.Where(s => s.Id == workflow.LandSubmissionId)
+                .Select(s => s.BasePreDesignedPlanId).FirstOrDefaultAsync();
             var newDesign = new HouseDesign
             {
                 WorkflowStateId = id,
@@ -78,6 +80,8 @@ public class InternalWorkflowController : ControllerBase
                 TerrainType = terrainType,
                 IsCurrent = true, // New design is always current
                 LayoutJson = layoutData.GetRawText(),
+                DesignSource = basePlanId is null ? "ai_generated" : "adapted_pre_designed",
+                BasePreDesignedPlanId = basePlanId,
                 CreatedAt = DateTimeOffset.UtcNow,
                 Rooms = new List<Room>()
             };
