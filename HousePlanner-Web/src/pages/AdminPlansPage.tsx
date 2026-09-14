@@ -5,7 +5,7 @@ import { preDesignedPlanService, type PreDesignedPlanSummary } from '../services
 export default function AdminPlansPage(){
  const [plans,setPlans]=useState<PreDesignedPlanSummary[]>([]),[status,setStatus]=useState('all'),[error,setError]=useState('');
  const load=()=>preDesignedPlanService.adminList(status).then(setPlans).catch(()=>setError('Could not load plans.'));
- useEffect(()=>{void load();},[status]);
+ useEffect(()=>{preDesignedPlanService.adminList(status).then(setPlans).catch(()=>setError('Could not load plans.'));},[status]);
  const toggle=async(p:PreDesignedPlanSummary)=>{if(!p.isActive&&!confirm(`Reactivate ${p.name}?`))return;if(p.isActive&&!confirm(`Deactivate ${p.name}? Existing designs will remain available.`))return; await preDesignedPlanService.setStatus(p.id,!p.isActive); load();};
  return <main className="p-6 md:p-10 max-w-7xl mx-auto text-zinc-900 dark:text-white"><div className="flex justify-between items-center mb-7"><div><p className="text-indigo-500 font-semibold text-sm">ADMIN</p><h1 className="text-3xl font-bold">Plan catalogue</h1></div><Link to="/dashboard/admin/plans/new" className="bg-indigo-600 text-white px-5 py-3 rounded-xl">Add plan</Link></div>
  <select value={status} onChange={e=>setStatus(e.target.value)} className="mb-5 p-2 rounded-lg bg-white dark:bg-gray-900 border"><option value="all">All statuses</option><option value="active">Active</option><option value="inactive">Inactive</option></select>{error&&<p role="alert">{error}</p>}
