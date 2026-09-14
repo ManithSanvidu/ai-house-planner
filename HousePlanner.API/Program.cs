@@ -65,6 +65,8 @@ builder.Services.AddSwaggerGen(c =>
 
 // 4. Register application services
 builder.Services.AddScoped<IFirebaseAuthService, FirebaseAuthService>();
+builder.Services.AddScoped<ICurrentUserContextService, CurrentUserContextService>();
+builder.Services.AddScoped<IPreDesignedPlanLayoutValidator, PreDesignedPlanLayoutValidator>();
 builder.Services.AddHttpClient("AgenticService", client =>
 {
     client.BaseAddress = new Uri(builder.Configuration["AgenticService:BaseUrl"] ?? "http://localhost:8001");
