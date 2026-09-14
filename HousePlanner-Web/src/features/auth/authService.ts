@@ -27,7 +27,7 @@ const authService = {
     setInMemoryToken(token);
 
     // 4. Verify token with backend database
-    const response = await apiClient.post<{ uid: string; email: string; role: 'Architect' | 'Contractor' }>(
+    const response = await apiClient.post<{ uid: string; email: string; role: import('../../types/auth.types').UserRole }>(
       '/auth/verify',
       { token }
     );
@@ -59,7 +59,7 @@ const authService = {
           const token = await fbUser.getIdToken();
           setInMemoryToken(token);
 
-          const response = await apiClient.post<{ uid: string; email: string; role: 'Architect' | 'Contractor' }>(
+          const response = await apiClient.post<{ uid: string; email: string; role: import('../../types/auth.types').UserRole }>(
             '/auth/verify',
             { token }
           );
