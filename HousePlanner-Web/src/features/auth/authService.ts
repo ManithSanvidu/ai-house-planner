@@ -1,4 +1,4 @@
-import { signInWithEmailAndPassword, signOut as firebaseSignOut, type UserCredential } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithEmailAndPassword, signInWithPopup, signOut as firebaseSignOut, type UserCredential } from 'firebase/auth';
 import { auth } from '../../services/firebase';
 import apiClient, { setInMemoryToken } from '../../services/apiClient';
 import type { UserProfile } from '../../types/auth.types';
@@ -7,6 +7,13 @@ import type { UserProfile } from '../../types/auth.types';
  * Service to manage Firebase Authentication and backend token exchange.
  */
 const authService = {
+  googleLogin: async (): Promise<{ user: UserProfile; token: string }> => {
+    const credential = await signInWithPopup(auth, new GoogleAuthProvider());
+    const token = await credential.user.getIdToken();
+    setInMemoryToken(token);
+    const response = await apiClient.post<{ uid:string; email:string; role:UserProfile['role'] }>('/auth/verify',{token});
+    return { user:{uid:response.data.uid,email:response.data.email,role:response.data.role}, token };
+  },
   /**
    * Signs in user using Firebase, retrieves the token, verifies it with the backend,
    * and returns the user's role/details.
