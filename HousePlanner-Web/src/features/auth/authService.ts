@@ -11,6 +11,10 @@ const authService = {
     const credential = await signInWithPopup(auth, new GoogleAuthProvider());
     const token = await credential.user.getIdToken();
     setInMemoryToken(token);
+    
+    // Ensure user exists in local database before verifying
+    await apiClient.post('/auth/register', { token });
+    
     const response = await apiClient.post<{ uid:string; email:string; role:UserProfile['role'] }>('/auth/verify',{token});
     return { user:{uid:response.data.uid,email:response.data.email,role:response.data.role}, token };
   },
@@ -32,6 +36,9 @@ const authService = {
 
     // 3. Set token in memory for Axios requests
     setInMemoryToken(token);
+
+    // Ensure user exists in local database
+    await apiClient.post('/auth/register', { token });
 
     // 4. Verify token with backend database
     const response = await apiClient.post<{ uid: string; email: string; role: import('../../types/auth.types').UserRole }>(
@@ -66,10 +73,24 @@ const authService = {
           const token = await fbUser.getIdToken();
           setInMemoryToken(token);
 
-          const response = await apiClient.post<{ uid: string; email: string; role: import('../../types/auth.types').UserRole }>(
-            '/auth/verify',
-            { token }
-          );
+          let response;
+          try {
+            response = await apiClient.post<{ uid: string; email: string; role: import('../../types/auth.types').UserRole }>(
+              '/auth/verify',
+              { token }
+            );
+          } catch (error: any) {
+            // If the local DB returns 401, they might be missing from Postgres. Register and retry.
+            if (error.response && error.response.status === 401) {
+              await apiClient.post('/auth/register', { token });
+              response = await apiClient.post<{ uid: string; email: string; role: import('../../types/auth.types').UserRole }>(
+                '/auth/verify',
+                { token }
+              );
+            } else {
+              throw error;
+            }
+          }
 
           resolve({
             user: {
