@@ -11,6 +11,7 @@ public record WorkflowStatusResponseDto(
     string? SlopeEstimate,
     HouseDesignSummaryDto? Design,
     CostSummaryDto? Cost,
+    System.Text.Json.JsonElement? ConstructionPlan,
     string ApprovalStatus,
     string? FailureReason = null
 );
