@@ -21,11 +21,12 @@ class CoordinatorInput(BaseModel):
 
 class WorkflowState(BaseModel):
     workflow_id:UUID
-    status:Literal["running","awaiting_approval","approved","rejected","failed"]="running"
+    status:Literal["running","awaiting_approval","approved","rejected","failed","design_generated"]="running"
 
     #Agent results
     terrain_result:Optional[Dict[str,Any]]=None
     design_result:Optional[Dict[str,Any]]=None
+    construction_plan_result:Optional[Dict[str,Any]]=None
     cost_result:Optional[Dict[str,Any]]=None
     validation_result:Optional[Dict[str,Any]]=None
 
@@ -39,3 +40,5 @@ class WorkflowState(BaseModel):
 
     #To store user chat feedback for revisions
     user_revision_prompt:Optional[str]=None
+
+

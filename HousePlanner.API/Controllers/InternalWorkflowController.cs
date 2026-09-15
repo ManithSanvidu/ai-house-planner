@@ -183,4 +183,31 @@ public class InternalWorkflowController : ControllerBase
             return StatusCode(StatusCodes.Status500InternalServerError, new { message = "An error occurred updating terrain." });
         }
     }
+
+    /// <summary>
+    /// Internal endpoint for the Construction Planning Agent to update construction plan results.
+    /// </summary>
+    [HttpPatch("{id:guid}/construction-plan")]
+    public async Task<IActionResult> UpdateConstructionPlan(Guid id, [FromBody] JsonElement planData)
+    {
+        try
+        {
+            var workflow = await FindWorkflowState(id);
+            if (workflow is null) return NotFound(new { message = $"Unknown workflow {id}." });
+
+            workflow.ConstructionPlan = planData.GetRawText();
+            workflow.UpdatedAt = DateTimeOffset.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Construction plan updated for workflow {WorkflowId}", id);
+            return Ok(new { message = "Construction plan updated." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating construction plan for workflow {WorkflowId}", id);
+            return StatusCode(StatusCodes.Status500InternalServerError, new { message = "An error occurred updating the construction plan." });
+        }
+    }
+
 }

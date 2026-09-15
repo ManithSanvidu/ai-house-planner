@@ -4,6 +4,7 @@ from app.schemas.workflow_state import WorkflowState
 from app.agents.coordinator_agent import coordinator_node
 from app.agents.land_analysis_agent import land_analysis_node
 from app.agents.design_agent import design_node
+from app.agents.construction_planning_agent import construction_planning_node
 from app.agents.cost_estimation_agent import cost_estimation_node
 from app.agents.validation_agent import validation_node
 from app.agents.rendering_agent import rendering_node
@@ -18,6 +19,7 @@ workflow = StateGraph(WorkflowState)
 workflow.add_node("coordinator", coordinator_node)
 workflow.add_node("land_analysis", land_analysis_node)
 workflow.add_node("design", design_node)
+workflow.add_node("construction_planning", construction_planning_node)
 workflow.add_node("cost_estimation", cost_estimation_node)
 workflow.add_node("validation", validation_node)
 workflow.add_node("rendering", rendering_node)
@@ -36,9 +38,10 @@ workflow.add_conditional_edges(
 
 workflow.add_edge("land_analysis", "design")
 workflow.add_conditional_edges(
-    "design", lambda state: "failed" if state.status == "failed" else "cost_estimation",
-    {"failed": END, "cost_estimation": "cost_estimation"},
+    "design", lambda state: "failed" if state.status == "failed" else "construction_planning",
+    {"failed": END, "construction_planning": "construction_planning"},
 )
+workflow.add_edge("construction_planning", "cost_estimation")
 workflow.add_edge("cost_estimation", "validation")
 workflow.add_edge("validation", END)
 workflow.add_edge("rendering", END)

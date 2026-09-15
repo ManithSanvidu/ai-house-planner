@@ -11,6 +11,7 @@ export const WorkflowReviewPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedFloor, setSelectedFloor] = useState<number>(1);
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
+  const [activeTab, setActiveTab] = useState<'floorplan' | 'construction'>('floorplan');
 
   useEffect(() => {
     if (!id) return;
@@ -29,9 +30,7 @@ export const WorkflowReviewPage: React.FC = () => {
           clearInterval(interval);
         }
       } catch (err: any) {
-        // If it's a 404, the workflow is likely still being created by the background task
         if (err.response?.status === 404 || err.message?.includes('404')) {
-          // Keep loading, don't set error
           setError(null);
         } else {
           setError(err.message || 'Failed to fetch workflow status');
@@ -41,18 +40,11 @@ export const WorkflowReviewPage: React.FC = () => {
       }
     };
 
-    // Initial fetch
     fetchWorkflow();
-
-    // Poll every 3 seconds until workflow is ready
-    interval = setInterval(() => {
-      fetchWorkflow();
-    }, 3000);
-
+    interval = setInterval(() => { fetchWorkflow(); }, 3000);
     return () => clearInterval(interval);
   }, [id]);
 
-  // ─── Loading State ───
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[calc(100vh-65px)] bg-gradient-to-br from-slate-50 to-zinc-100">
@@ -67,7 +59,6 @@ export const WorkflowReviewPage: React.FC = () => {
     );
   }
 
-  // ─── Error State ───
   if (error) {
     return (
       <div className="flex items-center justify-center h-[calc(100vh-65px)] bg-gradient-to-br from-red-50 to-red-100/50">
@@ -91,7 +82,6 @@ export const WorkflowReviewPage: React.FC = () => {
     </div>;
   }
 
-  // ─── Design Not Ready ───
   if (!workflow || !workflow.design) {
     return (
       <div className="flex items-center justify-center h-[calc(100vh-65px)] bg-gradient-to-br from-slate-50 to-zinc-100 relative overflow-hidden">
@@ -116,7 +106,6 @@ export const WorkflowReviewPage: React.FC = () => {
     );
   }
 
-  // ─── Map API DTO to FloorPlanViewer props ───
   const floorPlanData: FloorPlanData = {
     design_id: workflow.design.designId,
     floor_count: workflow.design.floorCount,
@@ -153,7 +142,6 @@ export const WorkflowReviewPage: React.FC = () => {
     }
   };
 
-  // Count rooms by type for summary
   const bedroomCount = workflow.design.rooms.filter(r => r.roomType.includes('bedroom')).length;
   const bathroomCount = workflow.design.rooms.filter(r => r.roomType.includes('bathroom')).length;
 
@@ -162,14 +150,13 @@ export const WorkflowReviewPage: React.FC = () => {
       {/* ─── Sidebar: Details ─── */}
       {isSidebarOpen && (
         <div className="w-80 bg-white/90 backdrop-blur-xl border-r border-zinc-200/60 flex flex-col shadow-[4px_0_24px_-12px_rgba(0,0,0,0.1)] overflow-y-auto shrink-0 transition-all duration-300 z-10">
-          {/* Header */}
           <div className="p-6 border-b border-zinc-100 flex justify-between items-center bg-gradient-to-b from-zinc-50/50 to-transparent">
             <div>
               <h1 className="text-xl font-bold text-zinc-900 tracking-tight">Design Review</h1>
               <p className="text-[11px] font-medium text-zinc-400 mt-1 uppercase tracking-wider">ID: {id?.slice(0, 8)}...</p>
             </div>
           </div>
-
+          
         <div className="p-6 space-y-5 flex-1">
           {/* Status */}
           <div className="bg-zinc-50 p-4 rounded-xl border border-zinc-100 shadow-sm">
@@ -179,44 +166,17 @@ export const WorkflowReviewPage: React.FC = () => {
             </span>
           </div>
 
-          {/* Design Version */}
-          <div className="bg-zinc-50 p-4 rounded-xl border border-zinc-100 shadow-sm">
-            <h3 className="text-[10px] uppercase tracking-widest text-zinc-400 font-bold mb-3">Design Info</h3>
-            <ul className="text-sm text-zinc-700 space-y-2">
-              <li className="flex justify-between items-center"><span className="font-medium text-zinc-500">Version</span> <span className="font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">v{workflow.design.version}</span></li>
-              <li className="flex justify-between items-center"><span className="font-medium text-zinc-500">Family</span> <span className="font-bold">{workflow.design.templateFamily || workflow.design.templateId || 'N/A'}</span></li>
-              {workflow.design.designScore != null && (
-                <li className="flex justify-between items-center"><span className="font-medium text-zinc-500">Score</span> <span className="font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">{workflow.design.designScore}/100</span></li>
-              )}
-              {workflow.design.designSeed != null && (
-                <li className="flex justify-between gap-3"><span className="text-zinc-500">Design Seed</span><code>{workflow.design.designSeed}</code></li>
-              )}
-              {workflow.design.geometryFingerprint && (
-                <li className="flex justify-between gap-3"><span className="text-zinc-500">Fingerprint</span><code title={workflow.design.geometryFingerprint}>{workflow.design.geometryFingerprint.slice(0, 12)}…</code></li>
-              )}
-              {workflow.design.candidateSummary?.generation_mode && (
-                <li className="flex justify-between gap-3"><span className="text-zinc-500">Generation</span><code>{workflow.design.candidateSummary.generation_mode}</code></li>
-              )}
-              {workflow.design.candidateSummary?.valid_count != null && (
-                <li className="flex justify-between items-center"><span className="font-medium text-zinc-500">Candidates</span> <span className="font-bold">{workflow.design.candidateSummary.generated_count ?? workflow.design.candidateSummary.valid_count + (workflow.design.candidateSummary.rejected_count || 0)} / {workflow.design.candidateSummary.valid_count} valid</span></li>
-              )}
-            </ul>
-          </div>
-
           {/* Specifications */}
           <div className="bg-zinc-50 p-4 rounded-xl border border-zinc-100 shadow-sm">
             <h3 className="text-[10px] uppercase tracking-widest text-zinc-400 font-bold mb-3">Specifications</h3>
             <ul className="text-sm text-zinc-700 space-y-2">
               <li className="flex justify-between items-center"><span className="font-medium text-zinc-500">Terrain</span> <span className="font-bold capitalize">{workflow.terrainType || 'N/A'}</span></li>
-              {workflow.slopeEstimate && (
-                <li className="flex justify-between items-center"><span className="font-medium text-zinc-500">Slope</span> <span className="font-bold capitalize">{workflow.slopeEstimate}</span></li>
-              )}
               <li className="flex justify-between items-center"><span className="font-medium text-zinc-500">Foundation</span> <span className="font-bold capitalize">{workflow.design.foundationType}</span></li>
               <li className="flex justify-between items-center"><span className="font-medium text-zinc-500">Floors</span> <span className="font-bold">{workflow.design.floorCount}</span></li>
               <li className="flex justify-between items-center"><span className="font-medium text-zinc-500">Area</span> <span className="font-bold">{workflow.design.totalBuiltUpAreaSqft} sqft</span></li>
             </ul>
           </div>
-
+          
           {/* Room Summary */}
           <div className="bg-zinc-50 p-4 rounded-xl border border-zinc-100 shadow-sm">
             <h3 className="text-[10px] uppercase tracking-widest text-zinc-400 font-bold mb-3 flex items-center justify-between">
@@ -239,53 +199,50 @@ export const WorkflowReviewPage: React.FC = () => {
 
         {/* Action Buttons */}
         <div className="p-6 border-t border-zinc-200 flex flex-col gap-3 bg-white">
-          <button
-            onClick={() => handleAction('approve')}
-            className="w-full py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl font-bold hover:from-emerald-600 hover:to-emerald-700 transition-all text-sm shadow-[0_4px_14px_0_rgb(16,185,129,0.39)] hover:shadow-[0_6px_20px_rgba(16,185,129,0.23)]"
-          >
+          <button onClick={() => handleAction('approve')} className="w-full py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl font-bold hover:from-emerald-600 hover:to-emerald-700 transition-all text-sm shadow-[0_4px_14px_0_rgb(16,185,129,0.39)] hover:shadow-[0_6px_20px_rgba(16,185,129,0.23)]">
             ✓ Approve Design
           </button>
-          <button
-            onClick={() => handleAction('request_revision')}
-            className="w-full py-3 bg-white text-indigo-600 border-2 border-indigo-100 rounded-xl font-bold hover:bg-indigo-50 hover:border-indigo-200 transition-all text-sm"
-          >
+          <button onClick={() => handleAction('request_revision')} className="w-full py-3 bg-white text-indigo-600 border-2 border-indigo-100 rounded-xl font-bold hover:bg-indigo-50 hover:border-indigo-200 transition-all text-sm">
             ↻ Request Revision
           </button>
-          <button
-            onClick={async () => {
-              if (!id) return;
-              await workflowService.approveWorkflow(id, 'request_revision', 'give me another design');
-              setWorkflow({ ...workflow, status: 'running' });
-            }}
-            className="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all text-sm"
-          >
-            Generate Another Design
-          </button>
-          <button
-            onClick={() => handleAction('reject')}
-            className="w-full py-3 bg-white text-red-500 border-2 border-red-100 rounded-xl font-bold hover:bg-red-50 hover:border-red-200 transition-all text-sm mt-2"
-          >
+          <button onClick={() => handleAction('reject')} className="w-full py-3 bg-white text-red-500 border-2 border-red-100 rounded-xl font-bold hover:bg-red-50 hover:border-red-200 transition-all text-sm mt-2">
             ✕ Reject
           </button>
         </div>
       </div>
       )}
 
-      {/* ─── Main Area: Floor Plan ─── */}
-      <div className="flex-1 flex flex-col overflow-hidden relative">
+      {/* ─── Main Area ─── */}
+      <div className="flex-1 flex flex-col overflow-hidden relative bg-white">
         {/* Top Action Bar */}
         <div className="bg-white border-b border-slate-200 px-4 py-3 flex items-center gap-4">
-          <button 
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="p-2 text-slate-500 hover:bg-slate-100 rounded-md transition-colors"
-            title="Toggle Sidebar"
-          >
+          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 text-slate-500 hover:bg-slate-100 rounded-md transition-colors" title="Toggle Sidebar">
             <Menu size={20} />
           </button>
           
-          {/* Floor Tabs */}
-          {floorNumbers.length > 1 && (
-            <div className="flex gap-2">
+          {/* Main View Tabs */}
+          <div className="flex gap-1 bg-slate-100 p-1 rounded-lg mr-4">
+            <button
+              onClick={() => setActiveTab('floorplan')}
+              className={`px-4 py-1.5 rounded-md text-sm font-bold transition-all ${
+                activeTab === 'floorplan' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              Floor Plan
+            </button>
+            <button
+              onClick={() => setActiveTab('construction')}
+              className={`px-4 py-1.5 rounded-md text-sm font-bold transition-all flex items-center gap-2 ${
+                activeTab === 'construction' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              🚧 Construction Plan
+            </button>
+          </div>
+
+          {/* Floor Tabs (Only show in floorplan view) */}
+          {activeTab === 'floorplan' && floorNumbers.length > 1 && (
+            <div className="flex gap-2 ml-auto">
               {floorNumbers.map(floor => (
                 <button
                   key={floor}
@@ -303,15 +260,121 @@ export const WorkflowReviewPage: React.FC = () => {
           )}
         </div>
 
-        {/* SVG Floor Plan */}
+        {/* Content Area */}
         <div className="flex-1 overflow-auto relative">
-          {workflow.design.plotConstraints?.dimensions_estimated &&
-            <p className="px-4 text-sm text-zinc-500">Plot dimensions are estimated. Supply measured width and length to refine the plan.</p>}
-          <FloorPlanViewer
-            data={floorPlanData}
-            pixelsPerFoot={22}
-            floorFilter={selectedFloor}
-          />
+          {activeTab === 'floorplan' ? (
+            <>
+              {workflow.design.plotConstraints?.dimensions_estimated &&
+                <p className="px-4 py-2 text-sm text-zinc-500 bg-amber-50 border-b border-amber-100">Plot dimensions are estimated. Supply measured width and length to refine the plan.</p>}
+              <FloorPlanViewer
+                data={floorPlanData}
+                pixelsPerFoot={22}
+                floorFilter={selectedFloor}
+              />
+            </>
+          ) : (
+            // Construction Plan View
+            <div className="p-8 max-w-4xl mx-auto">
+              {!workflow.constructionPlan ? (
+                <div className="text-center p-12 bg-slate-50 rounded-2xl border border-dashed border-slate-300">
+                  <p className="text-slate-500 font-medium">No construction plan has been generated for this design yet.</p>
+                </div>
+              ) : (
+                <div className="space-y-8 animate-fade-in">
+                  
+                  {/* Summary Header */}
+                  <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div>
+                      <h2 className="text-2xl font-bold text-slate-800 mb-1">Project Timeline Estimate</h2>
+                      <p className="text-slate-500">AI-generated construction roadmap based on architectural design</p>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-3xl font-black text-indigo-600">
+                        {workflow.constructionPlan.project_summary.estimated_duration_days} <span className="text-lg text-slate-400 font-medium">days</span>
+                      </div>
+                      <div className="text-sm font-bold text-slate-400">
+                        (~{workflow.constructionPlan.project_summary.estimated_duration_months} months)
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Target & Status */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                      <h4 className="text-xs uppercase tracking-widest text-slate-400 font-bold mb-1">Target Duration</h4>
+                      <p className="text-lg font-semibold text-slate-700">
+                        {workflow.constructionPlan.project_summary.target_duration_days ? `${workflow.constructionPlan.project_summary.target_duration_days} days` : 'Not Provided'}
+                      </p>
+                    </div>
+                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                      <h4 className="text-xs uppercase tracking-widest text-slate-400 font-bold mb-1">Schedule Status</h4>
+                      <p className={`text-lg font-bold ${
+                        workflow.constructionPlan.project_summary.schedule_status === 'ON_SCHEDULE' ? 'text-emerald-600' : 'text-amber-600'
+                      }`}>
+                        {workflow.constructionPlan.project_summary.schedule_status.replace('_', ' ')}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Phases List */}
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-800 mb-4">Construction Phases</h3>
+                    <div className="space-y-3">
+                      {workflow.constructionPlan.phases.map(phase => (
+                        <div key={phase.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between hover:border-indigo-200 transition-colors">
+                          <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 font-bold flex items-center justify-center shrink-0">
+                              {phase.id}
+                            </div>
+                            <div>
+                              <h4 className="font-bold text-slate-700">{phase.name}</h4>
+                              <p className="text-xs text-slate-500 mt-1">
+                                {phase.depends_on.length > 0 ? `Depends on: ${phase.depends_on.join(', ')}` : 'No dependencies'}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="font-bold text-slate-800">{phase.duration_days} days</div>
+                            <div className="text-xs font-bold text-indigo-500 bg-indigo-50 px-2 py-1 rounded mt-1 inline-block">
+                              Day {phase.start_day} – {phase.end_day}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Critical Path & Notes */}
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="bg-indigo-50/50 p-5 rounded-2xl border border-indigo-100">
+                      <h4 className="font-bold text-indigo-900 mb-3">Critical Path</h4>
+                      <ol className="list-decimal list-inside text-sm text-indigo-700/80 space-y-1">
+                        {workflow.constructionPlan.critical_path.map(cp => <li key={cp}>{cp}</li>)}
+                      </ol>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      {workflow.constructionPlan.optimization_notes.length > 0 && (
+                        <div className="bg-amber-50 p-5 rounded-2xl border border-amber-100">
+                          <h4 className="font-bold text-amber-900 mb-3">Optimization Notes</h4>
+                          <ul className="list-disc list-inside text-sm text-amber-700/80 space-y-1">
+                            {workflow.constructionPlan.optimization_notes.map(note => <li key={note}>{note}</li>)}
+                          </ul>
+                        </div>
+                      )}
+                      
+                      <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200">
+                        <h4 className="font-bold text-slate-700 mb-3">AI Assumptions</h4>
+                        <ul className="list-disc list-inside text-sm text-slate-500 space-y-1">
+                          {workflow.constructionPlan.assumptions.map(assumption => <li key={assumption}>{assumption}</li>)}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
