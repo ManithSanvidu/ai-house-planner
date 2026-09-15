@@ -54,6 +54,31 @@ export interface HouseDesignSummaryDto {
 
 }
 
+export interface ConstructionPhaseDto {
+  id: number;
+  name: string;
+  description: string;
+  duration_days: number;
+  depends_on: number[];
+  start_day: number;
+  end_day: number;
+  status: string;
+}
+
+export interface ConstructionPlanSummaryDto {
+  project_summary: {
+    estimated_duration_days: number;
+    estimated_duration_months: number;
+    target_duration_days: number | null;
+    schedule_status: string;
+  };
+  phases: ConstructionPhaseDto[];
+  critical_path: string[];
+  assumptions: string[];
+  optimization_notes: string[];
+}
+
+
 export interface WorkflowStatusResponseDto {
   workflowId: string;
   status: string;
@@ -61,6 +86,7 @@ export interface WorkflowStatusResponseDto {
   slopeEstimate: string | null;
   design: HouseDesignSummaryDto | null;
   cost: any | null; // Expand when Component C is integrated
+  constructionPlan:ConstructionPlanSummaryDto|null;
   approvalStatus: string;
   failureReason?: string | null;
 }
