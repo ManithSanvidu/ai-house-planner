@@ -14,6 +14,9 @@ pnpm-debug.log*
 .env.*
 !.env.example
 **/firebase-service-account.json
+**/service-account.json
+**/serviceAccount.json
+**/secrets/
 *.pem
 *.key
 
@@ -21,6 +24,45 @@ pnpm-debug.log*
 HousePlanner.API/bin/
 HousePlanner.API/obj/
 HousePlanner.API/App_Data/
+
+# Python
+agentic-service/venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Flutter/Dart
+mobile/.dart_tool/
+mobile/.packages
+mobile/build/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/.pub-cache/
+mobile/.pub/
+mobile/lib/generated_plugin_registrant.dart
+mobile/android/app/debug/
+mobile/android/app/profile/
+mobile/android/app/release/
+mobile/android/.gradle/
+mobile/android/local.properties
+mobile/android/key.properties
+mobile/android/**/GeneratedPluginRegistrant.java
+mobile/ios/Pods/
+mobile/ios/.symlinks/
+mobile/ios/Flutter/Flutter.framework/
+mobile/ios/Flutter/Flutter.podspec
+mobile/ios/Flutter/Generated.xcconfig
+mobile/ios/Flutter/app.flx
+mobile/ios/Flutter/app.zip
+mobile/ios/Flutter/flutter_assets/
+mobile/ios/Flutter/flutter_export_environment.sh
+mobile/ios/ServiceDefinitions.json
+mobile/ios/Runner/GeneratedPluginRegistrant.*
+mobile/macos/Flutter/GeneratedPluginRegistrant.swift
+mobile/macos/Flutter/ephemeral/
+mobile/linux/flutter/ephemeral/
+mobile/windows/flutter/ephemeral/
 
 # Editor and operating-system files
 .vscode/

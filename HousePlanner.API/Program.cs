@@ -66,6 +66,13 @@ builder.Services.AddSwaggerGen(c =>
 // 4. Register application services
 builder.Services.AddScoped<IFirebaseAuthService, FirebaseAuthService>();
 builder.Services.AddScoped<IPricingService, PricingService>();
+builder.Services.AddHttpClient("AgenticService", client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["AgenticService:BaseUrl"] ?? "http://localhost:8001");
+    client.Timeout = TimeSpan.FromSeconds(35);
+    client.DefaultRequestHeaders.Add("X-Internal-API-Key",
+        builder.Configuration["AgenticService:InternalApiKey"] ?? "shared-internal-secret");
+});
 
 // 5. Initialize Firebase Admin SDK
 var serviceAccountPath = builder.Configuration["Firebase:ServiceAccountPath"];
@@ -123,58 +130,14 @@ else
 
 var app = builder.Build();
 
-// Auto-create database tables and seed data
+// Apply CORS Policy early to ensure all responses (including errors) get the headers
+app.UseCors("AllowReactApp");
+
+// Apply checked-in migrations without deleting persisted designs.
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    context.Database.EnsureCreated();
-
-    // Seed PricingData
-    if (!context.PricingItems.Any())
-    {
-        var seedData = new List<HousePlanner.API.Entities.PricingData>
-        {
-            new HousePlanner.API.Entities.PricingData 
-            { 
-                ItemName = "Cement", 
-                Category = "material", 
-                UnitCostLkr = 2500m, 
-                Unit = "bag", 
-                TerrainMultiplier = new HousePlanner.API.Entities.TerrainMultiplierData { Flat = 1.0m, Hillside = 1.25m, Coastal = 1.35m }, 
-                UpdatedAt = DateTimeOffset.UtcNow 
-            },
-            new HousePlanner.API.Entities.PricingData 
-            { 
-                ItemName = "Steel", 
-                Category = "material", 
-                UnitCostLkr = 350000m, 
-                Unit = "ton", 
-                TerrainMultiplier = new HousePlanner.API.Entities.TerrainMultiplierData { Flat = 1.0m, Hillside = 1.2m, Coastal = 1.5m }, 
-                UpdatedAt = DateTimeOffset.UtcNow 
-            },
-            new HousePlanner.API.Entities.PricingData 
-            { 
-                ItemName = "Flooring", 
-                Category = "material", 
-                UnitCostLkr = 8000m, 
-                Unit = "sqm", 
-                TerrainMultiplier = new HousePlanner.API.Entities.TerrainMultiplierData { Flat = 1.0m, Hillside = 1.1m, Coastal = 1.1m }, 
-                UpdatedAt = DateTimeOffset.UtcNow 
-            },
-            new HousePlanner.API.Entities.PricingData 
-            { 
-                ItemName = "Construction Labour", 
-                Category = "labour", 
-                UnitCostLkr = 4500m, 
-                Unit = "day", 
-                TerrainMultiplier = new HousePlanner.API.Entities.TerrainMultiplierData { Flat = 1.0m, Hillside = 1.3m, Coastal = 1.2m }, 
-                UpdatedAt = DateTimeOffset.UtcNow 
-            }
-        };
-
-        context.PricingItems.AddRange(seedData);
-        context.SaveChanges();
-    }
+    context.Database.Migrate();
 }
 
 // 6. Register exception-handling middleware early in request pipeline
@@ -196,9 +159,25 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 // Apply CORS Policy
-app.UseCors("AllowReactApp");
+// Moved to the top to ensure CORS headers are sent on all responses, including exceptions.
+// (Already applied at the top)
 
 app.UseAuthorization();
+
+// Python callbacks are internal service-to-service requests.
+app.UseWhen(context => context.Request.Path.StartsWithSegments("/api/v1/internal"), branch =>
+{
+    branch.Use(async (context, next) =>
+    {
+        var expected = builder.Configuration["AgenticService:InternalApiKey"] ?? "shared-internal-secret";
+        if (!context.Request.Headers.TryGetValue("X-Internal-API-Key", out var actual) || actual != expected)
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            return;
+        }
+        await next();
+    });
+});
 
 // Map controllers
 app.MapControllers();

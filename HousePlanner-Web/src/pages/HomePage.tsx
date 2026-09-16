@@ -1,7 +1,7 @@
 import React, { useRef, useState, Suspense, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Environment, Html, useGLTF } from '@react-three/drei';
+import { OrbitControls, Html, useGLTF } from '@react-three/drei';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
 import { Mic, ArrowRight, Sparkles, Box, Moon, Sun, ChevronRight, ChevronLeft } from 'lucide-react';
 import * as THREE from 'three';
@@ -156,7 +156,7 @@ const ProceduralHouse = () => {
   );
 };
 
-const ExternalHouseModel = ({ url }: { url: string }) => {
+export const ExternalHouseModel = ({ url }: { url: string }) => {
   const { scene } = useGLTF(url);
   const groupRef = useRef<THREE.Group>(null);
   
@@ -208,7 +208,7 @@ const HouseScene = ({ isDark }: { isDark: boolean }) => {
       />
       <directionalLight position={[-15, -10, -15]} color={isDark ? "#1e40af" : "#38bdf8"} intensity={isDark ? 0.3 : 0.5} />
       
-      <Environment preset={isDark ? "night" : "city"} blur={0.8} />
+      {/* Removed Environment to prevent CORS / Network errors with pmndrs GitHub raw assets */}
       
       {/* Centered the house and moved up further */}
       <group position={[-2, 1.2, 0]}>
@@ -308,19 +308,19 @@ const HomePage: React.FC = () => {
       >
         <div className="max-w-[1600px] mx-auto px-8 h-24 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 relative flex items-center justify-center">
-              <Box className="absolute text-gray-900 dark:text-white transition-colors" size={24} strokeWidth={1.5} />
-              <Sparkles className="absolute text-yellow-600 -top-1 -right-1" size={12} />
-            </div>
-            <span className="text-sm font-bold text-gray-900 dark:text-white tracking-[0.2em] transition-colors">HOMEPLANNER<span className="text-gray-400">AI</span></span>
+            <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+              <div className="w-8 h-8 relative flex items-center justify-center">
+                <Box className="absolute text-gray-900 dark:text-white transition-colors" size={24} strokeWidth={1.5} />
+                <Sparkles className="absolute text-yellow-600 -top-1 -right-1" size={12} />
+              </div>
+              <span className="text-sm font-bold text-gray-900 dark:text-white tracking-[0.2em] transition-colors">HOMEPLANNER<span className="text-gray-400">AI</span></span>
+            </Link>
           </div>
           
           <div className="hidden lg:flex items-center gap-10 text-[11px] font-semibold tracking-[0.15em] text-gray-500 dark:text-gray-400">
-            <a href="#" className="text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors">HOME</a>
-            <a href="#" className="hover:text-gray-900 dark:hover:text-white transition-colors">AI DESIGN</a>
-            <a href="#" className="hover:text-gray-900 dark:hover:text-white transition-colors">3D PLANNER</a>
-            <a href="#" className="hover:text-gray-900 dark:hover:text-white transition-colors">HOUSE PLANS</a>
-            <a href="#" className="hover:text-gray-900 dark:hover:text-white transition-colors">HOW IT WORKS</a>
+            <Link to="/" className="text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors">HOME</Link>
+            <Link to="/dashboard/new-project" className="hover:text-gray-900 dark:hover:text-white transition-colors">AI DESIGN</Link>
+            <Link to="/dashboard" className="hover:text-gray-900 dark:hover:text-white transition-colors">MY PLANS</Link>
           </div>
 
           <div className="flex items-center gap-6">

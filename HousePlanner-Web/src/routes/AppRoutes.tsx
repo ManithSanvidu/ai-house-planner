@@ -6,6 +6,7 @@ import ProtectedRoute from './ProtectedRoute';
 import PageContainer from '../components/layout/PageContainer';
 import IntakeForm from '../pages/IntakeForm';
 import HomePage from '../pages/HomePage';
+import { WorkflowReviewPage } from '../pages/WorkflowReviewPage';
 import PricingManagementPage from '../pages/PricingManagementPage';
 
 export const AppRoutes: React.FC = () => {
@@ -44,6 +45,17 @@ export const AppRoutes: React.FC = () => {
           <ProtectedRoute allowedRoles={['Contractor']}>
             <PageContainer>
               <PricingManagementPage />
+            </PageContainer>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/dashboard/workflows/:id"
+        element={
+          <ProtectedRoute>
+            <PageContainer>
+              <WorkflowReviewPage />
             </PageContainer>
           </ProtectedRoute>
         }
