@@ -28,10 +28,18 @@ namespace HousePlanner.API.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("BasePreDesignedPlanId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("now()");
+
+                    b.Property<string>("DesignSource")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
 
                     b.Property<int>("FloorCount")
                         .HasColumnType("integer");
@@ -67,6 +75,8 @@ namespace HousePlanner.API.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("BasePreDesignedPlanId");
+
                     b.HasIndex("WorkflowStateId")
                         .HasDatabaseName("IX_HouseDesigns_WorkflowStateId");
 
@@ -84,6 +94,9 @@ namespace HousePlanner.API.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("BasePreDesignedPlanId")
                         .HasColumnType("uuid");
 
                     b.Property<decimal?>("BudgetLkr")
@@ -106,6 +119,10 @@ namespace HousePlanner.API.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)");
 
+                    b.Property<string>("PlanSelectionMode")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
                     b.Property<int>("PreferredBedrooms")
                         .HasColumnType("integer");
 
@@ -121,9 +138,133 @@ namespace HousePlanner.API.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("BasePreDesignedPlanId");
+
                     b.HasIndex("ClientId");
 
                     b.ToTable("LandSubmissions");
+                });
+
+            modelBuilder.Entity("HousePlanner.API.Entities.PreDesignedHousePlan", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Bathrooms")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Bedrooms")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Category")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("DesignCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<int>("FloorCount")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("HasBalcony")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("HasOffice")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("HasUtilityRoom")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("HasVeranda")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsAccessibleFriendly")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("LayoutJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<decimal>("MinimumLandSizePerches")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<decimal?>("MinimumPlotLengthFt")
+                        .HasColumnType("decimal(8,2)");
+
+                    b.Property<decimal?>("MinimumPlotWidthFt")
+                        .HasColumnType("decimal(8,2)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("character varying(160)");
+
+                    b.Property<int>("ParkingSpaces")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(180)
+                        .HasColumnType("character varying(180)");
+
+                    b.Property<string>("Style")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<string>("SuitableTerrain")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("TagsJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("ThumbnailUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<decimal>("TotalBuiltUpAreaSqft")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Bathrooms");
+
+                    b.HasIndex("Bedrooms");
+
+                    b.HasIndex("DesignCode")
+                        .IsUnique();
+
+                    b.HasIndex("FloorCount");
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("Slug")
+                        .IsUnique();
+
+                    b.HasIndex("Style");
+
+                    b.HasIndex("SuitableTerrain");
+
+                    b.ToTable("PreDesignedHousePlans");
                 });
 
             modelBuilder.Entity("HousePlanner.API.Entities.Role", b =>
@@ -300,22 +441,36 @@ namespace HousePlanner.API.Migrations
 
             modelBuilder.Entity("HousePlanner.API.Entities.HouseDesign", b =>
                 {
+                    b.HasOne("HousePlanner.API.Entities.PreDesignedHousePlan", "BasePreDesignedPlan")
+                        .WithMany("DerivedDesigns")
+                        .HasForeignKey("BasePreDesignedPlanId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("HousePlanner.API.Entities.WorkflowState", "WorkflowState")
                         .WithMany("HouseDesigns")
                         .HasForeignKey("WorkflowStateId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("BasePreDesignedPlan");
+
                     b.Navigation("WorkflowState");
                 });
 
             modelBuilder.Entity("HousePlanner.API.Entities.LandSubmission", b =>
                 {
+                    b.HasOne("HousePlanner.API.Entities.PreDesignedHousePlan", "BasePreDesignedPlan")
+                        .WithMany()
+                        .HasForeignKey("BasePreDesignedPlanId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("HousePlanner.API.Entities.User", "Client")
                         .WithMany()
                         .HasForeignKey("ClientId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("BasePreDesignedPlan");
 
                     b.Navigation("Client");
                 });
@@ -362,6 +517,11 @@ namespace HousePlanner.API.Migrations
             modelBuilder.Entity("HousePlanner.API.Entities.HouseDesign", b =>
                 {
                     b.Navigation("Rooms");
+                });
+
+            modelBuilder.Entity("HousePlanner.API.Entities.PreDesignedHousePlan", b =>
+                {
+                    b.Navigation("DerivedDesigns");
                 });
 
             modelBuilder.Entity("HousePlanner.API.Entities.WorkflowState", b =>

@@ -431,3 +431,4 @@
 /Users/kushancs/Desktop/ai-house-system/HousePlanner.API.Tests/obj/Debug/net8.0/HousePlanner.API.Tests.pdb
 /Users/kushancs/Desktop/ai-house-system/HousePlanner.API.Tests/obj/Debug/net8.0/HousePlanner.API.Tests.genruntimeconfig.cache
 /Users/kushancs/Desktop/ai-house-system/HousePlanner.API.Tests/obj/Debug/net8.0/ref/HousePlanner.API.Tests.dll
+/Users/kushancs/Desktop/ai-house-system/HousePlanner.API.Tests/bin/Debug/net8.0/Data/Seed/pre-designed-plans.json

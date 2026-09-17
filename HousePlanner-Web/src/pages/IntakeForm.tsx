@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Upload, Home, Map, DollarSign, Layers, CheckCircle2 } from 'lucide-react';
 import { workflowService } from '../services/workflowService';
@@ -37,6 +37,7 @@ interface IntakeFormData {
 
 const IntakeForm: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [formData, setFormData] = useState<IntakeFormData>({
     budget: '',
     landSize: '',
@@ -88,6 +89,7 @@ const IntakeForm: React.FC = () => {
       // Submit through the public gateway; Python remains an internal service.
       const parsedBudget = parseFloat(formData.budget);
       const payload: any = {
+        ...(searchParams.get('basePlanId') ? { basePreDesignedPlanId: searchParams.get('basePlanId'), planSelectionMode: searchParams.get('mode') || 'use' } : {}),
         landSizePerches: formData.landUnit === 'perches' ? parseFloat(formData.landSize) : (parseFloat(formData.landSize) / 272.25),
         manualTerrainType: formData.terrainType,
         preferences: {

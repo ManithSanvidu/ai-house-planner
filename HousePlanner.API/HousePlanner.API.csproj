@@ -17,4 +17,8 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Update="Data/Seed/pre-designed-plans.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

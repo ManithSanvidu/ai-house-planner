@@ -3,7 +3,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { motion } from 'framer-motion';
 import { Box, Lock, Mail, ArrowRight, Sparkles } from 'lucide-react';
-import { setMockAuth } from '../features/auth/authSlice';
+import { googleLoginAsync, loginAsync } from '../features/auth/authSlice';
+import type { AppDispatch } from '../store';
 import useAuth from '../features/auth/useAuth';
 
 const LoginPage: React.FC = () => {
@@ -12,7 +13,7 @@ const LoginPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const { isAuthenticated } = useAuth();
 
   useEffect(() => {
@@ -21,36 +22,20 @@ const LoginPage: React.FC = () => {
     }
   }, [isAuthenticated, navigate]);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    // Hardcoded auth requirement
-    const validEmails = ['architect@houseplanner.com', 'contractor@houseplanner.com'];
-    if (validEmails.includes(email) && password === 'password123') {
-      dispatch(setMockAuth({
-        uid: 'mock-123',
-        email: email,
-        role: email.startsWith('architect') ? 'Architect' : 'Contractor',
-      } as any));
-      navigate('/dashboard');
-    } else {
-      setError('Invalid email or password.');
-    }
+    const result = await dispatch(loginAsync({email,password}));
+    if (loginAsync.fulfilled.match(result)) navigate('/dashboard');
+    else setError((result.payload as string) || 'Invalid email or password.');
   };
 
-  const handleGoogleLogin = () => {
-    // Mock Google Login logic
-    console.log("Initiating Google Login...");
-    // Since Firebase config is not fully set up, we mock a successful google login
-    setTimeout(() => {
-      dispatch(setMockAuth({
-        uid: 'mock-google-123',
-        email: 'user@gmail.com',
-        role: 'Architect',
-      } as any));
-      navigate('/dashboard');
-    }, 1000);
+  const handleGoogleLogin = async () => {
+    setError('');
+    const result = await dispatch(googleLoginAsync());
+    if (googleLoginAsync.fulfilled.match(result)) navigate('/dashboard');
+    else setError((result.payload as string) || 'Google sign-in failed.');
   };
 
   return (

@@ -7,6 +7,10 @@ import PageContainer from '../components/layout/PageContainer';
 import IntakeForm from '../pages/IntakeForm';
 import HomePage from '../pages/HomePage';
 import { WorkflowReviewPage } from '../pages/WorkflowReviewPage';
+import PlanLibraryPage from '../pages/PlanLibraryPage';
+import PlanDetailPage from '../pages/PlanDetailPage';
+import AdminPlansPage from '../pages/AdminPlansPage';
+import AdminPlanFormPage from '../pages/AdminPlanFormPage';
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -36,6 +40,27 @@ export const AppRoutes: React.FC = () => {
             </PageContainer>
           </ProtectedRoute>
         }
+      />
+
+      <Route
+        path="/dashboard/plans"
+        element={<ProtectedRoute><PageContainer><PlanLibraryPage /></PageContainer></ProtectedRoute>}
+      />
+      <Route
+        path="/dashboard/plans/:id"
+        element={<ProtectedRoute><PageContainer><PlanDetailPage /></PageContainer></ProtectedRoute>}
+      />
+      <Route
+        path="/dashboard/admin/plans"
+        element={<ProtectedRoute allowedRoles={['Admin']}><PageContainer><AdminPlansPage /></PageContainer></ProtectedRoute>}
+      />
+      <Route
+        path="/dashboard/admin/plans/new"
+        element={<ProtectedRoute allowedRoles={['Admin']}><PageContainer><AdminPlanFormPage /></PageContainer></ProtectedRoute>}
+      />
+      <Route
+        path="/dashboard/admin/plans/:id/edit"
+        element={<ProtectedRoute allowedRoles={['Admin']}><PageContainer><AdminPlanFormPage /></PageContainer></ProtectedRoute>}
       />
 
       <Route

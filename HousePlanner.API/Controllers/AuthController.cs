@@ -70,6 +70,10 @@ namespace HousePlanner.API.Controllers
             }
 
             var userInfo = await _firebaseAuthService.VerifyTokenAsync(requestDto.Token);
+            var localUser = await _dbContext.Users.AsNoTracking().Include(u => u.Role)
+                .FirstOrDefaultAsync(u => u.Email == userInfo.Email);
+            if (localUser is null) return Unauthorized("Authenticated Firebase user is not registered locally.");
+            userInfo.Role = localUser.Role?.Name ?? "User";
             return Ok(userInfo);
         }
 

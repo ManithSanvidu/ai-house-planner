@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Plus, Sparkles } from 'lucide-react';
+import { Plus, Sparkles, Library } from 'lucide-react';
 import useAuth from '../features/auth/useAuth';
 
 const DashboardPage: React.FC = () => {
@@ -31,7 +31,7 @@ const DashboardPage: React.FC = () => {
           Ready to design something extraordinary today?
         </p>
 
-        <div className="flex justify-center">
+        <div className="flex flex-wrap gap-3 justify-center">
           <Link to="/dashboard/new-project">
             <motion.button
               whileHover={{ scale: 1.02 }}
@@ -43,6 +43,7 @@ const DashboardPage: React.FC = () => {
               <span>Start New Project</span>
             </motion.button>
           </Link>
+          <Link to="/dashboard/plans" className="flex items-center gap-2 px-8 py-4 border border-zinc-300 dark:border-gray-700 rounded-2xl font-semibold"><Library size={20}/>Browse Plans</Link>
         </div>
       </motion.div>
     </div>
