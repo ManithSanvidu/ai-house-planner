@@ -6,6 +6,7 @@ import 'views/register_view.dart';
 import 'views/intake_view.dart';
 import 'views/approval_view.dart';
 import 'views/project_status_view.dart';
+import 'views/design_preview_view.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async {
@@ -17,7 +18,8 @@ void main() async {
   // await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   runApp(
-    const ProviderScope(child: MyApp(),
+    const ProviderScope(
+      child: MyApp(),
     ),
   );
 }
@@ -26,7 +28,7 @@ class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context){
+  Widget build(BuildContext context) {
     return MaterialApp(
       title: 'AI House Planner',
       debugShowCheckedModeBanner: false,
@@ -42,6 +44,16 @@ class MyApp extends StatelessWidget {
         '/land_submission': (context) => const IntakeView(),
         '/approval': (context) => const ApprovalView(),
         '/project_status': (context) => const ProjectStatusView(),
+      },
+      // Dynamic route for design preview with workflowId parameter
+      onGenerateRoute: (settings) {
+        if (settings.name != null && settings.name!.startsWith('/design/')) {
+          final workflowId = settings.name!.split('/design/').last;
+          return MaterialPageRoute(
+            builder: (context) => DesignPreviewView(workflowId: workflowId),
+          );
+        }
+        return null;
       },
     );
   }

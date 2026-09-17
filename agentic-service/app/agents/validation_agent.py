@@ -21,6 +21,7 @@ from app.schemas.validation_schemas import (
     RuleValidationResult,
     ValidationResult,
 )
+from app.schemas.workflow_state import WorkflowState
 
 # ---------------------------------------------------------------------------
 # Business Rule Constants & Configuration Defaults
@@ -392,10 +393,31 @@ def extract_validation_input_from_state(state: Any) -> HousePlanValidationInput:
     terrain_type = terrain_result.get("terrain_type") or manual_terrain or state_dict.get("terrain_type")
     slope_estimate = terrain_result.get("slope_estimate") or state_dict.get("slope_estimate")
 
+    # Extract room list if present for auto-calculation
+    rooms_list = design_result.get("rooms") or state_dict.get("rooms") or []
+    computed_footprint = None
+    computed_bedroom_count = None
+    if rooms_list and isinstance(rooms_list, list):
+        floor1_rooms = [
+            r for r in rooms_list 
+            if (isinstance(r, dict) and r.get("floor", 1) == 1) or (hasattr(r, "floor") and getattr(r, "floor") == 1)
+        ]
+        if floor1_rooms:
+            computed_footprint = sum(
+                (r.get("width", 0) * r.get("length", 0) if isinstance(r, dict) else getattr(r, "width", 0) * getattr(r, "length", 0))
+                for r in floor1_rooms
+            )
+        computed_bedroom_count = len([
+            r for r in rooms_list
+            if ("bedroom" in (r.get("room_type", "") if isinstance(r, dict) else getattr(r, "room_type", "")).lower())
+        ])
+
     # Design attributes
     ground_coverage = (
         design_result.get("ground_coverage_sqft")
         or design_result.get("footprint_sqft")
+        or computed_footprint
+        or design_result.get("total_built_up_area_sqft")
         or state_dict.get("ground_coverage_sqft")
     )
     foundation_type = (
@@ -405,6 +427,7 @@ def extract_validation_input_from_state(state: Any) -> HousePlanValidationInput:
     actual_bedrooms = (
         design_result.get("bedrooms")
         or design_result.get("bedroom_count")
+        or computed_bedroom_count
         or state_dict.get("actual_bedrooms")
     )
     actual_floors = (
@@ -416,6 +439,7 @@ def extract_validation_input_from_state(state: Any) -> HousePlanValidationInput:
     # Cost attributes
     estimated_cost = (
         cost_result.get("total_estimated_cost_lkr")
+        or cost_result.get("estimated_total_lkr")
         or cost_result.get("estimated_cost_lkr")
         or cost_result.get("total_cost")
         or state_dict.get("estimated_cost_lkr")
@@ -537,3 +561,29 @@ class ValidationAgent:
             max_coverage_ratio=self.max_coverage_ratio,
             budget_tolerance_ratio=self.budget_tolerance_ratio,
         )
+
+
+def validation_node(state: WorkflowState) -> WorkflowState:
+    """
+    LangGraph node function executing deterministic safety and compliance validation.
+    Sets status = "awaiting_approval" and approval_status = "pending" on pass,
+    or manages revision retry routing on failure.
+    """
+    print(f"[Validation Agent] Validating constraints for workflow {state.workflow_id}...")
+    val_result = validate_house_plan(state)
+    state.validation_result = val_result.model_dump()
+
+    if val_result.passed:
+        state.status = "awaiting_approval"
+        state.approval_status = "pending"
+        state.current_agent = "rendering"
+    else:
+        state.approval_status = "not_requested"
+        if state.retry_count < 3:
+            state.retry_count += 1
+            state.current_agent = "design"
+        else:
+            state.status = "failed"
+            state.current_agent = "failed"
+
+    return state

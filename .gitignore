@@ -14,6 +14,9 @@ pnpm-debug.log*
 .env.*
 !.env.example
 **/firebase-service-account.json
+**/service-account.json
+**/serviceAccount.json
+**/secrets/
 *.pem
 *.key
 HousePlanner.API/appsettings.json
@@ -24,6 +27,25 @@ HousePlanner.API/appsettings.json
 HousePlanner.API/bin/
 HousePlanner.API/obj/
 HousePlanner.API/App_Data/
+test_output.txt
+**/test_output.txt
+
+# Python
+agentic-service/venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+**/.pytest_cache/
+
+# Flutter/Dart & Android
+mobile/.dart_tool/
+mobile/.packages
+mobile/build/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+.gradle/
+**/.gradle/
 
 # Editor and operating-system files
 .vscode/
@@ -37,4 +59,5 @@ HousePlanner.API/App_Data/
 # Python generated files
 **/__pycache__/
 *.py[cod]
-.pytest_cache/
+
+agentic-service/.venv/

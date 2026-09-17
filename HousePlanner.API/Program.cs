@@ -66,6 +66,7 @@ builder.Services.AddSwaggerGen(c =>
 // 4. Register application services
 builder.Services.AddScoped<IFirebaseAuthService, FirebaseAuthService>();
 builder.Services.AddSingleton<IWorkflowService, WorkflowService>();
+builder.Services.AddHttpClient();
 
 // 5. Initialize Firebase Admin SDK
 var serviceAccountPath = builder.Configuration["Firebase:ServiceAccountPath"];
@@ -123,10 +124,15 @@ else
 
 var app = builder.Build();
 
+// Apply CORS Policy early to ensure all responses (including errors) get the headers
+app.UseCors("AllowReactApp");
+
 // Auto-create database tables
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    // Drop existing database to ensure all tables are created properly
+    // context.Database.EnsureDeleted();
     context.Database.EnsureCreated();
 }
 
@@ -149,7 +155,8 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 // Apply CORS Policy
-app.UseCors("AllowReactApp");
+// Moved to the top to ensure CORS headers are sent on all responses, including exceptions.
+// (Already applied at the top)
 
 app.UseAuthorization();
 
