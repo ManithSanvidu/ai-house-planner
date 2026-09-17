@@ -1,4 +1,4 @@
-import { GoogleAuthProvider, signInWithEmailAndPassword, signInWithPopup, signOut as firebaseSignOut, type UserCredential } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithEmailAndPassword, signInWithPopup, signOut as firebaseSignOut, type UserCredential, setPersistence, browserSessionPersistence } from 'firebase/auth';
 import { auth } from '../../services/firebase';
 import apiClient, { setInMemoryToken } from '../../services/apiClient';
 import type { UserProfile } from '../../types/auth.types';
@@ -8,6 +8,7 @@ import type { UserProfile } from '../../types/auth.types';
  */
 const authService = {
   googleLogin: async (): Promise<{ user: UserProfile; token: string }> => {
+    await setPersistence(auth, browserSessionPersistence);
     const credential = await signInWithPopup(auth, new GoogleAuthProvider());
     const token = await credential.user.getIdToken();
     setInMemoryToken(token);
@@ -24,6 +25,7 @@ const authService = {
    */
   login: async (email: string, password: string): Promise<{ user: UserProfile; token: string }> => {
     // 1. Authenticate with Firebase Authentication (Production mode)
+    await setPersistence(auth, browserSessionPersistence);
     const credential: UserCredential = await signInWithEmailAndPassword(auth, email, password);
     const fbUser = credential.user;
 

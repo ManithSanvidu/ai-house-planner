@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace HousePlanner.API.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260914060333_AddPreDesignedHousePlans")]
-    partial class AddPreDesignedHousePlans
+    [Migration("20260917090303_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -99,6 +99,9 @@ namespace HousePlanner.API.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("BasePreDesignedPlanId")
+                        .HasColumnType("uuid");
+
                     b.Property<decimal?>("BudgetLkr")
                         .HasColumnType("decimal(14,2)");
 
@@ -119,6 +122,10 @@ namespace HousePlanner.API.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)");
 
+                    b.Property<string>("PlanSelectionMode")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
                     b.Property<int>("PreferredBedrooms")
                         .HasColumnType("integer");
 
@@ -133,6 +140,8 @@ namespace HousePlanner.API.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("BasePreDesignedPlanId");
 
                     b.HasIndex("ClientId");
 
@@ -450,11 +459,18 @@ namespace HousePlanner.API.Migrations
 
             modelBuilder.Entity("HousePlanner.API.Entities.LandSubmission", b =>
                 {
+                    b.HasOne("HousePlanner.API.Entities.PreDesignedHousePlan", "BasePreDesignedPlan")
+                        .WithMany()
+                        .HasForeignKey("BasePreDesignedPlanId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("HousePlanner.API.Entities.User", "Client")
                         .WithMany()
                         .HasForeignKey("ClientId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("BasePreDesignedPlan");
 
                     b.Navigation("Client");
                 });
