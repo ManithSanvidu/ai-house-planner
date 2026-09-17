@@ -55,6 +55,14 @@ public class HouseDesign
     [Column(TypeName = "jsonb")]
     public string LayoutJson { get; set; } = "{}";
 
+    [Required, MaxLength(30)]
+    public string DesignSource { get; set; } = "ai_generated";
+
+    public Guid? BasePreDesignedPlanId { get; set; }
+
+    [ForeignKey(nameof(BasePreDesignedPlanId))]
+    public virtual PreDesignedHousePlan? BasePreDesignedPlan { get; set; }
+
     [Column(TypeName = "timestamp with time zone")]
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 

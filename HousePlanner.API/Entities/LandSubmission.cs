@@ -37,6 +37,13 @@ namespace HousePlanner.API.Entities
         [StringLength(50)]
         public string? StylePreference {get;set;}
 
+        public Guid? BasePreDesignedPlanId { get; set; }
+        [ForeignKey(nameof(BasePreDesignedPlanId))]
+        public virtual PreDesignedHousePlan? BasePreDesignedPlan { get; set; }
+
+        [StringLength(20)]
+        public string? PlanSelectionMode { get; set; }
+
         public DateTimeOffset CreatedAt {get;set;}
 
         public DateTimeOffset UpdatedAt {get;set;}

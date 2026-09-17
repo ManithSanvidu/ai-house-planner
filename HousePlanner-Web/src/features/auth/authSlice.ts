@@ -53,6 +53,11 @@ export const loginAsync = createAsyncThunk(
   }
 );
 
+export const googleLoginAsync = createAsyncThunk('auth/googleLogin', async (_, { rejectWithValue }) => {
+  try { return await authService.googleLogin(); }
+  catch (error:any) { return rejectWithValue(error.message || 'Google sign-in failed.'); }
+});
+
 // Async Thunk for User Logout
 export const logoutAsync = createAsyncThunk('auth/logout', async (_, { rejectWithValue }) => {
   try {
@@ -112,6 +117,9 @@ const authSlice = createSlice({
         state.status = 'failed';
         state.error = action.payload as string;
       })
+      .addCase(googleLoginAsync.pending, (state) => { state.status='loading'; state.error=null; })
+      .addCase(googleLoginAsync.fulfilled, (state, action: PayloadAction<{user:UserProfile;token:string}>) => { state.status='succeeded'; state.user=action.payload.user; state.token=action.payload.token; })
+      .addCase(googleLoginAsync.rejected, (state, action) => { state.status='failed'; state.error=action.payload as string; })
       // Logout flows
       .addCase(logoutAsync.fulfilled, (state) => {
         state.user = null;
