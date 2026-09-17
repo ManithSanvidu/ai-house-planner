@@ -37,7 +37,7 @@ class RoomLayout(BaseModel):
 class DesignResult(BaseModel):
     design_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     floor_count: int = Field(..., ge=1)
-    total_built_up_area_sqft: float = Field(..., ge=0)
+    total_built_up_area_sqft: Optional[float] = Field(None, ge=0)
     foundation_type: Literal["slab", "stepped", "pile", "raised"] = Field(
         ..., description="Foundation type suited for the terrain"
     )

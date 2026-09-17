@@ -1,3 +1,4 @@
+import random
 from math import sqrt
 from typing import Literal, Optional, Union
 from pydantic import BaseModel, ConfigDict, Field, computed_field, model_validator
@@ -26,6 +27,7 @@ class PlotConstraints(BaseModel):
     setbacks: Setbacks = Field(default_factory=Setbacks)
     dimensions_estimated: bool = False
     parking_reserved: bool = False
+    design_seed: Optional[int] = None
     notable_features: list[str] = Field(default_factory=list)
 
     @model_validator(mode='after')
@@ -34,14 +36,58 @@ class PlotConstraints(BaseModel):
         if self.plot_width_ft is None or self.plot_length_ft is None:
             self.dimensions_estimated = True
             if self.plot_width_ft is None and self.plot_length_ft is None:
-                self.plot_width_ft = sqrt(area / 1.3)
+                # Seed a stable random aspect ratio using design_seed if available
+                rng = random.Random(self.design_seed if self.design_seed is not None else int(self.land_size_perches * 10))
+                # Choose family randomly: compact (1.0-1.25), moderate (1.25-1.6), narrow (1.6-2.4)
+                aspect = rng.choice([
+                    rng.uniform(1.0, 1.25),
+                    rng.uniform(1.25, 1.6),
+                    rng.uniform(1.6, 2.4)
+                ])
+                # Decide if aspect applies to length vs width based on a coin flip
+                if rng.random() > 0.5:
+                    self.plot_width_ft = sqrt(area / aspect)
+                else:
+                    self.plot_width_ft = sqrt(area * aspect)
             if self.plot_width_ft is None:
                 self.plot_width_ft = area / self.plot_length_ft
             if self.plot_length_ft is None:
                 self.plot_length_ft = area / self.plot_width_ft
+        
+        # Avoid floating point absurdities
+        self.plot_width_ft = round(self.plot_width_ft, 1)
+        self.plot_length_ft = round(self.plot_length_ft, 1)
+        
         if self.buildable_width <= 0 or self.buildable_length <= 0:
             raise ValueError('Setbacks/reserved parking leave no buildable rectangle.')
         return self
+
+    @computed_field
+    @property
+    def aspect_ratio(self) -> float:
+        return max(self.plot_width_ft or 1, self.plot_length_ft or 1) / min(self.plot_width_ft or 1, self.plot_length_ft or 1)
+        
+    @computed_field
+    @property
+    def plot_class(self) -> str:
+        area = perches_to_sqft(self.land_size_perches)
+        aspect = self.aspect_ratio
+        
+        if area < 3000:
+            size = "SMALL"
+        elif area < 6000:
+            size = "MEDIUM"
+        else:
+            size = "LARGE"
+            
+        if aspect < 1.3:
+            shape = "COMPACT"
+        elif aspect < 1.8:
+            shape = "MODERATE"
+        else:
+            shape = "NARROW"
+            
+        return f"{size}_{shape}"
 
     @computed_field
     @property

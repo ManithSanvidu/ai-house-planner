@@ -4,7 +4,7 @@
     "action": "Design generation failed; no layout submitted",
     "tool_called": "layout_generation_tool",
     "duration_ms": null,
-    "result": "Local geometry validation failed.",
-    "created_at_utc": "2026-09-14T06:28:14.539874+00:00"
+    "result": "Invalid design requirements: 1 validation error for PlotConstraints\n  Value error, Setbacks/reserved parking leave no buildable rectangle. [type=value_error, input_value={'road_side': 'east', 'pl...arking_reserved': False}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error",
+    "created_at_utc": "2026-09-17T15:47:44.695207+00:00"
   }
 ]
