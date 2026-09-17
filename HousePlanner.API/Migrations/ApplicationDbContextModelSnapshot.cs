@@ -22,6 +22,40 @@ namespace HousePlanner.API.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("HousePlanner.API.Entities.CostEstimate", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("BudgetDeltaPercent")
+                        .HasColumnType("decimal(6,2)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid>("HouseDesignId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("LabourCostLkr")
+                        .HasColumnType("decimal(14,2)");
+
+                    b.Property<decimal>("MaterialCostLkr")
+                        .HasColumnType("decimal(14,2)");
+
+                    b.Property<decimal>("TotalCostLkr")
+                        .HasColumnType("decimal(14,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("HouseDesignId")
+                        .HasDatabaseName("IX_CostEstimates_HouseDesignId");
+
+                    b.ToTable("CostEstimates");
+                });
+
             modelBuilder.Entity("HousePlanner.API.Entities.HouseDesign", b =>
                 {
                     b.Property<Guid>("Id")
@@ -124,6 +158,40 @@ namespace HousePlanner.API.Migrations
                     b.HasIndex("ClientId");
 
                     b.ToTable("LandSubmissions");
+                });
+
+            modelBuilder.Entity("HousePlanner.API.Entities.PricingData", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("ItemName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<string>("Unit")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<decimal>("UnitCostLkr")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("PricingData");
                 });
 
             modelBuilder.Entity("HousePlanner.API.Entities.Role", b =>
@@ -298,6 +366,17 @@ namespace HousePlanner.API.Migrations
                     b.ToTable("WorkflowStates");
                 });
 
+            modelBuilder.Entity("HousePlanner.API.Entities.CostEstimate", b =>
+                {
+                    b.HasOne("HousePlanner.API.Entities.HouseDesign", "HouseDesign")
+                        .WithMany("CostEstimates")
+                        .HasForeignKey("HouseDesignId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("HouseDesign");
+                });
+
             modelBuilder.Entity("HousePlanner.API.Entities.HouseDesign", b =>
                 {
                     b.HasOne("HousePlanner.API.Entities.WorkflowState", "WorkflowState")
@@ -318,6 +397,39 @@ namespace HousePlanner.API.Migrations
                         .IsRequired();
 
                     b.Navigation("Client");
+                });
+
+            modelBuilder.Entity("HousePlanner.API.Entities.PricingData", b =>
+                {
+                    b.OwnsOne("HousePlanner.API.Entities.TerrainMultiplierData", "TerrainMultiplier", b1 =>
+                        {
+                            b1.Property<int>("PricingDataId")
+                                .HasColumnType("integer");
+
+                            b1.Property<decimal>("Coastal")
+                                .HasColumnType("numeric")
+                                .HasAnnotation("Relational:JsonPropertyName", "coastal");
+
+                            b1.Property<decimal>("Flat")
+                                .HasColumnType("numeric")
+                                .HasAnnotation("Relational:JsonPropertyName", "flat");
+
+                            b1.Property<decimal>("Hillside")
+                                .HasColumnType("numeric")
+                                .HasAnnotation("Relational:JsonPropertyName", "hillside");
+
+                            b1.HasKey("PricingDataId");
+
+                            b1.ToTable("PricingData");
+
+                            b1.ToJson("TerrainMultiplier");
+
+                            b1.WithOwner()
+                                .HasForeignKey("PricingDataId");
+                        });
+
+                    b.Navigation("TerrainMultiplier")
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("HousePlanner.API.Entities.Room", b =>
@@ -361,6 +473,8 @@ namespace HousePlanner.API.Migrations
 
             modelBuilder.Entity("HousePlanner.API.Entities.HouseDesign", b =>
                 {
+                    b.Navigation("CostEstimates");
+
                     b.Navigation("Rooms");
                 });
 
