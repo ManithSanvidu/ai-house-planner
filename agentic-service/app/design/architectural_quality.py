@@ -1,4 +1,5 @@
 """Deterministic residential quality gate, independent of geometry certification."""
+import logging
 from dataclasses import asdict, dataclass
 from heapq import heappop, heappush
 from math import inf, hypot
@@ -7,6 +8,8 @@ from app.design.adjacency import graph_for, shared_wall
 from app.design.quality_config import QUALITY, WEIGHTS
 from app.design.quality_metrics import calculate_quality_metrics
 from app.design.room_rules import CIRCULATION_TYPES, room_kind
+
+logger = logging.getLogger(__name__)
 
 PUBLIC = {'living_room', 'dining', 'kitchen'}
 OUTDOOR = {'balcony', 'veranda'}
@@ -244,7 +247,7 @@ def validate_architectural_quality(design, req=None, plot=None, config=QUALITY):
         failures.append('public_zone_separation')
 
     bed_distance = max((dist(a, b) for i, a in enumerate(beds) for b in beds[i + 1:] if a.floor == b.floor), default=0)
-    print('ACTUAL bed_distance:', bed_distance, 'max:', config.bedroom_travel_max_ft)
+    logger.debug('bed_distance=%.1f max=%.1f', bed_distance, config.bedroom_travel_max_ft)
     if bed_distance > config.bedroom_travel_max_ft:
         failures.append('bedroom_spine')
 

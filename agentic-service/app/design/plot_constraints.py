@@ -41,10 +41,12 @@ class PlotConstraints(BaseModel):
         if not has_width and not has_length:
             self.dimension_source = "area_estimated"
             rng = random.Random(self.design_seed if self.design_seed is not None else int(self.land_size_perches * 10))
+            # Limit aspect ratio to 1.6 max: very narrow estimated plots leave insufficient buildable depth.
+            # Sri Lankan residential land typically runs 1.0–1.5:1 (width:length).
             aspect = rng.choice([
-                rng.uniform(1.0, 1.25),
-                rng.uniform(1.25, 1.55),
-                rng.uniform(1.55, 2.2)
+                rng.uniform(1.0, 1.2),
+                rng.uniform(1.2, 1.4),
+                rng.uniform(1.4, 1.6),
             ])
             if rng.random() > 0.5:
                 self.plot_width_ft = sqrt(area / aspect)

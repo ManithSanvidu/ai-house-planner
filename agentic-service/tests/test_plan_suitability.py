@@ -82,7 +82,8 @@ def test_impossible_dimensions_are_filtered_before_shortlist(monkeypatch):
                   if (plan.bedrooms, plan.bathrooms, plan.floors) == (3, 2, 1))
     req, plot = prepare_inputs(20, 'flat', {'bedrooms': 3, 'bathrooms': 2, 'floors': 1},
                                     {'plot_width_ft': 50, 'plot_length_ft': 110})
-    impossible = replace(source, plan_code='TOO-WIDE', minimum_plot_width_ft=plot.buildable_width + 1)
+    # minimum_plot_width_ft is compared against plot.plot_width_ft (not buildable_width)
+    impossible = replace(source, plan_code='TOO-WIDE', minimum_plot_width_ft=(plot.plot_width_ft or 0) + 1)
     import app.design.base_plan_library as library
     monkeypatch.setattr(library, 'load_base_plan_catalog', lambda: [impossible])
     compatible = filter_compatible_base_plans(req, plot)
