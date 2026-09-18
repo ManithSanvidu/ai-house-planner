@@ -1,7 +1,8 @@
-using System.Text;
+﻿using System.Text;
 using System.Text.Json;
 using HousePlanner.API.Data;
 using HousePlanner.API.DTOs;
+using HousePlanner.API.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,12 +15,21 @@ public class WorkflowController : ControllerBase
     private readonly ApplicationDbContext _context;
     private readonly ILogger<WorkflowController> _logger;
     private readonly HttpClient _agenticServiceClient;
+    private readonly IWorkflowService _workflowService;
+    private readonly ICurrentUserContextService _currentUserService;
 
-    public WorkflowController(ApplicationDbContext context, ILogger<WorkflowController> logger, IHttpClientFactory httpClientFactory)
+    public WorkflowController(
+        ApplicationDbContext context,
+        ILogger<WorkflowController> logger,
+        IHttpClientFactory httpClientFactory,
+        IWorkflowService workflowService,
+        ICurrentUserContextService currentUserService)
     {
         _context = context;
         _logger = logger;
         _agenticServiceClient = httpClientFactory.CreateClient("AgenticService");
+        _workflowService = workflowService;
+        _currentUserService = currentUserService;
     }
 
     /// <summary>
@@ -128,36 +138,49 @@ public class WorkflowController : ControllerBase
                     TerrainType: workflow.LatestDesign.TerrainType,
                     IsCurrent: workflow.LatestDesign.IsCurrent,
                     Rooms: roomDtos,
-                    TemplateFamily: GetMetadata(root, "template_family")?.GetString(),
-                    DesignSeed: GetMetadata(root, "design_seed")?.GetInt64(),
-                    DesignScore: GetMetadata(root, "design_score")?.GetDecimal(),
-                    GeometryFingerprint: GetMetadata(root, "geometry_fingerprint")?.GetString(),
-                    GroundFootprintSqft: GetMetadata(root, "ground_footprint_sqft")?.GetDecimal(),
-                    Connections: GetMetadata(root, "connections"),
+                    TemplateFamily: root.TryGetProperty("template_family", out var tf) ? tf.GetString() : null,
+                    DesignSeed: root.TryGetProperty("design_seed", out var ds) ? ds.GetInt64() : null,
+                    DesignScore: root.TryGetProperty("design_score", out var sc) ? sc.GetDecimal() : null,
+                    GeometryFingerprint: root.TryGetProperty("geometry_fingerprint", out var fp) ? fp.GetString() : null,
+                    GroundFootprintSqft: root.TryGetProperty("ground_footprint_sqft", out var gf) ? gf.GetDecimal() : null,
+                    Connections: GetMetadata(root, "room_connections"),
                     Entrances: GetMetadata(root, "entrances"),
                     PlotConstraints: GetMetadata(root, "plot_constraints"),
                     CandidateSummary: GetMetadata(root, "candidate_summary")
                 );
             }
 
-                var response = new WorkflowStatusResponseDto(
+            JsonElement? parsedConstructionPlan = null;
+            if (!string.IsNullOrEmpty(workflow.ConstructionPlan))
+            {
+                try
+                {
+                    using var doc = JsonDocument.Parse(workflow.ConstructionPlan);
+                    parsedConstructionPlan = doc.RootElement.Clone();
+                }
+                catch (JsonException)
+                {
+                    // Ignore JSON parsing failure
+                }
+            }
+
+            var responseDto = new WorkflowStatusResponseDto(
                 WorkflowId: workflow.Id,
                 Status: workflow.Status,
                 TerrainType: workflow.TerrainType,
                 SlopeEstimate: workflow.SlopeEstimate,
                 Design: designDto,
-                Cost: null, // CostSummary is populated when Component C adds CostEstimates
-                ConstructionPlan: workflow.ConstructionPlan != null ? JsonDocument.Parse(workflow.ConstructionPlan).RootElement : null,
+                Cost: null,
+                ConstructionPlan: parsedConstructionPlan,
                 ApprovalStatus: workflow.ApprovalStatus,
                 FailureReason: workflow.FailureReason
             );
 
-
-            return Ok(response);
+            return Ok(responseDto);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving workflow status for ID {WorkflowId}", id);
+            _logger.LogError(ex, "Error retrieving status for workflow {WorkflowId}", id);
             return StatusCode(StatusCodes.Status500InternalServerError, new { message = "An error occurred retrieving workflow status." });
         }
     }
@@ -215,7 +238,6 @@ public class WorkflowController : ControllerBase
         }
         catch (JsonException ex)
         {
-            // If LayoutJson is malformed, return empty — don't crash the status endpoint
             Console.WriteLine($"Warning: Could not parse LayoutJson for doors/windows: {ex.Message}");
         }
 
@@ -242,86 +264,71 @@ public class WorkflowController : ControllerBase
     [HttpPost("{id}/approve")]
     public async Task<IActionResult> ApproveWorkflow(Guid id, [FromBody] ApprovalRequestDto request)
     {
-        var workflow = await _context.WorkflowStates
-            .Include(w => w.LandSubmission)
-            .Include(w => w.HouseDesigns)
-            .FirstOrDefaultAsync(w => w.Id == id);
-        if (workflow == null || workflow.LandSubmission == null) return NotFound();
+        var user = await _currentUserService.GetAsync(HttpContext);
+        var result = await _workflowService.ProcessApprovalAsync(id, request, user?.Email, user?.Role);
 
-        if (request.Decision == "request_revision")
+        switch (result.Outcome)
         {
-            if (string.IsNullOrWhiteSpace(request.RevisionNotes))
-                return BadRequest(new { Message = "Revision notes are required." });
-            var current = workflow.HouseDesigns.OrderByDescending(d => d.Version).FirstOrDefault();
-            if (current is null) return Conflict(new { Message = "No design exists to revise." });
-            using var currentLayout = ParseLayout(current.LayoutJson);
-            var root = currentLayout.RootElement;
-            var currentSeed = GetMetadata(root, "design_seed")?.GetInt64() ?? 0;
-            var nextSeed = currentSeed + 1;
-            workflow.Status = "running";
-            workflow.ApprovalStatus = "revision_requested";
-            workflow.UpdatedAt = DateTimeOffset.UtcNow;
-            await _context.SaveChangesAsync();
-            
-            // Tell the Python AI service to run the Design agent again with the chat prompt
-            var payload = new {
-                workflow_id = id,
-                resume_from = "design",
-                user_revision_prompt = request.RevisionNotes, // Pass the chat text to the AI
-                budget_lkr = workflow.LandSubmission.BudgetLkr,
-                land_size_perches = workflow.LandSubmission.LandSizePerches,
-                manual_terrain_type = workflow.LandSubmission.ManualTerrainType,
-                preferences = new {
-                    bedrooms = workflow.LandSubmission.PreferredBedrooms,
-                    floors = workflow.LandSubmission.PreferredFloors,
-                    style = workflow.LandSubmission.StylePreference
-                },
-                terrain_result = new {
-                    terrain_type = workflow.TerrainType,
-                    slope_estimate = workflow.SlopeEstimate
-                },
-                previous_design = root.Clone(),
-                plot_constraints = GetMetadata(root, "plot_constraints"),
-                design_seed = nextSeed
-            };
-            
-            var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
-            
-            // POST to Python internal API to resume the graph
-            var response = await _agenticServiceClient.PostAsync("/workflows/resume", content);
-            if (!response.IsSuccessStatusCode)
-            {
-                workflow.Status = "awaiting_approval";
-                workflow.ApprovalStatus = "pending";
-                await _context.SaveChangesAsync();
-                return StatusCode(StatusCodes.Status502BadGateway,
-                    new { Message = "The design service could not start the revision." });
-            }
-            
-            return Ok(new { Message = "Revision started" });
+            case ApprovalOutcome.NotFound:
+                return NotFound(new { message = result.ErrorMessage });
+            case ApprovalOutcome.Conflict:
+                return Conflict(new { message = result.ErrorMessage });
+            case ApprovalOutcome.InvalidState:
+            case ApprovalOutcome.ValidationFailed:
+            case ApprovalOutcome.BadRequest:
+                return BadRequest(new { message = result.ErrorMessage });
+            case ApprovalOutcome.Unauthorized:
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = result.ErrorMessage });
+            case ApprovalOutcome.Success:
+                if (request.Decision.Trim().ToLowerInvariant() is "request_revision" or "revision_requested" or "revision")
+                {
+                    // Resume LangGraph workflow in Python
+                    var workflow = await _context.WorkflowStates
+                        .Include(w => w.LandSubmission)
+                        .Include(w => w.HouseDesigns)
+                        .FirstOrDefaultAsync(w => w.Id == id);
+                    if (workflow != null && workflow.LandSubmission != null)
+                    {
+                        var current = workflow.HouseDesigns.OrderByDescending(d => d.Version).FirstOrDefault();
+                        if (current != null)
+                        {
+                            using var currentLayout = ParseLayout(current.LayoutJson);
+                            var root = currentLayout.RootElement;
+                            var currentSeed = GetMetadata(root, "design_seed")?.GetInt64() ?? 0;
+                            var nextSeed = currentSeed + 1;
+
+                            var payload = new
+                            {
+                                workflow_id = id,
+                                resume_from = "design",
+                                user_revision_prompt = request.RevisionNotes,
+                                budget_lkr = workflow.LandSubmission.BudgetLkr,
+                                land_size_perches = workflow.LandSubmission.LandSizePerches,
+                                manual_terrain_type = workflow.LandSubmission.ManualTerrainType,
+                                preferences = new
+                                {
+                                    bedrooms = workflow.LandSubmission.PreferredBedrooms,
+                                    floors = workflow.LandSubmission.PreferredFloors,
+                                    style = workflow.LandSubmission.StylePreference
+                                },
+                                terrain_result = new
+                                {
+                                    terrain_type = workflow.TerrainType,
+                                    slope_estimate = workflow.SlopeEstimate
+                                },
+                                previous_design = root.Clone(),
+                                plot_constraints = GetMetadata(root, "plot_constraints"),
+                                design_seed = nextSeed
+                            };
+
+                            var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+                            await _agenticServiceClient.PostAsync("/workflows/resume", content);
+                        }
+                    }
+                }
+                return Ok(result.Response);
+            default:
+                return BadRequest(new { message = "Unknown approval outcome." });
         }
-        else if (request.Decision == "approve")
-        {
-            workflow.ApprovalStatus = "approved";
-            workflow.Status = "approved";
-            workflow.ApprovedAt = DateTimeOffset.UtcNow;
-            
-            workflow.UpdatedAt = DateTimeOffset.UtcNow;
-            await _context.SaveChangesAsync();
-            
-            return Ok(new { Message = "Workflow approved successfully" });
-        }
-        else if (request.Decision == "reject")
-        {
-            workflow.ApprovalStatus = "rejected";
-            workflow.Status = "rejected";
-            
-            workflow.UpdatedAt = DateTimeOffset.UtcNow;
-            await _context.SaveChangesAsync();
-            
-            return Ok(new { Message = "Workflow rejected" });
-        }
-        
-        return BadRequest(new { Message = "Invalid Decision. Use 'approve', 'reject', or 'request_revision'." });
     }
 }

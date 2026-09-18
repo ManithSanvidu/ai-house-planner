@@ -13,7 +13,10 @@ namespace HousePlanner.API.Data
         public DbSet<HouseDesign> HouseDesigns { get; set; }
         public DbSet<Room> Rooms { get; set; }
         public DbSet<WorkflowState> WorkflowStates { get; set; }
+        public DbSet<ValidationRequest> ValidationRequests { get; set; }
         public DbSet<PreDesignedHousePlan> PreDesignedHousePlans { get; set; }
+        public DbSet<Project> Projects { get; set; }
+        public DbSet<ConstructionPhase> ConstructionPhases { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -59,17 +62,18 @@ namespace HousePlanner.API.Data
                 entity.HasIndex(e => e.SuitableTerrain);
             });
 
-        modelBuilder.Entity<HouseDesign>()
+            modelBuilder.Entity<HouseDesign>()
                 .HasOne(e => e.BasePreDesignedPlan)
                 .WithMany(e => e.DerivedDesigns)
                 .HasForeignKey(e => e.BasePreDesignedPlanId)
                 .OnDelete(DeleteBehavior.SetNull);
 
-        modelBuilder.Entity<LandSubmission>()
-            .HasOne(x => x.BasePreDesignedPlan)
-            .WithMany()
-            .HasForeignKey(x => x.BasePreDesignedPlanId)
-            .OnDelete(DeleteBehavior.SetNull);
+            modelBuilder.Entity<LandSubmission>()
+                .HasOne(x => x.BasePreDesignedPlan)
+                .WithMany()
+                .HasForeignKey(x => x.BasePreDesignedPlanId)
+                .OnDelete(DeleteBehavior.SetNull);
         }
     }
 }
+

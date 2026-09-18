@@ -1,4 +1,4 @@
-"""
+﻿"""
 Design Agent — LangGraph node.
 
 Generates validated procedural house layouts and
@@ -40,12 +40,13 @@ def design_node(state: WorkflowState) -> WorkflowState:
     revision_reason = None
     if state.validation_result and not state.validation_result.get("passed", True):
         previous_design = state.design_result
-        revision_reason = state.validation_result.get("revision_reason", "Unknown validation failure")
+        errors = state.validation_result.get("errors") or state.validation_result.get("failures") or []
+        revision_reason = state.validation_result.get("revision_reason") or ("; ".join(errors) if errors else state.validation_result.get("reason", "Unknown validation failure"))
         print(f"[Design Agent] Revision requested. Reason: {revision_reason}")
     if state.user_revision_prompt:
         previous_design = state.design_result
         revision_reason = state.user_revision_prompt
-        print('[Design Agent] Human revision request received.')
+        print(f"[Design Agent] Human revision request received: {revision_reason}")
 
     # Soft vision observations may inform concepts, never structural calculations.
     preferences = dict(preferences)
