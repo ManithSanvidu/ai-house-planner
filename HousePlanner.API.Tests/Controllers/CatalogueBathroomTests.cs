@@ -23,10 +23,10 @@ public class CatalogueBathroomTests
             await File.WriteAllTextAsync(path, JsonSerializer.Serialize(new[] { new
             {
                 Name = "Existing test plan", Slug = "test", DesignCode = "TEST", Style = "modern",
-                Bedrooms = 3, Bathrooms = declared, FloorCount = 2, TotalBuiltUpAreaSqft = 1810,
+                Bedrooms = 3, Bathrooms = declared, Floors = 2, TotalBuiltUpAreaSqft = 1810,
                 MinimumLandSizePerches = 20, SuitableTerrain = "flat", Tags = Array.Empty<string>(),
                 IsActive = true, Layout = new { rooms = new[] {
-                    new { room_type = "bathroom_1" }, new { room_type = "bathroom_attached" }
+                    new { room_type = "bathroom_1", width = 5, length = 5 }, new { room_type = "bathroom_attached", width = 5, length = 5 }
                 } }
             } }));
             await using var db = new ApplicationDbContext(new DbContextOptionsBuilder<ApplicationDbContext>()

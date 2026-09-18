@@ -1,27 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Upload, Home, Map, Layers, CheckCircle2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Layers, Map, Home, CheckCircle2, ChevronRight, ChevronLeft } from 'lucide-react';
 import { workflowService } from '../services/workflowService';
 
+interface LandRangeDto { id: string; label: string; minPerches: number; maxPerches: number; approxSqft: string; }
+interface FeatureAvailabilityDto { available: boolean; reason?: string; }
+interface DesignOptionsResponseDto {
+  landRanges: LandRangeDto[];
+  plotShapes: string[];
+  bedrooms: number[];
+  bathrooms: number[];
+  floors: number[];
+  architecturalStyles: string[];
+  features: Record<string, FeatureAvailabilityDto>;
+}
+
 interface IntakeFormData {
-  landSize: string;
-  landUnit: 'perches' | 'sqft';
+  landRangeId: string;
+  plotShape: string;
   terrainType: string;
-  photo: File | null;
-  bedrooms: string;
-  bathrooms: string;
-  floors: string;
-  architecturalStyle: string;
+  roadSide: string;
   plotWidth: string;
   plotLength: string;
-  roadSide: string;
-  northDirection: string;
-  entranceSide: string;
-  frontSetback: string;
-  rearSetback: string;
-  leftSetback: string;
-  rightSetback: string;
+  floors: string;
+  bedrooms: string;
+  bathrooms: string;
+  architecturalStyle: string;
+  spacePriority: string;
   openPlan: boolean;
   masterEnsuite: boolean;
   separateDining: boolean;
@@ -31,30 +37,22 @@ interface IntakeFormData {
   utilityRoom: boolean;
   parkingRequired: boolean;
   accessibility: boolean;
-  spacePriority: string;
 }
 
 const IntakeForm: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const [step, setStep] = useState(1);
+  const [options, setOptions] = useState<DesignOptionsResponseDto | null>(null);
+  
   const [formData, setFormData] = useState<IntakeFormData>({
-    landSize: '',
-    landUnit: 'perches',
-    terrainType: 'flat/urban',
-    photo: null,
-    bedrooms: '3',
-    bathrooms: '1',
-    floors: '1',
-    architecturalStyle: 'Modern Minimalist',
-    plotWidth: '',
-    plotLength: '',
-    roadSide: 'south',
-    northDirection: 'north',
-    entranceSide: 'road_side',
-    frontSetback: '', rearSetback: '', leftSetback: '', rightSetback: '',
+    landRangeId: '', plotShape: 'BALANCED', terrainType: 'flat/urban', roadSide: 'south',
+    plotWidth: '', plotLength: '',
+    floors: '', bedrooms: '', bathrooms: '', architecturalStyle: '',
+    spacePriority: 'balanced',
     openPlan: false, masterEnsuite: false, separateDining: false,
     homeOffice: false, balcony: false, veranda: false, utilityRoom: false,
-    parkingRequired: false, accessibility: false, spacePriority: 'balanced',
+    parkingRequired: false, accessibility: false,
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -62,49 +60,101 @@ const IntakeForm: React.FC = () => {
   const [workflowId, setWorkflowId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
 
+  // Initial fetch
+  useEffect(() => {
+    fetch('http://localhost:5265/api/v1/design-options')
+      .then(res => res.json())
+      .then((data: DesignOptionsResponseDto) => {
+        setOptions(data);
+        if (!formData.landRangeId && data.landRanges.length > 0) {
+          setFormData(prev => ({ ...prev, landRangeId: data.landRanges[0].id }));
+        }
+      })
+      .catch(err => console.error("Failed to load options", err));
+  }, []);
+
+  const fetchCompatibleOptions = useCallback(async (currentData: IntakeFormData) => {
+    try {
+      const payload = {
+        landRangeId: currentData.landRangeId || undefined,
+        plotShape: currentData.plotShape || undefined,
+        floors: currentData.floors ? parseInt(currentData.floors) : undefined,
+        bedrooms: currentData.bedrooms ? parseInt(currentData.bedrooms) : undefined,
+        bathrooms: currentData.bathrooms ? parseInt(currentData.bathrooms) : undefined,
+        architecturalStyle: currentData.architecturalStyle || undefined
+      };
+      
+      const res = await fetch('http://localhost:5265/api/v1/design-options/compatible', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data: DesignOptionsResponseDto = await res.json();
+      setOptions(data);
+
+      // Auto-clear invalid selections
+      setFormData(prev => {
+        const next = { ...prev };
+        if (next.floors && !data.floors.includes(parseInt(next.floors))) next.floors = '';
+        if (next.bedrooms && !data.bedrooms.includes(parseInt(next.bedrooms))) next.bedrooms = '';
+        if (next.bathrooms && !data.bathrooms.includes(parseInt(next.bathrooms))) next.bathrooms = '';
+        if (next.architecturalStyle && !data.architecturalStyles.includes(next.architecturalStyle)) next.architecturalStyle = '';
+        
+        ['openPlan', 'masterEnsuite', 'separateDining', 'homeOffice', 'balcony', 'veranda', 'utilityRoom', 'parkingRequired', 'accessibility'].forEach(feat => {
+          const key = feat === 'openPlan' ? 'open_plan' : feat === 'masterEnsuite' ? 'master_ensuite' : feat === 'separateDining' ? 'separate_dining' : feat === 'homeOffice' ? 'home_office' : feat === 'utilityRoom' ? 'utility_room' : feat === 'parkingRequired' ? 'parking' : feat;
+          if (next[feat as keyof IntakeFormData] && !data.features[key]?.available) {
+            (next as any)[feat] = false;
+          }
+        });
+        return next;
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setFormData((prev) => ({ ...prev, photo: e.target.files![0] }));
+    const nextData = { ...formData, [name]: value };
+    setFormData(nextData);
+    
+    if (['landRangeId', 'plotShape', 'floors', 'bedrooms', 'bathrooms', 'architecturalStyle'].includes(name)) {
+      fetchCompatibleOptions(nextData);
     }
   };
 
   const handleToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, checked } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: checked }));
+    setFormData(prev => ({ ...prev, [name]: checked }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const nextStep = () => {
+    setErrorMessage('');
+    if (step === 1 && formData.plotShape === 'CUSTOM_DIMENSIONS') {
+      if (!formData.plotWidth || !formData.plotLength) {
+        setErrorMessage("Please enter both width and length for custom dimensions.");
+        return;
+      }
+    }
+    if (step === 2) {
+      if (!formData.floors || !formData.bedrooms || !formData.bathrooms || !formData.architecturalStyle) {
+        setErrorMessage("Please select all house requirements.");
+        return;
+      }
+    }
+    setStep(s => s + 1);
+  };
+
+  const prevStep = () => setStep(s => s - 1);
+
+  const handleSubmit = async () => {
     setIsSubmitting(true);
     setErrorMessage('');
-
     try {
-      const landSizePerches = formData.landUnit === 'perches' ? parseFloat(formData.landSize) : (parseFloat(formData.landSize) / 272.25);
+      const selectedRange = options?.landRanges.find(r => r.id === formData.landRangeId);
+      const landSizePerches = selectedRange ? selectedRange.minPerches + ((selectedRange.maxPerches - selectedRange.minPerches)/2) : 10;
       
-      // Early pre-generation validation
-      if (landSizePerches < 2) {
-        setErrorMessage("Land size is too small for standard construction. Minimum is 2 perches.");
-        setIsSubmitting(false);
-        return;
-      }
-      if (formData.plotWidth && parseFloat(formData.plotWidth) < 15) {
-        setErrorMessage("Plot width must be at least 15 ft.");
-        setIsSubmitting(false);
-        return;
-      }
-      if (formData.plotLength && parseFloat(formData.plotLength) < 15) {
-        setErrorMessage("Plot length must be at least 15 ft.");
-        setIsSubmitting(false);
-        return;
-      }
-
       const payload: any = {
-        ...(searchParams.get('basePlanId') ? { basePreDesignedPlanId: searchParams.get('basePlanId'), planSelectionMode: searchParams.get('mode') || 'use' } : {}),
         landSizePerches,
         manualTerrainType: formData.terrainType,
         preferences: {
@@ -128,31 +178,28 @@ const IntakeForm: React.FC = () => {
 
       payload.plotConstraints = {
         road_side: formData.roadSide,
-        north_direction: formData.northDirection,
-        entrance_side: formData.entranceSide === 'road_side' ? formData.roadSide : formData.entranceSide,
-        ...(formData.plotWidth ? { plot_width_ft: Number(formData.plotWidth) } : {}),
-        ...(formData.plotLength ? { plot_length_ft: Number(formData.plotLength) } : {}),
-        setbacks: {
-          ...(formData.frontSetback ? { front: Number(formData.frontSetback) } : {}),
-          ...(formData.rearSetback ? { rear: Number(formData.rearSetback) } : {}),
-          ...(formData.leftSetback ? { left: Number(formData.leftSetback) } : {}),
-          ...(formData.rightSetback ? { right: Number(formData.rightSetback) } : {}),
-        }
+        entrance_side: formData.roadSide,
+        ...(formData.plotShape === 'CUSTOM_DIMENSIONS' && formData.plotWidth ? { plot_width_ft: Number(formData.plotWidth) } : {}),
+        ...(formData.plotShape === 'CUSTOM_DIMENSIONS' && formData.plotLength ? { plot_length_ft: Number(formData.plotLength) } : {})
       };
       
       payload.designSeed = crypto.getRandomValues(new Uint32Array(1))[0];
 
-      const result = await workflowService.startDesign(payload);
+      const res = await fetch('http://localhost:5265/api/v1/ai-generation/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
       
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Failed to generate design");
+      }
+      const result = await res.json();
       setWorkflowId(result.workflowId);
       setIsSuccess(true);
     } catch (error: any) {
-      console.error('Error submitting form:', error);
-      const apiError = error.response?.data;
-      setErrorMessage(
-        apiError?.message || apiError?.Message || apiError?.details || apiError?.Details ||
-        error.message || 'An error occurred while connecting to the server.'
-      );
+      setErrorMessage(error.message || 'An error occurred while connecting to the server.');
     } finally {
       setIsSubmitting(false);
     }
@@ -160,296 +207,200 @@ const IntakeForm: React.FC = () => {
 
   if (isSuccess && workflowId) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-8 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-[2rem] border border-white/60 dark:border-gray-800 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none max-w-2xl mx-auto transition-colors duration-300">
-        <motion.div 
-          initial={{ scale: 0, rotate: -180 }} 
-          animate={{ scale: 1, rotate: 0 }} 
-          transition={{ type: "spring", bounce: 0.5 }}
-          className="text-emerald-500 mb-6 bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-full shadow-inner"
-        >
-          <CheckCircle2 size={64} className="drop-shadow-sm" />
-        </motion.div>
-        <h2 className="text-3xl font-extrabold text-zinc-900 dark:text-white mb-3 tracking-tight">AI Plan Generated!</h2>
-        <p className="text-zinc-500 dark:text-gray-400 mb-8 text-lg font-medium">
-          The AI Architect has processed your requirements and started generating your conceptual floor plan.
-        </p>
-        <button 
-          onClick={() => navigate(`/dashboard/workflows/${workflowId}`)}
-          className="group relative flex items-center justify-center gap-2 w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white font-bold tracking-wide rounded-2xl hover:from-indigo-700 hover:to-indigo-800 transition-all shadow-[0_4px_14px_0_rgb(79,70,229,0.39)] overflow-hidden"
-        >
-          <div className="absolute inset-0 w-1/4 h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 -translate-x-full group-hover:animate-shine"></div>
-          <span>Review Floor Plan</span>
-        </button>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-8 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-[2rem] border border-white/60 dark:border-gray-800 shadow-[0_8px_30px_rgb(0,0,0,0.04)] max-w-2xl mx-auto">
+        <CheckCircle2 size={64} className="text-emerald-500 mb-6" />
+        <h2 className="text-3xl font-extrabold text-zinc-900 dark:text-white mb-3">AI Plan Generated!</h2>
+        <button onClick={() => navigate(`/dashboard/workflows/${workflowId}`)} className="px-8 py-4 bg-indigo-600 text-white font-bold rounded-2xl">Review Floor Plan</button>
       </div>
     );
   }
 
+  if (!options) return <div className="text-center p-10">Loading design options...</div>;
+
   return (
-    <div className="max-w-3xl mx-auto p-8 sm:p-10 bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.3)] border border-white/60 dark:border-gray-800/80 relative overflow-hidden transition-colors duration-300">
-      {/* Decorative background blur inside the card */}
-      <div className="absolute -top-40 -right-40 w-80 h-80 bg-indigo-100/50 dark:bg-indigo-900/20 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-3xl opacity-50"></div>
-      
-      <div className="mb-10 relative z-10 text-center">
-        <h1 className="text-3xl font-extrabold text-zinc-900 dark:text-white tracking-tight mb-2 transition-colors">New Project Setup</h1>
-        <p className="text-base text-zinc-500 dark:text-gray-400 font-medium transition-colors">
-          Provide your land details and requirements to initialize the AI planner.
-        </p>
+    <div className="max-w-3xl mx-auto p-8 sm:p-10 bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 dark:border-gray-800/80 relative">
+      <div className="mb-10 text-center">
+        <h1 className="text-3xl font-extrabold text-zinc-900 dark:text-white tracking-tight mb-2">New Project Setup</h1>
+        <p className="text-zinc-500 dark:text-gray-400">Step {step} of 5</p>
       </div>
 
-      {errorMessage && (
-        <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg text-sm border border-red-200 dark:border-red-900/50">
-          {errorMessage}
-        </div>
-      )}
+      {errorMessage && <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-lg text-sm border border-red-200">{errorMessage}</div>}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        
-        {/* Section 1: Financials & Land */}
-        <div className="p-6 bg-zinc-50/80 dark:bg-gray-800/50 rounded-2xl border border-zinc-100/80 dark:border-gray-700/50 space-y-5 relative z-10 hover:shadow-sm transition-all duration-300">
-          <h3 className="font-bold text-zinc-900 dark:text-gray-100 flex items-center gap-2.5 text-lg">
-            <div className="bg-indigo-100 dark:bg-indigo-900/30 p-2 rounded-lg text-indigo-600 dark:text-indigo-400"><Layers size={18} /></div> 
-            Land Constraints
-          </h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex gap-2">
-              <div className="flex-1 relative">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Land Size</label>
-                <input 
-                  type="number" 
-                  name="landSize"
-                  required
-                  placeholder="e.g. 10"
-                  value={formData.landSize}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 transition-colors"
-                />
-                {formData.landSize && !isNaN(parseFloat(formData.landSize)) && (
-                  <div className="absolute -bottom-5 left-1 text-xs font-medium text-indigo-500/80">
-                    {formData.landUnit === 'perches' 
-                      ? `≈ ${(parseFloat(formData.landSize) * 272.25).toLocaleString('en-US', {maximumFractionDigits:0})} sqft` 
-                      : `≈ ${(parseFloat(formData.landSize) / 272.25).toFixed(1)} perches`}
-                  </div>
-                )}
+      <div className="space-y-6">
+        {step === 1 && (
+          <div className="space-y-4">
+            <h3 className="font-bold text-zinc-900 dark:text-white text-xl">Land Details</h3>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Land Size Range</label>
+              <select name="landRangeId" value={formData.landRangeId} onChange={handleInputChange} className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+                {options.landRanges.map(r => (
+                  <option key={r.id} value={r.id}>{r.label} (Approx. {r.approxSqft})</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Plot Shape</label>
+              <select name="plotShape" value={formData.plotShape} onChange={handleInputChange} className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+                <option value="NARROW_DEEP">Narrow / Deep</option>
+                <option value="BALANCED">Balanced</option>
+                <option value="WIDE_SHALLOW">Wide / Shallow</option>
+                <option value="CUSTOM_DIMENSIONS">I know my dimensions</option>
+              </select>
+            </div>
+            {formData.plotShape === 'CUSTOM_DIMENSIONS' && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Width (ft)</label>
+                  <input type="number" name="plotWidth" value={formData.plotWidth} onChange={handleInputChange} className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:bg-gray-900 text-gray-900 dark:text-gray-100" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Length (ft)</label>
+                  <input type="number" name="plotLength" value={formData.plotLength} onChange={handleInputChange} className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:bg-gray-900 text-gray-900 dark:text-gray-100" />
+                </div>
               </div>
-              <div className="w-1/3">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Unit</label>
-                <select 
-                  name="landUnit" 
-                  value={formData.landUnit} 
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 transition-colors"
-                >
-                  <option value="perches">Perches</option>
-                  <option value="sqft">Sq Ft</option>
+            )}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Terrain</label>
+                <select name="terrainType" value={formData.terrainType} onChange={handleInputChange} className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+                  <option value="flat/urban">Flat / Urban</option>
+                  <option value="hillside">Hillside / Sloped</option>
+                  <option value="coastal">Coastal</option>
+                  <option value="forested">Forested</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Road Side</label>
+                <select name="roadSide" value={formData.roadSide} onChange={handleInputChange} className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+                  {['south', 'north', 'east', 'west'].map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
             </div>
           </div>
-        </div>
+        )}
 
-        {/* Section 2: Terrain & Upload */}
-        <div className="p-6 bg-zinc-50/80 dark:bg-gray-800/50 rounded-2xl border border-zinc-100/80 dark:border-gray-700/50 space-y-5 relative z-10 hover:shadow-sm transition-all duration-300">
-          <h3 className="font-bold text-zinc-900 dark:text-gray-100 flex items-center gap-2.5 text-lg">
-            <div className="bg-emerald-100 dark:bg-emerald-900/30 p-2 rounded-lg text-emerald-600 dark:text-emerald-400"><Map size={18} /></div>
-            Terrain & Topography
-          </h3>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Upload Land Photo (Optional)</label>
-              <div className="flex items-center justify-center w-full">
-                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 dark:border-gray-700 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                    <Upload className="w-8 h-8 mb-3 text-gray-400 dark:text-gray-500" />
-                    <p className="text-xs text-gray-500 dark:text-gray-400 text-center px-2">
-                      {formData.photo ? formData.photo.name : "Click to upload or drag and drop"}
-                    </p>
-                  </div>
-                  <input type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
-                </label>
+        {step === 2 && (
+          <div className="space-y-4">
+            <h3 className="font-bold text-zinc-900 dark:text-white text-xl">House Details</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Floors</label>
+                <select name="floors" value={formData.floors} onChange={handleInputChange} className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+                  <option value="">Select...</option>
+                  {options.floors.map(f => <option key={f} value={f}>{f}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Bedrooms</label>
+                <select name="bedrooms" value={formData.bedrooms} onChange={handleInputChange} className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+                  <option value="">Select...</option>
+                  {options.bedrooms.map(b => <option key={b} value={b}>{b}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Bathrooms</label>
+                <select name="bathrooms" value={formData.bathrooms} onChange={handleInputChange} className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+                  <option value="">Select...</option>
+                  {options.bathrooms.map(b => <option key={b} value={b}>{b}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Style</label>
+                <select name="architecturalStyle" value={formData.architecturalStyle} onChange={handleInputChange} className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+                  <option value="">Select...</option>
+                  {options.architecturalStyles.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
               </div>
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Terrain Fallback Type</label>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Upload a clear land photo to help AI identify terrain characteristics. If no photo is available, choose the terrain manually.</p>
-              <select 
-                name="terrainType"
-                value={formData.terrainType}
-                onChange={handleInputChange}
-                className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 transition-colors"
-              >
-                <option value="flat/urban">Flat / Urban</option>
-                <option value="hillside">Hillside / Sloped</option>
-                <option value="coastal">Coastal</option>
-                <option value="forested">Forested</option>
-              </select>
-            </div>
           </div>
-        </div>
+        )}
 
-        <div className="p-6 bg-zinc-50/80 dark:bg-gray-800/50 rounded-2xl border border-zinc-100/80 dark:border-gray-700/50 space-y-5 relative z-10 hover:shadow-sm transition-all duration-300">
-          <h3 className="font-bold text-zinc-900 dark:text-gray-100 flex items-center gap-2.5 text-lg">
-            <div className="bg-orange-100 dark:bg-orange-900/30 p-2 rounded-lg text-orange-600 dark:text-orange-400"><Layers size={18} /></div>
-            Plot Constraints (Optional)
-          </h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400 -mt-2">Missing dimensions will be estimated for conceptual planning.</p>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {step === 3 && (
+          <div className="space-y-4">
+            <h3 className="font-bold text-zinc-900 dark:text-white text-xl">Priorities</h3>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Plot Width (ft)</label>
-              <input 
-                name="plotWidth" 
-                type="number" 
-                min="1" 
-                step="any"
-                value={formData.plotWidth} 
-                onChange={handleInputChange} 
-                className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 transition-colors" 
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Plot Length (ft)</label>
-              <input 
-                name="plotLength" 
-                type="number" 
-                min="1" 
-                step="any"
-                value={formData.plotLength} 
-                onChange={handleInputChange} 
-                className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 transition-colors" 
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Road Side</label>
-              <select 
-                name="roadSide" 
-                value={formData.roadSide} 
-                onChange={handleInputChange} 
-                className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 transition-colors"
-              >
-                {['south', 'north', 'east', 'west'].map(side => <option key={side} value={side}>{side.charAt(0).toUpperCase() + side.slice(1)}</option>)}
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Space Priority</label>
+              <select name="spacePriority" value={formData.spacePriority} onChange={handleInputChange} className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+                <option value="compact_cost_efficient">Compact &amp; Cost Efficient</option>
+                <option value="balanced">Balanced</option>
+                <option value="outdoor_garden">Outdoor / Garden Priority</option>
               </select>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">North Direction / Orientation</label>
-              <select name="northDirection" value={formData.northDirection} onChange={handleInputChange} className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500">
-                {['north', 'east', 'south', 'west'].map(side => <option key={side} value={side}>{side[0].toUpperCase() + side.slice(1)}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Main Access / Entrance Side</label>
-              <select name="entranceSide" value={formData.entranceSide} onChange={handleInputChange} className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500">
-                <option value="road_side">Road Side</option>
-                {['north', 'east', 'south', 'west'].map(side => <option key={side} value={side}>{side[0].toUpperCase() + side.slice(1)}</option>)}
-              </select>
-            </div>
-          </div>
-
-          <details className="rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-            <summary className="cursor-pointer font-semibold text-sm text-gray-700 dark:text-gray-200">Plot Setbacks (Optional)</summary>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">Conceptual planning values only.</p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
-              {([['frontSetback', 'Front'], ['rearSetback', 'Rear'], ['leftSetback', 'Left'], ['rightSetback', 'Right']] as const).map(([name, label]) => (
-                <label key={name} className="text-xs text-gray-600 dark:text-gray-300">{label} (ft)
-                  <input name={name} type="number" min="0" step="any" value={formData[name]} onChange={handleInputChange} className="mt-1 w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900" />
-                </label>
-              ))}
-            </div>
-          </details>
-        </div>
-
-        {/* Section 3: Design Preferences */}
-        <div className="p-6 bg-zinc-50/80 dark:bg-gray-800/50 rounded-2xl border border-zinc-100/80 dark:border-gray-700/50 space-y-5 relative z-10 hover:shadow-sm transition-all duration-300">
-          <h3 className="font-bold text-zinc-900 dark:text-gray-100 flex items-center gap-2.5 text-lg">
-            <div className="bg-purple-100 dark:bg-purple-900/30 p-2 rounded-lg text-purple-600 dark:text-purple-400"><Home size={18} /></div>
-            Design Preferences
-          </h3>
-
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Bedrooms</label>
-              <input 
-                type="number" 
-                name="bedrooms"
-                min="1"
-                required
-                value={formData.bedrooms}
-                onChange={handleInputChange}
-                className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 transition-colors"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Bathrooms</label>
-              <input type="number" name="bathrooms" min="1" max="6" required value={formData.bathrooms} onChange={handleInputChange} className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Floors</label>
-              <input 
-                type="number" 
-                name="floors"
-                min="1"
-                required
-                value={formData.floors}
-                onChange={handleInputChange}
-                className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 transition-colors"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Architectural Style</label>
-              <select 
-                name="architecturalStyle"
-                value={formData.architecturalStyle}
-                onChange={handleInputChange}
-                className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 transition-colors"
-              >
-                <option value="Modern Minimalist">Modern Minimalist</option>
-                <option value="Contemporary">Contemporary</option>
-                <option value="Traditional">Traditional Sri Lankan</option>
-                <option value="Tropical Modernism">Tropical Modernism</option>
-              </select>
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Space Priority</label>
-            <select name="spacePriority" value={formData.spacePriority} onChange={handleInputChange} className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500">
-              <option value="compact_cost_efficient">Compact &amp; Cost Efficient</option><option value="balanced">Balanced</option>
-              <option value="spacious_living">Spacious Living Areas</option><option value="larger_bedrooms">Larger Bedrooms</option>
-              <option value="outdoor_garden">Outdoor / Garden Priority</option>
-            </select>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {([['openPlan', 'Open-plan Living / Dining'], ['masterEnsuite', 'Master Bedroom with Attached Bathroom'],
-              ['separateDining', 'Separate Dining Area'], ['homeOffice', 'Home Office'], ['balcony', 'Balcony'],
-              ['veranda', 'Veranda'], ['utilityRoom', 'Utility / Laundry'], ['parkingRequired', 'Parking Required'],
-              ['accessibility', 'Accessible / Reduced-Step Layout']] as const).map(([name, label]) => (
-              <label key={name} className="flex items-center gap-3 rounded-xl border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm text-gray-700 dark:text-gray-200">
-                <input type="checkbox" name={name} checked={formData[name]} onChange={handleToggle} className="h-4 w-4 accent-indigo-600" />{label}
+            
+            <div className="mt-4 border rounded-xl p-4 border-gray-200 dark:border-gray-700">
+              <label className={`flex items-start gap-3 text-sm text-gray-700 dark:text-gray-200 ${!options.features['accessibility']?.available ? 'opacity-50' : ''}`}>
+                <input type="checkbox" name="accessibility" checked={formData.accessibility} onChange={handleToggle} disabled={!options.features['accessibility']?.available} className="mt-1 h-4 w-4" />
+                <div>
+                  <span className="font-medium">Accessibility (Reduced-step layout)</span>
+                  {!options.features['accessibility']?.available && <p className="text-xs text-red-500 mt-1">{options.features['accessibility'].reason}</p>}
+                </div>
               </label>
-            ))}
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* Submit Button */}
-        <div className="flex justify-end pt-6 relative z-10">
-          <button 
-            type="submit" 
-            disabled={isSubmitting}
-            className="group relative flex items-center justify-center gap-2 w-full sm:w-auto px-8 py-4 bg-zinc-900 dark:bg-white hover:bg-zinc-800 dark:hover:bg-gray-200 text-white dark:text-zinc-900 font-bold rounded-2xl transition-all shadow-[0_4px_14px_0_rgba(0,0,0,0.1)] overflow-hidden disabled:opacity-70 disabled:cursor-not-allowed"
-          >
-            <div className="absolute inset-0 w-1/4 h-full bg-gradient-to-r from-transparent via-white/10 dark:via-black/10 to-transparent -skew-x-12 -translate-x-full group-hover:animate-shine"></div>
-            {isSubmitting ? (
-              <span className="flex items-center gap-2">
-                <Layers className="animate-spin text-indigo-400 dark:text-indigo-600" size={20} /> 
-                <span className="tracking-wide">Processing Details...</span>
-              </span>
-            ) : (
-              <span className="tracking-wide">Generate AI Plan</span>
-            )}
-          </button>
+        {step === 4 && (
+          <div className="space-y-4">
+            <h3 className="font-bold text-zinc-900 dark:text-white text-xl">Optional Features</h3>
+            <p className="text-sm text-gray-500">Only features compatible with your current selections are available.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+              {[
+                { name: 'openPlan', key: 'open_plan', label: 'Open-plan Living/Dining' },
+                { name: 'masterEnsuite', key: 'master_ensuite', label: 'Master Ensuite' },
+                { name: 'separateDining', key: 'separate_dining', label: 'Separate Dining' },
+                { name: 'homeOffice', key: 'home_office', label: 'Home Office' },
+                { name: 'balcony', key: 'balcony', label: 'Balcony' },
+                { name: 'veranda', key: 'veranda', label: 'Veranda' },
+                { name: 'utilityRoom', key: 'utility_room', label: 'Utility Room' },
+                { name: 'parkingRequired', key: 'parking', label: 'Parking' }
+              ].map(f => {
+                const avail = options.features[f.key]?.available;
+                const reason = options.features[f.key]?.reason;
+                return (
+                  <div key={f.name} className={`border rounded-xl p-4 border-gray-200 dark:border-gray-700 ${!avail ? 'opacity-50 bg-gray-50 dark:bg-gray-800' : ''}`}>
+                    <label className="flex items-start gap-3 text-sm text-gray-700 dark:text-gray-200 cursor-pointer">
+                      <input type="checkbox" name={f.name} checked={(formData as any)[f.name]} onChange={handleToggle} disabled={!avail} className="mt-1 h-4 w-4" />
+                      <div>
+                        <span className="font-medium">{f.label}</span>
+                        {!avail && <p className="text-xs text-red-500 mt-1">{reason}</p>}
+                      </div>
+                    </label>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {step === 5 && (
+          <div className="space-y-4">
+            <h3 className="font-bold text-zinc-900 dark:text-white text-xl">Review Configuration</h3>
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 space-y-2 text-sm text-gray-700 dark:text-gray-300">
+              <p><strong>Land:</strong> {options.landRanges.find(r => r.id === formData.landRangeId)?.label}, {formData.plotShape}</p>
+              <p><strong>House:</strong> {formData.floors} floors, {formData.bedrooms} beds, {formData.bathrooms} baths</p>
+              <p><strong>Style:</strong> {formData.architecturalStyle}</p>
+            </div>
+          </div>
+        )}
+
+        <div className="flex justify-between pt-6 border-t border-gray-100 dark:border-gray-800">
+          {step > 1 ? (
+            <button type="button" onClick={prevStep} className="px-6 py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold rounded-xl flex items-center gap-2">
+              <ChevronLeft size={18} /> Back
+            </button>
+          ) : <div></div>}
+          
+          {step < 5 ? (
+            <button type="button" onClick={nextStep} className="px-6 py-3 bg-indigo-600 text-white font-semibold rounded-xl flex items-center gap-2">
+              Next <ChevronRight size={18} />
+            </button>
+          ) : (
+            <button type="button" onClick={handleSubmit} disabled={isSubmitting} className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl flex items-center gap-2 disabled:opacity-70">
+              {isSubmitting ? "Validating..." : "Generate AI Plan"}
+            </button>
+          )}
         </div>
-      </form>
+      </div>
     </div>
   );
 };
