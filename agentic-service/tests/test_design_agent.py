@@ -51,7 +51,7 @@ def test_design_node_revision_flow(mock_submit, mock_generate, mock_quality, moc
     state.input_data = CoordinatorInput(
         submission_id="00000000-0000-0000-0000-000000000123", 
         land_size_perches=10.0,
-        preferences={"bedrooms": 3, "floors": 1}
+        preferences={"bedrooms": 3, "bathrooms": 2, "floors": 1}
     )
     state.terrain_result = {"terrain_type": "flat"}
     
@@ -71,3 +71,4 @@ def test_design_node_revision_flow(mock_submit, mock_generate, mock_quality, moc
     assert updated_state.current_agent == "cost_estimation"
     assert mock_submit.called
     assert "Revised design" in updated_state.execution_log[-1].action
+    assert mock_generate.call_args.kwargs['preferences']['bathrooms'] == 2

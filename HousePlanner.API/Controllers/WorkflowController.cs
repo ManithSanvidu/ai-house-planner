@@ -2,6 +2,8 @@ using System.Text;
 using System.Text.Json;
 using HousePlanner.API.Data;
 using HousePlanner.API.DTOs;
+using HousePlanner.API.Entities;
+using HousePlanner.API.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -146,6 +148,7 @@ public class WorkflowController : ControllerBase
                 SlopeEstimate: workflow.SlopeEstimate,
                 Design: designDto,
                 Cost: null, // CostSummary is populated when Component C adds CostEstimates
+                ConstructionPlan: null,
                 ApprovalStatus: workflow.ApprovalStatus,
                 FailureReason: workflow.FailureReason
             );
@@ -229,6 +232,42 @@ public class WorkflowController : ControllerBase
         root.ValueKind == JsonValueKind.Object && root.TryGetProperty(key, out var value)
         && value.ValueKind != JsonValueKind.Null ? value.Clone() : null;
 
+    private static Dictionary<string, object?> RevisionPreferences(JsonElement layout, LandSubmission submission)
+    {
+        var preferences = new Dictionary<string, object?>
+        {
+            ["bedrooms"] = submission.PreferredBedrooms,
+            ["floors"] = submission.PreferredFloors,
+            ["style"] = submission.StylePreference
+        };
+        var summary = GetMetadata(layout, "candidate_summary");
+        var normalized = summary.HasValue ? GetMetadata(summary.Value, "normalized_input") : null;
+        if (normalized.HasValue)
+        {
+            // Preserve active requirements already recorded with the current design.
+            foreach (var key in new[] { "bedrooms", "floors", "architectural_style", "space_priority",
+                "open_plan", "master_ensuite", "separate_dining", "home_office", "balcony", "veranda",
+                "utility_room", "parking_required", "accessibility", "circulation_preference" })
+            {
+                var value = GetMetadata(normalized.Value, key);
+                if (value.HasValue)
+                    preferences[key == "architectural_style" ? "style" : key] = value.Value;
+            }
+        }
+        var savedBathrooms = normalized.HasValue ? GetMetadata(normalized.Value, "bathrooms") : null;
+        var bathrooms = LayoutRoomCounts.Bathrooms(layout);
+        if (savedBathrooms.HasValue)
+        {
+            if (savedBathrooms.Value.ValueKind != JsonValueKind.Number ||
+                !savedBathrooms.Value.TryGetInt32(out bathrooms) || bathrooms < 1)
+                throw new InvalidDataException("The current design has an invalid bathroom requirement.");
+        }
+        if (bathrooms < 1)
+            throw new InvalidDataException("Cannot revise the design without a bathroom count.");
+        preferences["bathrooms"] = bathrooms;
+        return preferences;
+    }
+
     private class RoomOpenings
     {
         public Guid? SourceId { get; set; }
@@ -253,6 +292,9 @@ public class WorkflowController : ControllerBase
             if (current is null) return Conflict(new { Message = "No design exists to revise." });
             using var currentLayout = ParseLayout(current.LayoutJson);
             var root = currentLayout.RootElement;
+            Dictionary<string, object?> revisionPreferences;
+            try { revisionPreferences = RevisionPreferences(root, workflow.LandSubmission); }
+            catch (InvalidDataException exc) { return Conflict(new { Message = exc.Message }); }
             var currentSeed = GetMetadata(root, "design_seed")?.GetInt64() ?? 0;
             var nextSeed = currentSeed + 1;
             workflow.Status = "running";
@@ -268,11 +310,7 @@ public class WorkflowController : ControllerBase
                 submission_id = workflow.LandSubmission.Id,
                 land_size_perches = workflow.LandSubmission.LandSizePerches,
                 manual_terrain_type = workflow.LandSubmission.ManualTerrainType,
-                preferences = new {
-                    bedrooms = workflow.LandSubmission.PreferredBedrooms,
-                    floors = workflow.LandSubmission.PreferredFloors,
-                    style = workflow.LandSubmission.StylePreference
-                },
+                preferences = revisionPreferences,
                 terrain_result = new {
                     terrain_type = workflow.TerrainType,
                     slope_estimate = workflow.SlopeEstimate

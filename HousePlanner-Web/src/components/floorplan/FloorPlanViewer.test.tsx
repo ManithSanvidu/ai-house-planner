@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { FloorPlanViewer } from './FloorPlanViewer';
 
@@ -63,5 +63,23 @@ describe('Procedural plan rendering', () => {
     rerender(<FloorPlanViewer data={data} floorFilter={2} />);
     expect(container.querySelector('[aria-label="Staircase treads"]')).not.toBeNull();
     expect(container.textContent).not.toContain('Bedroom 1');
+  });
+
+  it('renders every lower-floor support outline with stable room keys', () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const base = { room_type: 'living_room', floor: 1, x: 0, y: 0,
+      width: 10, length: 10, wall_height: 9, doors: [], windows: [] };
+    const data = { design_id: 'supported-upper', floor_count: 2, total_built_up_area_sqft: 300,
+      rooms: [
+        { ...base, room_id: 'lower-west' },
+        { ...base, room_id: 'lower-east', x: 10 },
+        { ...base, room_id: 'upper', room_type: 'bedroom_1', floor: 2, width: 20 },
+      ] };
+
+    const { container } = render(<FloorPlanViewer data={data} floorFilter={2} pixelsPerFoot={10} />);
+
+    expect(container.querySelectorAll('rect[stroke-dasharray="5,5"]')).toHaveLength(2);
+    expect(consoleError.mock.calls.flat().join(' ')).not.toContain('same key');
+    consoleError.mockRestore();
   });
 });

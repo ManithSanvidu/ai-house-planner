@@ -9,6 +9,7 @@ import requests
 from app.schemas.workflow_state import WorkflowState, ExecutionLogEntry
 from app.tools.layout_generation_tool import generate_layout, prepare_inputs
 from app.design.candidate_generator import GenerationFailure
+from app.design.revision import preserve_revision_preferences
 from app.design.architectural_quality import validate_architectural_quality
 from app.tools.geometry_validator import validate_geometry
 from app.config import ASPNET_API_URL, INTERNAL_API_KEY
@@ -52,6 +53,10 @@ def design_node(state: WorkflowState) -> WorkflowState:
     preferences = dict(preferences)
     preferences['notable_features'] = (state.terrain_result or {}).get('notable_features', [])
     try:
+        if previous_design is not None:
+            preferences = preserve_revision_preferences(preferences, previous_design)
+            if state.input_data:
+                state.input_data.preferences = preferences
         plot_input = state.input_data.plot_constraints if state.input_data else None
         seed = state.input_data.design_seed if state.input_data else None
         design = generate_layout(

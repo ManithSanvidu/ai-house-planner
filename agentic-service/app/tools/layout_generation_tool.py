@@ -11,6 +11,7 @@ from app.design.architectural_quality import validate_architectural_quality
 from app.design.base_plan_library import (
 
     compact_plan_metadata,
+    deduplicate_base_plans,
 
     filter_compatible_base_plans,
 
@@ -32,7 +33,7 @@ from app.design.plan_adapter import PlanAdapter
 
 from app.design.plot_constraints import PlotConstraints
 
-from app.design.revision import apply_supported_revision, requests_another_design
+from app.design.revision import apply_supported_revision, requests_another_design, preserve_revision_preferences
 
 from app.design.scoring import family_affinity
 
@@ -157,7 +158,10 @@ def prepare_inputs(
 
 
 
-def _candidate_pool(req: Requirements, plot: PlotConstraints):
+NO_DISTINCT_LAYOUT = 'No distinct compatible layout is currently available for these requirements.'
+
+
+def _candidate_pool(req: Requirements, plot: PlotConstraints, previous_fingerprint=None):
 
     compatible = filter_compatible_base_plans(req, plot)
 
@@ -165,29 +169,29 @@ def _candidate_pool(req: Requirements, plot: PlotConstraints):
 
         raise GenerationFailure('No compatible validated base plans exist for the supplied requirements.')
 
-    ranked = rank_base_plans(compatible, req, plot)
+    ranked = deduplicate_base_plans(rank_base_plans(compatible, req, plot), previous_fingerprint)
+    if not ranked:
+        raise GenerationFailure(NO_DISTINCT_LAYOUT)
 
     diverse = []
 
     seen_families = set()
 
+    remaining = []
     for plan in ranked:
-
-        if plan.topology_family not in seen_families or len(diverse) < 3:
-
+        if plan.topology_family not in seen_families:
             diverse.append(plan)
-
             seen_families.add(plan.topology_family)
+        else:
+            remaining.append(plan)
 
-        if len(diverse) >= min(7, len(ranked)):
-
-            break
-
-    return diverse or ranked[:1]
-
+    # Retain the complete unique pool for fallback beyond the AI shortlist.
+    return diverse + remaining
 
 
-def _build_ai_prompt(normalized: NormalizedDesignInput, plans, previous_plan_code=None,
+
+def _build_ai_prompt(normalized: NormalizedDesignInput, plans, req: Requirements,
+                     plot: PlotConstraints, previous_plan_code=None,
 
                      previous_fingerprint=None, revision_reason: Optional[str] = None) -> str:
 
@@ -195,7 +199,7 @@ def _build_ai_prompt(normalized: NormalizedDesignInput, plans, previous_plan_cod
 
         'normalized_input': normalized.model_dump(),
 
-        'candidate_plans': compact_plan_metadata(plans),
+        'candidate_plans': compact_plan_metadata(plans, req, plot),
 
         'previous_plan_code': previous_plan_code,
 
@@ -203,7 +207,7 @@ def _build_ai_prompt(normalized: NormalizedDesignInput, plans, previous_plan_cod
 
         'revision_reason': revision_reason,
 
-        'generation_mode': 'generate_another' if previous_plan_code else 'generate',
+        'generation_mode': 'generate_another' if requests_another_design(revision_reason) else 'generate',
 
     }
 
@@ -215,9 +219,12 @@ def _fallback_decision(plans, req: Requirements, plot: PlotConstraints, previous
 
                        previous_fingerprint=None) -> AIPlanDecision:
 
-    chosen = next((plan for plan in plans if plan.plan_code != previous_plan_code), plans[0])
+    plans = deduplicate_base_plans(plans, previous_fingerprint)
+    if not plans:
+        raise GenerationFailure(NO_DISTINCT_LAYOUT)
+    chosen = plans[0]
 
-    alternatives = [plan.plan_code for plan in plans if plan.plan_code != chosen.plan_code][:3]
+    alternatives = [plan.plan_code for plan in plans[1:7]]
 
     public_orientation = plot.road_side
 
@@ -347,6 +354,8 @@ def generate_layout(
 
     try:
 
+        if previous_design is not None:
+            preferences = preserve_revision_preferences(preferences, previous_design)
         revised_preferences, applied_revision = apply_supported_revision(preferences, revision_reason)
 
         req, plot = prepare_inputs(land_size_perches, terrain_type, revised_preferences, plot_constraints, design_seed)
@@ -373,13 +382,14 @@ def generate_layout(
 
     normalized = NormalizedDesignInput.from_inputs(req, plot)
 
-    candidate_pool = _candidate_pool(req, plot)
-
     previous_plan_code = None
 
     previous_fingerprint = None
 
-    if previous_design:
+    if requests_another_design(revision_reason) and previous_design is None:
+        raise GenerationFailure('Cannot compare geometry: the previous design is required.')
+
+    if previous_design is not None:
 
         try:
 
@@ -389,168 +399,101 @@ def generate_layout(
 
             previous_plan_code = previous_layout.candidate_summary.get('selected_plan_code') if isinstance(previous_layout.candidate_summary, dict) else None
 
-        except Exception:
-
+        except Exception as exc:
+            if requests_another_design(revision_reason):
+                raise GenerationFailure('Cannot compare geometry: the previous design is invalid.') from exc
             previous_fingerprint = None
 
-    if previous_plan_code and requests_another_design(revision_reason):
-
-        candidate_pool = [plan for plan in candidate_pool if plan.plan_code != previous_plan_code] or candidate_pool
+    excluded_fingerprint = previous_fingerprint if requests_another_design(revision_reason) else None
+    candidate_pool = _candidate_pool(req, plot, excluded_fingerprint)
+    shortlist = candidate_pool[:7]
 
     provider = get_available_design_provider()
-
     provider_name = getattr(provider, 'provider_name', None) if provider else None
-
     model_name = getattr(provider, 'model_name', None) if provider else None
-
+    decision = None
     if provider:
-
         print(f'[Design Agent] Calling provider {provider.provider_name} for base-plan selection...')
-
-        user_prompt = _build_ai_prompt(normalized, candidate_pool, previous_plan_code, previous_fingerprint, revision_reason)
-
+        user_prompt = _build_ai_prompt(normalized, shortlist, req, plot, previous_plan_code,
+                                       previous_fingerprint, revision_reason)
         try:
-
-            decision = AIPlanDecision.model_validate(provider.generate_json(SYSTEM_PROMPT, user_prompt, AIPlanDecision))
-
+            decision = AIPlanDecision.model_validate(
+                provider.generate_json(SYSTEM_PROMPT, user_prompt, AIPlanDecision))
         except Exception as exc:
-
             print(f'[Design Agent] AI decision failed ({exc}); using deterministic selection.')
 
-            decision = _fallback_decision(candidate_pool, req, plot, previous_plan_code, previous_fingerprint)
-
-    else:
-
-        decision = _fallback_decision(candidate_pool, req, plot, previous_plan_code, previous_fingerprint)
-
-    if previous_fingerprint and previous_plan_code and decision.selected_plan_code == previous_plan_code:
-
-        decision = decision.model_copy(update={
-
-            'alternative_plan_codes': [code for code in decision.alternative_plan_codes if code != previous_plan_code],
-
-        })
-
     adapter = PlanAdapter()
-
     tried_codes: list[str] = []
-
     failures: list[dict] = []
+    repeated_geometry = False
 
-    candidate_by_code = {plan.plan_code: plan for plan in candidate_pool}
-
-    for plan_code in [decision.selected_plan_code, *decision.alternative_plan_codes]:
-
-        if plan_code in tried_codes:
-
-            continue
-
-        tried_codes.append(plan_code)
-
-        plan = candidate_by_code.get(plan_code)
-
-        if plan is None:
-
-            failures.append({'plan_code': plan_code, 'failures': ['plan_not_compatible']})
-
-            continue
-
+    def attempt(plan, selection, selected_provider=None, selected_model=None):
+        nonlocal repeated_geometry
+        tried_codes.append(plan.plan_code)
         try:
-
-            design = adapter.adapt(plan, decision, req, plot)
-
-            print(f"DEBUG {plan_code}: {[c.from_room + '-' + c.to_room for c in design.connections]}")
-
+            # Keep the selected code accurate when trying an alternative.
+            selection = selection.model_copy(update={'selected_plan_code': plan.plan_code})
+            design = adapter.adapt(plan, selection, req, plot)
+            final_fingerprint = geometry_fingerprint(design)
+            if excluded_fingerprint and final_fingerprint == excluded_fingerprint:
+                repeated_geometry = True
+                failures.append({'plan_code': plan.plan_code,
+                                 'reason': 'previous_geometry_repeated',
+                                 'failures': [NO_DISTINCT_LAYOUT]})
+                return None
             final_design = _validate_and_finalize(
-
-                design,
-
-                req,
-
-                plot,
-
-                plan.plan_code,
-
-                provider_name,
-
-                model_name,
-
-                decision,
-
-                tried_codes,
-
-                candidate_pool,
-
-            )
-
+                design, req, plot, plan.plan_code, selected_provider, selected_model,
+                selection, tried_codes, candidate_pool)
             final_design.candidate_summary.update({
-
-                'generation_mode': 'ai_adapted_template' if provider_name else 'deterministic_template_selection',
-
+                'generation_mode': 'ai_adapted_template' if selected_provider else 'deterministic_template_selection',
                 'base_plan_name': plan.name,
-
                 'base_plan_code': plan.plan_code,
-                
                 'template_id': final_design.template_id,
-
-                'alternative_plan_codes': decision.alternative_plan_codes,
-
-                'reason_codes': decision.reason_codes,
-
+                'alternative_plan_codes': selection.alternative_plan_codes,
+                'reason_codes': selection.reason_codes,
                 'normalized_input': normalized.model_dump(),
-
                 'compatible_plan_count': len(candidate_pool),
-
             })
-
             if previous_fingerprint:
-
                 final_design.candidate_summary['previous_fingerprint'] = previous_fingerprint
-
             if previous_plan_code:
-
                 final_design.candidate_summary['previous_plan_code'] = previous_plan_code
-
             if revision_reason:
-
                 final_design.candidate_summary['revision_feedback'] = revision_reason
-
                 final_design.candidate_summary['bounded_revision_preferences'] = applied_revision
-
             return final_design
-
         except GenerationFailure as exc:
-
-            failures.extend(getattr(exc, 'failures', []) or [{'plan_code': plan_code, 'failures': [str(exc)]}])
-
+            failures.extend(exc.failures or [{'plan_code': plan.plan_code, 'failures': [str(exc)]}])
         except Exception as exc:
+            failures.append({'plan_code': plan.plan_code, 'failures': [str(exc)]})
+        return None
 
-            failures.append({'plan_code': plan_code, 'failures': [str(exc)]})
-    if failures and provider:
-        print("ADAPTATION FAILURES FROM AI:", json.dumps(failures, indent=2))
-        print("Falling back to deterministic selection.")
-        decision = _fallback_decision(candidate_pool, req, plot, previous_plan_code, previous_fingerprint)
-        tried_codes.clear()
+    if decision is not None:
+        candidate_by_code = {plan.plan_code: plan for plan in shortlist}
         for plan_code in [decision.selected_plan_code, *decision.alternative_plan_codes]:
             if plan_code in tried_codes:
                 continue
-            tried_codes.append(plan_code)
             plan = candidate_by_code.get(plan_code)
-            if not plan:
+            if plan is None:
+                failures.append({'plan_code': plan_code, 'failures': ['plan_not_compatible']})
                 continue
-            try:
-                design = adapter.adapt(plan, decision, req, plot)
-                return _validate_and_finalize(design, req, plot, plan.plan_code, None, None, decision, tried_codes, candidate_pool)
-            except GenerationFailure as exc:
-                failures.extend(getattr(exc, 'failures', []) or [{'plan_code': plan_code, 'failures': [str(exc)]}])
-            except Exception as exc:
-                failures.append({'plan_code': plan_code, 'failures': [str(exc)]})
+            result = attempt(plan, decision, provider_name, model_name)
+            if result is not None:
+                return result
 
+    # Try all unique compatible geometries, including those outside the shortlist.
+    # AI adaptations may have failed, so retry those plans with deterministic adaptations.
+    fallback = _fallback_decision(candidate_pool, req, plot, previous_plan_code, excluded_fingerprint)
+    for plan in candidate_pool:
+        result = attempt(plan, fallback)
+        if result is not None:
+            return result
+
+    if repeated_geometry:
+        raise GenerationFailure(NO_DISTINCT_LAYOUT, failures)
     if failures:
         raise GenerationFailure('No validated base plan could be adapted into a high-quality design.', failures)
     raise GenerationFailure('Candidate pool exhausted without finding a valid plan.')
-
-
 
 
 
@@ -631,4 +574,3 @@ def _mock_layout(
         result.template_id = template_id
     result.foundation_type = foundation_type
     return result
-

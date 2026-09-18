@@ -63,7 +63,8 @@ def test_complete_optional_context_reaches_design_prompt():
         plan_code='HP-TEST', name='Test Plan', bedrooms=3, bathrooms=2, floors=1,
         topology_family='COMPACT_RECTANGLE', minimum_land_perches=5, maximum_land_perches=None,
         minimum_plot_width_ft=None, minimum_plot_length_ft=None, supported_plot_shapes=['COMPACT_RECTANGLE'],
-        supported_terrains=['flat'], supported_styles=['Modern Minimalist'], capabilities={}, architectural_metrics={}, layout_json="{}"
+        supported_terrains=['flat'], supported_styles=['Modern Minimalist'], capabilities={}, architectural_metrics={},
+        layout_json=DesignResult(floor_count=1, foundation_type='slab').model_dump_json()
     )
     with patch('app.tools.layout_generation_tool.filter_compatible_base_plans', return_value=[dummy_plan]):
         with patch('app.tools.layout_generation_tool.get_available_design_provider', return_value=mock_provider):

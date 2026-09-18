@@ -37,6 +37,13 @@ public sealed class PreDesignedPlanSeeder(
 
         foreach (var seed in plans.Where(plan => !existingCodes.Contains(plan.DesignCode)))
         {
+            var actualBathrooms = LayoutRoomCounts.Bathrooms(seed.Layout);
+            if (seed.Bathrooms != actualBathrooms)
+            {
+                logger.LogWarning("Skipping catalogue plan {Code}: bathroom count mismatch (declared {Declared}, actual {Actual}).",
+                    seed.DesignCode, seed.Bathrooms, actualBathrooms);
+                continue;
+            }
             var errors = layoutValidator.Validate(seed.Layout, seed.Bedrooms, seed.FloorCount);
             if (errors.Count > 0)
                 throw new InvalidDataException($"Seed plan {seed.DesignCode} is invalid: {string.Join(" ", errors)}");
@@ -70,6 +77,7 @@ public sealed class PreDesignedPlanSeeder(
         }
 
         await db.SaveChangesAsync(cancellationToken);
-        logger.LogInformation("Pre-designed plan catalog ready with {Count} entries", plans.Count);
+        logger.LogInformation("Pre-designed plan catalog ready with {Count} entries",
+            await db.PreDesignedHousePlans.CountAsync(cancellationToken));
     }
 }

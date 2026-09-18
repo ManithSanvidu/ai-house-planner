@@ -7,6 +7,7 @@ from typing import Optional, Dict, Any
 import secrets
 
 from app.schemas.workflow_state import WorkflowState, CoordinatorInput
+from app.design.revision import preserve_revision_preferences
 from app.workflows.house_planning_graph import app_graph
 from app.config import INTERNAL_API_KEY
 
@@ -87,12 +88,16 @@ def resume_workflow(
 ):
     if request.resume_from != "design":
         raise HTTPException(status_code=400, detail="Only design revisions are supported")
+    try:
+        preferences = preserve_revision_preferences(request.preferences, request.previous_design)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     # Reconstruct input data
     input_data = CoordinatorInput(
         submission_id=request.workflow_id,
         land_size_perches=request.land_size_perches,
         manual_terrain_type=request.manual_terrain_type,
-        preferences=request.preferences,
+        preferences=preferences,
         plot_constraints=request.plot_constraints,
         design_seed=request.design_seed,
     )

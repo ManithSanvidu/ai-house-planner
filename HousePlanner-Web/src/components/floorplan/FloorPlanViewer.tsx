@@ -143,7 +143,7 @@ export const FloorPlanViewer: React.FC<FloorPlanViewerProps> = ({ data, pixelsPe
             
             return (
               <rect
-                key={`lower-${lowerRoom.roomId}`}
+                key={`lower-${lowerRoom.room_id}`}
                 x={lSvgX}
                 y={lSvgY}
                 width={lSvgWidth}

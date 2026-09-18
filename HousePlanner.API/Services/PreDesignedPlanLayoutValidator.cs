@@ -140,9 +140,9 @@ public class PreDesignedPlanLayoutValidator : IPreDesignedPlanLayoutValidator
         if (living.Any() && kitchen.Any() && MinDistance(living, kitchen) > 30m) errors.Add("Living and kitchen are too far apart.");
         if (dining.Any() && MinDistance(dining, publicRooms) > 30m) errors.Add("Dining is too far from the public zone.");
 
-        var bedrooms = rooms.Where(r => r.Type.Contains("bedroom", StringComparison.OrdinalIgnoreCase)).ToList();
+        var bedroomRooms = rooms.Where(r => r.Type.Contains("bedroom", StringComparison.OrdinalIgnoreCase)).ToList();
         var commonBaths = rooms.Where(r => r.Type.Contains("bath", StringComparison.OrdinalIgnoreCase) && !r.Type.Contains("attached", StringComparison.OrdinalIgnoreCase)).ToList();
-        if (bedrooms.Any() && commonBaths.Any() && MinDistance(commonBaths, bedrooms) > 32m) errors.Add("Common bathrooms are too far from the bedroom cluster.");
+        if (bedroomRooms.Any() && commonBaths.Any() && MinDistance(commonBaths, bedroomRooms) > 32m) errors.Add("Common bathrooms are too far from the bedroom cluster.");
 
         if (layout.TryGetProperty("entrances", out var entrances) && entrances.ValueKind == JsonValueKind.Array && entrances.GetArrayLength() > 0)
         {
