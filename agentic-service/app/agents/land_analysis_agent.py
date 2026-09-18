@@ -1,5 +1,5 @@
 """
-Land Analysis Agent — LangGraph node.
+Land Analysis Agent â€” LangGraph node.
 
 Analyzes a land photo using the vision classify tool and updates
 the workflow state with terrain results. If no photo URL is available,
@@ -17,9 +17,9 @@ def land_analysis_node(state: WorkflowState) -> WorkflowState:
     LangGraph node for terrain classification.
 
     Flow:
-    1. Check if manual terrain was already set by coordinator → skip vision
+    1. Check if manual terrain was already set by coordinator â†’ skip vision
     2. Extract photo_url from input_data preferences
-    3. Call vision tool → get TerrainResult
+    3. Call vision tool â†’ get TerrainResult
     4. Validate and persist to workflow state
     5. Call ASP.NET internal API to update terrain on WorkflowState
     """
@@ -28,7 +28,7 @@ def land_analysis_node(state: WorkflowState) -> WorkflowState:
 
     # If terrain already filled by coordinator (manual fallback), just pass through
     if state.terrain_result and state.terrain_result.get("terrain_type"):
-        action = f"Skipped vision — manual terrain '{state.terrain_result['terrain_type']}' already set"
+        action = f"Skipped vision â€” manual terrain '{state.terrain_result['terrain_type']}' already set"
     else:
         # Extract photo URL from preferences
         photo_url = None
@@ -36,13 +36,13 @@ def land_analysis_node(state: WorkflowState) -> WorkflowState:
             photo_url = state.input_data.preferences.get("photo_url")
 
         if not photo_url:
-            # No photo available — use safe default
+            # No photo available â€” use safe default
             state.terrain_result = {
                 "terrain_type": "flat",
                 "slope_estimate": "unknown",
                 "notable_features": ["no_photo_provided"]
             }
-            action = "No photo URL available — defaulted to flat terrain"
+            action = "No photo URL available â€” defaulted to flat terrain"
         else:
             # Call the vision classification tool
             terrain_result = vision_classify_tool(photo_url)
@@ -81,7 +81,7 @@ def _persist_terrain(state: WorkflowState):
             "notable_features": state.terrain_result.get("notable_features", [])
         }
         response = requests.patch(
-            f"{ASPNET_API_URL}/internal/workflows/{state.workflow_id}/terrain",
+            f"{ASPNET_API_URL}/api/v1/internal/workflows/{state.workflow_id}/terrain",
             json=payload,
             headers=headers,
             timeout=5,

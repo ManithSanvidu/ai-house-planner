@@ -32,17 +32,32 @@ const DashboardPage: React.FC = () => {
         </p>
 
         <div className="flex justify-center">
-          <Link to="/dashboard/new-project">
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="group relative flex items-center gap-3 px-8 py-4 bg-zinc-900 hover:bg-zinc-800 text-white rounded-2xl font-semibold shadow-[0_1px_2px_rgba(0,0,0,0.24)] transition-all overflow-hidden"
-            >
-              <div className="absolute inset-0 w-1/4 h-full bg-gradient-to-r from-transparent via-white/10 to-transparent -skew-x-12 -translate-x-full group-hover:animate-shine"></div>
-              <Plus size={20} className="text-zinc-300 group-hover:text-white transition-colors" />
-              <span>Start New Project</span>
-            </motion.button>
-          </Link>
+
+          {user?.role === 'Contractor' ? (
+            <Link to="/contractor/dashboard">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="group relative flex items-center gap-3 px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-semibold shadow-[0_4px_14px_0_rgb(79,70,229,0.39)] transition-all overflow-hidden"
+              >
+                <div className="absolute inset-0 w-1/4 h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 -translate-x-full group-hover:animate-shine"></div>
+                <span>Open Contractor Dashboard</span>
+              </motion.button>
+            </Link>
+          ) : (
+            <Link to="/dashboard/new-project">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="group relative flex items-center gap-3 px-8 py-4 bg-zinc-900 hover:bg-zinc-800 text-white rounded-2xl font-semibold shadow-[0_1px_2px_rgba(0,0,0,0.24)] transition-all overflow-hidden"
+              >
+                <div className="absolute inset-0 w-1/4 h-full bg-gradient-to-r from-transparent via-white/10 to-transparent -skew-x-12 -translate-x-full group-hover:animate-shine"></div>
+                <Plus size={20} className="text-zinc-300 group-hover:text-white transition-colors" />
+                <span>Start New Project</span>
+              </motion.button>
+            </Link>
+          )}
+
         </div>
       </motion.div>
     </div>

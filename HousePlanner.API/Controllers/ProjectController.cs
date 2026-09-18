@@ -108,5 +108,76 @@ namespace HousePlanner.API.Controllers
 
             return Ok(response);
         }
+
+        /// <summary>
+        /// Retrieves all projects (for Contractor Dashboard).
+        /// </summary>
+        [HttpGet]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetProjects()
+        {
+            var projects = await _dbContext.Projects
+                .AsNoTracking()
+                .OrderByDescending(p => p.CreatedAt)
+                .Select(p => new
+                {
+                    p.Id,
+                    p.WorkflowStateId,
+                    p.ContractorId,
+                    p.Status,
+                    p.CreatedAt,
+                    p.UpdatedAt
+                })
+                .ToListAsync();
+
+            return Ok(projects);
+        }
+
+        public class UpdatePhaseRequest
+        {
+            public string Status { get; set; } = null!;
+            public DateTimeOffset? StartedAtUtc { get; set; }
+            public DateTimeOffset? CompletedAtUtc { get; set; }
+        }
+
+        /// <summary>
+        /// Updates a construction phase status.
+        /// </summary>
+        [HttpPut("{id:guid}/phases/{phaseName}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> UpdateProjectPhase(Guid id, string phaseName, [FromBody] UpdatePhaseRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.Status))
+                return BadRequest("Status is required.");
+
+            var project = await _dbContext.Projects
+                .Include(p => p.ConstructionPhases)
+                .FirstOrDefaultAsync(p => p.Id == id);
+
+            if (project == null)
+                return NotFound($"Project with ID '{id}' was not found.");
+
+            // Find the phase case-insensitively
+            var phase = project.ConstructionPhases
+                .FirstOrDefault(cp => cp.PhaseName.Equals(phaseName, StringComparison.OrdinalIgnoreCase));
+
+            if (phase == null)
+                return NotFound($"Phase '{phaseName}' not found in project '{id}'.");
+
+            phase.Status = request.Status;
+
+            if (request.StartedAtUtc.HasValue)
+                phase.StartedAt = request.StartedAtUtc.Value;
+
+            if (request.CompletedAtUtc.HasValue)
+                phase.CompletedAt = request.CompletedAtUtc.Value;
+
+            await _dbContext.SaveChangesAsync();
+
+            return Ok(new { message = $"Phase '{phase.PhaseName}' updated successfully to '{phase.Status}'." });
+        }
+
     }
 }

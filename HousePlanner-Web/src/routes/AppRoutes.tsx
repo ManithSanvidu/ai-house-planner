@@ -9,6 +9,8 @@ import ProjectTrackingPage from '../pages/ProjectTrackingPage';
 import IntakeForm from '../pages/IntakeForm';
 import HomePage from '../pages/HomePage';
 import { WorkflowReviewPage } from '../pages/WorkflowReviewPage';
+import ContractorDashboard from '../pages/ContractorDashboard';
+
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -18,6 +20,17 @@ export const AppRoutes: React.FC = () => {
       <Route path="/login" element={<LoginPage />} />
 
       {/* Protected Routes */}
+      <Route
+        path="/contractor/dashboard"
+        element={
+          <ProtectedRoute>
+            <PageContainer>
+              <ContractorDashboard />
+            </PageContainer>
+          </ProtectedRoute>
+        }
+      />
+
       <Route
         path="/dashboard"
         element={

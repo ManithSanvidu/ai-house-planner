@@ -7,7 +7,7 @@ using System.Text.Json;
 namespace HousePlanner.API.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/v1/ai-generation")]
     public class AiGenerationController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
@@ -62,6 +62,7 @@ namespace HousePlanner.API.Controllers
                 await _context.SaveChangesAsync();
 
                 payload = new {
+                    workflow_id = workflowState.Id,
                     submission_id = submission.Id,
                     budget_lkr = request.BudgetLkr,
                     land_size_perches = request.LandSizePerches,

@@ -3,6 +3,8 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
+import useAuth from '../features/auth/useAuth';
+
 import projectService, { type ProjectTrackingResponseDto } from '../features/projects/projectService';
 
 const ProjectTrackingPage: React.FC = () => {
@@ -10,6 +12,8 @@ const ProjectTrackingPage: React.FC = () => {
   const navigate = useNavigate();
   const queryProjectId = searchParams.get('projectId');
   const queryWorkflowId = searchParams.get('workflowId');
+  const { user } = useAuth();
+  const isContractor = user?.role === 'Contractor' || true; // Component D specific logic for assignment
 
   const [inputProjectId, setInputProjectId] = useState(queryProjectId || '');
   const [trackingData, setTrackingData] = useState<ProjectTrackingResponseDto | null>(null);
@@ -50,6 +54,21 @@ const ProjectTrackingPage: React.FC = () => {
     }
   }, [queryProjectId, queryWorkflowId, fetchTracking]);
 
+
+  const handleUpdatePhase = async (phaseName: string, status: string) => {
+    if (!trackingData) return;
+    try {
+      await projectService.updateProjectPhase(trackingData.projectId, phaseName, { status });
+      // Update local state
+      setTrackingData(prev => prev ? {
+        ...prev,
+        phases: prev.phases.map(p => p.phaseName === phaseName ? { ...p, status } : p)
+      } : null);
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Failed to update phase');
+    }
+  };
+
   const handleLookup = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmedId = inputProjectId.trim();
@@ -60,7 +79,7 @@ const ProjectTrackingPage: React.FC = () => {
 
   return (
     <div className="min-h-[calc(100vh-65px)] bg-gray-50 p-6 flex justify-center">
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
@@ -125,11 +144,46 @@ const ProjectTrackingPage: React.FC = () => {
                 </div>
 
                 <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-900 text-sm">
-                  <p className="font-semibold">✓ Project Successfully Registered</p>
+                  <p className="font-semibold">Γ£ô Project Successfully Registered</p>
                   <p className="text-xs text-emerald-700 mt-1">
                     The house planning workflow has passed deterministic safety validation and received human approval. The project record is persisted in the database.
                   </p>
                 </div>
+              </div>
+            </Card>
+
+            <Card title="Construction Tracking" subtitle="Manage and track construction phases.">
+              <div className="space-y-3">
+                {trackingData.phases && trackingData.phases.map((phase) => (
+                  <div key={phase.phaseName} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white border border-zinc-200 rounded-lg shadow-sm">
+                    <div className="mb-2 sm:mb-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-zinc-400 bg-zinc-100 px-2 py-0.5 rounded">Step {phase.sequenceOrder}</span>
+                        <h4 className="font-semibold text-zinc-900">{phase.phaseName}</h4>
+                      </div>
+                      <p className="text-xs text-zinc-500 mt-1">
+                        Started: {phase.startedAtUtc ? new Date(phase.startedAtUtc).toLocaleDateString() : 'N/A'} |
+                        Completed: {phase.completedAtUtc ? new Date(phase.completedAtUtc).toLocaleDateString() : 'N/A'}
+                      </p>
+                    </div>
+
+                    {isContractor ? (
+                      <select
+                        value={phase.status}
+                        onChange={(e) => handleUpdatePhase(phase.phaseName, e.target.value)}
+                        className={`text-sm font-semibold rounded-lg border px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${phase.status === 'completed' ? 'bg-green-50 text-green-700 border-green-200' : phase.status === 'in_progress' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-zinc-50 text-zinc-700 border-zinc-200'}`}
+                      >
+                        <option value="pending">Pending</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="completed">Completed</option>
+                      </select>
+                    ) : (
+                      <span className={`px-3 py-1.5 rounded-lg text-xs font-bold tracking-wide ${phase.status === 'completed' ? 'bg-green-100 text-green-700' : phase.status === 'in_progress' ? 'bg-blue-100 text-blue-700' : 'bg-zinc-100 text-zinc-700'}`}>
+                        {phase.status.replace('_', ' ').toUpperCase()}
+                      </span>
+                    )}
+                  </div>
+                ))}
               </div>
             </Card>
           </div>
@@ -141,7 +195,7 @@ const ProjectTrackingPage: React.FC = () => {
                 Please enter a Project ID above, or complete the Human Approval workflow to create and view an approved project.
               </p>
               <Button variant="outline" onClick={() => navigate('/approval')} className="mt-2 text-xs">
-                Go to Project Approval →
+                Go to Project Approval ΓåÆ
               </Button>
             </div>
           </Card>

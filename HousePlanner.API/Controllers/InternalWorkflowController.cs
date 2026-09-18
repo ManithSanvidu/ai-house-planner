@@ -213,4 +213,33 @@ public class InternalWorkflowController : ControllerBase
             return StatusCode(StatusCodes.Status500InternalServerError, new { message = "An error occurred updating terrain." });
         }
     }
+
+    /// <summary>
+    /// Internal endpoint to update the workflow status after validation or rendering.
+    /// </summary>
+    [HttpPatch("{id:guid}/status")]
+    public async Task<IActionResult> UpdateStatus(Guid id, [FromBody] JsonElement statusData)
+    {
+        try
+        {
+            var workflow = await EnsureWorkflowStateExists(id);
+
+            if (statusData.TryGetProperty("status", out var statusProp) && statusProp.ValueKind != JsonValueKind.Null)
+                workflow.Status = statusProp.GetString();
+
+            if (statusData.TryGetProperty("approval_status", out var approvalProp) && approvalProp.ValueKind != JsonValueKind.Null)
+                workflow.ApprovalStatus = approvalProp.GetString();
+
+            workflow.UpdatedAt = DateTimeOffset.UtcNow;
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Status updated for workflow {WorkflowId}", id);
+            return Ok(new { message = "Status updated." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating status for workflow {WorkflowId}", id);
+            return StatusCode(StatusCodes.Status500InternalServerError, new { message = "An error occurred updating status." });
+        }
+    }
 }

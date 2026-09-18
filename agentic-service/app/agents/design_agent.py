@@ -1,5 +1,5 @@
 """
-Design Agent — LangGraph node.
+Design Agent â€” LangGraph node.
 
 Generates structured house layouts using deterministic templates and
 submits them to ASP.NET Core for persistence. Supports both initial
@@ -42,6 +42,10 @@ def design_node(state: WorkflowState) -> WorkflowState:
         previous_design = state.design_result
         revision_reason = state.validation_result.get("revision_reason", "Unknown validation failure")
         print(f"[Design Agent] Revision requested. Reason: {revision_reason}")
+    elif state.user_revision_prompt:
+        previous_design = state.design_result
+        revision_reason = f"Architect feedback: {state.user_revision_prompt}"
+        print(f"[Design Agent] Human revision requested. Feedback: {revision_reason}")
 
     # Generate layout using the template-based tool
     design = generate_layout(
@@ -63,7 +67,7 @@ def design_node(state: WorkflowState) -> WorkflowState:
 
     if not validation.passed:
         print(f"[Design Agent] Local geometry validation warnings: {validation.failures}")
-        # Still submit — the ASP.NET side and Member 4 validation will catch issues
+        # Still submit â€” the ASP.NET side and Member 4 validation will catch issues
 
     # Submit to ASP.NET Core for persistence
     api_result = _submit_design(state)
@@ -72,7 +76,7 @@ def design_node(state: WorkflowState) -> WorkflowState:
 
     action = "Generated room layout and foundation"
     if revision_reason:
-        action = f"Revised design — reason: {revision_reason[:100]}"
+        action = f"Revised design â€” reason: {revision_reason[:100]}"
 
     state.execution_log.append(ExecutionLogEntry(
         agent_name="DesignAgent",
@@ -95,7 +99,7 @@ def _submit_design(state: WorkflowState) -> str:
             "Content-Type": "application/json"
         }
         response = requests.post(
-            f"{ASPNET_API_URL}/internal/workflows/{state.workflow_id}/design",
+            f"{ASPNET_API_URL}/api/v1/internal/workflows/{state.workflow_id}/design",
             json=state.design_result,
             headers=headers,
             timeout=10,

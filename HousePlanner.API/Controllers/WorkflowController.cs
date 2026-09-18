@@ -29,24 +29,7 @@ namespace HousePlanner.API.Controllers
             _agenticServiceClient = httpClientFactory?.CreateClient("AgenticService");
         }
 
-        public WorkflowController(IWorkflowService workflowService, ILogger<WorkflowController> logger)
-        {
-            _workflowService = workflowService;
-            _logger = logger;
-        }
 
-        public WorkflowController(ApplicationDbContext context, ILogger<WorkflowController> logger)
-        {
-            _context = context;
-            _logger = logger;
-        }
-
-        public WorkflowController(ApplicationDbContext context, ILogger<WorkflowController> logger, IHttpClientFactory httpClientFactory)
-        {
-            _context = context;
-            _logger = logger;
-            _agenticServiceClient = httpClientFactory?.CreateClient("AgenticService");
-        }
 
         /// <summary>
         /// Retrieves the current execution status, validation outcome, and latest design summary.
@@ -210,55 +193,42 @@ namespace HousePlanner.API.Controllers
 
             if (_workflowService != null)
             {
-                var result = await _workflowService.ProcessApprovalAsync(id, request);
+                var userEmail = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
+                var userRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+                var result = await _workflowService.ProcessApprovalAsync(id, request, userEmail, userRole);
 
-                // Sync with database WorkflowStates record if present
-                if (_context != null)
+                if (result.Outcome == ApprovalOutcome.Success && (request.Decision.Trim().ToLowerInvariant() is "request_revision" or "revision_requested" or "revision"))
                 {
-                    var dbWorkflow = await _context.WorkflowStates.FindAsync(id);
-                    if (dbWorkflow != null)
+                    if (_agenticServiceClient != null && _context != null)
                     {
-                        var normalizedDecision = request.Decision.Trim().ToLowerInvariant();
-                        if (normalizedDecision is "approve" or "approved")
+                        var dbWorkflow = await _context.WorkflowStates.FindAsync(id);
+                        if (dbWorkflow != null)
                         {
-                            dbWorkflow.ApprovalStatus = "approved";
-                            dbWorkflow.Status = "approved";
-                            dbWorkflow.ApprovedAt = DateTimeOffset.UtcNow;
-                            dbWorkflow.UpdatedAt = DateTimeOffset.UtcNow;
-                            await _context.SaveChangesAsync();
-                        }
-                        else if (normalizedDecision is "reject" or "rejected")
-                        {
-                            dbWorkflow.ApprovalStatus = "rejected";
-                            dbWorkflow.Status = "rejected";
-                            dbWorkflow.UpdatedAt = DateTimeOffset.UtcNow;
-                            await _context.SaveChangesAsync();
-                        }
-                        else if (normalizedDecision is "request_revision" or "revision_requested" or "revision")
-                        {
-                            dbWorkflow.Status = "running";
-                            dbWorkflow.ApprovalStatus = "revision_requested";
-                            dbWorkflow.UpdatedAt = DateTimeOffset.UtcNow;
-                            await _context.SaveChangesAsync();
-
-                            if (_agenticServiceClient != null)
+                            var submission = await _context.LandSubmissions.FindAsync(dbWorkflow.LandSubmissionId);
+                            if (submission != null)
                             {
+                                var payload = new {
+                                    workflow_id = id,
+                                    submission_id = submission.Id,
+                                    budget_lkr = submission.BudgetLkr,
+                                    land_size_perches = submission.LandSizePerches,
+                                    manual_terrain_type = submission.ManualTerrainType,
+                                    revision_notes = request.RevisionNotes,
+                                    preferences = new {
+                                        bedrooms = submission.PreferredBedrooms,
+                                        floors = submission.PreferredFloors,
+                                        architecturalStyle = submission.StylePreference
+                                    }
+                                };
+                                _agenticServiceClient.DefaultRequestHeaders.Clear();
+                                _agenticServiceClient.DefaultRequestHeaders.Add("X-Internal-API-Key", "shared-internal-secret");
                                 try
                                 {
-                                    var payload = new
-                                    {
-                                        workflow_id = id,
-                                        resume_from = "design",
-                                        user_revision_prompt = request.RevisionNotes
-                                    };
-                                    var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
-                                    _agenticServiceClient.DefaultRequestHeaders.Clear();
-                                    _agenticServiceClient.DefaultRequestHeaders.Add("X-Internal-API-Key", "shared-internal-secret");
-                                    await _agenticServiceClient.PostAsync("http://localhost:8001/workflows/resume", content);
+                                    await _agenticServiceClient.PostAsJsonAsync("http://localhost:8001/workflows/resume", payload);
                                 }
                                 catch (Exception ex)
                                 {
-                                    _logger.LogWarning(ex, "Could not notify agentic service for workflow revision: {Message}", ex.Message);
+                                    _logger.LogError(ex, "Failed to call python /workflows/resume endpoint for {WorkflowId}", id);
                                 }
                             }
                         }

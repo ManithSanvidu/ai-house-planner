@@ -49,12 +49,11 @@ const IntakeForm: React.FC = () => {
     setErrorMessage('');
 
     try {
-      // Construct payload for Python Agentic Service
+      // Construct payload for ASP.NET API
       const payload = {
-        submission_id: crypto.randomUUID(),
-        budget_lkr: parseFloat(formData.budget) || 15000000,
-        land_size_perches: formData.landUnit === 'perches' ? parseFloat(formData.landSize) : (parseFloat(formData.landSize) / 272.25),
-        manual_terrain_type: formData.terrainType,
+        budgetLkr: parseFloat(formData.budget) || 15000000,
+        landSizePerches: formData.landUnit === 'perches' ? parseFloat(formData.landSize) : (parseFloat(formData.landSize) / 272.25),
+        manualTerrainType: formData.terrainType,
         preferences: {
           bedrooms: parseInt(formData.bedrooms) || 3,
           floors: parseInt(formData.floors) || 1,
@@ -62,12 +61,12 @@ const IntakeForm: React.FC = () => {
         }
       };
 
-      // Call Python LangGraph API directly to start the workflow
-      const response = await fetch('http://127.0.0.1:8001/workflows/start', {
+      // Call ASP.NET API to start the workflow
+      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5265/api/v1';
+      const response = await fetch(`${baseUrl}/ai-generation/generate`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'X-Internal-API-Key': 'shared-internal-secret' // Required by Python API
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(payload),
       });
@@ -79,7 +78,7 @@ const IntakeForm: React.FC = () => {
       const result = await response.json();
       console.log('AI Coordinator Result:', result);
       
-      setWorkflowId(result.workflow_id);
+      setWorkflowId(result.workflowId);
       setIsSuccess(true);
     } catch (error: any) {
       console.error('Error submitting form:', error);

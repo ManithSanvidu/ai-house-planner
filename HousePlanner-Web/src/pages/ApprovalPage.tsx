@@ -8,12 +8,10 @@ import projectService, {
   type ApprovalResponseDto
 } from '../features/projects/projectService';
 
-const DEFAULT_WORKFLOW_ID = '3fa85f64-5717-4562-b3fc-2c963f66afa6';
-
 const ApprovalPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const workflowId = searchParams.get('workflowId') || DEFAULT_WORKFLOW_ID;
+  const workflowId = searchParams.get('workflowId');
 
   const [workflow, setWorkflow] = useState<WorkflowStatusResponseDto | null>(null);
   const [approvalResult, setApprovalResult] = useState<ApprovalResponseDto | null>(null);
@@ -22,6 +20,18 @@ const ApprovalPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  if (!workflowId) {
+    return (
+      <div className="flex items-center justify-center min-h-[calc(100vh-65px)] bg-slate-50">
+        <div className="bg-white p-8 rounded-2xl shadow-sm border border-red-100 max-w-md text-center">
+          <h2 className="text-xl font-bold text-red-600 mb-2">Workflow ID is missing</h2>
+          <p className="text-zinc-600">Please return to the workflow review page.</p>
+        </div>
+      </div>
+    );
+  }
+
 
   const fetchWorkflowStatus = useCallback(async () => {
     setIsLoading(true);
@@ -105,7 +115,7 @@ const ApprovalPage: React.FC = () => {
 
   return (
     <div className="min-h-[calc(100vh-65px)] bg-gray-50 flex flex-col items-center py-12 px-6">
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
@@ -145,7 +155,7 @@ const ApprovalPage: React.FC = () => {
                   onClick={() => navigate(`/project-tracking?projectId=${approvalResult.projectId}`)}
                   className="text-xs py-1 px-3 border-green-600 text-green-700 hover:bg-green-100"
                 >
-                  View Project Status →
+                  View Project Status ΓåÆ
                 </Button>
               </div>
             )}
@@ -167,25 +177,48 @@ const ApprovalPage: React.FC = () => {
             <div className="grid grid-cols-2 gap-3 text-xs">
               <div className="p-3 bg-zinc-50 rounded border border-zinc-100 flex items-center justify-between">
                 <span className="text-zinc-600">1. Ground Coverage Rule</span>
-                <span className="font-semibold text-emerald-600">✓ PASS</span>
+                <span className="font-semibold text-emerald-600">Γ£ô PASS</span>
               </div>
               <div className="p-3 bg-zinc-50 rounded border border-zinc-100 flex items-center justify-between">
                 <span className="text-zinc-600">2. Terrain/Foundation Compatibility</span>
-                <span className="font-semibold text-emerald-600">✓ PASS</span>
+                <span className="font-semibold text-emerald-600">Γ£ô PASS</span>
               </div>
               <div className="p-3 bg-zinc-50 rounded border border-zinc-100 flex items-center justify-between">
                 <span className="text-zinc-600">3. Budget Tolerance Rule</span>
-                <span className="font-semibold text-emerald-600">✓ PASS</span>
+                <span className="font-semibold text-emerald-600">Γ£ô PASS</span>
               </div>
               <div className="p-3 bg-zinc-50 rounded border border-zinc-100 flex items-center justify-between">
                 <span className="text-zinc-600">4. Room & Floor Preferences</span>
-                <span className="font-semibold text-emerald-600">✓ PASS</span>
+                <span className="font-semibold text-emerald-600">Γ£ô PASS</span>
               </div>
             </div>
           </div>
         </Card>
 
+
+        {/* Generated Floor Plan */}
+        <Card title="Generated Floor Plan" subtitle="The AI's rendering of your floor plan design.">
+          <div className="flex justify-center bg-zinc-50 rounded-lg border border-zinc-200 overflow-hidden min-h-[300px]">
+            <img
+              src={`http://localhost:8001/plans/plan_${workflowId}.png`}
+              alt="Generated Floor Plan"
+              className="max-w-full h-auto object-contain"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                const parent = e.currentTarget.parentElement;
+                if (parent) {
+                  const div = document.createElement('div');
+                  div.className = 'flex items-center justify-center w-full h-full p-12 text-zinc-400 font-medium text-sm';
+                  div.innerText = 'Image rendering in progress or not available.';
+                  parent.appendChild(div);
+                }
+              }}
+            />
+          </div>
+        </Card>
+
         {/* Workflow & Plan Information */}
+
         <Card title="Workflow & Plan Summary" subtitle="Review the proposed architecture and budget before deciding.">
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -229,23 +262,23 @@ const ApprovalPage: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-3 pt-2">
-              <Button 
-                variant="primary" 
+              <Button
+                variant="primary"
                 onClick={() => handleDecision('approve')}
                 disabled={isApproved || !validationPassed || isSubmitting || isLoading}
                 className="bg-green-600 hover:bg-green-700 focus:ring-green-500"
               >
                 {isSubmitting ? 'Processing...' : 'Approve & Create Project'}
               </Button>
-              <Button 
-                variant="danger" 
+              <Button
+                variant="danger"
                 onClick={() => handleDecision('reject')}
                 disabled={isRejected || isSubmitting || isLoading}
               >
                 Reject
               </Button>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => handleDecision('request_revision')}
                 disabled={isApproved || isSubmitting || isLoading}
               >

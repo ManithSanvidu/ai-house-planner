@@ -25,15 +25,31 @@ namespace HousePlanner.API.Services
 
         public async Task<WorkflowSessionInfo?> GetWorkflowStatusAsync(Guid workflowId)
         {
-            if (_activeWorkflows.TryGetValue(workflowId, out var session))
+            // Removed stale memory cache check so we always read the latest state synced by Python
+            using var scope = _scopeFactory.CreateScope();
+            var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var dbWorkflowState = await dbContext.WorkflowStates.FirstOrDefaultAsync(w => w.Id == workflowId);
+
+            var existingWorkflow = await dbContext.WorkflowStates
+                .AsNoTracking()
+                .FirstOrDefaultAsync(w => w.Id == workflowId);
+
+            if (existingWorkflow != null)
             {
-                return session;
+                var reconstructed = new WorkflowSessionInfo
+                {
+                    WorkflowId = existingWorkflow.Id,
+                    Status = existingWorkflow.Status ?? "running",
+                    ApprovalStatus = existingWorkflow.ApprovalStatus ?? "not_requested",
+                    ValidationPassed = existingWorkflow.ApprovalStatus == "approved" || existingWorkflow.ApprovalStatus == "pending" || existingWorkflow.ApprovalStatus == "client_review",
+                    CreatedAt = existingWorkflow.CreatedAt,
+                    UpdatedAt = existingWorkflow.UpdatedAt
+                };
+                _activeWorkflows[workflowId] = reconstructed;
+                return reconstructed;
             }
 
             // Fallback: check if an approved project already exists in the database for this workflow
-            using var scope = _scopeFactory.CreateScope();
-            var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-
             var existingProject = await dbContext.Projects
                 .AsNoTracking()
                 .FirstOrDefaultAsync(p => p.WorkflowStateId == workflowId);
@@ -74,6 +90,7 @@ namespace HousePlanner.API.Services
             // 2. Prevent invalid duplicate approvals
             using var scope = _scopeFactory.CreateScope();
             var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var dbWorkflowState = await dbContext.WorkflowStates.FirstOrDefaultAsync(w => w.Id == workflowId);
 
             var existingProject = await dbContext.Projects
                 .AsNoTracking()
@@ -87,7 +104,7 @@ namespace HousePlanner.API.Services
             }
 
             // 3. Confirm the workflow is in the human approval stage
-            if (session.Status != "awaiting_approval" && session.ApprovalStatus != "pending")
+            if (session.Status != "awaiting_approval" && session.ApprovalStatus != "pending" && session.ApprovalStatus != "client_review")
             {
                 _logger.LogWarning("Approval rejected for Workflow '{WorkflowId}': Invalid status '{Status}'.",
                     workflowId, session.Status);
@@ -103,6 +120,23 @@ namespace HousePlanner.API.Services
                     $"Cannot approve workflow '{workflowId}': Safety validation has not passed or is in a failed state.");
             }
 
+            // 4.5. Enforce role-based access if role information is available
+            if (!string.IsNullOrEmpty(userRole))
+            {
+                var lowerRole = userRole.ToLowerInvariant();
+                if (session.ApprovalStatus == "pending" && lowerRole != "architect" && lowerRole != "admin")
+                {
+                    _logger.LogWarning("Approval rejected for Workflow '{WorkflowId}': User role '{Role}' is not authorized to approve in pending state.", workflowId, userRole);
+                    return ApprovalServiceResult.Unauthorized("Only Architects can approve workflows in the 'pending' state.");
+                }
+
+                if (session.ApprovalStatus == "client_review" && lowerRole != "client" && lowerRole != "admin")
+                {
+                    _logger.LogWarning("Approval rejected for Workflow '{WorkflowId}': User role '{Role}' is not authorized to approve in client_review state.", workflowId, userRole);
+                    return ApprovalServiceResult.Unauthorized("Only Clients can approve workflows in the 'client_review' state.");
+                }
+            }
+
             // 5. Normalize and apply requested decision
             var decision = request.Decision.Trim().ToLowerInvariant();
 
@@ -110,6 +144,31 @@ namespace HousePlanner.API.Services
             {
                 case "approve":
                 case "approved":
+                    if (session.ApprovalStatus == "pending")
+                    {
+                        session.ApprovalStatus = "client_review";
+                        session.UpdatedAt = DateTimeOffset.UtcNow;
+
+                        if (dbWorkflowState != null) {
+                            dbWorkflowState.ApprovalStatus = session.ApprovalStatus;
+                            dbWorkflowState.Status = session.Status;
+                            dbWorkflowState.UpdatedAt = session.UpdatedAt;
+                            await dbContext.SaveChangesAsync();
+                        }
+
+                        _logger.LogInformation("Workflow '{WorkflowId}' ARCHITECT APPROVED. Moved to Client Review.", workflowId);
+
+                        return ApprovalServiceResult.Success(new ApprovalResponseDto
+                        {
+                            WorkflowId = workflowId,
+                            Decision = "client_review",
+                            Status = "awaiting_approval",
+                            ProjectId = null,
+                            Message = "Architect approved. Workflow moved to Client Review.",
+                            Timestamp = DateTimeOffset.UtcNow
+                        });
+                    }
+
                     // Create Project record atomically in database
                     var newProject = new Project
                     {
@@ -117,7 +176,15 @@ namespace HousePlanner.API.Services
                         WorkflowStateId = workflowId,
                         Status = "not_started",
                         CreatedAt = DateTimeOffset.UtcNow,
-                        UpdatedAt = DateTimeOffset.UtcNow
+                        UpdatedAt = DateTimeOffset.UtcNow,
+                        ConstructionPhases = new List<ConstructionPhase>
+                        {
+                            new ConstructionPhase { Id = Guid.NewGuid(), PhaseName = "Site Preparation", Status = "pending", SequenceOrder = 1 },
+                            new ConstructionPhase { Id = Guid.NewGuid(), PhaseName = "Foundation", Status = "pending", SequenceOrder = 2 },
+                            new ConstructionPhase { Id = Guid.NewGuid(), PhaseName = "Framing", Status = "pending", SequenceOrder = 3 },
+                            new ConstructionPhase { Id = Guid.NewGuid(), PhaseName = "Roofing", Status = "pending", SequenceOrder = 4 },
+                            new ConstructionPhase { Id = Guid.NewGuid(), PhaseName = "Interior & Finish", Status = "pending", SequenceOrder = 5 }
+                        }
                     };
 
                     dbContext.Projects.Add(newProject);
@@ -127,6 +194,13 @@ namespace HousePlanner.API.Services
                     session.ApprovalStatus = "approved";
                     session.ProjectId = newProject.Id;
                     session.UpdatedAt = DateTimeOffset.UtcNow;
+
+                    if (dbWorkflowState != null) {
+                        dbWorkflowState.ApprovalStatus = session.ApprovalStatus;
+                        dbWorkflowState.Status = session.Status;
+                        dbWorkflowState.UpdatedAt = session.UpdatedAt;
+                        await dbContext.SaveChangesAsync();
+                    }
 
                     _logger.LogInformation("Workflow '{WorkflowId}' successfully APPROVED. Created Project '{ProjectId}'.",
                         workflowId, newProject.Id);
@@ -148,6 +222,13 @@ namespace HousePlanner.API.Services
                     session.RevisionNotes = request.RevisionNotes;
                     session.UpdatedAt = DateTimeOffset.UtcNow;
 
+                    if (dbWorkflowState != null) {
+                        dbWorkflowState.ApprovalStatus = session.ApprovalStatus;
+                        dbWorkflowState.Status = session.Status;
+                        dbWorkflowState.UpdatedAt = session.UpdatedAt;
+                        await dbContext.SaveChangesAsync();
+                    }
+
                     _logger.LogInformation("Workflow '{WorkflowId}' REJECTED.", workflowId);
 
                     return ApprovalServiceResult.Success(new ApprovalResponseDto
@@ -168,6 +249,13 @@ namespace HousePlanner.API.Services
                     session.RevisionNotes = request.RevisionNotes;
                     session.RetryCount++;
                     session.UpdatedAt = DateTimeOffset.UtcNow;
+
+                    if (dbWorkflowState != null) {
+                        dbWorkflowState.ApprovalStatus = session.ApprovalStatus;
+                        dbWorkflowState.Status = session.Status;
+                        dbWorkflowState.UpdatedAt = session.UpdatedAt;
+                        await dbContext.SaveChangesAsync();
+                    }
 
                     _logger.LogInformation("Workflow '{WorkflowId}' REVISION REQUESTED (Retry count: {RetryCount}).",
                         workflowId, session.RetryCount);

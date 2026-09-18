@@ -77,7 +77,26 @@ export const projectService = {
   getProjectByWorkflow: async (workflowId: string): Promise<ProjectTrackingResponseDto> => {
     const response = await apiClient.get<ProjectTrackingResponseDto>(`/projects/by-workflow/${workflowId}`);
     return response.data;
+  },
+
+  /**
+   * Retrieves all projects (for Contractor Dashboard).
+   * GET /api/v1/projects
+   */
+  getProjects: async (): Promise<any[]> => {
+    const response = await apiClient.get<any[]>('/projects');
+    return response.data;
+  },
+
+  /**
+   * Updates a construction phase status.
+   * PUT /api/v1/projects/{projectId}/phases/{phaseName}
+   */
+  updateProjectPhase: async (projectId: string, phaseName: string, data: { status: string; startedAtUtc?: string | null; completedAtUtc?: string | null }): Promise<any> => {
+    const response = await apiClient.put<any>(`/projects/${projectId}/phases/${encodeURIComponent(phaseName)}`, data);
+    return response.data;
   }
 };
+
 
 export default projectService;
