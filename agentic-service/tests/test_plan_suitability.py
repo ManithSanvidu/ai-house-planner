@@ -113,3 +113,67 @@ def test_generation_emits_bounded_workflow_observability(caplog, monkeypatch):
         assert stage in messages
     assert result.geometry_fingerprint in messages
     assert '"rooms"' not in messages
+
+def test_guided_ui_hard_parking_requirement_is_enforced(monkeypatch):
+    req, plot = prepare_inputs(24, 'flat', {'bedrooms': 3, 'bathrooms': 1, 'floors': 1, 'parking': True}, {'plot_width_ft': 95, 'plot_length_ft': 70})
+    candidates = filter_compatible_base_plans(req, plot)
+    # The current catalogue has no parking-capable plans, so this should return []
+    assert len(candidates) == 0
+
+def test_guided_ui_hard_balcony_requirement_is_enforced(monkeypatch):
+    req, plot = prepare_inputs(24, 'flat', {'bedrooms': 3, 'bathrooms': 1, 'floors': 1, 'balcony': True}, {'plot_width_ft': 95, 'plot_length_ft': 70})
+    candidates = filter_compatible_base_plans(req, plot)
+    # The current catalogue has no balcony-capable plans, so this should return []
+    assert len(candidates) == 0
+
+def test_narrow_plot_rejects_balanced_only_plans_if_footprint_does_not_fit():
+    # C. NARROW plot + BALANCED-only plan whose footprint does not fit -> rejected
+    # (Because we removed the blanket BALANCED->NARROW exception in the filter)
+    req, plot = prepare_inputs(15, 'flat', {'bedrooms': 3, 'bathrooms': 2, 'floors': 1}, {'plot_width_ft': 30, 'plot_length_ft': 136})
+    assert plot.plot_class.endswith('NARROW') or plot.plot_class.endswith('VERY_NARROW')
+    candidates = filter_compatible_base_plans(req, plot)
+    # The only compatible topologies should be ones that explicitly support NARROW (like LINEAR)
+    assert all('NARROW' in plan.supported_plot_shapes for plan in candidates)
+
+def test_total_plot_dims_pass_but_footprint_violates_buildable_envelope(monkeypatch):
+    # D. Minimum total plot dims pass but footprint violates setback-adjusted buildable envelope -> rejected by geometry validation
+    from app.design.plan_adapter import PlanAdapter
+    from app.tools.geometry_validator import validate_geometry
+    from app.tools.layout_generation_tool import _fallback_decision
+    
+    # 20 perches, wide and shallow. Total length 49ft (passes catalog minimums).
+    # We use custom huge setbacks (front=20, rear=15) so buildable depth is only 14ft, causing footprint failure.
+    req, plot = prepare_inputs(20, 'flat', {'bedrooms': 3, 'bathrooms': 1, 'floors': 1}, {'plot_width_ft': 110, 'plot_length_ft': 49})
+    plot.setbacks.front = 20
+    plot.setbacks.rear = 15
+    candidates = filter_compatible_base_plans(req, plot)
+    
+    # Force test a COMPACT_RECTANGLE plan which is deep
+    plan = next(p for p in candidates if p.topology_family == 'COMPACT_RECTANGLE')
+    
+    # Check that it passes the filter (because plot_width_ft and plot_length_ft satisfy minimums)
+    assert plan in candidates
+    
+    # But it fails geometry validation because the buildable length (14ft) is too shallow for the layout
+    decision = _fallback_decision([plan], req, plot)
+    adapter = PlanAdapter()
+    adapted_design = adapter.adapt(plan, decision.model_copy(update={'selected_plan_code': plan.plan_code}), req, plot)
+    
+    v = validate_geometry(adapted_design.rooms, req.bedrooms, req.floors, plot.land_size_perches, plot=plot, design=adapted_design)
+    assert not v.passed
+    assert any("lies outside the buildable boundary" in f for f in v.failures)
+
+def test_missing_dimensions_uses_balanced_conceptual_shape():
+    # E. Missing physical dimensions + BALANCED conceptual shape -> deterministic estimated dimensions
+    req, plot = prepare_inputs(10, 'flat', {'bedrooms': 3, 'bathrooms': 1, 'floors': 1}, {})
+    assert plot.dimension_source == 'area_estimated'
+    # Aspect ratio should be 1.25
+    aspect = max(plot.plot_width_ft, plot.plot_length_ft) / min(plot.plot_width_ft, plot.plot_length_ft)
+    assert abs(aspect - 1.25) < 0.01
+    
+def test_same_input_produces_same_estimated_dimensions():
+    # F. Same input produces same estimated dimensions
+    req1, plot1 = prepare_inputs(10, 'flat', {'bedrooms': 3, 'bathrooms': 1, 'floors': 1}, {})
+    req2, plot2 = prepare_inputs(10, 'flat', {'bedrooms': 3, 'bathrooms': 1, 'floors': 1}, {})
+    assert plot1.plot_width_ft == plot2.plot_width_ft
+    assert plot1.plot_length_ft == plot2.plot_length_ft

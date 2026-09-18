@@ -99,7 +99,7 @@ def _supported_plot_shapes(topology_family: str) -> list[str]:
         'T_SHAPE': ['BALANCED', 'LARGE'],
         'CENTRAL_CORE': ['COMPACT', 'BALANCED'],
         'SPLIT_ZONE': ['BALANCED', 'LARGE'],
-        'DUPLEX_STACKED': ['COMPACT', 'BALANCED', 'NARROW', 'LARGE', 'MEDIUM'],
+        'DUPLEX_STACKED': ['COMPACT', 'BALANCED', 'LARGE', 'MEDIUM'],
         'HILLSIDE_STEPPED': ['COMPACT', 'BALANCED', 'LARGE', 'MEDIUM'],
         'COASTAL_RAISED_COMPACT': ['COMPACT', 'BALANCED', 'MEDIUM'],
     }
@@ -273,23 +273,21 @@ def compatibility_rejection_reasons(plan: BasePlanRecord, req: Requirements,
     shape = plot.plot_class.split('_')[-1]
     if plot.plot_class.endswith('VERY_NARROW'):
         shape = 'NARROW'
-    # NARROW plots are also acceptable for plans that support BALANCED layouts
-    # (the PlanAdapter can rotate/mirror to fit narrower footprints).
-    compatible_shapes = set(plan.supported_plot_shapes)
-    if 'BALANCED' in compatible_shapes:
-        compatible_shapes.add('NARROW')
-    size_class = plot.plot_class.split('_')[0]
-    if shape not in compatible_shapes and size_class not in compatible_shapes:
+    if shape not in plan.supported_plot_shapes and plot.plot_class.split('_')[0] not in plan.supported_plot_shapes:
         reasons.append('plot_shape')
-    # Hard capability requirements: structural layout features that cannot be added post-selection.
-    # Soft features (balcony, veranda, parking) are handled via suitability scoring, not hard rejection.
+        
+    # Hard capability requirements: if the user explicitly selected these, the plan MUST support them.
+    # Note: Soft suitability preferences (like space_priority or style) only affect ranking score, not filtering.
     required_capabilities = {
         'accessibility': req.accessibility,
         'master_ensuite': req.master_bedroom or req.attached_bathroom,
         'open_plan': req.open_plan,
         'separate_dining': req.dining_required,
         'home_office': req.home_office,
+        'balcony': req.balcony,
+        'veranda': req.veranda,
         'utility_room': req.utility_room,
+        'parking': req.parking,
     }
     reasons.extend(f'missing_{name}' for name, required in required_capabilities.items()
                    if required and not plan.capabilities.get(name, False))
