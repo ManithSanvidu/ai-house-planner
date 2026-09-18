@@ -36,7 +36,6 @@ def test_land_analysis_node_fallback_no_photo():
     state = WorkflowState(workflow_id="00000000-0000-0000-0000-000000000123")
     state.input_data = CoordinatorInput(
         submission_id="00000000-0000-0000-0000-000000000123", 
-        budget_lkr=1.0, 
         land_size_perches=20.0,
         preferences={}
     )

@@ -9,6 +9,7 @@ import requests
 from app.schemas.workflow_state import WorkflowState, ExecutionLogEntry
 from app.tools.layout_generation_tool import generate_layout, prepare_inputs
 from app.design.candidate_generator import GenerationFailure
+from app.design.architectural_quality import validate_architectural_quality
 from app.tools.geometry_validator import validate_geometry
 from app.config import ASPNET_API_URL, INTERNAL_API_KEY
 from datetime import datetime, timezone
@@ -57,9 +58,11 @@ def design_node(state: WorkflowState) -> WorkflowState:
             land_size_perches=land_size, terrain_type=terrain_type,
             preferences=preferences, previous_design=previous_design,
             revision_reason=revision_reason, plot_constraints=plot_input, design_seed=seed,
-            budget_lkr=state.input_data.budget_lkr if state.input_data else None,
         )
         req, plot = prepare_inputs(land_size, terrain_type, preferences, plot_input, seed)
+        quality = validate_architectural_quality(design, req=req, plot=plot)
+        if not quality.passed or quality.status != 'VALID_HIGH_QUALITY':
+            raise GenerationFailure('Architectural quality validation failed.', [{'failures': quality.failures}])
         validation = validate_geometry(design.rooms, req.bedrooms, req.floors, land_size,
                                        plot=plot, design=design)
         if not validation.passed:

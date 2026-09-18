@@ -45,7 +45,6 @@ public class WorkflowController : ControllerBase
                     w.SlopeEstimate,
                     w.ApprovalStatus,
                     w.FailureReason,
-                    w.ConstructionPlan,
                     // Pick the current (or latest) design version
                     LatestDesign = w.HouseDesigns
                         .OrderByDescending(d => d.IsCurrent)
@@ -140,18 +139,16 @@ public class WorkflowController : ControllerBase
                 );
             }
 
-                var response = new WorkflowStatusResponseDto(
+            var response = new WorkflowStatusResponseDto(
                 WorkflowId: workflow.Id,
                 Status: workflow.Status,
                 TerrainType: workflow.TerrainType,
                 SlopeEstimate: workflow.SlopeEstimate,
                 Design: designDto,
                 Cost: null, // CostSummary is populated when Component C adds CostEstimates
-                ConstructionPlan: workflow.ConstructionPlan != null ? JsonDocument.Parse(workflow.ConstructionPlan).RootElement : null,
                 ApprovalStatus: workflow.ApprovalStatus,
                 FailureReason: workflow.FailureReason
             );
-
 
             return Ok(response);
         }
@@ -268,7 +265,7 @@ public class WorkflowController : ControllerBase
                 workflow_id = id,
                 resume_from = "design",
                 user_revision_prompt = request.RevisionNotes, // Pass the chat text to the AI
-                budget_lkr = workflow.LandSubmission.BudgetLkr,
+                submission_id = workflow.LandSubmission.Id,
                 land_size_perches = workflow.LandSubmission.LandSizePerches,
                 manual_terrain_type = workflow.LandSubmission.ManualTerrainType,
                 preferences = new {

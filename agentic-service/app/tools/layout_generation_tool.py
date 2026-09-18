@@ -1,329 +1,634 @@
-from typing import Optional, Union
-"""Generative AI layout planner with procedural fallback."""
+"""Validated base-plan selection with deterministic adaptation and strict quality gates."""
+
+from __future__ import annotations
+
 import json
-import uuid
-from app.config import GOOGLE_API_KEY
+
+from typing import Optional, Union
+
+from app.design.architectural_quality import validate_architectural_quality
+
+from app.design.base_plan_library import (
+
+    compact_plan_metadata,
+
+    filter_compatible_base_plans,
+
+    load_base_plan_catalog,
+
+    rank_base_plans,
+
+)
+
 from app.design.candidate_generator import GenerationFailure, select_best
-from app.design.diversity import geometry_fingerprint, stable_seed
-from app.design.geometry_engine import TERRAIN_FOUNDATION_MAP
+
+from app.design.diversity import geometry_fingerprint
+
 from app.design.models import Requirements
-from app.design.scoring import score_layout
-from app.design.revision import apply_supported_revision, requests_another_design
-from app.design.quality_metrics import (
-    CIRCULATION_VERY_POOR_RATIO, HALLWAY_EXTREME_LENGTH_FT,
-    NARROW_PLOT_THRESHOLD_FT, calculate_quality_metrics, quality_feedback,
-)
+
+from app.design.normalized_input import NormalizedDesignInput
+
+from app.design.plan_adapter import PlanAdapter
+
 from app.design.plot_constraints import PlotConstraints
-from app.design.spatial_program import build_program
-from app.design.topology_registry import eligible_topologies, topology_dict
-from app.schemas.design_result import DesignResult
-from app.tools.geometry_validator import validate_geometry
-from app.tools.land_utils import SQFT_PER_PERCH, MAX_COVERAGE_RATIO
 
-AI_CANDIDATE_COUNT = 3
-MAX_AI_REVISIONS = 3
-CANDIDATE_STRATEGIES = (
-    'Explore compact centralized circulation with a short shared private lobby.',
-    'Explore a winged or L-shaped public/private zoning strategy suited to this plot.',
-    'Explore an open public zone with a compact central wet/service core and bedroom cluster.',
+from app.design.revision import apply_supported_revision, requests_another_design
+
+from app.design.scoring import family_affinity
+
+from app.design.topology_registry import eligible_topologies, topology_dict
+
+from app.providers import get_available_design_provider
+
+from app.schemas.ai_plan_decision import AIPlanDecision
+
+from app.schemas.design_result import DesignResult
+
+from app.tools.geometry_validator import validate_geometry
+
+from app.tools.land_utils import MAX_COVERAGE_RATIO, SQFT_PER_PERCH
+
+SYSTEM_PROMPT = (
+
+    "You are the HousePlanner design-selection agent. Choose among validated base plans only. "
+
+    "Do not generate coordinates, room dimensions, openings, or stair locations. Return only the strict schema."
+
 )
 
-SYSTEM_PROMPT = """You are the Design Agent of an AI-Assisted Home Design & Cost Planner.
-Create a realistic conceptual residential floor plan from the supplied homeowner
-requirements, plot constraints, terrain, spatial program and eligible high-level
-concepts. You are responsible for the spatial zoning, room arrangement, circulation,
-floor distribution, dimensions and x/y coordinates. Do not copy a predefined layout.
-Do not assume a two-row grid.
 
-This is a university-level planning and estimation system. The generated design is NOT construction-ready architectural documentation. It is a conceptual floor plan used for visualization, cost estimation, validation, and design revision.
+def prepare_inputs(
 
-Return only JSON matching the response schema. Coordinates use architectural feet,
-with (0,0) at the buildable rectangle's southwest corner. Room rectangles on the same
-floor cannot overlap. Every normal room must be reachable from an exterior entrance
-through declared connections. Non-stair connections require a shared wall and matching
-door openings on both rooms. Multi-floor designs require aligned staircase rooms and
-stair connections. Use unique stable room IDs within the candidate. Include the exact
-requested bedroom and floor counts, living room, kitchen and bathroom. Keep rooms inside
-buildable_width/buildable_length and total area inside maximum_total_floor_area.
+    land_size_perches: float,
 
-Functional priorities: circulation, independent bedroom access, privacy, living/dining/
-kitchen relationships, bathroom access, efficient area, terrain suitability, exterior
-wall opportunities and homeowner preferences. Ground floors generally prioritize public
-and service spaces; upper floors generally prioritize private spaces. These are design
-preferences, not a fixed arrangement. Do not output construction materials, structure,
-electrical, plumbing or approval claims. Deterministic validation is the final authority.
+    terrain_type: str,
 
-SPACE EFFICIENCY IS IMPORTANT. Hallways are support space, not primary living space.
-Prefer circulation at or below 8% of built-up area; 8-12% is acceptable, while more
-than 12% needs a strong plot reason. Do not solve access with one long hallway. For a
-compact single-storey home, consider a short private bedroom lobby or let public rooms
-provide appropriate public circulation. Keep typical hallways around 3.5-4.5 ft wide.
-Avoid long dead ends, duplicated paths, and a hallway serving only one room.
+    preferences: dict,
 
-Reason in PUBLIC, PRIVATE, and SERVICE zones. Place a common bathroom near the bedroom
-cluster and shared circulation, never as a passage room, and normally away from a direct
-kitchen or primary dining opening. Group kitchen, bathrooms, and utility into a reasonable
-wet/service zone where practical. Prefer exterior-wall opportunities for living, bedrooms,
-kitchen, and bathrooms. Before returning JSON, internally check whether circulation can be
-shortened, the bathroom can move closer to bedrooms, service rooms can group better, room
-proportions can improve, or unusable strips and voids can be removed. If so, improve the
-arrangement first. Produce a substantially different spatial strategy for each candidate,
-not a coordinate shift or resize of the same hallway plan.
-"""
+    plot_constraints: Union[dict, Optional[PlotConstraints]] = None,
 
-def prepare_inputs(land_size_perches: float, terrain_type: str, preferences: dict,
-                   plot_constraints: Union[dict, Optional[PlotConstraints]] = None,
-                   design_seed: Optional[int] = None) -> tuple[Requirements, PlotConstraints]:
+    design_seed: Optional[int] = None,
+
+) -> tuple[Requirements, PlotConstraints]:
+
     values = dict(preferences)
+
     if 'architecturalStyle' in values and 'style' not in values:
+
         values['style'] = values.pop('architecturalStyle')
+
     if 'style_preference' in values and 'style' not in values:
+
         values['style'] = values.pop('style_preference')
+
     if 'accessibility_preference' in values and 'accessibility' not in values:
+
         values['accessibility'] = values.pop('accessibility_preference')
+
     aliases = {
-        'architectural_style': 'style', 'master_ensuite': 'attached_bathroom',
-        'separate_dining': 'dining_required', 'parking_required': 'parking',
+
+        'architectural_style': 'style',
+
+        'master_ensuite': 'attached_bathroom',
+
+        'separate_dining': 'dining_required',
+
+        'parking_required': 'parking',
+
         'utility': 'utility_room',
+
     }
+
     for source_key, target_key in aliases.items():
+
         if source_key in values and target_key not in values:
+
             values[target_key] = values.pop(source_key)
+
     if values.get('space_priority') == 'outdoor_garden':
+
         values['garden_priority'] = True
+
     if values.get('space_priority') == 'compact_cost_efficient':
+
         values['compact_priority'] = True
+
     if values.get('attached_bathroom'):
+
         values['master_bedroom'] = True
+
     if design_seed is not None:
+
         values['design_seed'] = design_seed
-    values = {k: v for k, v in values.items() if v is not None}
+
+    values = {key: value for key, value in values.items() if value is not None}
+
     req = Requirements.model_validate(values)
+
     source = plot_constraints if plot_constraints is not None else preferences.get('plot_constraints', {})
+
     if isinstance(source, PlotConstraints):
+
         source = source.model_dump(include=set(PlotConstraints.model_fields))
+
     raw = dict(source)
+
     if raw.get('entrance_side') == 'road_side':
+
         raw['entrance_side'] = raw.get('road_side', preferences.get('road_side', 'south'))
+
     for key in PlotConstraints.model_fields:
+
         if key in preferences and key not in raw:
+
             raw[key] = preferences[key]
-    raw.update(land_size_perches=land_size_perches, terrain_type=terrain_type.lower(), parking_reserved=req.parking)
+
+    raw.update(
+
+        land_size_perches=land_size_perches,
+
+        terrain_type=terrain_type.lower(),
+
+        parking_reserved=req.parking,
+
+    )
+
     return req, PlotConstraints.model_validate(raw)
 
 
-def generate_layout(land_size_perches: float, terrain_type: str, preferences: dict,
-                    previous_design: Optional[dict] = None, revision_reason: Optional[str] = None,
-                    *, plot_constraints: Union[dict, Optional[PlotConstraints]] = None,
-                    design_seed: Optional[int] = None, budget_lkr: Optional[float] = None) -> DesignResult:
+
+def _candidate_pool(req: Requirements, plot: PlotConstraints):
+
+    compatible = filter_compatible_base_plans(req, plot)
+
+    if not compatible:
+
+        raise GenerationFailure('No compatible validated base plans exist for the supplied requirements.')
+
+    ranked = rank_base_plans(compatible, req, plot)
+
+    diverse = []
+
+    seen_families = set()
+
+    for plan in ranked:
+
+        if plan.topology_family not in seen_families or len(diverse) < 3:
+
+            diverse.append(plan)
+
+            seen_families.add(plan.topology_family)
+
+        if len(diverse) >= min(7, len(ranked)):
+
+            break
+
+    return diverse or ranked[:1]
+
+
+
+def _build_ai_prompt(normalized: NormalizedDesignInput, plans, previous_plan_code=None,
+
+                     previous_fingerprint=None, revision_reason: Optional[str] = None) -> str:
+
+    payload = {
+
+        'normalized_input': normalized.model_dump(),
+
+        'candidate_plans': compact_plan_metadata(plans),
+
+        'previous_plan_code': previous_plan_code,
+
+        'previous_fingerprint': previous_fingerprint,
+
+        'revision_reason': revision_reason,
+
+        'generation_mode': 'generate_another' if previous_plan_code else 'generate',
+
+    }
+
+    return json.dumps(payload, separators=(',', ':'), ensure_ascii=True)
+
+
+
+def _fallback_decision(plans, req: Requirements, plot: PlotConstraints, previous_plan_code=None,
+
+                       previous_fingerprint=None) -> AIPlanDecision:
+
+    chosen = next((plan for plan in plans if plan.plan_code != previous_plan_code), plans[0])
+
+    alternatives = [plan.plan_code for plan in plans if plan.plan_code != chosen.plan_code][:3]
+
+    public_orientation = plot.road_side
+
+    private_orientation = {'south': 'north', 'north': 'south', 'east': 'west', 'west': 'east'}[plot.road_side]
+
+    service_orientation = {'south': 'west', 'north': 'east', 'east': 'south', 'west': 'north'}[plot.road_side]
+
+    return AIPlanDecision.model_validate({
+
+        'selected_plan_code': chosen.plan_code,
+
+        'alternative_plan_codes': alternatives,
+
+        'design_intent': {
+
+            'public_zone_orientation': public_orientation,
+
+            'private_zone_orientation': private_orientation,
+
+            'service_zone_orientation': service_orientation,
+
+            'privacy_priority': 'high' if getattr(req, 'privacy_priority', False) or getattr(req, 'attached_bathroom', False) else 'balanced',
+
+            'circulation_preference': 'short_central_hall',
+
+        },
+
+        'adaptations': {
+
+            'mirror_horizontal': False,
+
+            'mirror_vertical': False,
+
+            'rotation_degrees': 0,
+
+            'living_scale': 1.0,
+
+            'bedroom_scale': 1.0,
+
+            'entrance_side': plot.effective_entrance_side,
+
+            'preserve_stair_core': True,
+
+            'preserve_wet_core': True,
+
+        },
+
+        'reason_codes': ['plot_fit', 'preference_match', 'low_circulation'],
+
+    })
+
+
+
+def _validate_and_finalize(design: DesignResult, req: Requirements, plot: PlotConstraints,
+
+                           base_plan_code: str, provider_name: Optional[str], model_name: Optional[str],
+
+                           ai_decision: AIPlanDecision, tried_codes: list[str], candidate_pool) -> DesignResult:
+
+    quality = validate_architectural_quality(design, req=req, plot=plot)
+
+    if not quality.passed:
+
+        raise GenerationFailure('Architectural quality validation failed.', [{'base_plan_code': base_plan_code, 'failures': quality.failures}])
+
+    geometry = validate_geometry(design.rooms, req.bedrooms, req.floors, plot.land_size_perches, plot=plot, design=design)
+
+    if not geometry.passed:
+
+        raise GenerationFailure('Local geometry validation failed.', [{'base_plan_code': base_plan_code, 'failures': geometry.failures}])
+
+    design.design_score = quality.score
+
+    design.candidate_status = quality.status
+
+    design.geometry_fingerprint = geometry_fingerprint(design)
+
+    if design.candidate_summary is None:
+        design.candidate_summary = {}
+    design.candidate_summary.update({
+
+        'selected_plan_code': base_plan_code,
+
+        'provider': provider_name,
+
+        'model': model_name,
+
+        'generation_mode': 'ai_adapted_template' if provider_name else 'deterministic_template_selection',
+
+        'quality_metrics': quality.metrics,
+
+        'quality_breakdown': quality.score_breakdown,
+
+        'geometry_validation': geometry.to_dict(),
+
+        'tried_plan_codes': tried_codes,
+
+        'compatible_plan_codes': [plan.plan_code for plan in candidate_pool],
+
+        'catalog_size': len(load_base_plan_catalog()),
+
+    })
+
+    return design
+
+
+
+def generate_layout(
+
+    land_size_perches: float,
+
+    terrain_type: str,
+
+    preferences: dict,
+
+    previous_design: Optional[dict] = None,
+
+    revision_reason: Optional[str] = None,
+
+    *,
+
+    plot_constraints: Union[dict, Optional[PlotConstraints]] = None,
+
+    design_seed: Optional[int] = None,
+
+) -> DesignResult:
+
     try:
+
         revised_preferences, applied_revision = apply_supported_revision(preferences, revision_reason)
+
         req, plot = prepare_inputs(land_size_perches, terrain_type, revised_preferences, plot_constraints, design_seed)
+
+        if plot.terrain_type == 'unknown':
+
+            raise GenerationFailure('Terrain is unknown; provide a manual terrain classification.')
+
+        if plot.plot_width_ft and plot.plot_width_ft < 15:
+
+            raise GenerationFailure(f'Plot width ({plot.plot_width_ft} ft) is too narrow for standard construction.')
+
+        if plot.plot_length_ft and plot.plot_length_ft < 15:
+
+            raise GenerationFailure(f'Plot length ({plot.plot_length_ft} ft) is too shallow for standard construction.')
+
+        if plot.buildable_width < 10 or plot.buildable_length < 10:
+
+            raise GenerationFailure('Setbacks leave insufficient buildable area (less than 10ft).')
+
     except (ValueError, TypeError) as exc:
+
         raise GenerationFailure(f'Invalid design requirements: {exc}') from exc
-        
-    mode = 'procedural_demo_fallback'
-    result = None
 
-    if GOOGLE_API_KEY and plot.terrain_type != 'unknown':
-        base_payload = {'plot': plot.model_dump(), 'requirements': req.model_dump(),
-                        'eligible_families': [topology_dict(t) for t in eligible_topologies(req, plot)],
-                        'spatial_program': build_program(req).model_dump(),
-                        'previous_design': previous_design,
-                        'revision_feedback': revision_reason,
-                        'design_seed': req.design_seed,
-                        'budget_lkr': budget_lkr,
-                        'budget_note': 'Use only as a conceptual size-efficiency signal; do not estimate costs.'}
-        valid_candidates = []
-        failures = []
-        eligible_family_names = {item['name'] for item in base_payload['eligible_families']}
+    normalized = NormalizedDesignInput.from_inputs(req, plot)
+
+    candidate_pool = _candidate_pool(req, plot)
+
+    previous_plan_code = None
+
+    previous_fingerprint = None
+
+    if previous_design:
+
         try:
-            from google import genai
-            from google.genai import types
-            client = genai.Client(api_key=GOOGLE_API_KEY, http_options=types.HttpOptions(timeout=25000))
-            try:
-                for candidate_index in range(AI_CANDIDATE_COUNT):
-                    print(f'[Design Agent] Generating AI candidate {candidate_index + 1}/{AI_CANDIDATE_COUNT}')
-                    payload = dict(base_payload, candidate_index=candidate_index,
-                                   diversity_instruction=CANDIDATE_STRATEGIES[candidate_index])
-                    prompt = json.dumps(payload, default=str)
-                    prior = None
-                    for revision in range(MAX_AI_REVISIONS):
-                        try:
-                            data = _parse_design_result(_call_gemini_design(client, prompt))
-                            if not data:
-                                raise ValueError('Invalid JSON response')
-                            data.setdefault('design_id', str(uuid.uuid4()))
-                            data.setdefault('template_id', data.get('template_family', 'CUSTOM_AI'))
-                            data['floor_count'] = req.floors
-                            data['terrain_type'] = plot.terrain_type
-                            data['foundation_type'] = TERRAIN_FOUNDATION_MAP[plot.terrain_type]
-                            candidate = DesignResult.model_validate(data)
-                            if candidate.template_family not in eligible_family_names:
-                                raise ValueError(
-                                    f"template_family must be one of {sorted(eligible_family_names)}"
-                                )
-                            candidate.total_built_up_area_sqft = round(sum(r.width * r.length for r in candidate.rooms), 2)
-                            candidate.ground_footprint_sqft = round(sum(r.width * r.length for r in candidate.rooms if r.floor == 1), 2)
-                            candidate.design_seed = req.design_seed
-                            candidate.plot_constraints = plot.model_dump()
-                            candidate.program = build_program(req).model_dump()
-                            check = validate_geometry(candidate.rooms, req.bedrooms, req.floors,
-                                                      land_size_perches, plot=plot, design=candidate)
-                            metrics = calculate_quality_metrics(candidate)
-                            narrow_plot = min(plot.buildable_width, plot.buildable_length) < NARROW_PLOT_THRESHOLD_FT
-                            quality_issues = []
-                            if not narrow_plot and metrics['circulation_ratio'] > CIRCULATION_VERY_POOR_RATIO:
-                                quality_issues.append(
-                                    f"Circulation area is {metrics['circulation_area']:.1f} sqft of "
-                                    f"{metrics['actual_room_footprint_area']:.1f} sqft "
-                                    f"({metrics['circulation_ratio']:.1%}). Reduce hallway length or use "
-                                    "a compact bedroom cluster."
-                                )
-                            if not narrow_plot and metrics['longest_hallway_ft'] > HALLWAY_EXTREME_LENGTH_FT:
-                                quality_issues.append(
-                                    f"Longest hallway is {metrics['longest_hallway_ft']:.1f} ft. "
-                                    "Create a substantially different compact circulation strategy."
-                                )
-                            # Quality issues get bounded revision attempts. On the final
-                            # attempt, preserve a geometrically valid candidate and let
-                            # deterministic scoring rank it instead of failing the workflow.
-                            if quality_issues and revision < MAX_AI_REVISIONS - 1:
-                                for issue in quality_issues:
-                                    check.fail('design_quality', issue)
-                            candidate_fingerprint = geometry_fingerprint(candidate)
-                            if any(item.geometry_fingerprint == candidate_fingerprint for item in valid_candidates):
-                                check.fail(
-                                    'duplicate_geometry',
-                                    'This duplicates an earlier candidate. Use a meaningfully different zoning and circulation strategy.'
-                                )
-                            if check.passed:
-                                candidate.design_score, breakdown = score_layout(candidate, req, plot)
-                                candidate.geometry_fingerprint = candidate_fingerprint
-                                candidate.candidate_summary = {'candidate_index': candidate_index,
-                                                               'revision_count': revision,
-                                                               'score_breakdown': breakdown,
-                                                               'quality_metrics': metrics,
-                                                               'quality_feedback': quality_feedback(metrics),
-                                                               'accepted_quality_warnings': quality_issues}
-                                valid_candidates.append(candidate)
-                                print(f'[Geometry Validator] Candidate {candidate_index + 1} passed; score={candidate.design_score}')
-                                break
-                            prior = candidate.model_dump()
-                            failures.append({'candidate': candidate_index, 'revision': revision,
-                                             'failures': check.failures})
-                            print(f'[Geometry Validator] Candidate {candidate_index + 1} failed: {check.failures}')
-                            prompt = json.dumps(dict(payload, previous_attempt=prior,
-                                exact_validation_failures=check.failures,
-                                revision_instruction='Preserve valid choices and fix every listed failure.'), default=str)
-                        except (ValueError, TypeError) as exc:
-                            failures.append({'candidate': candidate_index, 'revision': revision,
-                                             'failures': [f'Schema error: {exc}']})
-                            prompt = json.dumps(dict(payload, previous_attempt=prior,
-                                exact_validation_failures=[f'Schema error: {exc}'],
-                                revision_instruction='Return complete JSON matching the schema.'), default=str)
-            finally:
-                client.close()
+
+            previous_layout = DesignResult.model_validate(previous_design)
+
+            previous_fingerprint = geometry_fingerprint(previous_layout)
+
+            previous_plan_code = previous_layout.candidate_summary.get('selected_plan_code') if isinstance(previous_layout.candidate_summary, dict) else None
+
+        except Exception:
+
+            previous_fingerprint = None
+
+    if previous_plan_code and requests_another_design(revision_reason):
+
+        candidate_pool = [plan for plan in candidate_pool if plan.plan_code != previous_plan_code] or candidate_pool
+
+    provider = get_available_design_provider()
+
+    provider_name = getattr(provider, 'provider_name', None) if provider else None
+
+    model_name = getattr(provider, 'model_name', None) if provider else None
+
+    if provider:
+
+        print(f'[Design Agent] Calling provider {provider.provider_name} for base-plan selection...')
+
+        user_prompt = _build_ai_prompt(normalized, candidate_pool, previous_plan_code, previous_fingerprint, revision_reason)
+
+        try:
+
+            decision = AIPlanDecision.model_validate(provider.generate_json(SYSTEM_PROMPT, user_prompt, AIPlanDecision))
+
         except Exception as exc:
-            raise GenerationFailure(f'Gemini design generation failed: {type(exc).__name__}', failures) from exc
 
-        unique = {}
-        for candidate in valid_candidates:
-            current = unique.get(candidate.geometry_fingerprint)
-            if current is None or candidate.design_score > current.design_score:
-                unique[candidate.geometry_fingerprint] = candidate
-        if not unique:
-            raise GenerationFailure('Unable to produce valid AI geometry after bounded revisions.', failures)
-        result = max(unique.values(), key=lambda c: (c.design_score, c.geometry_fingerprint))
-        result.candidate_summary.update({
-            'generation_mode': 'ai_generative',
-            'generated_count': AI_CANDIDATE_COUNT,
-            'valid_count': len(valid_candidates),
-            'unique_valid_count': len(unique),
-            'rejected_attempt_count': len(failures),
-            'validation_failures': failures,
-            'candidates': [{'design_id': c.design_id, 'family': c.template_family,
-                            'score': c.design_score,
-                            'geometry_fingerprint': c.geometry_fingerprint}
-                           for c in unique.values()],
+            print(f'[Design Agent] AI decision failed ({exc}); using deterministic selection.')
+
+            decision = _fallback_decision(candidate_pool, req, plot, previous_plan_code, previous_fingerprint)
+
+    else:
+
+        decision = _fallback_decision(candidate_pool, req, plot, previous_plan_code, previous_fingerprint)
+
+    if previous_fingerprint and previous_plan_code and decision.selected_plan_code == previous_plan_code:
+
+        decision = decision.model_copy(update={
+
+            'alternative_plan_codes': [code for code in decision.alternative_plan_codes if code != previous_plan_code],
+
         })
-        mode = 'ai_generative'
 
-    if result is None:
-        # Explicit demo-only fallback when no API key is configured.
-        if req.design_seed is None:
-            req.design_seed = stable_seed({'requirements': req.model_dump(), 'plot': plot.model_dump()})
-        excluded = set()
-        if previous_design and requests_another_design(revision_reason):
-            previous_fingerprint = previous_design.get('geometry_fingerprint')
+    adapter = PlanAdapter()
+
+    tried_codes: list[str] = []
+
+    failures: list[dict] = []
+
+    candidate_by_code = {plan.plan_code: plan for plan in candidate_pool}
+
+    for plan_code in [decision.selected_plan_code, *decision.alternative_plan_codes]:
+
+        if plan_code in tried_codes:
+
+            continue
+
+        tried_codes.append(plan_code)
+
+        plan = candidate_by_code.get(plan_code)
+
+        if plan is None:
+
+            failures.append({'plan_code': plan_code, 'failures': ['plan_not_compatible']})
+
+            continue
+
+        try:
+
+            design = adapter.adapt(plan, decision, req, plot)
+
+            print(f"DEBUG {plan_code}: {[c.from_room + '-' + c.to_room for c in design.connections]}")
+
+            final_design = _validate_and_finalize(
+
+                design,
+
+                req,
+
+                plot,
+
+                plan.plan_code,
+
+                provider_name,
+
+                model_name,
+
+                decision,
+
+                tried_codes,
+
+                candidate_pool,
+
+            )
+
+            final_design.candidate_summary.update({
+
+                'generation_mode': 'ai_adapted_template' if provider_name else 'deterministic_template_selection',
+
+                'base_plan_name': plan.name,
+
+                'base_plan_code': plan.plan_code,
+                
+                'template_id': final_design.template_id,
+
+                'alternative_plan_codes': decision.alternative_plan_codes,
+
+                'reason_codes': decision.reason_codes,
+
+                'normalized_input': normalized.model_dump(),
+
+                'compatible_plan_count': len(candidate_pool),
+
+            })
+
             if previous_fingerprint:
-                excluded.add(previous_fingerprint)
-        result = select_best(req, plot, excluded_fingerprints=excluded)
-        check = validate_geometry(result.rooms, req.bedrooms, req.floors, land_size_perches, plot=plot, design=result)
-        if not check.passed:
-            raise GenerationFailure('Selected candidate failed final validation.', [{'failures': check.failures}])
-        result.candidate_summary['fallback_disclosure'] = (
-            'Procedural demo fallback; Gemini did not create this geometry.'
-        )
-        mode = 'procedural_demo_fallback'
 
-    known_extras = set(PlotConstraints.model_fields) | {'plot_constraints', 'photo_url'}
-    unhandled = sorted(set(req.model_extra or {}) - known_extras)
-    result.candidate_summary.update(generation_mode=mode, unhandled_preferences=unhandled)
-    final_metrics = calculate_quality_metrics(result)
-    result.candidate_summary['quality_metrics'] = final_metrics
-    result.candidate_summary['quality_feedback'] = quality_feedback(final_metrics)
-    if (final_metrics['circulation_ratio'] > 0.12 and
-            min(plot.buildable_width, plot.buildable_length) < NARROW_PLOT_THRESHOLD_FT):
-        result.candidate_summary['circulation_exception'] = (
-            'Higher circulation ratio retained because the buildable plot is narrow; '
-            'the score still includes the circulation penalty.'
-        )
-    if unhandled:
-        result.candidate_summary.setdefault('notes', []).append('Unrecognized preferences were not applied: '+', '.join(unhandled))
-    if revision_reason:
-        result.candidate_summary['revision_feedback'] = revision_reason
-        result.candidate_summary['bounded_revision_preferences'] = applied_revision
-        
-    return result
+                final_design.candidate_summary['previous_fingerprint'] = previous_fingerprint
+
+            if previous_plan_code:
+
+                final_design.candidate_summary['previous_plan_code'] = previous_plan_code
+
+            if revision_reason:
+
+                final_design.candidate_summary['revision_feedback'] = revision_reason
+
+                final_design.candidate_summary['bounded_revision_preferences'] = applied_revision
+
+            return final_design
+
+        except GenerationFailure as exc:
+
+            failures.extend(getattr(exc, 'failures', []) or [{'plan_code': plan_code, 'failures': [str(exc)]}])
+
+        except Exception as exc:
+
+            failures.append({'plan_code': plan_code, 'failures': [str(exc)]})
+    if failures and provider:
+        print("ADAPTATION FAILURES FROM AI:", json.dumps(failures, indent=2))
+        print("Falling back to deterministic selection.")
+        decision = _fallback_decision(candidate_pool, req, plot, previous_plan_code, previous_fingerprint)
+        tried_codes.clear()
+        for plan_code in [decision.selected_plan_code, *decision.alternative_plan_codes]:
+            if plan_code in tried_codes:
+                continue
+            tried_codes.append(plan_code)
+            plan = candidate_by_code.get(plan_code)
+            if not plan:
+                continue
+            try:
+                design = adapter.adapt(plan, decision, req, plot)
+                return _validate_and_finalize(design, req, plot, plan.plan_code, None, None, decision, tried_codes, candidate_pool)
+            except GenerationFailure as exc:
+                failures.extend(getattr(exc, 'failures', []) or [{'plan_code': plan_code, 'failures': [str(exc)]}])
+            except Exception as exc:
+                failures.append({'plan_code': plan_code, 'failures': [str(exc)]})
+
+    if failures:
+        raise GenerationFailure('No validated base plan could be adapted into a high-quality design.', failures)
+    raise GenerationFailure('Candidate pool exhausted without finding a valid plan.')
 
 
-def _call_gemini_design(client, user_prompt: str) -> str:
-    from google.genai import types
-    response = client.models.generate_content(
-        model='gemini-3.6-flash', contents=user_prompt,
-        config=types.GenerateContentConfig(system_instruction=SYSTEM_PROMPT, temperature=0.4,
-                                          max_output_tokens=6000, response_mime_type='application/json',
-                                          response_json_schema=DesignResult.model_json_schema()))
-    return (response.text or '').strip()
 
-
-def _parse_design_result(text: str) -> Optional[dict]:
-    try:
-        cleaned = '\n'.join(line for line in text.strip().splitlines() if not line.strip().startswith('```'))
-        data = json.loads(cleaned)
-        return data if isinstance(data, dict) else None
-    except (ValueError, TypeError, AttributeError):
-        return None
 
 
 def select_template(bedrooms: int, floors: int, terrain_type: str, land_size_perches: float) -> dict:
-    """Legacy helper name retained; returns topology rules, never finished coordinates."""
-    req, plot = prepare_inputs(land_size_perches, terrain_type, {'bedrooms': bedrooms, 'floors': floors})
+
+    """Legacy helper name retained; returns a validated base-plan summary, never coordinates."""
+
+    import math
+
+    side = round(math.sqrt(land_size_perches * 272.25), 1)
+
+    req, plot = prepare_inputs(
+
+        land_size_perches,
+
+        terrain_type,
+
+        {'bedrooms': bedrooms, 'floors': floors},
+
+        plot_constraints={'plot_width_ft': side, 'plot_length_ft': side},
+
+    )
+
     choices = eligible_topologies(req, plot)
+
     if not choices:
+
         raise GenerationFailure('No eligible topology for the plot and requirements.')
-    from app.design.scoring import family_affinity
-    topology = max(choices, key=lambda t: family_affinity(t.name, req, plot))
-    return {'template_id': f'{bedrooms}BR_{floors}F_{terrain_type.upper()}', **topology_dict(topology)}
+
+    topology = max(choices, key=lambda topo: family_affinity(topo.name, req, plot))
+
+    return {
+
+        'name': topology.name,
+
+        'plan_code': topology.name,
+
+        'min_width': topology.min_width,
+
+        'min_length': topology.min_length,
+
+        'supported_floors': list(topology.supported_floors),
+
+        'bedroom_range': list(topology.bedroom_range),
+
+        'zoning': topology.zoning,
+
+        'adjacency': list(topology.adjacency),
+
+    }
 
 
-def _mock_layout(bedrooms: int, floors: int, terrain_type: str, foundation_type: str,
-                 max_area: float, template_id: Optional[str] = None, template: Optional[dict] = None) -> DesignResult:
-    """Compatibility wrapper: the offline path uses the same validated candidate engine."""
-    req, plot = prepare_inputs(max_area/(SQFT_PER_PERCH*MAX_COVERAGE_RATIO), terrain_type,
-                               {'bedrooms': bedrooms, 'floors': floors, 'design_seed': 0})
-    result = select_best(req, plot)
+
+
+
+def _mock_layout(
+    bedrooms: int,
+    floors: int,
+    terrain_type: str,
+    foundation_type: str,
+    max_area: float,
+    template_id: Optional[str] = None,
+    template: Optional[dict] = None,
+) -> DesignResult:
+    """Compatibility wrapper: the offline path uses the same validated base-plan engine."""
+    import math
+    perches = max_area / (SQFT_PER_PERCH * MAX_COVERAGE_RATIO)
+    side = round(math.sqrt(perches * 272.25), 1)
+    
+    result = generate_layout(
+        land_size_perches=perches,
+        terrain_type=terrain_type,
+        preferences={'bedrooms': bedrooms, 'floors': floors, 'design_seed': 0},
+        plot_constraints={'plot_width_ft': side, 'plot_length_ft': side}
+    )
+    
     if template_id:
         result.template_id = template_id
+    result.foundation_type = foundation_type
     return result
+
