@@ -17,6 +17,10 @@ export const Sidebar: React.FC = () => {
     { to: '/dashboard/new-project', label: 'New Project (Intake)', icon: PlusSquare },
     { to: '/dashboard/plans', label: 'Plan Library', icon: Library },
     ...(user.role === 'Admin' ? [{ to: '/dashboard/admin/plans', label: 'Manage Plans', icon: Shield }] : []),
+    ...(user.role === 'Architect' ? [
+      { to: '/architect/dashboard', label: 'Architect Dashboard', icon: LayoutDashboard },
+      { to: '/architect/requests', label: 'Validation Requests', icon: Library },
+    ] : []),
   ];
 
   return (

@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { workflowService, type WorkflowStatusResponseDto } from '../services/workflowService';
 import { FloorPlanViewer, type FloorPlanData } from '../components/floorplan/FloorPlanViewer';
 import { Menu } from 'lucide-react';
+import { validationRequestService } from '../services/validationRequestService';
 
 export const WorkflowReviewPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -142,6 +143,16 @@ export const WorkflowReviewPage: React.FC = () => {
     }
   };
 
+  const handleRequestValidation = async () => {
+    if (!id) return;
+    try {
+      await validationRequestService.create(id);
+      alert('Validation request sent successfully! An architect will review your design.');
+    } catch (e: any) {
+      alert(`Error requesting validation: ${e.response?.data?.message || e.message}`);
+    }
+  };
+
   const bedroomCount = workflow.design.rooms.filter(r => r.roomType.includes('bedroom')).length;
   const bathroomCount = workflow.design.rooms.filter(r => r.roomType.includes('bathroom')).length;
 
@@ -199,8 +210,11 @@ export const WorkflowReviewPage: React.FC = () => {
 
         {/* Action Buttons */}
         <div className="p-6 border-t border-zinc-200 flex flex-col gap-3 bg-white">
-          <button onClick={() => handleAction('approve')} className="w-full py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl font-bold hover:from-emerald-600 hover:to-emerald-700 transition-all text-sm shadow-[0_4px_14px_0_rgb(16,185,129,0.39)] hover:shadow-[0_6px_20px_rgba(16,185,129,0.23)]">
-            ✓ Approve Design
+          <button onClick={() => handleRequestValidation()} className="w-full py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-bold hover:from-blue-600 hover:to-blue-700 transition-all text-sm shadow-sm">
+            🔍 Request Architect Validation
+          </button>
+          <button onClick={() => handleAction('approve')} className="w-full py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl font-bold hover:from-emerald-600 hover:to-emerald-700 transition-all text-sm shadow-sm mt-2">
+            ✓ Approve Design (Skip Validation)
           </button>
           <button onClick={() => handleAction('request_revision')} className="w-full py-3 bg-white text-indigo-600 border-2 border-indigo-100 rounded-xl font-bold hover:bg-indigo-50 hover:border-indigo-200 transition-all text-sm">
             ↻ Request Revision

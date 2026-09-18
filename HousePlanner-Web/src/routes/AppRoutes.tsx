@@ -11,6 +11,10 @@ import PlanLibraryPage from '../pages/PlanLibraryPage';
 import PlanDetailPage from '../pages/PlanDetailPage';
 import AdminPlansPage from '../pages/AdminPlansPage';
 import AdminPlanFormPage from '../pages/AdminPlanFormPage';
+import ArchitectDashboard from '../pages/architect/ArchitectDashboard';
+import ValidationRequestsPage from '../pages/architect/ValidationRequestsPage';
+import ApprovedRequestsPage from '../pages/architect/ApprovedRequestsPage';
+import ValidationRequestDetails from '../pages/architect/ValidationRequestDetails';
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -74,6 +78,23 @@ export const AppRoutes: React.FC = () => {
         }
       />
 
+            <Route
+        path="/architect/dashboard"
+        element={<ProtectedRoute allowedRoles={['Architect']}><PageContainer><ArchitectDashboard /></PageContainer></ProtectedRoute>}
+      />
+      <Route
+        path="/architect/requests"
+        element={<ProtectedRoute allowedRoles={['Architect']}><PageContainer><ValidationRequestsPage /></PageContainer></ProtectedRoute>}
+      />
+      <Route
+        path="/architect/approved"
+        element={<ProtectedRoute allowedRoles={['Architect']}><PageContainer><ApprovedRequestsPage /></PageContainer></ProtectedRoute>}
+      />
+      <Route
+        path="/architect/requests/:id"
+        element={<ProtectedRoute allowedRoles={['Architect']}><PageContainer><ValidationRequestDetails /></PageContainer></ProtectedRoute>}
+      />
+
       {/* Fallback routing */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
@@ -81,3 +102,4 @@ export const AppRoutes: React.FC = () => {
 };
 
 export default AppRoutes;
+
