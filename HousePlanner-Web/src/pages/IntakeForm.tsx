@@ -5,7 +5,6 @@ import { Upload, Home, Map, DollarSign, Layers, CheckCircle2 } from 'lucide-reac
 import { workflowService } from '../services/workflowService';
 
 interface IntakeFormData {
-  budget: string;
   landSize: string;
   landUnit: 'perches' | 'sqft';
   terrainType: string;
@@ -39,7 +38,6 @@ const IntakeForm: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [formData, setFormData] = useState<IntakeFormData>({
-    budget: '',
     landSize: '',
     landUnit: 'perches',
     terrainType: 'flat/urban',
@@ -86,11 +84,28 @@ const IntakeForm: React.FC = () => {
     setErrorMessage('');
 
     try {
-      // Submit through the public gateway; Python remains an internal service.
-      const parsedBudget = parseFloat(formData.budget);
+      const landSizePerches = formData.landUnit === 'perches' ? parseFloat(formData.landSize) : (parseFloat(formData.landSize) / 272.25);
+      
+      // Early pre-generation validation
+      if (landSizePerches < 2) {
+        setErrorMessage("Land size is too small for standard construction. Minimum is 2 perches.");
+        setIsSubmitting(false);
+        return;
+      }
+      if (formData.plotWidth && parseFloat(formData.plotWidth) < 15) {
+        setErrorMessage("Plot width must be at least 15 ft.");
+        setIsSubmitting(false);
+        return;
+      }
+      if (formData.plotLength && parseFloat(formData.plotLength) < 15) {
+        setErrorMessage("Plot length must be at least 15 ft.");
+        setIsSubmitting(false);
+        return;
+      }
+
       const payload: any = {
         ...(searchParams.get('basePlanId') ? { basePreDesignedPlanId: searchParams.get('basePlanId'), planSelectionMode: searchParams.get('mode') || 'use' } : {}),
-        landSizePerches: formData.landUnit === 'perches' ? parseFloat(formData.landSize) : (parseFloat(formData.landSize) / 272.25),
+        landSizePerches,
         manualTerrainType: formData.terrainType,
         preferences: {
           bedrooms: parseInt(formData.bedrooms) || 3,
@@ -126,10 +141,6 @@ const IntakeForm: React.FC = () => {
       };
       
       payload.designSeed = crypto.getRandomValues(new Uint32Array(1))[0];
-
-      if (!isNaN(parsedBudget)) {
-        payload.budgetLkr = parsedBudget;
-      }
 
       const result = await workflowService.startDesign(payload);
       
@@ -196,25 +207,13 @@ const IntakeForm: React.FC = () => {
         {/* Section 1: Financials & Land */}
         <div className="p-6 bg-zinc-50/80 dark:bg-gray-800/50 rounded-2xl border border-zinc-100/80 dark:border-gray-700/50 space-y-5 relative z-10 hover:shadow-sm transition-all duration-300">
           <h3 className="font-bold text-zinc-900 dark:text-gray-100 flex items-center gap-2.5 text-lg">
-            <div className="bg-indigo-100 dark:bg-indigo-900/30 p-2 rounded-lg text-indigo-600 dark:text-indigo-400"><DollarSign size={18} /></div> 
-            Budget & Land Constraints
+            <div className="bg-indigo-100 dark:bg-indigo-900/30 p-2 rounded-lg text-indigo-600 dark:text-indigo-400"><Layers size={18} /></div> 
+            Land Constraints
           </h3>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Total Budget (LKR) <span className="text-gray-400 font-normal">(Optional)</span></label>
-              <input 
-                type="number" 
-                name="budget"
-                placeholder="e.g. 15000000"
-                value={formData.budget}
-                onChange={handleInputChange}
-                className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 transition-colors"
-              />
-            </div>
-            
             <div className="flex gap-2">
-              <div className="flex-1">
+              <div className="flex-1 relative">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Land Size</label>
                 <input 
                   type="number" 
@@ -225,6 +224,13 @@ const IntakeForm: React.FC = () => {
                   onChange={handleInputChange}
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 transition-colors"
                 />
+                {formData.landSize && !isNaN(parseFloat(formData.landSize)) && (
+                  <div className="absolute -bottom-5 left-1 text-xs font-medium text-indigo-500/80">
+                    {formData.landUnit === 'perches' 
+                      ? `≈ ${(parseFloat(formData.landSize) * 272.25).toLocaleString('en-US', {maximumFractionDigits:0})} sqft` 
+                      : `≈ ${(parseFloat(formData.landSize) / 272.25).toFixed(1)} perches`}
+                  </div>
+                )}
               </div>
               <div className="w-1/3">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Unit</label>

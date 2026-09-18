@@ -58,4 +58,6 @@ class DesignResult(BaseModel):
     entrances: List[Entrance] = Field(default_factory=list)
     plot_constraints: Optional[dict] = None
     program: Optional[dict] = None
+    site_features: list[dict] = Field(default_factory=list)
+    candidate_status: Optional[Literal["GEOMETRICALLY_INVALID", "ARCHITECTURALLY_POOR", "VALID_HIGH_QUALITY"]] = None
     candidate_summary: dict = Field(default_factory=dict)

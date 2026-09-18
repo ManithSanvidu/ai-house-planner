@@ -25,7 +25,8 @@ class PlotConstraints(BaseModel):
     terrain_type: Terrain = 'flat'
     slope_direction: Optional[Direction] = None
     setbacks: Setbacks = Field(default_factory=Setbacks)
-    dimensions_estimated: bool = False
+    setback_source: str = "conceptual_default"
+    dimension_source: str = "user_supplied"
     parking_reserved: bool = False
     design_seed: Optional[int] = None
     notable_features: list[str] = Field(default_factory=list)
@@ -33,26 +34,38 @@ class PlotConstraints(BaseModel):
     @model_validator(mode='after')
     def derive_dimensions(self) -> 'PlotConstraints':
         area = perches_to_sqft(self.land_size_perches)
-        if self.plot_width_ft is None or self.plot_length_ft is None:
-            self.dimensions_estimated = True
-            if self.plot_width_ft is None and self.plot_length_ft is None:
-                # Seed a stable random aspect ratio using design_seed if available
-                rng = random.Random(self.design_seed if self.design_seed is not None else int(self.land_size_perches * 10))
-                # Choose family randomly: compact (1.0-1.25), moderate (1.25-1.6), narrow (1.6-2.4)
-                aspect = rng.choice([
-                    rng.uniform(1.0, 1.25),
-                    rng.uniform(1.25, 1.6),
-                    rng.uniform(1.6, 2.4)
-                ])
-                # Decide if aspect applies to length vs width based on a coin flip
-                if rng.random() > 0.5:
-                    self.plot_width_ft = sqrt(area / aspect)
-                else:
-                    self.plot_width_ft = sqrt(area * aspect)
-            if self.plot_width_ft is None:
-                self.plot_width_ft = area / self.plot_length_ft
-            if self.plot_length_ft is None:
-                self.plot_length_ft = area / self.plot_width_ft
+        
+        has_width = self.plot_width_ft is not None
+        has_length = self.plot_length_ft is not None
+
+        if not has_width and not has_length:
+            self.dimension_source = "area_estimated"
+            rng = random.Random(self.design_seed if self.design_seed is not None else int(self.land_size_perches * 10))
+            aspect = rng.choice([
+                rng.uniform(1.0, 1.25),
+                rng.uniform(1.25, 1.55),
+                rng.uniform(1.55, 2.2)
+            ])
+            if rng.random() > 0.5:
+                self.plot_width_ft = sqrt(area / aspect)
+            else:
+                self.plot_width_ft = sqrt(area * aspect)
+            self.plot_length_ft = area / self.plot_width_ft
+        elif has_width and not has_length:
+            self.dimension_source = "partially_derived"
+            self.plot_length_ft = area / self.plot_width_ft
+        elif not has_width and has_length:
+            self.dimension_source = "partially_derived"
+            self.plot_width_ft = area / self.plot_length_ft
+        else:
+            self.dimension_source = "user_supplied"
+            
+        # Auto-correct perches if explicitly supplied dimensions vary wildly
+        if has_width and has_length:
+            dimension_area = self.plot_width_ft * self.plot_length_ft
+            variance = abs(dimension_area - area) / area
+            if variance > 0.30:
+                self.land_size_perches = dimension_area / perches_to_sqft(1)
         
         # Avoid floating point absurdities
         self.plot_width_ft = round(self.plot_width_ft, 1)
@@ -77,15 +90,19 @@ class PlotConstraints(BaseModel):
             size = "SMALL"
         elif area < 6000:
             size = "MEDIUM"
-        else:
+        elif area < 10000:
             size = "LARGE"
-            
-        if aspect < 1.3:
-            shape = "COMPACT"
-        elif aspect < 1.8:
-            shape = "MODERATE"
         else:
+            size = "VERY_LARGE"
+            
+        if aspect <= 1.25:
+            shape = "COMPACT"
+        elif aspect <= 1.55:
+            shape = "BALANCED"
+        elif aspect <= 2.2:
             shape = "NARROW"
+        else:
+            shape = "VERY_NARROW"
             
         return f"{size}_{shape}"
 

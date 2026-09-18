@@ -24,6 +24,7 @@ app.add_middleware(
 api_key_header=APIKeyHeader(name="X-Internal-API-Key")
 
 def verify_api_key(api_key: str=Security(api_key_header)):
+
     if not secrets.compare_digest(api_key, INTERNAL_API_KEY):
         raise HTTPException(status_code=403,detail="Forbidden:Invalid API Key")
     return api_key
@@ -31,7 +32,6 @@ def verify_api_key(api_key: str=Security(api_key_header)):
 class StartWorkflowRequest(BaseModel):
     workflow_id: UUID
     submission_id: UUID
-    budget_lkr: Optional[float] = None
     land_size_perches: float
     manual_terrain_type: Optional[str] = None
     preferences: Dict[str, Any]
@@ -42,7 +42,6 @@ class ResumeWorkflowRequest(BaseModel):
     workflow_id: UUID
     resume_from: str
     user_revision_prompt: str
-    budget_lkr: Optional[float] = None
     land_size_perches: float
     manual_terrain_type: Optional[str] = None
     preferences: Dict[str, Any]
@@ -91,14 +90,12 @@ def resume_workflow(
     # Reconstruct input data
     input_data = CoordinatorInput(
         submission_id=request.workflow_id,
-        budget_lkr=request.budget_lkr,
         land_size_perches=request.land_size_perches,
         manual_terrain_type=request.manual_terrain_type,
         preferences=request.preferences,
         plot_constraints=request.plot_constraints,
         design_seed=request.design_seed,
     )
-
     state = WorkflowState(
         workflow_id=request.workflow_id,
         status="running",

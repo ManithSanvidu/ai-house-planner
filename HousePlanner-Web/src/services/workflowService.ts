@@ -65,10 +65,9 @@ export interface WorkflowStatusResponseDto {
   failureReason?: string | null;
 }
 
-export interface GenerateDesignRequest {
+export interface StartDesignRequest {
   basePreDesignedPlanId?: string;
-  planSelectionMode?: 'use' | 'adapt';
-  budgetLkr?: number;
+  planSelectionMode?: 'use' | 'reference' | 'override';
   landSizePerches: number;
   manualTerrainType?: string;
   designSeed?: number;
@@ -91,7 +90,7 @@ export interface GenerateDesignRequest {
 // ──────────────────────────────────────────────────
 
 export const workflowService = {
-  startDesign: async (request: GenerateDesignRequest): Promise<{ workflowId: string }> => {
+  startDesign: async (request: StartDesignRequest): Promise<{ workflowId: string }> => {
     const response = await apiClient.post('/ai-generation/generate', request);
     return response.data;
   },

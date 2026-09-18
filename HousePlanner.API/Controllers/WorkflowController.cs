@@ -265,7 +265,7 @@ public class WorkflowController : ControllerBase
                 workflow_id = id,
                 resume_from = "design",
                 user_revision_prompt = request.RevisionNotes, // Pass the chat text to the AI
-                budget_lkr = workflow.LandSubmission.BudgetLkr,
+                submission_id = workflow.LandSubmission.Id,
                 land_size_perches = workflow.LandSubmission.LandSizePerches,
                 manual_terrain_type = workflow.LandSubmission.ManualTerrainType,
                 preferences = new {

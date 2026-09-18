@@ -24,6 +24,9 @@ def family_affinity(family: str, req: Requirements, plot: PlotConstraints) -> fl
     if plot.terrain_type == 'coastal':
         return 1.0 if family == 'COASTAL_RAISED_COMPACT' else 0.5
     
+    if req.floors > 1 and family == 'DUPLEX_STACKED':
+        return 1.0
+        
     preferred = set()
     
     # Topology preferences based on plot class
@@ -47,13 +50,13 @@ def family_affinity(family: str, req: Requirements, plot: PlotConstraints) -> fl
         preferred.update(('COMPACT_RECTANGLE', 'CENTRAL_CORE'))
     if req.privacy_priority:
         preferred.add('SPLIT_ZONE')
-    if req.floors > 1:
-        preferred.add('DUPLEX_STACKED')
         
     if not preferred:
         preferred.add('COMPACT_RECTANGLE')
         
-    return 1.0 if family in preferred else 0.2
+    if family in preferred:
+        return 0.9 if family == 'COMPACT_RECTANGLE' else 0.8
+    return 0.2
 
 
 def score_layout(layout: DesignResult, requirements: Requirements,

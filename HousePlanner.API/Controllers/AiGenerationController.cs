@@ -43,7 +43,6 @@ namespace HousePlanner.API.Controllers
                 {
                     Id = Guid.NewGuid(),
                     ClientId = client.Id,
-                    BudgetLkr = request.BudgetLkr,
                     LandSizePerches = request.LandSizePerches,
                     ManualTerrainType = request.ManualTerrainType,
                     PreferredBedrooms = request.Preferences?.Bedrooms ?? 3,
@@ -95,14 +94,13 @@ namespace HousePlanner.API.Controllers
                 payload = new {
                     workflow_id = workflowState.Id,
                     submission_id = submission.Id,
-                    budget_lkr = request.BudgetLkr,
                     land_size_perches = request.LandSizePerches,
                     manual_terrain_type = request.ManualTerrainType,
                     preferences = request.Preferences,
                     plot_constraints = request.PlotConstraints,
-                    design_seed = request.DesignSeed
-                    ,base_pre_designed_plan_id = request.BasePreDesignedPlanId
-                    ,plan_selection_mode = request.PlanSelectionMode
+                    design_seed = request.DesignSeed,
+                    base_pre_designed_plan_id = request.BasePreDesignedPlanId,
+                    plan_selection_mode = request.PlanSelectionMode
                 };
             }
             catch (Exception ex)
@@ -141,7 +139,6 @@ namespace HousePlanner.API.Controllers
     public class AiGenerationRequest
     {
         public Guid? ClientId { get; set; }
-        public decimal? BudgetLkr { get; set; }
         public decimal LandSizePerches { get; set; }
         public string? ManualTerrainType { get; set; }
         public PreferencesDto? Preferences { get; set; }

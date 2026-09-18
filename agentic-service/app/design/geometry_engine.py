@@ -59,12 +59,48 @@ def generate_geometry(program: SpatialProgram, req: Requirements, plot: PlotCons
             w = round(target/d, 1)
         return min(spec.max_width, w), min(spec.max_length, d)
 
+    stair_core = None
+    
+    floor_specs = {}
     for floor in range(1, req.floors+1):
         specs = [s for s in program.rooms if s.floor == floor]
-        # Keep public adjacencies and the optional master/ensuite pair contiguous.
         priority = {'living_room': 0, 'dining': 1, 'kitchen': 2, 'bedroom_1': 4, 'bathroom_attached': 4.1}
         specs.sort(key=lambda s: (priority.get(s.id, 5 if s.zone == 'private' else 6), s.id))
-        sized = [(s, *dimensions(s)) for s in specs]
+        floor_specs[floor] = [(s, *dimensions(s)) for s in specs]
+        
+    # Equalize lengths across floors so they align structurally.
+    if req.floors > 1:
+        if family == 'LINEAR' and floor_specs.get(1) and floor_specs.get(2):
+            span1 = sum(d for _, w, d in floor_specs[1])
+            span2 = sum(d for _, w, d in floor_specs[2])
+            max_span = max(span1, span2)
+            if span1 < max_span:
+                s, w, d = floor_specs[1][-1]
+                floor_specs[1][-1] = (s, w, d + (max_span - span1))
+        elif family in ('COMPACT_RECTANGLE', 'CENTRAL_CORE', 'SPLIT_ZONE', 'HILLSIDE_STEPPED') and floor_specs.get(1) and floor_specs.get(2):
+            def calc_top_span(f_specs):
+                if family == 'SPLIT_ZONE':
+                    top = [x for x in f_specs if x[0].zone in ('public', 'service') and not x[0].id.startswith('bathroom')]
+                else:
+                    split = (len(f_specs)+1)//2
+                    top_w, bot_w = sum(x[1] for x in f_specs[:split]), sum(x[1] for x in f_specs[split:])
+                    while split > 1 and top_w > bot_w * 1.5:
+                        split -= 1; top_w, bot_w = sum(x[1] for x in f_specs[:split]), sum(x[1] for x in f_specs[split:])
+                    while split < len(f_specs)-1 and bot_w > top_w * 1.5:
+                        split += 1; top_w, bot_w = sum(x[1] for x in f_specs[:split]), sum(x[1] for x in f_specs[split:])
+                    top = f_specs[:split]
+                return sum(w for _, w, d in top), top
+            
+            top_span1, top1 = calc_top_span(floor_specs[1])
+            top_span2, top2 = calc_top_span(floor_specs[2])
+            if top_span1 < top_span2 and top1:
+                # Add padding to the last room in top1
+                s, w, d = top1[-1]
+                idx = floor_specs[1].index((s, w, d))
+                floor_specs[1][idx] = (s, w + (top_span2 - top_span1), d)
+                
+    for floor in range(1, req.floors+1):
+        sized = floor_specs[floor]
         cw = circulation_width
         def bank(items: list, x: float, y: float, side: str) -> float:
             pos = 0.0
@@ -77,16 +113,22 @@ def generate_geometry(program: SpatialProgram, req: Requirements, plot: PlotCons
                     put(spec.id, spec.room_type, floor, x, y-pos-w, d, w)
                 pos = round(pos+w, 4)
             return pos
+            
         if family == 'LINEAR':
             span = bank(sized, cw, 0, 'east')
             put(f'hall_{floor}', 'hallway', floor, 0, -span, cw, span)
             if req.floors > 1:
-                put(f'stair_{floor}', 'staircase', floor, cw, 0, 6, 10)
-                put(f'foyer_{floor}', 'foyer', floor, 0, 0, cw, 10)
+                if floor == 1:
+                    stair_core = (cw, 0, 6, 10)
+                if stair_core:
+                    put(f'stair_{floor}', 'staircase', floor, *stair_core)
+                if floor == 1:
+                    put(f'foyer_{floor}', 'foyer', floor, 0, 0, cw, 10)
         elif family in ('L_SHAPE', 'T_SHAPE'):
             public_count = sum(s.zone == 'public' or s.id == 'kitchen' for s in specs)
             split = max(2, public_count)
             first, rest = sized[:split], sized[split:]
+            
             span = bank(first, 0, cw, 'north')
             if family == 'L_SHAPE':
                 depth = bank(rest, span+cw, 0, 'east')
@@ -108,6 +150,11 @@ def generate_geometry(program: SpatialProgram, req: Requirements, plot: PlotCons
                 put(f'hall_{floor}', 'hallway', floor, 0, 0, max(span, mid+cw), cw)
                 if max(depths):
                     put(f'branch_{floor}', 'hallway', floor, mid, -max(depths), cw, max(depths))
+            if req.floors > 1:
+                if floor == 1:
+                    stair_core = (0, 0, 6, 10)
+                if stair_core:
+                    put(f'stair_{floor}', 'staircase', floor, *stair_core)
         else:
             if family == 'SPLIT_ZONE':
                 top = [x for x in sized if x[0].zone in ('public', 'service') and not x[0].id.startswith('bathroom')]
@@ -128,13 +175,18 @@ def generate_geometry(program: SpatialProgram, req: Requirements, plot: PlotCons
                     bot_w = sum(x[1] for x in sized[split:])
                 
                 top, bottom = sized[:split], sized[split:]
+                
             offset = 4.0 if family == 'HILLSIDE_STEPPED' else 0.0
             a = bank(top, 0, cw, 'north')
             b = bank(bottom, offset, 0, 'south') + offset
+            
             span = max(a, b, 6)
             put(f'hall_{floor}', 'foyer' if family == 'CENTRAL_CORE' else 'hallway', floor, 0, 0, span, cw)
             if req.floors > 1:
-                put(f'stair_{floor}', 'staircase', floor, -6, 0, 6, 10)
+                if floor == 1:
+                    stair_core = (-6, 0, 6, 10)
+                if stair_core:
+                    put(f'stair_{floor}', 'staircase', floor, *stair_core)
 
     # Long narrow-plot circulation is represented by connected segments so each
     # space stays within the centralized 50 ft dimension limit.
