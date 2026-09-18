@@ -1,4 +1,4 @@
-from langgraph.graph import StateGraph, END
+﻿from langgraph.graph import StateGraph, END
 from app.schemas.workflow_state import WorkflowState
 # Import all actual agent logic
 from app.agents.coordinator_agent import coordinator_node
@@ -12,6 +12,14 @@ from app.agents.rendering_agent import rendering_node
 def route_from_coordinator(state: WorkflowState) -> str:
     """Conditional edge router from the Coordinator"""
     return state.current_agent
+
+def route_from_validation(state: WorkflowState) -> str:
+    """Conditional edge router from Validation: pass -> rendering, fail -> design retry or failed"""
+    if state.validation_result and state.validation_result.get("passed", False):
+        return "rendering"
+    if state.status == "failed" or state.current_agent == "failed":
+        return "failed"
+    return "design"
 
 # Initialize the State Graph
 workflow = StateGraph(WorkflowState)
@@ -38,11 +46,20 @@ workflow.add_conditional_edges(
 
 workflow.add_edge("land_analysis", "design")
 workflow.add_conditional_edges(
-    "design", lambda state: "failed" if state.status == "failed" else "construction_planning",
+    "design",
+    lambda state: "failed" if state.status == "failed" else "construction_planning",
     {"failed": END, "construction_planning": "construction_planning"},
 )
 workflow.add_edge("construction_planning", "cost_estimation")
 workflow.add_edge("cost_estimation", "validation")
-workflow.add_edge("validation", END)
+workflow.add_conditional_edges(
+    "validation",
+    route_from_validation,
+    {
+        "rendering": "rendering",
+        "design": "design",
+        "failed": END
+    }
+)
 workflow.add_edge("rendering", END)
 app_graph = workflow.compile()

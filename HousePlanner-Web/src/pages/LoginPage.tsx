@@ -3,7 +3,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { motion } from 'framer-motion';
 import { Box, Lock, Mail, ArrowRight, Sparkles } from 'lucide-react';
-import { googleLoginAsync, loginAsync } from '../features/auth/authSlice';
+import { googleLoginAsync, loginAsync, setMockAuth } from '../features/auth/authSlice';
+import { setInMemoryToken } from '../services/apiClient';
 import type { AppDispatch } from '../store';
 import useAuth from '../features/auth/useAuth';
 
@@ -137,7 +138,7 @@ const LoginPage: React.FC = () => {
 
           <button 
             onClick={handleGoogleLogin}
-            className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-white font-semibold py-3.5 rounded-xl flex items-center justify-center gap-3 transition-colors"
+            className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-white font-semibold py-3.5 rounded-xl flex items-center justify-center gap-3 transition-colors mb-3"
           >
             <svg viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -146,6 +147,19 @@ const LoginPage: React.FC = () => {
               <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
             </svg>
             Continue with Google
+          </button>
+
+          <button 
+            type="button"
+            onClick={() => {
+              dispatch(setMockAuth({ uid: 'mock-arch', email: 'architect@homeplanner.com', role: 'Architect' }));
+              setInMemoryToken('mock_token');
+              navigate('/architect/dashboard');
+            }}
+            className="w-full bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 font-semibold py-3.5 rounded-xl flex items-center justify-center gap-3 transition-colors"
+          >
+            <Sparkles size={20} />
+            Test Login as Architect
           </button>
 
           <div className="mt-8 text-center text-sm text-gray-500">

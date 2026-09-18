@@ -43,7 +43,7 @@ namespace HousePlanner.API.Controllers
                 {
                     Id = Guid.NewGuid(),
                     ClientId = client.Id,
-                    BudgetLkr = request.BudgetLkr,
+                    BudgetLkr = request.BudgetLkr ?? 0m,
                     LandSizePerches = request.LandSizePerches,
                     ManualTerrainType = request.ManualTerrainType,
                     PreferredBedrooms = request.Preferences?.Bedrooms ?? 3,
@@ -197,3 +197,4 @@ namespace HousePlanner.API.Controllers
         public decimal? right { get; set; }
     }
 }
+

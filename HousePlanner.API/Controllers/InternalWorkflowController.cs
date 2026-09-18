@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using HousePlanner.API.Data;
 using HousePlanner.API.Entities;
 using Microsoft.AspNetCore.Mvc;
@@ -8,7 +8,6 @@ namespace HousePlanner.API.Controllers;
 
 [ApiController]
 [Route("api/v1/internal/workflows")]
-// Requires InternalServiceAuthMiddleware — shared secret header, not JWT
 public class InternalWorkflowController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
@@ -20,30 +19,28 @@ public class InternalWorkflowController : ControllerBase
         _logger = logger;
     }
 
-    private async Task<WorkflowState?> FindWorkflowState(Guid workflowId)
+    private async Task<WorkflowState?> FindWorkflowState(Guid id)
     {
-        var workflow = await _context.WorkflowStates
+        return await _context.WorkflowStates
             .Include(w => w.HouseDesigns)
-            .FirstOrDefaultAsync(w => w.Id == workflowId);
-
-        return workflow;
+            .FirstOrDefaultAsync(w => w.Id == id);
     }
 
     /// <summary>
-    /// Internal endpoint for the Design Agent to submit a new generated layout.
-    /// Used both for initial generation and revisions after validation failure.
-    /// Manages design versioning — marks old versions as not current.
+    /// Internal endpoint for the Design Agent to save generated/revised layouts.
     /// </summary>
     [HttpPost("{id:guid}/design")]
-    public async Task<IActionResult> SubmitDesignRevision(Guid id, [FromBody] JsonElement layoutData)
+    public async Task<IActionResult> SaveDesign(Guid id, [FromBody] JsonElement layoutData)
     {
         try
         {
             var workflow = await FindWorkflowState(id);
             if (workflow is null)
-                return NotFound(new { message = $"Unknown workflow {id}; callback was not persisted." });
+            {
+                _logger.LogWarning("Workflow {WorkflowId} not found when saving design.", id);
+                return NotFound(new { message = $"Workflow {id} not found." });
+            }
 
-            // Extract required fields from the JSON contract
             int floorCount = layoutData.GetProperty("floor_count").GetInt32();
             decimal totalArea = layoutData.TryGetProperty("total_built_up_area_sqft", out var areaProp)
                 ? areaProp.GetDecimal()
@@ -136,6 +133,44 @@ public class InternalWorkflowController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Internal endpoint for the Validation Agent to update validation status.
+    /// </summary>
+    [HttpPatch("{id:guid}/validation")]
+    public async Task<IActionResult> UpdateValidationStatus(Guid id, [FromBody] JsonElement validationData)
+    {
+        try
+        {
+            var workflow = await FindWorkflowState(id);
+            if (workflow is null) return NotFound(new { message = $"Unknown workflow {id}." });
+
+            bool passed = validationData.TryGetProperty("passed", out var pProp) && pProp.GetBoolean();
+            if (passed)
+            {
+                workflow.Status = "awaiting_approval";
+                workflow.ApprovalStatus = "pending";
+                workflow.FailureReason = null;
+            }
+            else
+            {
+                string? reason = validationData.TryGetProperty("summary", out var sProp) ? sProp.GetString() :
+                                 validationData.TryGetProperty("revision_reason", out var rProp) ? rProp.GetString() : "Validation failed";
+                workflow.FailureReason = reason?[..Math.Min(reason.Length, 1000)];
+            }
+
+            workflow.UpdatedAt = DateTimeOffset.UtcNow;
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Validation status updated for workflow {WorkflowId}: passed={Passed}, status={Status}", id, passed, workflow.Status);
+            return Ok(new { message = "Validation status updated.", status = workflow.Status, approvalStatus = workflow.ApprovalStatus });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating validation status for workflow {WorkflowId}", id);
+            return StatusCode(StatusCodes.Status500InternalServerError, new { message = "An error occurred updating validation status." });
+        }
+    }
+
     [HttpPatch("{id:guid}/status")]
     public async Task<IActionResult> UpdateGenerationStatus(Guid id, [FromBody] JsonElement data)
     {
@@ -213,5 +248,4 @@ public class InternalWorkflowController : ControllerBase
             return StatusCode(StatusCodes.Status500InternalServerError, new { message = "An error occurred updating the construction plan." });
         }
     }
-
 }
