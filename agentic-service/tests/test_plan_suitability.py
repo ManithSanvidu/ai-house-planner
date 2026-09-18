@@ -6,6 +6,7 @@ from app.design.base_plan_library import (
 )
 from app.design.plan_suitability import SUITABILITY_WEIGHTS, suitability_breakdown
 from app.tools.layout_generation_tool import _candidate_pool, prepare_inputs
+from app.tools import layout_generation_tool as generation
 
 
 def ranked(land, preferences, dimensions):
@@ -97,3 +98,17 @@ def test_ai_metadata_contains_only_compact_selection_evidence():
                 'plot_fit', 'geometry_fingerprint'}
     assert all(set(item) == required for item in payload)
     assert all('layout_json' not in item and 'rooms' not in item for item in payload)
+
+
+def test_generation_emits_bounded_workflow_observability(caplog, monkeypatch):
+    monkeypatch.setattr(generation, 'get_available_design_provider', lambda: None)
+    caplog.set_level('INFO', logger='app.tools.layout_generation_tool')
+    result = generation.generate_layout(
+        20, 'flat', {'bedrooms': 3, 'bathrooms': 2, 'floors': 1},
+        plot_constraints={'plot_width_ft': 90, 'plot_length_ft': 65}, design_seed=7)
+    messages = '\n'.join(record.getMessage() for record in caplog.records)
+    for stage in ('[Design Input]', '[Candidate Filter]', '[Suitability Ranking]',
+                  '[AI Selection]', '[Adaptation]', '[Validation]', '[Final Design]'):
+        assert stage in messages
+    assert result.geometry_fingerprint in messages
+    assert '"rooms"' not in messages

@@ -251,45 +251,62 @@ def load_base_plan_catalog() -> list[BasePlanRecord]:
     return records
 
 
-def filter_compatible_base_plans(req: Requirements, plot: PlotConstraints) -> list[BasePlanRecord]:
+def compatibility_rejection_reasons(plan: BasePlanRecord, req: Requirements,
+                                    plot: PlotConstraints) -> list[str]:
+    reasons = []
+    if not plan.is_active:
+        reasons.append('inactive')
+    if plan.floors != req.floors:
+        reasons.append('floor_count')
+    if plan.bedrooms != req.bedrooms:
+        reasons.append('bedroom_count')
+    if plan.bathrooms < req.bathrooms:
+        reasons.append('bathroom_count')
+    if plot.land_size_perches < plan.minimum_land_perches:
+        reasons.append('minimum_land')
+    if plan.minimum_plot_width_ft and plot.buildable_width < plan.minimum_plot_width_ft:
+        reasons.append('minimum_buildable_width')
+    if plan.minimum_plot_length_ft and plot.buildable_length < plan.minimum_plot_length_ft:
+        reasons.append('minimum_buildable_length')
+    if plot.terrain_type not in plan.supported_terrains:
+        reasons.append('terrain')
+    shape = plot.plot_class.split('_')[-1]
+    if plot.plot_class.endswith('VERY_NARROW'):
+        shape = 'NARROW'
+    if shape not in plan.supported_plot_shapes and plot.plot_class.split('_')[0] not in plan.supported_plot_shapes:
+        reasons.append('plot_shape')
+    required_capabilities = {
+        'accessibility': req.accessibility,
+        'master_ensuite': req.master_bedroom or req.attached_bathroom,
+        'open_plan': req.open_plan,
+        'separate_dining': req.dining_required,
+        'home_office': req.home_office,
+        'balcony': req.balcony,
+        'veranda': req.veranda,
+        'utility_room': req.utility_room,
+        'parking': req.parking,
+    }
+    reasons.extend(f'missing_{name}' for name, required in required_capabilities.items()
+                   if required and not plan.capabilities.get(name, False))
+    return reasons
+
+
+def filter_compatible_base_plans_with_diagnostics(
+        req: Requirements, plot: PlotConstraints) -> tuple[list[BasePlanRecord], dict[str, int]]:
     plans = []
+    rejected: dict[str, int] = {}
     for plan in load_base_plan_catalog():
-        if not plan.is_active:
-            continue
-        if plan.floors != req.floors or plan.bedrooms != req.bedrooms or plan.bathrooms < req.bathrooms:
-            continue
-        if plot.land_size_perches < plan.minimum_land_perches:
-            continue
-        if plan.minimum_plot_width_ft and plot.buildable_width < plan.minimum_plot_width_ft:
-            continue
-        if plan.minimum_plot_length_ft and plot.buildable_length < plan.minimum_plot_length_ft:
-            continue
-        if plot.terrain_type not in plan.supported_terrains:
-            continue
-        shape = plot.plot_class.split('_')[-1]
-        if plot.plot_class.endswith('VERY_NARROW'):
-            shape = 'NARROW'
-        if shape not in plan.supported_plot_shapes and plot.plot_class.split('_')[0] not in plan.supported_plot_shapes:
-            continue
-        if req.accessibility and not plan.capabilities.get('accessibility', False):
-            continue
-        if req.master_bedroom and not plan.capabilities.get('master_ensuite', False):
-            continue
-        if req.open_plan and not plan.capabilities.get('open_plan', False):
-            continue
-        if req.dining_required and not plan.capabilities.get('separate_dining', False):
-            continue
-        if req.home_office and not plan.capabilities.get('home_office', False):
-            continue
-        if req.balcony and not plan.capabilities.get('balcony', False):
-            continue
-        if req.veranda and not plan.capabilities.get('veranda', False):
-            continue
-        if req.utility_room and not plan.capabilities.get('utility_room', False):
-            continue
-        if req.parking and not plan.capabilities.get('parking', False):
+        reasons = compatibility_rejection_reasons(plan, req, plot)
+        if reasons:
+            for reason in reasons:
+                rejected[reason] = rejected.get(reason, 0) + 1
             continue
         plans.append(plan)
+    return plans, rejected
+
+
+def filter_compatible_base_plans(req: Requirements, plot: PlotConstraints) -> list[BasePlanRecord]:
+    plans, _ = filter_compatible_base_plans_with_diagnostics(req, plot)
     return plans
 
 

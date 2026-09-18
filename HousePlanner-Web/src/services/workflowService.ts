@@ -63,6 +63,7 @@ export interface WorkflowStatusResponseDto {
   cost: any | null; // Expand when Component C is integrated
   approvalStatus: string;
   failureReason?: string | null;
+  constructionPlan?: any | null;
 }
 
 export interface StartDesignRequest {

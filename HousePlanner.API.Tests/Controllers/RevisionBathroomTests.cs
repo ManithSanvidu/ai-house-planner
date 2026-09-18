@@ -4,6 +4,7 @@ using HousePlanner.API.Controllers;
 using HousePlanner.API.Data;
 using HousePlanner.API.DTOs;
 using HousePlanner.API.Entities;
+using HousePlanner.API.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -62,7 +63,15 @@ public class RevisionBathroomTests
         using var client = new HttpClient(handler) { BaseAddress = new Uri("http://agentic.test") };
         var factory = new Mock<IHttpClientFactory>();
         factory.Setup(f => f.CreateClient(It.IsAny<string>())).Returns(client);
-        var controller = new WorkflowController(db, Mock.Of<ILogger<WorkflowController>>(), factory.Object);
+        var workflowService = new Mock<IWorkflowService>();
+        workflowService.Setup(service => service.ProcessApprovalAsync(
+            workflow.Id, It.IsAny<ApprovalRequestDto>(), It.IsAny<string?>(), It.IsAny<string?>()))
+            .ReturnsAsync(ApprovalServiceResult.Success(new ApprovalResponseDto
+            {
+                WorkflowId = workflow.Id, Decision = "request_revision", Status = "revision_requested"
+            }));
+        var controller = new WorkflowController(db, Mock.Of<ILogger<WorkflowController>>(), factory.Object,
+            workflowService.Object, Mock.Of<ICurrentUserContextService>());
 
         var result = await controller.ApproveWorkflow(workflow.Id,
             new ApprovalRequestDto("request_revision", "make living room bigger"));

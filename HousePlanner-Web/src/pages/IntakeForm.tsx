@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Upload, Home, Map, DollarSign, Layers, CheckCircle2 } from 'lucide-react';
+import { Upload, Home, Map, Layers, CheckCircle2 } from 'lucide-react';
 import { workflowService } from '../services/workflowService';
 
 interface IntakeFormData {

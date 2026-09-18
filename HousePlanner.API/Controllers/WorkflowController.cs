@@ -305,12 +305,7 @@ public class WorkflowController : ControllerBase
                                 budget_lkr = workflow.LandSubmission.BudgetLkr,
                                 land_size_perches = workflow.LandSubmission.LandSizePerches,
                                 manual_terrain_type = workflow.LandSubmission.ManualTerrainType,
-                                preferences = new
-                                {
-                                    bedrooms = workflow.LandSubmission.PreferredBedrooms,
-                                    floors = workflow.LandSubmission.PreferredFloors,
-                                    style = workflow.LandSubmission.StylePreference
-                                },
+                                preferences = BuildRevisionPreferences(root, workflow.LandSubmission),
                                 terrain_result = new
                                 {
                                     terrain_type = workflow.TerrainType,
@@ -330,5 +325,46 @@ public class WorkflowController : ControllerBase
             default:
                 return BadRequest(new { message = "Unknown approval outcome." });
         }
+    }
+
+    private static Dictionary<string, object?> BuildRevisionPreferences(
+        JsonElement layout, HousePlanner.API.Entities.LandSubmission submission)
+    {
+        var preferences = new Dictionary<string, object?>
+        {
+            ["bedrooms"] = submission.PreferredBedrooms,
+            ["floors"] = submission.PreferredFloors,
+            ["style"] = submission.StylePreference
+        };
+
+        if (layout.TryGetProperty("candidate_summary", out var summary)
+            && summary.TryGetProperty("normalized_input", out var normalized)
+            && normalized.ValueKind == JsonValueKind.Object)
+        {
+            var mappings = new Dictionary<string, string>
+            {
+                ["bedrooms"] = "bedrooms", ["bathrooms"] = "bathrooms", ["floors"] = "floors",
+                ["architectural_style"] = "style", ["space_priority"] = "space_priority",
+                ["open_plan"] = "open_plan", ["master_ensuite"] = "attached_bathroom",
+                ["separate_dining"] = "dining_required", ["home_office"] = "home_office",
+                ["balcony"] = "balcony", ["veranda"] = "veranda",
+                ["utility_room"] = "utility_room", ["parking_required"] = "parking",
+                ["accessibility"] = "accessibility"
+            };
+            foreach (var mapping in mappings)
+                if (normalized.TryGetProperty(mapping.Key, out var value) && value.ValueKind != JsonValueKind.Null)
+                    preferences[mapping.Value] = value.Clone();
+        }
+
+        if (!preferences.ContainsKey("bathrooms"))
+        {
+            var bathroomCount = layout.TryGetProperty("rooms", out var rooms)
+                ? rooms.EnumerateArray().Count(room => room.TryGetProperty("room_type", out var type)
+                    && (type.GetString() ?? string.Empty).Contains("bathroom", StringComparison.OrdinalIgnoreCase))
+                : 0;
+            if (bathroomCount > 0)
+                preferences["bathrooms"] = bathroomCount;
+        }
+        return preferences;
     }
 }

@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import logging
+from collections import Counter
 
 from typing import Optional, Union
 
@@ -11,6 +13,7 @@ from app.design.architectural_quality import validate_architectural_quality
 from app.design.base_plan_library import (
 
     compact_plan_metadata,
+    compatibility_rejection_reasons,
     deduplicate_base_plans,
 
     filter_compatible_base_plans,
@@ -32,6 +35,7 @@ from app.design.normalized_input import NormalizedDesignInput
 from app.design.plan_adapter import PlanAdapter
 
 from app.design.plot_constraints import PlotConstraints
+from app.design.plan_suitability import suitability_breakdown
 
 from app.design.revision import apply_supported_revision, requests_another_design, preserve_revision_preferences
 
@@ -56,6 +60,8 @@ SYSTEM_PROMPT = (
     "Do not generate coordinates, room dimensions, openings, or stair locations. Return only the strict schema."
 
 )
+
+logger = logging.getLogger(__name__)
 
 
 def prepare_inputs(
@@ -165,6 +171,11 @@ def _candidate_pool(req: Requirements, plot: PlotConstraints, previous_fingerpri
 
     compatible = filter_compatible_base_plans(req, plot)
 
+    rejected = Counter(reason for plan in load_base_plan_catalog()
+                       for reason in compatibility_rejection_reasons(plan, req, plot))
+    logger.info('[Candidate Filter] compatible_plan_codes=%s rejected_reasons=%s',
+                [plan.plan_code for plan in compatible], dict(sorted(rejected.items())))
+
     if not compatible:
 
         raise GenerationFailure('No compatible validated base plans exist for the supplied requirements.')
@@ -172,6 +183,12 @@ def _candidate_pool(req: Requirements, plot: PlotConstraints, previous_fingerpri
     ranked = deduplicate_base_plans(rank_base_plans(compatible, req, plot), previous_fingerprint)
     if not ranked:
         raise GenerationFailure(NO_DISTINCT_LAYOUT)
+
+    logger.info('[Suitability Ranking] candidates=%s', [
+        {'plan_code': plan.plan_code, 'topology': plan.topology_family,
+         'suitability_score': suitability_breakdown(plan, req, plot)['score']}
+        for plan in ranked
+    ])
 
     diverse = []
 
@@ -381,6 +398,7 @@ def generate_layout(
         raise GenerationFailure(f'Invalid design requirements: {exc}') from exc
 
     normalized = NormalizedDesignInput.from_inputs(req, plot)
+    logger.info('[Design Input] normalized=%s', normalized.model_dump())
 
     previous_plan_code = None
 
@@ -419,6 +437,9 @@ def generate_layout(
         try:
             decision = AIPlanDecision.model_validate(
                 provider.generate_json(SYSTEM_PROMPT, user_prompt, AIPlanDecision))
+            logger.info('[AI Selection] provider=%s model=%s selected_plan=%s alternatives=%s reason_codes=%s',
+                        provider_name, model_name, decision.selected_plan_code,
+                        decision.alternative_plan_codes, decision.reason_codes)
         except Exception as exc:
             print(f'[Design Agent] AI decision failed ({exc}); using deterministic selection.')
 
@@ -433,6 +454,8 @@ def generate_layout(
         try:
             # Keep the selected code accurate when trying an alternative.
             selection = selection.model_copy(update={'selected_plan_code': plan.plan_code})
+            logger.info('[Adaptation] plan_code=%s operations=%s',
+                        plan.plan_code, selection.adaptations.model_dump())
             design = adapter.adapt(plan, selection, req, plot)
             final_fingerprint = geometry_fingerprint(design)
             if excluded_fingerprint and final_fingerprint == excluded_fingerprint:
@@ -444,6 +467,8 @@ def generate_layout(
             final_design = _validate_and_finalize(
                 design, req, plot, plan.plan_code, selected_provider, selected_model,
                 selection, tried_codes, candidate_pool)
+            logger.info('[Validation] plan_code=%s architectural_score=%s geometry_passed=%s',
+                        plan.plan_code, final_design.design_score, True)
             final_design.candidate_summary.update({
                 'generation_mode': 'ai_adapted_template' if selected_provider else 'deterministic_template_selection',
                 'base_plan_name': plan.name,
@@ -461,6 +486,10 @@ def generate_layout(
             if revision_reason:
                 final_design.candidate_summary['revision_feedback'] = revision_reason
                 final_design.candidate_summary['bounded_revision_preferences'] = applied_revision
+            logger.info('[Final Design] selected_base_plan=%s topology=%s fingerprint=%s generation_mode=%s',
+                        plan.plan_code, final_design.template_family,
+                        final_design.geometry_fingerprint,
+                        final_design.candidate_summary.get('generation_mode'))
             return final_design
         except GenerationFailure as exc:
             failures.extend(exc.failures or [{'plan_code': plan.plan_code, 'failures': [str(exc)]}])
@@ -484,6 +513,8 @@ def generate_layout(
     # Try all unique compatible geometries, including those outside the shortlist.
     # AI adaptations may have failed, so retry those plans with deterministic adaptations.
     fallback = _fallback_decision(candidate_pool, req, plot, previous_plan_code, excluded_fingerprint)
+    logger.info('[AI Selection] provider=deterministic selected_plan=%s alternatives=%s reason_codes=%s',
+                fallback.selected_plan_code, fallback.alternative_plan_codes, fallback.reason_codes)
     for plan in candidate_pool:
         result = attempt(plan, fallback)
         if result is not None:
