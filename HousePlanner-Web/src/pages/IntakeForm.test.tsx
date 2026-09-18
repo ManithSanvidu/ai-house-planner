@@ -1,9 +1,8 @@
-import React from 'react';
+
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import IntakeForm from './IntakeForm';
 import { expect, test, vi, beforeEach } from 'vitest';
-import '@testing-library/jest-dom';
 
 const mockOptions = {
   landRanges: [
@@ -24,7 +23,7 @@ const mockOptions = {
 };
 
 beforeEach(() => {
-  global.fetch = vi.fn().mockImplementation((url: string) => {
+  vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string) => {
     if (url.includes('/api/v1/design-options')) {
       return Promise.resolve({
         ok: true,
@@ -35,7 +34,7 @@ beforeEach(() => {
       ok: true,
       json: () => Promise.resolve({ workflowId: 'test-workflow-123' })
     });
-  }) as any;
+  }));
 });
 
 test('loads options on mount and shows land range', async () => {
@@ -46,7 +45,7 @@ test('loads options on mount and shows land range', async () => {
   );
   
   await waitFor(() => {
-    expect(screen.getByText('5-8 perches (Approx. 1361-2178 sqft)')).toBeInTheDocument();
+    expect(screen.getByText('5-8 perches (Approx. 1361-2178 sqft)')).toBeTruthy();
   });
 });
 
@@ -59,18 +58,18 @@ test('progresses through steps and shows review before submit', async () => {
   
   // Wait for load
   await waitFor(() => {
-    expect(screen.getByText('5-8 perches (Approx. 1361-2178 sqft)')).toBeInTheDocument();
+    expect(screen.getByText('5-8 perches (Approx. 1361-2178 sqft)')).toBeTruthy();
   });
   
   // Step 1 -> 2
   fireEvent.click(screen.getByText(/Next/));
   
   // Step 2 (House Details)
-  expect(screen.getByText('House Details')).toBeInTheDocument();
+  expect(screen.getByText('House Details')).toBeTruthy();
   
   // Try to go next without filling -> error
   fireEvent.click(screen.getByText(/Next/));
-  expect(screen.getByText('Please select all house requirements.')).toBeInTheDocument();
+  expect(screen.getByText('Please select all house requirements.')).toBeTruthy();
   
   // Fill step 2
   fireEvent.change(screen.getAllByRole('combobox')[0], { target: { value: '1' } }); // floors
@@ -81,33 +80,33 @@ test('progresses through steps and shows review before submit', async () => {
   fireEvent.click(screen.getByText(/Next/));
   
   // Step 3 (Priorities)
-  expect(screen.getByText('Priorities')).toBeInTheDocument();
+  expect(screen.getByText('Priorities')).toBeTruthy();
   fireEvent.click(screen.getByText(/Next/));
   
   // Step 4 (Optional Features)
-  expect(screen.getByText('Optional Features')).toBeInTheDocument();
+  expect(screen.getByText('Optional Features')).toBeTruthy();
   
   // Balcony should be disabled
-  const balconyCheckbox = screen.getByRole('checkbox', { name: /Balcony/i });
-  expect(balconyCheckbox).toBeDisabled();
-  expect(screen.getByText('No validated design is available for this configuration.')).toBeInTheDocument();
+  const balconyCheckbox = screen.getByRole('checkbox', { name: /Balcony/i }) as HTMLInputElement;
+  expect(balconyCheckbox.disabled).toBe(true);
+  expect(screen.getByText('No validated design is available for this configuration.')).toBeTruthy();
   
   // Open Plan should be enabled
-  const openPlanCheckbox = screen.getByRole('checkbox', { name: /Open-plan/i });
-  expect(openPlanCheckbox).not.toBeDisabled();
+  const openPlanCheckbox = screen.getByRole('checkbox', { name: /Open-plan/i }) as HTMLInputElement;
+  expect(openPlanCheckbox.disabled).toBe(false);
   
   fireEvent.click(screen.getByText(/Next/));
   
   // Step 5 (Review)
-  expect(screen.getByText('Review Configuration')).toBeInTheDocument();
-  expect(screen.getByText(/5-8 perches/)).toBeInTheDocument();
-  expect(screen.getByText(/1 floors, 2 beds, 1 baths/)).toBeInTheDocument();
-  expect(screen.getByText(/Modern Minimalist/)).toBeInTheDocument();
+  expect(screen.getByText('Review Configuration')).toBeTruthy();
+  expect(screen.getByText(/5-8 perches/)).toBeTruthy();
+  expect(screen.getByText(/1 floors, 2 beds, 1 baths/)).toBeTruthy();
+  expect(screen.getByText(/Modern Minimalist/)).toBeTruthy();
   
   // Submit
   fireEvent.click(screen.getByText('Generate AI Plan'));
   
   await waitFor(() => {
-    expect(screen.getByText('AI Plan Generated!')).toBeInTheDocument();
+    expect(screen.getByText('AI Plan Generated!')).toBeTruthy();
   });
 });

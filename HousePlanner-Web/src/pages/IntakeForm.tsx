@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Layers, Map, Home, CheckCircle2, ChevronRight, ChevronLeft } from 'lucide-react';
-import { workflowService } from '../services/workflowService';
+import { useNavigate } from 'react-router-dom';
+import { CheckCircle2, ChevronRight, ChevronLeft } from 'lucide-react';
 
 interface LandRangeDto { id: string; label: string; minPerches: number; maxPerches: number; approxSqft: string; }
 interface FeatureAvailabilityDto { available: boolean; reason?: string; }
@@ -41,7 +39,6 @@ interface IntakeFormData {
 
 const IntakeForm: React.FC = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const [step, setStep] = useState(1);
   const [options, setOptions] = useState<DesignOptionsResponseDto | null>(null);
   
