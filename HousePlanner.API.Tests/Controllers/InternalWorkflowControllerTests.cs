@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using HousePlanner.API.Controllers;
 using HousePlanner.API.Data;
+using HousePlanner.API.DTOs;
 using HousePlanner.API.Entities;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -160,7 +161,248 @@ public class InternalWorkflowControllerTests
             await _controller.UpdateTerrain(workflowId, terrainJson.RootElement));
         Assert.IsType<NotFoundObjectResult>(
             await _controller.SubmitDesignRevision(workflowId, designJson.RootElement));
+        Assert.IsType<NotFoundObjectResult>(
+            await _controller.SaveCostEstimate(workflowId, new SaveCostEstimateRequestDto
+            {
+                MaterialCostLkr = 1000m,
+                LabourCostLkr = 300m,
+                TotalCostLkr = 1300m,
+                BudgetDeltaPercent = 13m
+            }));
         Assert.Empty(_dbContext.WorkflowStates);
         Assert.Empty(_dbContext.HouseDesigns);
+        Assert.Empty(_dbContext.CostEstimates);
+    }
+
+    [Fact]
+    public async Task SaveCostEstimate_SuccessfullyPersists_AndLinksToCurrentDesign()
+    {
+        // Arrange
+        var workflowId = Guid.NewGuid();
+        var designId = Guid.NewGuid();
+        var design = new HouseDesign
+        {
+            Id = designId,
+            WorkflowStateId = workflowId,
+            Version = 1,
+            IsCurrent = true,
+            FloorCount = 1,
+            TotalBuiltUpAreaSqft = 1000m,
+            FoundationType = "slab",
+            LayoutJson = "{}"
+        };
+
+        var workflow = new WorkflowState
+        {
+            Id = workflowId,
+            LandSubmissionId = Guid.NewGuid(),
+            Status = "design_generated",
+            HouseDesigns = new List<HouseDesign> { design }
+        };
+
+        _dbContext.WorkflowStates.Add(workflow);
+        await _dbContext.SaveChangesAsync();
+
+        var request = new SaveCostEstimateRequestDto
+        {
+            MaterialCostLkr = 500000m,
+            LabourCostLkr = 150000m,
+            TotalCostLkr = 650000m,
+            BudgetDeltaPercent = 13.0m
+        };
+
+        // Act
+        var result = await _controller.SaveCostEstimate(workflowId, request);
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        var response = Assert.IsType<CostEstimateResponseDto>(okResult.Value);
+
+        Assert.NotEqual(Guid.Empty, response.CostEstimateId);
+        Assert.Equal(designId, response.HouseDesignId);
+        Assert.Equal(500000m, response.MaterialCostLkr);
+        Assert.Equal(150000m, response.LabourCostLkr);
+        Assert.Equal(650000m, response.TotalCostLkr);
+        Assert.Equal(13.0m, response.BudgetDeltaPercent);
+
+        var dbEstimate = await _dbContext.CostEstimates.FirstOrDefaultAsync(c => c.Id == response.CostEstimateId);
+        Assert.NotNull(dbEstimate);
+        Assert.Equal(designId, dbEstimate.HouseDesignId);
+        Assert.Equal(500000m, dbEstimate.MaterialCostLkr);
+        Assert.Equal(150000m, dbEstimate.LabourCostLkr);
+        Assert.Equal(650000m, dbEstimate.TotalCostLkr);
+        Assert.Equal(13.0m, dbEstimate.BudgetDeltaPercent);
+    }
+
+    [Fact]
+    public async Task SaveCostEstimate_WorkflowNotFound_ReturnsNotFound()
+    {
+        var nonExistentWorkflowId = Guid.NewGuid();
+        var request = new SaveCostEstimateRequestDto
+        {
+            MaterialCostLkr = 1000m,
+            LabourCostLkr = 300m,
+            TotalCostLkr = 1300m,
+            BudgetDeltaPercent = 13m
+        };
+
+        var result = await _controller.SaveCostEstimate(nonExistentWorkflowId, request);
+
+        Assert.IsType<NotFoundObjectResult>(result);
+        Assert.Empty(_dbContext.CostEstimates);
+    }
+
+    [Fact]
+    public async Task SaveCostEstimate_NoCurrentDesign_ReturnsConflict()
+    {
+        // Arrange: Workflow exists, but has no HouseDesigns or none with IsCurrent == true
+        var workflowId = Guid.NewGuid();
+        var oldDesign = new HouseDesign
+        {
+            Id = Guid.NewGuid(),
+            WorkflowStateId = workflowId,
+            Version = 1,
+            IsCurrent = false,
+            FloorCount = 1,
+            TotalBuiltUpAreaSqft = 1000m,
+            FoundationType = "slab",
+            LayoutJson = "{}"
+        };
+
+        var workflow = new WorkflowState
+        {
+            Id = workflowId,
+            LandSubmissionId = Guid.NewGuid(),
+            Status = "pending",
+            HouseDesigns = new List<HouseDesign> { oldDesign }
+        };
+
+        _dbContext.WorkflowStates.Add(workflow);
+        await _dbContext.SaveChangesAsync();
+
+        var request = new SaveCostEstimateRequestDto
+        {
+            MaterialCostLkr = 1000m,
+            LabourCostLkr = 300m,
+            TotalCostLkr = 1300m,
+            BudgetDeltaPercent = 13m
+        };
+
+        // Act
+        var result = await _controller.SaveCostEstimate(workflowId, request);
+
+        // Assert
+        Assert.IsType<ConflictObjectResult>(result);
+        Assert.Empty(_dbContext.CostEstimates);
+    }
+
+    [Theory]
+    [InlineData(-1, 100, 99, 10)]
+    [InlineData(100, -1, 99, 10)]
+    [InlineData(100, 100, -1, 10)]
+    [InlineData(100, 100, 200, -5)]
+    public async Task SaveCostEstimate_NegativeValues_ReturnsBadRequest(
+        decimal material, decimal labour, decimal total, decimal budgetDelta)
+    {
+        var workflowId = Guid.NewGuid();
+        var request = new SaveCostEstimateRequestDto
+        {
+            MaterialCostLkr = material,
+            LabourCostLkr = labour,
+            TotalCostLkr = total,
+            BudgetDeltaPercent = budgetDelta
+        };
+
+        var result = await _controller.SaveCostEstimate(workflowId, request);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Empty(_dbContext.CostEstimates);
+    }
+
+    [Fact]
+    public async Task SaveCostEstimate_InconsistentTotal_ReturnsBadRequest()
+    {
+        var workflowId = Guid.NewGuid();
+        var request = new SaveCostEstimateRequestDto
+        {
+            MaterialCostLkr = 1000m,
+            LabourCostLkr = 300m,
+            TotalCostLkr = 2000m, // Inconsistent: 1000 + 300 != 2000
+            BudgetDeltaPercent = 20m
+        };
+
+        var result = await _controller.SaveCostEstimate(workflowId, request);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Empty(_dbContext.CostEstimates);
+    }
+
+    [Fact]
+    public async Task SaveCostEstimate_RetryDoesNotCreateDuplicateEstimates_UpdatesExisting()
+    {
+        // Arrange
+        var workflowId = Guid.NewGuid();
+        var designId = Guid.NewGuid();
+        var design = new HouseDesign
+        {
+            Id = designId,
+            WorkflowStateId = workflowId,
+            Version = 1,
+            IsCurrent = true,
+            FloorCount = 1,
+            TotalBuiltUpAreaSqft = 1000m,
+            FoundationType = "slab",
+            LayoutJson = "{}"
+        };
+
+        var workflow = new WorkflowState
+        {
+            Id = workflowId,
+            LandSubmissionId = Guid.NewGuid(),
+            Status = "design_generated",
+            HouseDesigns = new List<HouseDesign> { design }
+        };
+
+        _dbContext.WorkflowStates.Add(workflow);
+        await _dbContext.SaveChangesAsync();
+
+        var initialRequest = new SaveCostEstimateRequestDto
+        {
+            MaterialCostLkr = 400000m,
+            LabourCostLkr = 120000m,
+            TotalCostLkr = 520000m,
+            BudgetDeltaPercent = 10.4m
+        };
+
+        var retryRequest = new SaveCostEstimateRequestDto
+        {
+            MaterialCostLkr = 450000m,
+            LabourCostLkr = 135000m,
+            TotalCostLkr = 585000m,
+            BudgetDeltaPercent = 11.7m
+        };
+
+        // Act: Submit twice for the same workflow/design
+        var firstResult = await _controller.SaveCostEstimate(workflowId, initialRequest);
+        var secondResult = await _controller.SaveCostEstimate(workflowId, retryRequest);
+
+        // Assert
+        var firstOk = Assert.IsType<OkObjectResult>(firstResult);
+        var secondOk = Assert.IsType<OkObjectResult>(secondResult);
+
+        var firstDto = Assert.IsType<CostEstimateResponseDto>(firstOk.Value);
+        var secondDto = Assert.IsType<CostEstimateResponseDto>(secondOk.Value);
+
+        // Exactly 1 estimate in DB for this design (not duplicated)
+        var estimates = await _dbContext.CostEstimates.Where(c => c.HouseDesignId == designId).ToListAsync();
+        Assert.Single(estimates);
+
+        var currentEstimate = estimates.First();
+        Assert.Equal(firstDto.CostEstimateId, currentEstimate.Id);
+        Assert.Equal(secondDto.CostEstimateId, currentEstimate.Id);
+        Assert.Equal(450000m, currentEstimate.MaterialCostLkr);
+        Assert.Equal(135000m, currentEstimate.LabourCostLkr);
+        Assert.Equal(585000m, currentEstimate.TotalCostLkr);
+        Assert.Equal(11.7m, currentEstimate.BudgetDeltaPercent);
     }
 }
