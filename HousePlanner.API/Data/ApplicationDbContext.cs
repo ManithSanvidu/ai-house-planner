@@ -16,7 +16,8 @@ namespace HousePlanner.API.Data
         public DbSet<ValidationRequest> ValidationRequests { get; set; }
         public DbSet<PreDesignedHousePlan> PreDesignedHousePlans { get; set; }
         public DbSet<Project> Projects { get; set; }
-        public DbSet<ConstructionPhase> ConstructionPhases { get; set; }
+        public DbSet<ConstructionPhase> ConstructionPhases { get; set; } = null!;
+        public DbSet<ConstructorWorkflowLog> ConstructorWorkflowLogs { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

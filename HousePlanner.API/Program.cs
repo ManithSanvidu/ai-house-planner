@@ -1,4 +1,4 @@
-﻿using FirebaseAdmin;
+using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
 using HousePlanner.API.Middleware;
 using HousePlanner.API.Services;
@@ -69,6 +69,7 @@ builder.Services.AddScoped<ICurrentUserContextService, CurrentUserContextService
 builder.Services.AddScoped<IPreDesignedPlanLayoutValidator, PreDesignedPlanLayoutValidator>();
 builder.Services.AddScoped<PreDesignedPlanSeeder>();
 builder.Services.AddScoped<IWorkflowService, WorkflowService>();
+builder.Services.AddScoped<IConstructorWorkflowService, ConstructorWorkflowService>();
 builder.Services.AddHttpClient("AgenticService", client =>
 {
     client.BaseAddress = new Uri(builder.Configuration["AgenticService:BaseUrl"] ?? "http://localhost:8001");
