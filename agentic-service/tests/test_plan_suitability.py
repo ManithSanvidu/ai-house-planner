@@ -140,28 +140,26 @@ def test_total_plot_dims_pass_but_footprint_violates_buildable_envelope(monkeypa
     from app.design.plan_adapter import PlanAdapter
     from app.tools.geometry_validator import validate_geometry
     from app.tools.layout_generation_tool import _fallback_decision
+    def test_total_plot_dims_pass_but_footprint_violates_buildable_envelope(monkeypatch):
+        # D. Minimum total plot dims pass but footprint violates setback-adjusted buildable envelope -> rejected by filter
+        from app.design.plan_adapter import PlanAdapter
+        from app.tools.geometry_validator import validate_geometry
+        from app.tools.layout_generation_tool import _fallback_decision
+        from app.design.base_plan_library import filter_compatible_base_plans_with_diagnostics
     
-    # 20 perches, wide and shallow. Total length 49ft (passes catalog minimums).
-    # We use custom huge setbacks (front=20, rear=15) so buildable depth is only 14ft, causing footprint failure.
-    req, plot = prepare_inputs(20, 'flat', {'bedrooms': 3, 'bathrooms': 1, 'floors': 1}, {'plot_width_ft': 110, 'plot_length_ft': 49})
-    plot.setbacks.front = 20
-    plot.setbacks.rear = 15
-    candidates = filter_compatible_base_plans(req, plot)
+        # 20 perches, wide and shallow. Total length 49ft (passes catalog minimums).
+        # We use custom huge setbacks (front=20, rear=15) so buildable depth is only 14ft, causing footprint failure.
+        req, plot = prepare_inputs(20, 'flat', {'bedrooms': 3, 'bathrooms': 1, 'floors': 1}, {'plot_width_ft': 110, 'plot_length_ft': 49})
+        plot.setbacks.front = 20
+        plot.setbacks.rear = 15
+        candidates, diagnostics = filter_compatible_base_plans_with_diagnostics(req, plot)
     
-    # Force test a COMPACT_RECTANGLE plan which is deep
-    plan = next(p for p in candidates if p.topology_family == 'COMPACT_RECTANGLE')
-    
-    # Check that it passes the filter (because plot_width_ft and plot_length_ft satisfy minimums)
-    assert plan in candidates
-    
-    # But it fails geometry validation because the buildable length (14ft) is too shallow for the layout
-    decision = _fallback_decision([plan], req, plot)
-    adapter = PlanAdapter()
-    adapted_design = adapter.adapt(plan, decision.model_copy(update={'selected_plan_code': plan.plan_code}), req, plot)
-    
-    v = validate_geometry(adapted_design.rooms, req.bedrooms, req.floors, plot.land_size_perches, plot=plot, design=adapted_design)
-    assert not v.passed
-    assert any("lies outside the buildable boundary" in f for f in v.failures)
+        # The filter should reject plans because their footprint exceeds the buildable length
+        # We expect 'footprint_length' to be in the diagnostics for rejected plans
+        assert 'footprint_length' in diagnostics
+        
+        # Verify that no COMPACT_RECTANGLE plan makes it through
+        assert not any(p for p in candidates if p.topology_family == 'COMPACT_RECTANGLE')
 
 def test_missing_dimensions_uses_balanced_conceptual_shape():
     # E. Missing physical dimensions + BALANCED conceptual shape -> deterministic estimated dimensions
