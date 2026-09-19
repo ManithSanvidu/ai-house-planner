@@ -1,9 +1,13 @@
 import React from 'react';
-import { LogOut, User, Box, Sparkles } from 'lucide-react';
+import { LogOut, User, Box, Sparkles, Menu } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import useAuth from '../../features/auth/useAuth';
 
-export const Navbar: React.FC = () => {
+interface NavbarProps {
+  onMenuClick?: () => void;
+}
+
+export const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
   const { user, logout } = useAuth();
   const handleLogout = () => {
     logout();
@@ -11,8 +15,16 @@ export const Navbar: React.FC = () => {
   };
 
   return (
-    <header className="sticky top-0 z-30 w-full bg-white/70 dark:bg-gray-950/70 backdrop-blur-xl border-b border-zinc-200/50 dark:border-gray-800/50 px-6 py-3.5 flex items-center justify-between shadow-[0_4px_30px_rgba(0,0,0,0.03)] transition-colors duration-300">
+    <header className="sticky top-0 z-30 w-full bg-white/70 dark:bg-gray-950/70 backdrop-blur-xl border-b border-zinc-200/50 dark:border-gray-800/50 px-4 sm:px-6 py-3.5 flex items-center justify-between shadow-[0_4px_30px_rgba(0,0,0,0.03)] transition-colors duration-300">
       <div className="flex items-center gap-3">
+        {onMenuClick && (
+          <button 
+            onClick={onMenuClick}
+            className="md:hidden p-2 -ml-2 text-zinc-500 hover:text-zinc-900 dark:text-gray-400 dark:hover:text-white transition-colors rounded-lg hover:bg-zinc-100 dark:hover:bg-gray-800"
+          >
+            <Menu size={20} />
+          </button>
+        )}
         <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
           <div className="w-8 h-8 relative flex items-center justify-center">
             <Box className="absolute text-gray-900 dark:text-white transition-colors" size={24} strokeWidth={1.5} />
