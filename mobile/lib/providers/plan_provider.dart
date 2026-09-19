@@ -1,8 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/plan.dart';
 import '../core/network/api_client.dart';
-import 'dart:convert';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 final planServiceProvider = Provider<PlanService>((ref) {
   return PlanService();
