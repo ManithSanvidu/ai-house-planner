@@ -22,6 +22,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { to: '/dashboard/new-project', label: 'New Project (Intake)', icon: PlusSquare },
     { to: '/dashboard/plans', label: 'Plan Library', icon: Library },
     ...(user.role === 'Admin' ? [{ to: '/dashboard/admin/plans', label: 'Manage Plans', icon: Shield }] : []),
+    ...(user.role === 'Architect' ? [
+      { to: '/architect/dashboard', label: 'Architect Dashboard', icon: LayoutDashboard },
+      { to: '/architect/requests', label: 'Validation Requests', icon: Library },
+    ] : []),
+    ...(user.role === 'Constructor' ? [
+      { to: '/constructor/dashboard', label: 'Constructor Dashboard', icon: LayoutDashboard },
+    ] : []),
   ];
 
   return (
