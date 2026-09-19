@@ -1,7 +1,9 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
+import '../core/theme/app_tokens.dart';
 
 class LoginView extends ConsumerStatefulWidget {
   const LoginView({super.key});
@@ -23,17 +25,14 @@ class _LoginViewState extends ConsumerState<LoginView> {
     
     if (!mounted) return;
     
-    // Check if the state is an error after login attempt
     final state = ref.read(authProvider);
     if (state.hasError && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(state.error.toString(), style: const TextStyle(color: Colors.white)),
-          backgroundColor: Colors.red,
+          backgroundColor: AppTokens.red,
         ),
       );
-    } else if (state.valueOrNull != null && mounted) {
-      context.go('/dashboard');
     }
   }
 
@@ -41,18 +40,19 @@ class _LoginViewState extends ConsumerState<LoginView> {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF6F2F4),
-        borderRadius: BorderRadius.circular(24),
+        color: AppTokens.bg,
+        borderRadius: BorderRadius.circular(AppTokens.radiusField),
+        border: Border.all(color: AppTokens.line),
       ),
       child: TextField(
         controller: controller,
         obscureText: isPassword,
-        style: const TextStyle(fontSize: 18),
+        style: const TextStyle(fontSize: 14.5, color: AppTokens.ink),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: const TextStyle(color: Color(0xFF78767D)),
+          hintStyle: const TextStyle(color: AppTokens.inkMute, fontSize: 14.5),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         ),
       ),
     );
@@ -63,101 +63,199 @@ class _LoginViewState extends ConsumerState<LoginView> {
     final authState = ref.watch(authProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFE5E1E3),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Header
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 20, 24),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Color(0xFF00000B)),
-                    onPressed: () => context.go('/'),
-                    style: IconButton.styleFrom(backgroundColor: Colors.white, elevation: 1),
-                  ),
-                  const SizedBox(width: 8),
-                  const Expanded(
-                    child: Text(
-                      'Welcome\nBack',
-                      style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, height: 1.2, color: Color(0xFF00000B)),
-                    ),
-                  ),
-                ],
+      backgroundColor: AppTokens.bg,
+      body: Stack(
+        children: [
+          // Decorative Blobs
+          Positioned(
+            top: -50,
+            left: -50,
+            child: ImageFiltered(
+              imageFilter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
+              child: Container(
+                width: 220,
+                height: 220,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Color(0x337C71F2),
+                ),
               ),
             ),
-            
-            Expanded(
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.only(topLeft: Radius.circular(32), topRight: Radius.circular(32)),
-                ),
-                child: ListView(
-                  physics: const BouncingScrollPhysics(),
+          ),
+          
+          SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const SizedBox(height: 24),
-
-                    // Inputs
-                    _buildTextField('Email Address', _emailController),
-                    _buildTextField('Password', _passwordController, isPassword: true),
-                    
-                    // Forgot Password
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: GestureDetector(
-                        onTap: () => context.go('/register'),
-                        child: const Text('Forgot Password?', style: TextStyle(color: Color(0xFF00000B), fontWeight: FontWeight.bold)),
-                      ),
-                    ),
-
-                    const SizedBox(height: 48),
-
-                    // Submit
-                    SizedBox(
-                      height: 64,
-                      child: ElevatedButton(
-                        onPressed: authState.isLoading ? null : _handleLogin,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF1A1A2E),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                          elevation: 8,
-                          shadowColor: const Color(0xFF1A1A2E).withOpacity(0.3),
-                        ),
-                        child: authState.isLoading 
-                          ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                          : const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text('Log In', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white)),
-                                SizedBox(width: 8),
-                                Icon(Icons.arrow_forward, color: Colors.white),
-                              ],
-                            ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
+                    // Logo Header
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text('Don\'t have an account? ', style: TextStyle(color: Color(0xFF78767D))),
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppTokens.ink,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(Icons.home, color: Colors.white, size: 24),
+                        ),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'HOMEPLANNER AI',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1.2,
+                            color: AppTokens.ink,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 48),
+
+                    // Glass Card Form
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(AppTokens.radiusCardGlass),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                        child: Container(
+                          padding: const EdgeInsets.all(32),
+                          decoration: BoxDecoration(
+                            color: AppTokens.cardGlass,
+                            borderRadius: BorderRadius.circular(AppTokens.radiusCardGlass),
+                            border: Border.all(color: Colors.white.withOpacity(0.7)),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Color(0x380B0B14),
+                                blurRadius: 50,
+                                offset: Offset(0, 20),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              const Text(
+                                'Welcome back',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 23,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppTokens.ink,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              const Text(
+                                'Sign in to access your projects or admin portal.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 14.5,
+                                  color: AppTokens.inkSoft,
+                                ),
+                              ),
+                              const SizedBox(height: 32),
+
+                              const Text('Email address', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppTokens.ink)),
+                              const SizedBox(height: 8),
+                              _buildTextField('name@example.com', _emailController),
+
+                              const SizedBox(height: 8),
+                              const Text('Password', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppTokens.ink)),
+                              const SizedBox(height: 8),
+                              _buildTextField('••••••••', _passwordController, isPassword: true),
+
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: TextButton(
+                                  onPressed: () {}, 
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: AppTokens.accent,
+                                    padding: EdgeInsets.zero,
+                                    minimumSize: Size.zero,
+                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  child: const Text('Forgot password?', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12.5)),
+                                ),
+                              ),
+                              const SizedBox(height: 32),
+
+                              // Sign In CTA
+                              ElevatedButton(
+                                onPressed: authState.isLoading ? null : _handleLogin,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppTokens.ink,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(AppTokens.radiusButton),
+                                  ),
+                                  elevation: 0,
+                                ),
+                                child: authState.isLoading 
+                                  ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                                  : const Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Text('Sign In', style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold)),
+                                        SizedBox(width: 8),
+                                        Icon(Icons.arrow_forward, size: 16),
+                                      ],
+                                    ),
+                              ),
+                              const SizedBox(height: 24),
+
+                              const Row(
+                                children: [
+                                  Expanded(child: Divider(color: AppTokens.line)),
+                                  Padding(
+                                    padding: EdgeInsets.symmetric(horizontal: 16),
+                                    child: Text('OR', style: TextStyle(color: AppTokens.inkMute, fontSize: 11, fontWeight: FontWeight.w600)),
+                                  ),
+                                  Expanded(child: Divider(color: AppTokens.line)),
+                                ],
+                              ),
+                              const SizedBox(height: 24),
+
+                              // Google Auth
+                              OutlinedButton.icon(
+                                onPressed: () {},
+                                icon: const Icon(Icons.g_mobiledata, size: 24),
+                                label: const Text('Continue with Google', style: TextStyle(color: AppTokens.ink, fontSize: 14.5, fontWeight: FontWeight.w600)),
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                  side: const BorderSide(color: AppTokens.line),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(AppTokens.radiusButton),
+                                  ),
+                                  backgroundColor: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text('No account? ', style: TextStyle(color: AppTokens.inkMute, fontSize: 12.5)),
                         GestureDetector(
-                          onTap: () => context.go('/register'),
-                          child: const Text('Register', style: TextStyle(color: Color(0xFF00000B), fontWeight: FontWeight.bold)),
+                          onTap: () {},
+                          child: const Text('Contact administrator', style: TextStyle(color: AppTokens.accent, fontWeight: FontWeight.w600, fontSize: 12.5)),
                         )
                       ],
                     ),
-                    const SizedBox(height: 32),
                   ],
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
