@@ -66,6 +66,17 @@ export interface WorkflowStatusResponseDto {
   constructionPlan?: any | null;
 }
 
+export interface DesignHistoryDto {
+  designId: string; version: number; isCurrent: boolean; isPreferred: boolean; topology: string | null;
+  bedrooms: number; bathrooms: number; floorCount: number; totalBuiltUpAreaSqft: number;
+  foundationType: string; generationMode: string | null; selectedBasePlan: string | null;
+  geometryFingerprint: string | null; createdAt: string;
+}
+export interface WorkflowDesignHistoryDto {
+  workflowId: string; status: string; preferredHouseDesignId: string | null; createdAt: string;
+  designs: DesignHistoryDto[];
+}
+
 export interface StartDesignRequest {
   basePreDesignedPlanId?: string;
   planSelectionMode?: 'use' | 'reference' | 'override';
@@ -95,10 +106,18 @@ export const workflowService = {
     const response = await apiClient.post('/ai-generation/generate', request);
     return response.data;
   },
-  getWorkflowStatus: async (id: string): Promise<WorkflowStatusResponseDto> => {
-    const response = await apiClient.get<WorkflowStatusResponseDto>(`/workflows/${id}/status`);
+  getWorkflowStatus: async (id: string, designId?: string): Promise<WorkflowStatusResponseDto> => {
+    const response = await apiClient.get<WorkflowStatusResponseDto>(`/workflows/${id}/status`, { params: designId ? { designId } : undefined });
     return response.data;
   },
+  getMyDesigns: async (): Promise<WorkflowDesignHistoryDto[]> =>
+    (await apiClient.get<WorkflowDesignHistoryDto[]>('/workflows/designs')).data,
+  getDesigns: async (id: string): Promise<WorkflowDesignHistoryDto> =>
+    (await apiClient.get<WorkflowDesignHistoryDto>(`/workflows/${id}/designs`)).data,
+  selectDesign: async (workflowId: string, designId: string) =>
+    (await apiClient.post(`/workflows/${workflowId}/designs/${designId}/select`)).data,
+  submitArchitectReview: async (workflowId: string) =>
+    (await apiClient.post(`/workflows/${workflowId}/submit-architect-review`)).data,
 
   approveWorkflow: async (id: string, decision: 'approve' | 'reject' | 'request_revision', notes?: string) => {
     const response = await apiClient.post(`/workflows/${id}/approve`, { decision, revisionNotes: notes });

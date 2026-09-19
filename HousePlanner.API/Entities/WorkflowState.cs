@@ -49,6 +49,9 @@ public class WorkflowState
 
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
 
+    /// <summary>The version explicitly selected by the client. Independent of generation IsCurrent.</summary>
+    public Guid? PreferredHouseDesignId { get; set; }
+
     // Navigation properties
     public virtual ICollection<HouseDesign> HouseDesigns { get; set; } = new List<HouseDesign>();
 }

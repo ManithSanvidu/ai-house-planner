@@ -40,7 +40,7 @@ public class WorkflowController : ControllerBase
     [ProducesResponseType(typeof(WorkflowStatusResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<WorkflowStatusResponseDto>> GetWorkflowStatus(Guid id)
+    public async Task<ActionResult<WorkflowStatusResponseDto>> GetWorkflowStatus(Guid id, [FromQuery] Guid? designId = null)
     {
         try
         {
@@ -58,6 +58,7 @@ public class WorkflowController : ControllerBase
                     w.ConstructionPlan,
                     // Pick the current (or latest) design version
                     LatestDesign = w.HouseDesigns
+                        .Where(d => designId == null || d.Id == designId)
                         .OrderByDescending(d => d.IsCurrent)
                         .ThenByDescending(d => d.Version)
                         .Select(d => new
@@ -260,6 +261,91 @@ public class WorkflowController : ControllerBase
         public List<OpeningDto> Doors { get; set; } = new();
         public List<OpeningDto> Windows { get; set; } = new();
     }
+
+    [HttpGet("{id:guid}/designs")]
+    public async Task<IActionResult> GetDesigns(Guid id)
+    {
+        var workflow = await _context.WorkflowStates.AsNoTracking()
+            .Include(w => w.HouseDesigns).ThenInclude(d => d.Rooms)
+            .FirstOrDefaultAsync(w => w.Id == id);
+        if (workflow is null) return NotFound(new { message = $"Workflow {id} not found." });
+        return Ok(ToHistory(workflow));
+    }
+
+    [HttpGet("designs")]
+    public async Task<IActionResult> GetMyDesigns()
+    {
+        var user = await _currentUserService.GetAsync(HttpContext);
+        if (user?.Id is null) return Unauthorized(new { message = "User not identified." });
+        var workflows = await _context.WorkflowStates.AsNoTracking()
+            .Where(w => w.LandSubmission.ClientId == user.Id.Value)
+            .Include(w => w.HouseDesigns).ThenInclude(d => d.Rooms)
+            .OrderByDescending(w => w.UpdatedAt)
+            .ToListAsync();
+        return Ok(workflows.Where(w => w.HouseDesigns.Count > 0).Select(ToHistory));
+    }
+
+    [HttpPost("{id:guid}/designs/{designId:guid}/select")]
+    public async Task<IActionResult> SelectDesign(Guid id, Guid designId)
+    {
+        var workflow = await _context.WorkflowStates.Include(w => w.HouseDesigns)
+            .FirstOrDefaultAsync(w => w.Id == id);
+        if (workflow is null) return NotFound(new { message = $"Workflow {id} not found." });
+        if (!workflow.HouseDesigns.Any(d => d.Id == designId))
+            return BadRequest(new { message = "The selected design does not belong to this workflow." });
+        workflow.PreferredHouseDesignId = designId;
+        workflow.Status = "selected_by_client";
+        workflow.ApprovalStatus = "selected_by_client";
+        workflow.UpdatedAt = DateTimeOffset.UtcNow;
+        await _context.SaveChangesAsync();
+        return Ok(new { workflowId = id, preferredHouseDesignId = designId, status = workflow.Status });
+    }
+
+    [HttpPost("{id:guid}/submit-architect-review")]
+    public async Task<IActionResult> SubmitArchitectReview(Guid id)
+    {
+        var workflow = await _context.WorkflowStates.Include(w => w.LandSubmission)
+            .Include(w => w.HouseDesigns).FirstOrDefaultAsync(w => w.Id == id);
+        if (workflow is null) return NotFound(new { message = $"Workflow {id} not found." });
+        if (workflow.PreferredHouseDesignId is null ||
+            !workflow.HouseDesigns.Any(d => d.Id == workflow.PreferredHouseDesignId))
+            return BadRequest(new { message = "Select a design before submitting it for architect review." });
+        var active = await _context.ValidationRequests.AnyAsync(r => r.WorkflowStateId == id &&
+            (r.Status == "Pending" || r.Status == "Under Review"));
+        if (!active)
+            _context.ValidationRequests.Add(new HousePlanner.API.Entities.ValidationRequest
+            {
+                WorkflowStateId = id,
+                ClientId = workflow.LandSubmission.ClientId,
+                Status = "Pending"
+            });
+        workflow.Status = "awaiting_architect_review";
+        workflow.ApprovalStatus = "awaiting_architect_review";
+        workflow.UpdatedAt = DateTimeOffset.UtcNow;
+        await _context.SaveChangesAsync();
+        return Ok(new { workflowId = id, status = workflow.Status });
+    }
+
+    private static WorkflowDesignHistoryDto ToHistory(HousePlanner.API.Entities.WorkflowState workflow) =>
+        new(workflow.Id, workflow.Status, workflow.PreferredHouseDesignId, workflow.CreatedAt,
+            workflow.HouseDesigns.OrderByDescending(d => d.Version).Select(d =>
+            {
+                using var document = ParseLayout(d.LayoutJson);
+                var root = document.RootElement;
+                var summary = root.TryGetProperty("candidate_summary", out var value) && value.ValueKind == JsonValueKind.Object
+                    ? value : default;
+                string? SummaryString(string key) => summary.ValueKind == JsonValueKind.Object &&
+                    summary.TryGetProperty(key, out var item) && item.ValueKind == JsonValueKind.String ? item.GetString() : null;
+                var bedrooms = d.Rooms.Count(r => r.RoomType.Contains("bedroom", StringComparison.OrdinalIgnoreCase));
+                var bathrooms = d.Rooms.Count(r => r.RoomType.Contains("bathroom", StringComparison.OrdinalIgnoreCase));
+                return new DesignHistoryDto(
+                    d.Id, d.Version, d.IsCurrent, workflow.PreferredHouseDesignId == d.Id,
+                    root.TryGetProperty("template_family", out var topology) ? topology.GetString() : d.TemplateId,
+                    bedrooms, bathrooms, d.FloorCount, d.TotalBuiltUpAreaSqft, d.FoundationType,
+                    SummaryString("generation_mode"), SummaryString("selected_plan_code") ?? SummaryString("base_plan_code"),
+                    root.TryGetProperty("geometry_fingerprint", out var fingerprint) ? fingerprint.GetString() : null,
+                    d.CreatedAt);
+            }).ToList());
 
     [HttpPost("{id}/approve")]
     public async Task<IActionResult> ApproveWorkflow(Guid id, [FromBody] ApprovalRequestDto request)

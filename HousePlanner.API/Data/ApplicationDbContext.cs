@@ -45,6 +45,15 @@ namespace HousePlanner.API.Data
                 }
             });
 
+            modelBuilder.Entity<WorkflowState>()
+                .HasIndex(e => e.PreferredHouseDesignId)
+                .HasDatabaseName("IX_WorkflowStates_PreferredHouseDesignId");
+            modelBuilder.Entity<WorkflowState>()
+                .HasOne<HouseDesign>()
+                .WithMany()
+                .HasForeignKey(e => e.PreferredHouseDesignId)
+                .OnDelete(DeleteBehavior.SetNull);
+
             modelBuilder.Entity<Room>(entity =>
             {
                 entity.HasIndex(e => e.HouseDesignId).HasDatabaseName("IX_Rooms_HouseDesignId");
@@ -76,4 +85,3 @@ namespace HousePlanner.API.Data
         }
     }
 }
-

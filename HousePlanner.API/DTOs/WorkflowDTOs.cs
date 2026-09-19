@@ -64,3 +64,28 @@ public record CostSummaryDto(
     decimal TotalCostLkr,
     decimal BudgetDeltaPercent
 );
+
+public record DesignHistoryDto(
+    Guid DesignId,
+    int Version,
+    bool IsCurrent,
+    bool IsPreferred,
+    string? Topology,
+    int Bedrooms,
+    int Bathrooms,
+    int FloorCount,
+    decimal TotalBuiltUpAreaSqft,
+    string FoundationType,
+    string? GenerationMode,
+    string? SelectedBasePlan,
+    string? GeometryFingerprint,
+    DateTimeOffset CreatedAt
+);
+
+public record WorkflowDesignHistoryDto(
+    Guid WorkflowId,
+    string Status,
+    Guid? PreferredHouseDesignId,
+    DateTimeOffset CreatedAt,
+    List<DesignHistoryDto> Designs
+);

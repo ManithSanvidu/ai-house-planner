@@ -534,6 +534,9 @@ namespace HousePlanner.API.Migrations
                     b.Property<string>("NotableFeatures")
                         .HasColumnType("jsonb");
 
+                    b.Property<Guid?>("PreferredHouseDesignId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("SlopeEstimate")
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)");
@@ -555,6 +558,9 @@ namespace HousePlanner.API.Migrations
                     b.HasIndex("ApprovedByUserId");
 
                     b.HasIndex("LandSubmissionId");
+
+                    b.HasIndex("PreferredHouseDesignId")
+                        .HasDatabaseName("IX_WorkflowStates_PreferredHouseDesignId");
 
                     b.ToTable("WorkflowStates");
                 });
@@ -672,6 +678,11 @@ namespace HousePlanner.API.Migrations
 
             modelBuilder.Entity("HousePlanner.API.Entities.WorkflowState", b =>
                 {
+                    b.HasOne("HousePlanner.API.Entities.HouseDesign", null)
+                        .WithMany()
+                        .HasForeignKey("PreferredHouseDesignId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("HousePlanner.API.Entities.User", "ApprovedByUser")
                         .WithMany()
                         .HasForeignKey("ApprovedByUserId");

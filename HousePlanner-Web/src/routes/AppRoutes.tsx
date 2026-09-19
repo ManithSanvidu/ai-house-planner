@@ -15,6 +15,7 @@ import ArchitectDashboard from '../pages/architect/ArchitectDashboard';
 import ValidationRequestsPage from '../pages/architect/ValidationRequestsPage';
 import ApprovedRequestsPage from '../pages/architect/ApprovedRequestsPage';
 import ValidationRequestDetails from '../pages/architect/ValidationRequestDetails';
+import MyDesignsPage from '../pages/MyDesignsPage';
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -50,6 +51,7 @@ export const AppRoutes: React.FC = () => {
         path="/dashboard/plans"
         element={<ProtectedRoute><PageContainer><PlanLibraryPage /></PageContainer></ProtectedRoute>}
       />
+      <Route path="/dashboard/designs" element={<ProtectedRoute><PageContainer><MyDesignsPage /></PageContainer></ProtectedRoute>} />
       <Route
         path="/dashboard/plans/:id"
         element={<ProtectedRoute><PageContainer><PlanDetailPage /></PageContainer></ProtectedRoute>}
@@ -102,4 +104,3 @@ export const AppRoutes: React.FC = () => {
 };
 
 export default AppRoutes;
-

@@ -2,7 +2,7 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
   LayoutDashboard, 
-  PlusSquare, Library, Shield
+  PlusSquare, Library, Shield, PanelsTopLeft
 } from 'lucide-react';
 import useAuth from '../../features/auth/useAuth';
 
@@ -14,7 +14,8 @@ export const Sidebar: React.FC = () => {
   // Common links for all users
   const links = [
     { to: '/dashboard', label: 'Overview', icon: LayoutDashboard },
-    { to: '/dashboard/new-project', label: 'New Project (Intake)', icon: PlusSquare },
+    { to: '/dashboard/new-project', label: 'New Project', icon: PlusSquare },
+    { to: '/dashboard/designs', label: 'My Designs', icon: PanelsTopLeft },
     { to: '/dashboard/plans', label: 'Plan Library', icon: Library },
     ...(user.role === 'Admin' ? [{ to: '/dashboard/admin/plans', label: 'Manage Plans', icon: Shield }] : []),
     ...(user.role === 'Architect' ? [

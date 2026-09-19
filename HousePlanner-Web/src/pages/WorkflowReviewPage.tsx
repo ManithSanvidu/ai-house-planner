@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { workflowService, type WorkflowStatusResponseDto } from '../services/workflowService';
 import { FloorPlanViewer, type FloorPlanData } from '../components/floorplan/FloorPlanViewer';
 import { Menu } from 'lucide-react';
-import { validationRequestService } from '../services/validationRequestService';
 
 export const WorkflowReviewPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
+  const previewDesignId = searchParams.get('design') || undefined;
   const [workflow, setWorkflow] = useState<WorkflowStatusResponseDto | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -22,7 +23,7 @@ export const WorkflowReviewPage: React.FC = () => {
 
     const fetchWorkflow = async () => {
       try {
-        const data = await workflowService.getWorkflowStatus(id);
+        const data = await workflowService.getWorkflowStatus(id, previewDesignId);
         setWorkflow(data);
         setError(null);
         setLoading(false);
@@ -45,7 +46,7 @@ export const WorkflowReviewPage: React.FC = () => {
     fetchWorkflow();
     interval = setInterval(() => { fetchWorkflow(); }, 3000);
     return () => clearInterval(interval);
-  }, [id, pollCycle]);
+  }, [id, pollCycle, previewDesignId]);
 
   if (loading) {
     return (
@@ -148,16 +149,6 @@ export const WorkflowReviewPage: React.FC = () => {
     }
   };
 
-  const handleRequestValidation = async () => {
-    if (!id) return;
-    try {
-      await validationRequestService.create(id);
-      alert('Validation request sent successfully! An architect will review your design.');
-    } catch (e: any) {
-      alert(`Error requesting validation: ${e.response?.data?.message || e.message}`);
-    }
-  };
-
   const bedroomCount = workflow.design.rooms.filter(r => r.roomType.includes('bedroom')).length;
   const bathroomCount = workflow.design.rooms.filter(r => r.roomType.includes('bathroom')).length;
 
@@ -217,20 +208,14 @@ export const WorkflowReviewPage: React.FC = () => {
 
         {/* Action Buttons */}
         <div className="p-6 border-t border-zinc-200 flex flex-col gap-3 bg-white">
-          <button onClick={() => handleRequestValidation()} className="w-full py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-bold hover:from-blue-600 hover:to-blue-700 transition-all text-sm shadow-sm">
-            🔍 Request Architect Validation
-          </button>
-          <button onClick={() => handleAction('approve')} className="w-full py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl font-bold hover:from-emerald-600 hover:to-emerald-700 transition-all text-sm shadow-sm mt-2">
-            ✓ Approve Design (Skip Validation)
-          </button>
+          <Link to="/dashboard/designs" className="w-full py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-bold text-center text-sm shadow-sm">
+            Select from My Designs
+          </Link>
           <button onClick={() => handleAction('request_revision')} className="w-full py-3 bg-white text-indigo-600 border-2 border-indigo-100 rounded-xl font-bold hover:bg-indigo-50 hover:border-indigo-200 transition-all text-sm">
             ↻ Request Revision
           </button>
           <button onClick={() => handleAction('request_revision', 'Generate Another')} className="w-full py-3 bg-indigo-50 text-indigo-700 border-2 border-indigo-200 rounded-xl font-bold hover:bg-indigo-100 transition-all text-sm">
             Generate Another
-          </button>
-          <button onClick={() => handleAction('reject')} className="w-full py-3 bg-white text-red-500 border-2 border-red-100 rounded-xl font-bold hover:bg-red-50 hover:border-red-200 transition-all text-sm mt-2">
-            ✕ Reject
           </button>
         </div>
       </div>

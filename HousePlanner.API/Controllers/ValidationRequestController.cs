@@ -125,7 +125,7 @@ namespace HousePlanner.API.Controllers
             if (role != "Architect") return StatusCode(403);
 
             var userId = userCtx.Id;
-            var request = await _context.ValidationRequests.FirstOrDefaultAsync(v => v.Id == id);
+            var request = await _context.ValidationRequests.Include(v => v.WorkflowState).FirstOrDefaultAsync(v => v.Id == id);
             if (request == null) return NotFound();
 
             if (request.Status == "Approved") return Conflict(new { message = "Already approved." });
@@ -134,6 +134,11 @@ namespace HousePlanner.API.Controllers
             request.ArchitectReview = dto.Review;
             request.ArchitectId = userId;
             request.DecisionAt = DateTimeOffset.UtcNow;
+            request.WorkflowState.Status = "approved";
+            request.WorkflowState.ApprovalStatus = "approved";
+            request.WorkflowState.ApprovedByUserId = userId;
+            request.WorkflowState.ApprovedAt = request.DecisionAt;
+            request.WorkflowState.UpdatedAt = DateTimeOffset.UtcNow;
             
             await _context.SaveChangesAsync();
             return Ok(new { message = "Request approved." });
@@ -148,7 +153,7 @@ namespace HousePlanner.API.Controllers
             if (role != "Architect") return StatusCode(403);
 
             var userId = userCtx.Id;
-            var request = await _context.ValidationRequests.FirstOrDefaultAsync(v => v.Id == id);
+            var request = await _context.ValidationRequests.Include(v => v.WorkflowState).FirstOrDefaultAsync(v => v.Id == id);
             if (request == null) return NotFound();
 
             if (request.Status == "Rejected") return Conflict(new { message = "Already rejected." });
@@ -157,6 +162,9 @@ namespace HousePlanner.API.Controllers
             request.ArchitectReview = dto.Review;
             request.ArchitectId = userId;
             request.DecisionAt = DateTimeOffset.UtcNow;
+            request.WorkflowState.Status = "revision_requested";
+            request.WorkflowState.ApprovalStatus = "revision_requested";
+            request.WorkflowState.UpdatedAt = DateTimeOffset.UtcNow;
             
             await _context.SaveChangesAsync();
             return Ok(new { message = "Request rejected." });
@@ -180,7 +188,9 @@ namespace HousePlanner.API.Controllers
 
         private object MapToDetailedDto(ValidationRequest req)
         {
-            var design = req.WorkflowState?.HouseDesigns?.OrderByDescending(d => d.Version).FirstOrDefault();
+            var design = req.WorkflowState?.PreferredHouseDesignId is Guid preferredId
+                ? req.WorkflowState.HouseDesigns.FirstOrDefault(d => d.Id == preferredId)
+                : req.WorkflowState?.HouseDesigns?.OrderByDescending(d => d.Version).FirstOrDefault();
             return new
             {
                 id = req.Id,
@@ -217,4 +227,3 @@ namespace HousePlanner.API.Controllers
         public string? Review { get; set; }
     }
 }
-
