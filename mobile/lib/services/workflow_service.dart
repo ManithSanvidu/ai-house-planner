@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../widgets/floor_plan_painter.dart'; // To access RoomLayout
 
 class WorkflowService {
   // Update to match your local or cloud backend API URL
