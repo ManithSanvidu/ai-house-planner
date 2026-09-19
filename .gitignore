@@ -21,8 +21,8 @@ pnpm-debug.log*
 *.key
 
 # .NET build output and local data
-HousePlanner.API/bin/
-HousePlanner.API/obj/
+**/bin/
+**/obj/
 HousePlanner.API/App_Data/
 
 # Python
