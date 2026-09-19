@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "/Users/kushancs/Desktop/ai-house-system/HousePlanner.API.Tests/HousePlanner.API.Tests.csproj": {}
+    "C:\\Users\\dewmi fernando\\Documents\\GitHub\\ai-house-planner\\HousePlanner.API.Tests\\HousePlanner.API.Tests.csproj": {}
   },
   "projects": {
-    "/Users/kushancs/Desktop/ai-house-system/HousePlanner.API.Tests/HousePlanner.API.Tests.csproj": {
+    "C:\\Users\\dewmi fernando\\Documents\\GitHub\\ai-house-planner\\HousePlanner.API.Tests\\HousePlanner.API.Tests.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/Users/kushancs/Desktop/ai-house-system/HousePlanner.API.Tests/HousePlanner.API.Tests.csproj",
+        "projectUniqueName": "C:\\Users\\dewmi fernando\\Documents\\GitHub\\ai-house-planner\\HousePlanner.API.Tests\\HousePlanner.API.Tests.csproj",
         "projectName": "HousePlanner.API.Tests",
-        "projectPath": "/Users/kushancs/Desktop/ai-house-system/HousePlanner.API.Tests/HousePlanner.API.Tests.csproj",
-        "packagesPath": "/Users/kushancs/.nuget/packages/",
-        "outputPath": "/Users/kushancs/Desktop/ai-house-system/HousePlanner.API.Tests/obj/",
+        "projectPath": "C:\\Users\\dewmi fernando\\Documents\\GitHub\\ai-house-planner\\HousePlanner.API.Tests\\HousePlanner.API.Tests.csproj",
+        "packagesPath": "C:\\Users\\dewmi fernando\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\dewmi fernando\\Documents\\GitHub\\ai-house-planner\\HousePlanner.API.Tests\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "/Users/kushancs/.nuget/NuGet/NuGet.Config"
+          "C:\\Users\\dewmi fernando\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net8.0"
@@ -27,8 +27,8 @@
             "framework": "net8.0",
             "targetAlias": "net8.0",
             "projectReferences": {
-              "/Users/kushancs/Desktop/ai-house-system/HousePlanner.API/HousePlanner.API.csproj": {
-                "projectPath": "/Users/kushancs/Desktop/ai-house-system/HousePlanner.API/HousePlanner.API.csproj"
+              "C:\\Users\\dewmi fernando\\Documents\\GitHub\\ai-house-planner\\HousePlanner.API\\HousePlanner.API.csproj": {
+                "projectPath": "C:\\Users\\dewmi fernando\\Documents\\GitHub\\ai-house-planner\\HousePlanner.API\\HousePlanner.API.csproj"
               }
             }
           }
@@ -56,11 +56,15 @@
             },
             "Microsoft.EntityFrameworkCore.InMemory": {
               "target": "Package",
-              "version": "[8.0.4, )"
+              "version": "[8.0.8, )"
             },
             "Microsoft.EntityFrameworkCore.Relational": {
               "target": "Package",
-              "version": "[8.0.4, )"
+              "version": "[8.0.8, )"
+            },
+            "Microsoft.Extensions.Caching.Memory": {
+              "target": "Package",
+              "version": "[8.0.1, )"
             },
             "Microsoft.NET.Test.Sdk": {
               "target": "Package",
@@ -69,6 +73,10 @@
             "Moq": {
               "target": "Package",
               "version": "[4.20.72, )"
+            },
+            "System.Text.Json": {
+              "target": "Package",
+              "version": "[8.0.5, )"
             },
             "coverlet.collector": {
               "target": "Package",
@@ -97,11 +105,15 @@
           "downloadDependencies": [
             {
               "name": "Microsoft.AspNetCore.App.Ref",
-              "version": "[8.0.29, 8.0.29]"
+              "version": "[8.0.30, 8.0.30]"
             },
             {
               "name": "Microsoft.NETCore.App.Ref",
-              "version": "[8.0.29, 8.0.29]"
+              "version": "[8.0.30, 8.0.30]"
+            },
+            {
+              "name": "Microsoft.WindowsDesktop.App.Ref",
+              "version": "[8.0.30, 8.0.30]"
             }
           ],
           "frameworkReferences": {
@@ -109,21 +121,21 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/10.0.302/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.303/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "/Users/kushancs/Desktop/ai-house-system/HousePlanner.API/HousePlanner.API.csproj": {
+    "C:\\Users\\dewmi fernando\\Documents\\GitHub\\ai-house-planner\\HousePlanner.API\\HousePlanner.API.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/Users/kushancs/Desktop/ai-house-system/HousePlanner.API/HousePlanner.API.csproj",
+        "projectUniqueName": "C:\\Users\\dewmi fernando\\Documents\\GitHub\\ai-house-planner\\HousePlanner.API\\HousePlanner.API.csproj",
         "projectName": "HousePlanner.API",
-        "projectPath": "/Users/kushancs/Desktop/ai-house-system/HousePlanner.API/HousePlanner.API.csproj",
-        "packagesPath": "/Users/kushancs/.nuget/packages/",
-        "outputPath": "/Users/kushancs/Desktop/ai-house-system/HousePlanner.API/obj/",
+        "projectPath": "C:\\Users\\dewmi fernando\\Documents\\GitHub\\ai-house-planner\\HousePlanner.API\\HousePlanner.API.csproj",
+        "packagesPath": "C:\\Users\\dewmi fernando\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\dewmi fernando\\Documents\\GitHub\\ai-house-planner\\HousePlanner.API\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "/Users/kushancs/.nuget/NuGet/NuGet.Config"
+          "C:\\Users\\dewmi fernando\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net8.0"
@@ -169,6 +181,14 @@
               "target": "Package",
               "version": "[8.0.8, )"
             },
+            "Microsoft.Extensions.Caching.Memory": {
+              "target": "Package",
+              "version": "[8.0.1, )"
+            },
+            "Newtonsoft.Json": {
+              "target": "Package",
+              "version": "[13.0.1, )"
+            },
             "Npgsql.EntityFrameworkCore.PostgreSQL": {
               "target": "Package",
               "version": "[8.0.4, )"
@@ -176,6 +196,10 @@
             "Swashbuckle.AspNetCore": {
               "target": "Package",
               "version": "[6.6.2, )"
+            },
+            "System.Text.Json": {
+              "target": "Package",
+              "version": "[8.0.5, )"
             }
           },
           "imports": [
@@ -192,15 +216,19 @@
           "downloadDependencies": [
             {
               "name": "Microsoft.AspNetCore.App.Ref",
-              "version": "[8.0.29, 8.0.29]"
+              "version": "[8.0.30, 8.0.30]"
             },
             {
-              "name": "Microsoft.NETCore.App.Host.osx-arm64",
-              "version": "[8.0.29, 8.0.29]"
+              "name": "Microsoft.NETCore.App.Host.win-x64",
+              "version": "[8.0.30, 8.0.30]"
             },
             {
               "name": "Microsoft.NETCore.App.Ref",
-              "version": "[8.0.29, 8.0.29]"
+              "version": "[8.0.30, 8.0.30]"
+            },
+            {
+              "name": "Microsoft.WindowsDesktop.App.Ref",
+              "version": "[8.0.30, 8.0.30]"
             }
           ],
           "frameworkReferences": {
@@ -211,7 +239,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/10.0.302/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.303/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

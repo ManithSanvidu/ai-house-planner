@@ -11,7 +11,9 @@ public record WorkflowStatusResponseDto(
     string? SlopeEstimate,
     HouseDesignSummaryDto? Design,
     CostSummaryDto? Cost,
-    string ApprovalStatus
+    System.Text.Json.JsonElement? ConstructionPlan,
+    string ApprovalStatus,
+    string? FailureReason = null
 );
 
 public record HouseDesignSummaryDto(
@@ -27,6 +29,7 @@ public record HouseDesignSummaryDto(
     string? TemplateFamily = null,
     long? DesignSeed = null,
     decimal? DesignScore = null,
+    string? GeometryFingerprint = null,
     decimal? GroundFootprintSqft = null,
     System.Text.Json.JsonElement? Connections = null,
     System.Text.Json.JsonElement? Entrances = null,

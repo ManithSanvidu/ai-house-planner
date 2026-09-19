@@ -38,16 +38,53 @@ export interface HouseDesignSummaryDto {
   templateFamily?: string | null;
   designSeed?: number | null;
   designScore?: number | null;
+  geometryFingerprint?: string | null;
   groundFootprintSqft?: number | null;
   entrances?: { room_id: string; wall: OpeningDto['wall']; offset: number; width: number }[];
   plotConstraints?: { dimensions_estimated?: boolean };
   candidateSummary?: { 
     notes?: string[],
     valid_count?: number,
-    rejected_count?: number
+    rejected_count?: number,
+    generated_count?: number,
+    unique_valid_count?: number,
+    generation_mode?: string,
+    selection_method?: string
   };
 
 }
+
+export interface CostSummaryDto {
+  materialCostLkr: number;
+  labourCostLkr: number;
+  totalCostLkr: number;
+  budgetDeltaPercent: number;
+}
+
+export interface ConstructionPhaseDto {
+  id: number;
+  name: string;
+  description: string;
+  duration_days: number;
+  depends_on: number[];
+  start_day: number;
+  end_day: number;
+  status: string;
+}
+
+export interface ConstructionPlanSummaryDto {
+  project_summary: {
+    estimated_duration_days: number;
+    estimated_duration_months: number;
+    target_duration_days: number | null;
+    schedule_status: string;
+  };
+  phases: ConstructionPhaseDto[];
+  critical_path: string[];
+  assumptions: string[];
+  optimization_notes: string[];
+}
+
 
 export interface WorkflowStatusResponseDto {
   workflowId: string;
@@ -55,8 +92,29 @@ export interface WorkflowStatusResponseDto {
   terrainType: string | null;
   slopeEstimate: string | null;
   design: HouseDesignSummaryDto | null;
-  cost: any | null; // Expand when Component C is integrated
+  cost: CostSummaryDto | null;
+  constructionPlan:ConstructionPlanSummaryDto|null;
   approvalStatus: string;
+  failureReason?: string | null;
+}
+
+export interface GenerateDesignRequest {
+  budgetLkr?: number;
+  landSizePerches: number;
+  manualTerrainType?: string;
+  designSeed?: number;
+  preferences: {
+    bedrooms: number; bathrooms: number; floors: number; architecturalStyle?: string;
+    openPlan?: boolean; masterEnsuite?: boolean; separateDining?: boolean;
+    homeOffice?: boolean; balcony?: boolean; veranda?: boolean; utilityRoom?: boolean;
+    parkingRequired?: boolean; accessibility?: boolean; spacePriority?: string;
+    circulationPreference?: 'space_efficient';
+  };
+  plotConstraints?: {
+    road_side: string; plot_width_ft?: number; plot_length_ft?: number;
+    north_direction?: string; entrance_side?: string;
+    setbacks?: { front?: number; rear?: number; left?: number; right?: number };
+  };
 }
 
 // ──────────────────────────────────────────────────
@@ -64,6 +122,10 @@ export interface WorkflowStatusResponseDto {
 // ──────────────────────────────────────────────────
 
 export const workflowService = {
+  startDesign: async (request: GenerateDesignRequest): Promise<{ workflowId: string }> => {
+    const response = await apiClient.post('/ai-generation/generate', request);
+    return response.data;
+  },
   getWorkflowStatus: async (id: string): Promise<WorkflowStatusResponseDto> => {
     const response = await apiClient.get<WorkflowStatusResponseDto>(`/workflows/${id}/status`);
     return response.data;

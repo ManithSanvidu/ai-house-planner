@@ -1,0 +1,10 @@
+[
+  {
+    "agent_name": "DesignAgent",
+    "action": "Design generation failed; no layout submitted",
+    "tool_called": "layout_generation_tool",
+    "duration_ms": null,
+    "result": "Local geometry validation failed.",
+    "created_at_utc": "2026-09-19T13:05:51.466219+00:00"
+  }
+]

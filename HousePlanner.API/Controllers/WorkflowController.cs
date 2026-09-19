@@ -44,6 +44,8 @@ public class WorkflowController : ControllerBase
                     w.TerrainType,
                     w.SlopeEstimate,
                     w.ApprovalStatus,
+                    w.FailureReason,
+                    w.ConstructionPlan,
                     // Pick the current (or latest) design version
                     LatestDesign = w.HouseDesigns
                         .OrderByDescending(d => d.IsCurrent)
@@ -75,7 +77,17 @@ public class WorkflowController : ControllerBase
                                     r.AreaSqft,
                                     r.WallHeight
                                 })
-                                .ToList()
+                                .ToList(),
+                            LatestCost = d.CostEstimates
+                                .OrderByDescending(c => c.CreatedAt)
+                                .Select(c => new
+                                {
+                                    c.MaterialCostLkr,
+                                    c.LabourCostLkr,
+                                    c.TotalCostLkr,
+                                    c.BudgetDeltaPercent
+                                })
+                                .FirstOrDefault()
                         })
                         .FirstOrDefault()
                 })
@@ -88,6 +100,7 @@ public class WorkflowController : ControllerBase
             }
 
             HouseDesignSummaryDto? designDto = null;
+            CostSummaryDto? costDto = null;
             if (workflow.LatestDesign is not null)
             {
                 // Extract doors/windows from LayoutJson for each room
@@ -129,12 +142,23 @@ public class WorkflowController : ControllerBase
                     TemplateFamily: GetMetadata(root, "template_family")?.GetString(),
                     DesignSeed: GetMetadata(root, "design_seed")?.GetInt64(),
                     DesignScore: GetMetadata(root, "design_score")?.GetDecimal(),
+                    GeometryFingerprint: GetMetadata(root, "geometry_fingerprint")?.GetString(),
                     GroundFootprintSqft: GetMetadata(root, "ground_footprint_sqft")?.GetDecimal(),
                     Connections: GetMetadata(root, "connections"),
                     Entrances: GetMetadata(root, "entrances"),
                     PlotConstraints: GetMetadata(root, "plot_constraints"),
                     CandidateSummary: GetMetadata(root, "candidate_summary")
                 );
+
+                if (workflow.LatestDesign.LatestCost is not null)
+                {
+                    costDto = new CostSummaryDto(
+                        MaterialCostLkr: workflow.LatestDesign.LatestCost.MaterialCostLkr,
+                        LabourCostLkr: workflow.LatestDesign.LatestCost.LabourCostLkr,
+                        TotalCostLkr: workflow.LatestDesign.LatestCost.TotalCostLkr,
+                        BudgetDeltaPercent: workflow.LatestDesign.LatestCost.BudgetDeltaPercent
+                    );
+                }
             }
 
             var response = new WorkflowStatusResponseDto(
@@ -143,9 +167,12 @@ public class WorkflowController : ControllerBase
                 TerrainType: workflow.TerrainType,
                 SlopeEstimate: workflow.SlopeEstimate,
                 Design: designDto,
-                Cost: null, // CostSummary is populated when Component C adds CostEstimates
-                ApprovalStatus: workflow.ApprovalStatus
+                Cost: costDto,
+                ConstructionPlan: workflow.ConstructionPlan != null ? JsonDocument.Parse(workflow.ConstructionPlan).RootElement : null,
+                ApprovalStatus: workflow.ApprovalStatus,
+                FailureReason: workflow.FailureReason
             );
+
 
             return Ok(response);
         }
@@ -244,7 +271,16 @@ public class WorkflowController : ControllerBase
 
         if (request.Decision == "request_revision")
         {
+            if (string.IsNullOrWhiteSpace(request.RevisionNotes))
+                return BadRequest(new { Message = "Revision notes are required." });
+            var current = workflow.HouseDesigns.OrderByDescending(d => d.Version).FirstOrDefault();
+            if (current is null) return Conflict(new { Message = "No design exists to revise." });
+            using var currentLayout = ParseLayout(current.LayoutJson);
+            var root = currentLayout.RootElement;
+            var currentSeed = GetMetadata(root, "design_seed")?.GetInt64() ?? 0;
+            var nextSeed = currentSeed + 1;
             workflow.Status = "running";
+            workflow.ApprovalStatus = "revision_requested";
             workflow.UpdatedAt = DateTimeOffset.UtcNow;
             await _context.SaveChangesAsync();
             
@@ -265,16 +301,23 @@ public class WorkflowController : ControllerBase
                     terrain_type = workflow.TerrainType,
                     slope_estimate = workflow.SlopeEstimate
                 },
-                previous_design = workflow.HouseDesigns.OrderByDescending(d => d.Version).FirstOrDefault()?.LayoutJson
+                previous_design = root.Clone(),
+                plot_constraints = GetMetadata(root, "plot_constraints"),
+                design_seed = nextSeed
             };
             
             var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
             
             // POST to Python internal API to resume the graph
-            _agenticServiceClient.DefaultRequestHeaders.Clear();
-            _agenticServiceClient.DefaultRequestHeaders.Add("X-Internal-API-Key", "shared-internal-secret");
-            
-            await _agenticServiceClient.PostAsync("http://localhost:8001/workflows/resume", content);
+            var response = await _agenticServiceClient.PostAsync("/workflows/resume", content);
+            if (!response.IsSuccessStatusCode)
+            {
+                workflow.Status = "awaiting_approval";
+                workflow.ApprovalStatus = "pending";
+                await _context.SaveChangesAsync();
+                return StatusCode(StatusCodes.Status502BadGateway,
+                    new { Message = "The design service could not start the revision." });
+            }
             
             return Ok(new { Message = "Revision started" });
         }

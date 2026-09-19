@@ -2,7 +2,8 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
   LayoutDashboard, 
-  PlusSquare
+  PlusSquare,
+  DollarSign
 } from 'lucide-react';
 import useAuth from '../../features/auth/useAuth';
 
@@ -16,6 +17,14 @@ export const Sidebar: React.FC = () => {
     { to: '/dashboard', label: 'Overview', icon: LayoutDashboard },
     { to: '/dashboard/new-project', label: 'New Project (Intake)', icon: PlusSquare },
   ];
+
+  if (user.role === 'Contractor') {
+    links.push({
+      to: '/dashboard/cost-estimator',
+      label: 'Cost Estimator',
+      icon: DollarSign,
+    });
+  }
 
   return (
     <aside className="w-64 border-r border-zinc-200/50 dark:border-gray-800/50 bg-white/80 dark:bg-gray-950/80 backdrop-blur-xl min-h-[calc(100vh-65px)] p-4 flex flex-col gap-6 shadow-[4px_0_24px_-12px_rgba(0,0,0,0.1)] z-10 transition-colors duration-300">

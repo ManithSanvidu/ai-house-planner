@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("HousePlanner.API.Tests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e8c055b9de31d458eebb63765a6474941cbfd259")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+9ffd9789a3038af7a9688b6503a8a2568ce9b4fd")]
 [assembly: System.Reflection.AssemblyProductAttribute("HousePlanner.API.Tests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("HousePlanner.API.Tests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

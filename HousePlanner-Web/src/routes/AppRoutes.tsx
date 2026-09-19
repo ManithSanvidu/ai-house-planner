@@ -7,6 +7,7 @@ import PageContainer from '../components/layout/PageContainer';
 import IntakeForm from '../pages/IntakeForm';
 import HomePage from '../pages/HomePage';
 import { WorkflowReviewPage } from '../pages/WorkflowReviewPage';
+import PricingManagementPage from '../pages/PricingManagementPage';
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -33,6 +34,17 @@ export const AppRoutes: React.FC = () => {
           <ProtectedRoute>
             <PageContainer>
               <IntakeForm/>
+            </PageContainer>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/dashboard/cost-estimator"
+        element={
+          <ProtectedRoute allowedRoles={['Contractor']}>
+            <PageContainer>
+              <PricingManagementPage />
             </PageContainer>
           </ProtectedRoute>
         }

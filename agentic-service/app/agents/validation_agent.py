@@ -3,7 +3,7 @@ def validation_node(state: WorkflowState) -> WorkflowState:
     print(f"[Validation Agent] Validating constraints for workflow {state.workflow_id}...")
     
     budget = state.input_data.budget_lkr
-    estimated_cost = state.cost_result.get("estimated_total_lkr", 0) if state.cost_result else 0
+    estimated_cost = state.cost_result.get("total_cost_lkr", 0) if state.cost_result else 0
     
     is_valid = True
     reason = "Design meets all budget and space constraints."
