@@ -4,6 +4,7 @@ using HousePlanner.API.Entities;
 using System.Text;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using HousePlanner.API.Services;
 
 namespace HousePlanner.API.Controllers
 {
@@ -13,16 +14,41 @@ namespace HousePlanner.API.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly HttpClient _agenticServiceClient;
+        private readonly IDesignOptionsService _designOptionsService;
 
-        public AiGenerationController(ApplicationDbContext context, IHttpClientFactory httpClientFactory)
+        public AiGenerationController(ApplicationDbContext context, IHttpClientFactory httpClientFactory, IDesignOptionsService designOptionsService)
         {
             _context = context;
             _agenticServiceClient = httpClientFactory.CreateClient("AgenticService");
+            _designOptionsService = designOptionsService;
         }
 
         [HttpPost("generate")]
-        public async Task<IActionResult> Generate([FromBody] AiGenerationRequest request)
+        public async Task<IActionResult> Generate([FromBody] AiGenerationRequest request, CancellationToken cancellationToken)
         {
+            if (!string.IsNullOrEmpty(request.ManualTerrainType))
+            {
+                if (request.ManualTerrainType.StartsWith("flat", StringComparison.OrdinalIgnoreCase))
+                    request.ManualTerrainType = "flat";
+                else if (request.ManualTerrainType.StartsWith("hillside", StringComparison.OrdinalIgnoreCase))
+                    request.ManualTerrainType = "hillside";
+                else if (request.ManualTerrainType.StartsWith("coastal", StringComparison.OrdinalIgnoreCase))
+                    request.ManualTerrainType = "coastal";
+                else
+                    request.ManualTerrainType = "unknown";
+            }
+
+            var validation = await _designOptionsService.ValidateFinalSelectionAsync(request, cancellationToken);
+            if (!validation.IsValid)
+            {
+                return BadRequest(new { 
+                    code = validation.ErrorCode, 
+                    message = validation.Message,
+                    conflicts = validation.Conflicts,
+                    suggestions = validation.Suggestions 
+                });
+            }
+
             WorkflowState workflowState;
             object payload;
             try 
@@ -32,17 +58,25 @@ namespace HousePlanner.API.Controllers
                     : await _context.Users.OrderBy(u => u.CreatedAt).FirstOrDefaultAsync();
                 if (client is null)
                     return Conflict(new { Message = "No client account exists for this submission." });
+                PreDesignedHousePlan? basePlan = null;
+                if (request.BasePreDesignedPlanId.HasValue)
+                {
+                    basePlan = await _context.PreDesignedHousePlans.FirstOrDefaultAsync(p => p.Id == request.BasePreDesignedPlanId && p.IsActive);
+                    if (basePlan is null) return BadRequest(new { Message = "The selected pre-designed plan is unavailable." });
+                }
 
                 var submission = new LandSubmission
                 {
                     Id = Guid.NewGuid(),
                     ClientId = client.Id,
-                    BudgetLkr = request.BudgetLkr,
+                    BudgetLkr = request.BudgetLkr ?? 0m,
                     LandSizePerches = request.LandSizePerches,
                     ManualTerrainType = request.ManualTerrainType,
                     PreferredBedrooms = request.Preferences?.Bedrooms ?? 3,
                     PreferredFloors = request.Preferences?.Floors ?? 1,
                     StylePreference = request.Preferences?.ArchitecturalStyle ?? "Modern Minimalist",
+                    BasePreDesignedPlanId = basePlan?.Id,
+                    PlanSelectionMode = request.PlanSelectionMode,
                     CreatedAt = DateTimeOffset.UtcNow,
                     UpdatedAt = DateTimeOffset.UtcNow
                 };
@@ -62,6 +96,28 @@ namespace HousePlanner.API.Controllers
                 _context.WorkflowStates.Add(workflowState);
                 await _context.SaveChangesAsync();
 
+                if (basePlan is not null && string.Equals(request.PlanSelectionMode, "use", StringComparison.OrdinalIgnoreCase))
+                {
+                    using var document = JsonDocument.Parse(basePlan.LayoutJson);
+                    var root = document.RootElement;
+                    var design = new HouseDesign
+                    {
+                        WorkflowStateId = workflowState.Id, Version = 1, FloorCount = basePlan.FloorCount,
+                        TotalBuiltUpAreaSqft = basePlan.TotalBuiltUpAreaSqft,
+                        FoundationType = root.TryGetProperty("foundation_type", out var foundation) ? foundation.GetString() ?? "conceptual" : "conceptual",
+                        TemplateId = root.TryGetProperty("template_id", out var template) ? template.GetString() : null,
+                        TerrainType = basePlan.SuitableTerrain, LayoutJson = basePlan.LayoutJson, IsCurrent = true,
+                        DesignSource = "pre_designed", BasePreDesignedPlanId = basePlan.Id, CreatedAt = DateTimeOffset.UtcNow
+                    };
+                    foreach (var room in root.GetProperty("rooms").EnumerateArray())
+                    {
+                        var width = room.GetProperty("width").GetDecimal(); var length = room.GetProperty("length").GetDecimal();
+                        design.Rooms.Add(new Room { RoomType=room.GetProperty("room_type").GetString()??"unknown", Name=room.TryGetProperty("name",out var n)?n.GetString():null, FloorNumber=room.GetProperty("floor").GetInt32(), X=room.GetProperty("x").GetDecimal(), Y=room.GetProperty("y").GetDecimal(), Width=width, Length=length, AreaSqft=Math.Round(width*length,2), WallHeight=room.TryGetProperty("wall_height",out var wh)?wh.GetDecimal():9 });
+                    }
+                    workflowState.Status = "design_generated"; _context.HouseDesigns.Add(design); await _context.SaveChangesAsync();
+                    return Ok(new { Message = "Pre-designed plan selected successfully", WorkflowId = workflowState.Id });
+                }
+
                 payload = new {
                     workflow_id = workflowState.Id,
                     submission_id = submission.Id,
@@ -71,6 +127,8 @@ namespace HousePlanner.API.Controllers
                     preferences = request.Preferences,
                     plot_constraints = request.PlotConstraints,
                     design_seed = request.DesignSeed
+                    ,base_pre_designed_plan_id = request.BasePreDesignedPlanId
+                    ,plan_selection_mode = request.PlanSelectionMode
                 };
             }
             catch (Exception ex)
@@ -115,6 +173,8 @@ namespace HousePlanner.API.Controllers
         public PreferencesDto? Preferences { get; set; }
         public PlotConstraintsDto? PlotConstraints { get; set; }
         public long? DesignSeed { get; set; }
+        public Guid? BasePreDesignedPlanId { get; set; }
+        public string? PlanSelectionMode { get; set; }
     }
 
     public class PreferencesDto
@@ -163,3 +223,4 @@ namespace HousePlanner.API.Controllers
         public decimal? right { get; set; }
     }
 }
+

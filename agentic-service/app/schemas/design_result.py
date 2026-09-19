@@ -37,7 +37,7 @@ class RoomLayout(BaseModel):
 class DesignResult(BaseModel):
     design_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     floor_count: int = Field(..., ge=1)
-    total_built_up_area_sqft: float = Field(..., ge=0)
+    total_built_up_area_sqft: Optional[float] = Field(None, ge=0)
     foundation_type: Literal["slab", "stepped", "pile", "raised"] = Field(
         ..., description="Foundation type suited for the terrain"
     )
@@ -58,4 +58,6 @@ class DesignResult(BaseModel):
     entrances: List[Entrance] = Field(default_factory=list)
     plot_constraints: Optional[dict] = None
     program: Optional[dict] = None
+    site_features: list[dict] = Field(default_factory=list)
+    candidate_status: Optional[Literal["GEOMETRICALLY_INVALID", "ARCHITECTURALLY_POOR", "VALID_HIGH_QUALITY"]] = None
     candidate_summary: dict = Field(default_factory=dict)

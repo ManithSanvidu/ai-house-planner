@@ -65,6 +65,11 @@ builder.Services.AddSwaggerGen(c =>
 
 // 4. Register application services
 builder.Services.AddScoped<IFirebaseAuthService, FirebaseAuthService>();
+builder.Services.AddScoped<ICurrentUserContextService, CurrentUserContextService>();
+builder.Services.AddScoped<IPreDesignedPlanLayoutValidator, PreDesignedPlanLayoutValidator>();
+builder.Services.AddScoped<PreDesignedPlanSeeder>();
+builder.Services.AddScoped<IWorkflowService, WorkflowService>();
+builder.Services.AddScoped<IDesignOptionsService, DesignOptionsService>();
 builder.Services.AddScoped<IPricingService, PricingService>();
 builder.Services.AddHttpClient("AgenticService", client =>
 {
@@ -138,6 +143,7 @@ using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     context.Database.Migrate();
+    await scope.ServiceProvider.GetRequiredService<PreDesignedPlanSeeder>().SeedAsync();
 }
 
 // 6. Register exception-handling middleware early in request pipeline
@@ -157,10 +163,6 @@ if (app.Environment.IsDevelopment())
 // Disable default HTTPS redirect for ease of local testing in CORS environments if desired,
 // but keep it active and ensure client URLs match.
 app.UseHttpsRedirection();
-
-// Apply CORS Policy
-// Moved to the top to ensure CORS headers are sent on all responses, including exceptions.
-// (Already applied at the top)
 
 app.UseAuthorization();
 

@@ -1,4 +1,4 @@
-import { signInWithEmailAndPassword, signOut as firebaseSignOut, type UserCredential } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithEmailAndPassword, signInWithPopup, signOut as firebaseSignOut, type UserCredential, setPersistence, browserSessionPersistence } from 'firebase/auth';
 import { auth } from '../../services/firebase';
 import apiClient, { setInMemoryToken } from '../../services/apiClient';
 import type { UserProfile } from '../../types/auth.types';
@@ -7,12 +7,25 @@ import type { UserProfile } from '../../types/auth.types';
  * Service to manage Firebase Authentication and backend token exchange.
  */
 const authService = {
+  googleLogin: async (): Promise<{ user: UserProfile; token: string }> => {
+    await setPersistence(auth, browserSessionPersistence);
+    const credential = await signInWithPopup(auth, new GoogleAuthProvider());
+    const token = await credential.user.getIdToken();
+    setInMemoryToken(token);
+    
+    // Ensure user exists in local database before verifying
+    await apiClient.post('/auth/register', { token });
+    
+    const response = await apiClient.post<{ uid:string; email:string; role:UserProfile['role'] }>('/auth/verify',{token});
+    return { user:{uid:response.data.uid,email:response.data.email,role:response.data.role}, token };
+  },
   /**
    * Signs in user using Firebase, retrieves the token, verifies it with the backend,
    * and returns the user's role/details.
    */
   login: async (email: string, password: string): Promise<{ user: UserProfile; token: string }> => {
     // 1. Authenticate with Firebase Authentication (Production mode)
+    await setPersistence(auth, browserSessionPersistence);
     const credential: UserCredential = await signInWithEmailAndPassword(auth, email, password);
     const fbUser = credential.user;
 
@@ -26,8 +39,11 @@ const authService = {
     // 3. Set token in memory for Axios requests
     setInMemoryToken(token);
 
+    // Ensure user exists in local database
+    await apiClient.post('/auth/register', { token });
+
     // 4. Verify token with backend database
-    const response = await apiClient.post<{ uid: string; email: string; role: 'Architect' | 'Contractor' }>(
+    const response = await apiClient.post<{ uid: string; email: string; role: import('../../types/auth.types').UserRole }>(
       '/auth/verify',
       { token }
     );
@@ -59,10 +75,24 @@ const authService = {
           const token = await fbUser.getIdToken();
           setInMemoryToken(token);
 
-          const response = await apiClient.post<{ uid: string; email: string; role: 'Architect' | 'Contractor' }>(
-            '/auth/verify',
-            { token }
-          );
+          let response;
+          try {
+            response = await apiClient.post<{ uid: string; email: string; role: import('../../types/auth.types').UserRole }>(
+              '/auth/verify',
+              { token }
+            );
+          } catch (error: any) {
+            // If the local DB returns 401, they might be missing from Postgres. Register and retry.
+            if (error.response && error.response.status === 401) {
+              await apiClient.post('/auth/register', { token });
+              response = await apiClient.post<{ uid: string; email: string; role: import('../../types/auth.types').UserRole }>(
+                '/auth/verify',
+                { token }
+              );
+            } else {
+              throw error;
+            }
+          }
 
           resolve({
             user: {

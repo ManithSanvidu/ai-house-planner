@@ -48,12 +48,24 @@ public class HouseDesign
     [Required]
     public bool IsCurrent { get; set; } = true;
 
+    /// <summary>Hidden from customer design lists while retained for audit/version history.</summary>
+    [Required]
+    public bool IsArchived { get; set; }
+
     /// <summary>
     /// Stores the shared JSON layout contract (rooms, coordinates, openings) as native PostgreSQL JSONB.
     /// </summary>
     [Required]
     [Column(TypeName = "jsonb")]
     public string LayoutJson { get; set; } = "{}";
+
+    [Required, MaxLength(30)]
+    public string DesignSource { get; set; } = "ai_generated";
+
+    public Guid? BasePreDesignedPlanId { get; set; }
+
+    [ForeignKey(nameof(BasePreDesignedPlanId))]
+    public virtual PreDesignedHousePlan? BasePreDesignedPlan { get; set; }
 
     [Column(TypeName = "timestamp with time zone")]
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;

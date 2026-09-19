@@ -13,6 +13,13 @@ namespace HousePlanner.API.Data
         public DbSet<HouseDesign> HouseDesigns { get; set; }
         public DbSet<Room> Rooms { get; set; }
         public DbSet<WorkflowState> WorkflowStates { get; set; }
+        public DbSet<ValidationRequest> ValidationRequests { get; set; }
+        public DbSet<PreDesignedHousePlan> PreDesignedHousePlans { get; set; }
+        public DbSet<Project> Projects { get; set; }
+        public DbSet<ConstructionPhase> ConstructionPhases { get; set; }
+        public DbSet<ConstructorWorkflowLog> ConstructorWorkflowLogs { get; set; }
+        public DbSet<PricingData> PricingItems { get; set; }
+        public DbSet<CostEstimate> CostEstimates { get; set; }
         public DbSet<PricingData> PricingItems { get; set; }
         public DbSet<CostEstimate> CostEstimates { get; set; }
 
@@ -27,15 +34,16 @@ namespace HousePlanner.API.Data
             );
 
             modelBuilder.Entity<PricingData>()
-                .OwnsOne(p => p.TerrainMultiplier, owned =>
-                {
-                    owned.ToJson();
-                });
+                .OwnsOne(p => p.TerrainMultiplier, owned => owned.ToJson());
+
+            modelBuilder.Entity<PricingData>()
+                .OwnsOne(p => p.TerrainMultiplier, owned => owned.ToJson());
 
             modelBuilder.Entity<HouseDesign>(entity =>
             {
                 entity.HasIndex(e => e.WorkflowStateId).HasDatabaseName("IX_HouseDesigns_WorkflowStateId");
                 entity.HasIndex(e => new { e.WorkflowStateId, e.IsCurrent }).HasDatabaseName("IX_HouseDesigns_WorkflowState_IsCurrent");
+                entity.HasIndex(e => new { e.WorkflowStateId, e.IsArchived }).HasDatabaseName("IX_HouseDesigns_WorkflowState_IsArchived");
                 entity.HasIndex(e => new { e.WorkflowStateId, e.Version })
                     .IsUnique()
                     .HasDatabaseName("UX_HouseDesigns_WorkflowState_Version");
@@ -48,6 +56,15 @@ namespace HousePlanner.API.Data
                     // Ignore for in-memory provider 
                 }
             });
+
+            modelBuilder.Entity<WorkflowState>()
+                .HasIndex(e => e.PreferredHouseDesignId)
+                .HasDatabaseName("IX_WorkflowStates_PreferredHouseDesignId");
+            modelBuilder.Entity<WorkflowState>()
+                .HasOne<HouseDesign>()
+                .WithMany()
+                .HasForeignKey(e => e.PreferredHouseDesignId)
+                .OnDelete(DeleteBehavior.SetNull);
 
             modelBuilder.Entity<Room>(entity =>
             {
@@ -62,15 +79,44 @@ namespace HousePlanner.API.Data
                 entity.HasOne(e => e.HouseDesign)
                     .WithMany(d => d.CostEstimates)
                     .HasForeignKey(e => e.HouseDesignId);
-                try
-                {
-                    entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()");
-                }
-                catch
-                {
-                    // Ignore for in-memory provider
-                }
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()");
             });
+
+            modelBuilder.Entity<CostEstimate>(entity =>
+            {
+                entity.HasIndex(e => e.HouseDesignId)
+                    .IsUnique()
+                    .HasDatabaseName("IX_CostEstimates_HouseDesignId");
+                entity.HasOne(e => e.HouseDesign)
+                    .WithMany(d => d.CostEstimates)
+                    .HasForeignKey(e => e.HouseDesignId);
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()");
+            });
+
+            modelBuilder.Entity<PreDesignedHousePlan>(entity =>
+            {
+                entity.HasIndex(e => e.Slug).IsUnique();
+                entity.HasIndex(e => e.DesignCode).IsUnique();
+                entity.HasIndex(e => e.IsActive);
+                entity.HasIndex(e => e.Bedrooms);
+                entity.HasIndex(e => e.Bathrooms);
+                entity.HasIndex(e => e.FloorCount);
+                entity.HasIndex(e => e.Style);
+                entity.HasIndex(e => e.SuitableTerrain);
+            });
+
+            modelBuilder.Entity<HouseDesign>()
+                .HasOne(e => e.BasePreDesignedPlan)
+                .WithMany(e => e.DerivedDesigns)
+                .HasForeignKey(e => e.BasePreDesignedPlanId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<LandSubmission>()
+                .HasOne(x => x.BasePreDesignedPlan)
+                .WithMany()
+                .HasForeignKey(x => x.BasePreDesignedPlanId)
+                .OnDelete(DeleteBehavior.SetNull);
         }
     }
 }
+

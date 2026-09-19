@@ -7,6 +7,7 @@ from typing import Optional, Dict, Any
 import secrets
 
 from app.schemas.workflow_state import WorkflowState, CoordinatorInput
+from app.design.revision import preserve_revision_preferences
 from app.workflows.house_planning_graph import app_graph
 from app.config import INTERNAL_API_KEY
 
@@ -24,6 +25,7 @@ app.add_middleware(
 api_key_header=APIKeyHeader(name="X-Internal-API-Key")
 
 def verify_api_key(api_key: str=Security(api_key_header)):
+
     if not secrets.compare_digest(api_key, INTERNAL_API_KEY):
         raise HTTPException(status_code=403,detail="Forbidden:Invalid API Key")
     return api_key
@@ -31,7 +33,6 @@ def verify_api_key(api_key: str=Security(api_key_header)):
 class StartWorkflowRequest(BaseModel):
     workflow_id: UUID
     submission_id: UUID
-    budget_lkr: Optional[float] = None
     land_size_perches: float
     manual_terrain_type: Optional[str] = None
     preferences: Dict[str, Any]
@@ -42,7 +43,6 @@ class ResumeWorkflowRequest(BaseModel):
     workflow_id: UUID
     resume_from: str
     user_revision_prompt: str
-    budget_lkr: Optional[float] = None
     land_size_perches: float
     manual_terrain_type: Optional[str] = None
     preferences: Dict[str, Any]
@@ -88,17 +88,19 @@ def resume_workflow(
 ):
     if request.resume_from != "design":
         raise HTTPException(status_code=400, detail="Only design revisions are supported")
+    try:
+        preferences = preserve_revision_preferences(request.preferences, request.previous_design)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     # Reconstruct input data
     input_data = CoordinatorInput(
         submission_id=request.workflow_id,
-        budget_lkr=request.budget_lkr,
         land_size_perches=request.land_size_perches,
         manual_terrain_type=request.manual_terrain_type,
-        preferences=request.preferences,
+        preferences=preferences,
         plot_constraints=request.plot_constraints,
         design_seed=request.design_seed,
     )
-
     state = WorkflowState(
         workflow_id=request.workflow_id,
         status="running",

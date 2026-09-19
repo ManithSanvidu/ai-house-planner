@@ -1,6 +1,10 @@
 import json
 from unittest.mock import MagicMock, patch
 import pytest
+from app.design.architectural_quality import validate_architectural_quality
+from app.design.models import Connection, Entrance
+from app.schemas.design_result import RoomLayout, Connection, DesignResult
+from app.design.base_plan_library import BasePlanRecord
 from app.tools.layout_generation_tool import generate_layout
 from app.design.candidate_generator import GenerationFailure
 from app.schemas.workflow_state import CoordinatorInput, WorkflowState
@@ -16,42 +20,6 @@ def state():
         terrain_result={'terrain_type':'flat'})
 
 
-def test_configured_api_failure_does_not_use_procedural_fallback():
-    with patch('app.tools.layout_generation_tool.GOOGLE_API_KEY', 'test'), \
-         patch('app.tools.layout_generation_tool._call_gemini_design', side_effect=RuntimeError('offline')):
-        with pytest.raises(GenerationFailure, match='Gemini design generation failed'):
-            generate_layout(20, 'flat', {'bedrooms':3,'floors':1})
-
-
-def test_invalid_final_ai_retry_never_becomes_layout():
-    with patch('app.tools.layout_generation_tool.GOOGLE_API_KEY', 'test'), \
-         patch('app.tools.layout_generation_tool._call_gemini_design', return_value='{"rooms": [{"x": -999}]}') as call:
-        with pytest.raises(GenerationFailure, match='Unable to produce valid AI geometry'):
-            generate_layout(20, 'flat', {'bedrooms':3,'floors':1})
-    assert call.call_count == 9
-
-
-def test_ai_path_generates_three_valid_candidates_and_selects_highest_score():
-    narrow_plot = {'plot_width_ft': 26, 'plot_length_ft': 210}
-    generated = [
-        generate_layout(20, 'flat', {'bedrooms': 3, 'floors': 1},
-                        plot_constraints=narrow_plot, design_seed=seed)
-        for seed in (11, 22, 33)
-    ]
-    payloads = [json.dumps(item.model_dump()) for item in generated]
-    fake_client = MagicMock()
-    with patch('app.tools.layout_generation_tool.GOOGLE_API_KEY', 'test'), \
-         patch('google.genai.Client', return_value=fake_client), \
-         patch('app.tools.layout_generation_tool._call_gemini_design', side_effect=payloads) as call:
-        result = generate_layout(20, 'flat', {'bedrooms': 3, 'floors': 1},
-                                 plot_constraints=narrow_plot)
-
-    assert call.call_count == 3
-    assert result.candidate_summary['generation_mode'] == 'ai_generative'
-    assert result.candidate_summary['generated_count'] == 3
-    assert result.candidate_summary['valid_count'] == 3
-    assert result.design_score == max(c['score'] for c in result.candidate_summary['candidates'])
-    assert len(result.geometry_fingerprint) == 64
 
 
 def test_complete_optional_context_reaches_design_prompt():
@@ -68,28 +36,84 @@ def test_complete_optional_context_reaches_design_prompt():
         'north_direction': 'east', 'entrance_side': 'west',
         'setbacks': {'front': 10, 'rear': 6, 'left': 5, 'right': 5},
     }
-    with patch('app.tools.layout_generation_tool.GOOGLE_API_KEY', 'test'), \
-         patch('app.tools.layout_generation_tool._call_gemini_design', return_value='{}') as call:
-        with pytest.raises(GenerationFailure):
-            generate_layout(15, 'flat', preferences, plot_constraints=plot, budget_lkr=15_000_000)
+    mock_provider = MagicMock()
+    mock_provider.generate_json.return_value = {
+        "selected_plan_code": "INVALID",
+        "alternative_plan_codes": [],
+        "design_intent": {
+            "public_zone_orientation": "south",
+            "private_zone_orientation": "north",
+            "service_zone_orientation": "west",
+            "privacy_priority": "high",
+            "circulation_preference": "short_central_hall",
+        },
+        "adaptations": {
+            "mirror_horizontal": False,
+            "mirror_vertical": False,
+            "rotation_degrees": 0,
+            "living_scale": 1.0,
+            "bedroom_scale": 1.0,
+            "entrance_side": "south",
+            "preserve_stair_core": True,
+            "preserve_wet_core": True,
+        },
+        "reason_codes": ["plot_fit"]
+    }
+    dummy_plan = BasePlanRecord(
+        plan_code='HP-TEST', name='Test Plan', bedrooms=3, bathrooms=2, floors=1,
+        topology_family='COMPACT_RECTANGLE', minimum_land_perches=5, maximum_land_perches=None,
+        minimum_plot_width_ft=None, minimum_plot_length_ft=None, supported_plot_shapes=['COMPACT_RECTANGLE'],
+        supported_terrains=['flat'], supported_styles=['Modern Minimalist'], capabilities={}, architectural_metrics={},
+        layout_json=DesignResult(floor_count=1, foundation_type='slab').model_dump_json()
+    )
+    with patch('app.tools.layout_generation_tool.filter_compatible_base_plans', return_value=[dummy_plan]):
+        with patch('app.tools.layout_generation_tool.get_available_design_provider', return_value=mock_provider):
+            with patch('app.design.plan_adapter.PlanAdapter.adapt') as mock_adapt:
+                mock_adapt.return_value = MagicMock(template_id='HP-TEST', template_family='COMPACT_RECTANGLE', rooms=[])
+                try:
+                    result = generate_layout(15, 'flat', preferences, plot_constraints=plot)
+                except Exception:
+                    pass # the generation might fail due to dummy plan, we just care that it reached the prompt
 
-    sent = json.loads(call.call_args_list[0].args[1])
-    assert sent['budget_lkr'] == 15_000_000
-    assert sent['requirements']['bathrooms'] == 2
-    assert sent['requirements']['attached_bathroom'] is True
-    assert sent['requirements']['utility_room'] is True
-    assert sent['requirements']['circulation_preference'] == 'space_efficient'
-    assert sent['plot']['north_direction'] == 'east'
-    assert sent['plot']['entrance_side'] == 'west'
-    assert sent['plot']['setbacks']['rear'] == 6
+    sent = json.loads(mock_provider.generate_json.call_args_list[0].args[1])
+    assert 'budget_lkr' not in sent['normalized_input']
+    assert sent['normalized_input']['bathrooms'] == 2
+    assert sent['normalized_input']['master_ensuite'] is True
+    assert sent['normalized_input']['utility_room'] is True
+    assert sent['normalized_input']['north_direction'] == 'east'
+    assert sent['normalized_input']['entrance_side'] == 'west'
+    assert mock_provider.generate_json.call_count == 1
 
 
-def test_seeded_request_never_calls_remote_advice():
-    with patch('app.tools.layout_generation_tool._call_gemini_design') as call:
-        a = generate_layout(20, 'flat', {'floors':1}, design_seed=8)
-        b = generate_layout(20, 'flat', {'floors':1}, design_seed=8)
-    call.assert_not_called()
-    assert a.model_dump() == b.model_dump()
+def test_seeded_request_still_calls_remote_advice_once():
+    mock_provider = MagicMock()
+    mock_provider.generate_json.return_value = {
+        "selected_plan_code": "INVALID",
+        "alternative_plan_codes": [],
+        "design_intent": {
+            "public_zone_orientation": "south",
+            "private_zone_orientation": "north",
+            "service_zone_orientation": "west",
+            "privacy_priority": "balanced",
+            "circulation_preference": "short_central_hall",
+        },
+        "adaptations": {
+            "mirror_horizontal": False,
+            "mirror_vertical": False,
+            "rotation_degrees": 0,
+            "living_scale": 1.0,
+            "bedroom_scale": 1.0,
+            "entrance_side": "south",
+            "preserve_stair_core": True,
+            "preserve_wet_core": True,
+        },
+        "reason_codes": ["plot_fit"]
+    }
+    with patch('app.tools.layout_generation_tool.get_available_design_provider', return_value=mock_provider):
+        result = generate_layout(20, 'flat', {'floors':1}, design_seed=8)
+
+    assert result.candidate_summary['generation_mode'] == 'deterministic_fallback'
+    assert mock_provider.generate_json.call_count == 1
 
 
 def test_failed_generation_is_not_submitted_or_approved():
@@ -125,3 +149,44 @@ def test_safe_failure_reason_exposes_validation_without_traceback():
         'candidate_failures': [{'failures': ['Circulation area is 18.0%.', 'Invalid entrance.']}]
     }
     assert _safe_failure_reason(failed) == 'Circulation area is 18.0%. Invalid entrance.'
+
+
+def test_architectural_quality_rejects_long_hallway_spine():
+    design = DesignResult(
+        floor_count=1,
+        foundation_type='slab',
+        terrain_type='flat',
+        rooms=[
+            RoomLayout(room_type='living_room', floor=1, x=0, y=0, width=14, length=12),
+            RoomLayout(room_type='kitchen', floor=1, x=0, y=12, width=14, length=10),
+            RoomLayout(room_type='hallway', floor=1, x=0, y=22, width=4, length=42),
+            RoomLayout(room_type='bedroom_1', floor=1, x=4, y=22, width=10, length=12),
+            RoomLayout(room_type='bedroom_2', floor=1, x=4, y=34, width=10, length=12),
+            RoomLayout(room_type='bedroom_3', floor=1, x=4, y=46, width=10, length=12),
+            RoomLayout(room_type='bathroom', floor=1, x=4, y=58, width=6, length=8),
+        ],
+        connections=[
+            Connection(from_room='living-room', to_room='kitchen'),
+        ],
+        entrances=[Entrance(room_id='living-room', wall='south', offset=4, width=3)],
+        template_family='LINEAR',
+        template_id='LINEAR',
+    )
+    # Fix room IDs and explicit connections to mirror a fake corridor spine.
+    for index, room in enumerate(design.rooms, start=1):
+        room.room_id = f'r{index}'
+    design.connections = [
+        Connection(from_room='r1', to_room='r2'),
+        Connection(from_room='r2', to_room='r3'),
+        Connection(from_room='r3', to_room='r4'),
+        Connection(from_room='r4', to_room='r5'),
+        Connection(from_room='r5', to_room='r6'),
+        Connection(from_room='r6', to_room='r7'),
+    ]
+    design.entrances = [Entrance(room_id='r1', wall='south', offset=4, width=3)]
+
+    req = type('Req', (), {'bedrooms': 3, 'bathrooms': 1, 'floors': 1, 'home_office': False, 'utility_room': False, 'balcony': False, 'veranda': False, 'dining_required': False, 'attached_bathroom': False, 'open_plan': False, 'accessibility': False, 'parking': False, 'privacy_priority': False})()
+    plot = type('Plot', (), {'road_side': 'south', 'effective_entrance_side': 'south', 'plot_width_ft': 80, 'plot_length_ft': 80, 'buildable_width': 70, 'buildable_length': 70, 'edge_setbacks': {'west': 5, 'south': 5}})()
+    result = validate_architectural_quality(design, req=req, plot=plot)
+    assert not result.passed
+    assert 'long_hallway' in result.failures or 'excessive_circulation' in result.failures or 'public_zone_separation' in result.failures

@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
 
 import 'package:dio/dio.dart';
+import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/network/api_client.dart';
+import '../providers/auth_provider.dart';
 
-class RegisterView extends StatefulWidget {
+class RegisterView extends ConsumerStatefulWidget {
   const RegisterView({super.key});
 
   @override
-  State<RegisterView> createState() => _RegisterViewState();
+  ConsumerState<RegisterView> createState() => _RegisterViewState();
 }
 
-class _RegisterViewState extends State<RegisterView> {
+class _RegisterViewState extends ConsumerState<RegisterView> {
   int _selectedRoleIndex = 0;
   bool _agreedToTerms = false;
   bool _isLoading = false;
@@ -31,19 +35,22 @@ class _RegisterViewState extends State<RegisterView> {
 
     setState(() => _isLoading = true);
     try {
-      final dio = Dio();
-      final response = await dio.post(
-        'http://localhost:5265/api/v1/auth/local/register',
+      final response = await ApiClient.instance.post(
+        '/auth/local/register',
         data: {
           'email': _emailController.text.trim(),
           'password': _passwordController.text.trim(),
           'fullName': _nameController.text.trim(),
-          'roleId': _selectedRoleIndex + 1, // Basic mapping (0->1, 1->2...)
+          'roleId': _selectedRoleIndex + 1,
         },
       );
 
       if (response.statusCode == 200 && mounted) {
-        Navigator.pushReplacementNamed(context, '/land_submission');
+        await ref.read(authProvider.notifier).login(
+          _emailController.text.trim(),
+          _passwordController.text.trim()
+        );
+        if (mounted) context.go('/dashboard');
       }
     } on DioException catch (e) {
       if (mounted) {
@@ -125,7 +132,7 @@ class _RegisterViewState extends State<RegisterView> {
                 children: [
                   IconButton(
                     icon: const Icon(Icons.arrow_back, color: Color(0xFF00000B)),
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () => context.go('/login'),
                     style: IconButton.styleFrom(backgroundColor: Colors.white, elevation: 1),
                   ),
                   const SizedBox(width: 8),
@@ -261,7 +268,7 @@ class _RegisterViewState extends State<RegisterView> {
                       children: [
                         const Text('Already have an account? ', style: TextStyle(color: Color(0xFF78767D))),
                         GestureDetector(
-                          onTap: () => Navigator.pushReplacementNamed(context, '/login'),
+                          onTap: () => context.go('/login'),
                           child: const Text('Log in', style: TextStyle(color: Color(0xFF00000B), fontWeight: FontWeight.bold)),
                         )
                       ],

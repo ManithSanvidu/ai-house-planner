@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using HousePlanner.API.Data;
 using HousePlanner.API.DTOs;
 using HousePlanner.API.Entities;
@@ -9,7 +9,6 @@ namespace HousePlanner.API.Controllers;
 
 [ApiController]
 [Route("api/v1/internal/workflows")]
-// Requires InternalServiceAuthMiddleware — shared secret header, not JWT
 public class InternalWorkflowController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
@@ -21,31 +20,29 @@ public class InternalWorkflowController : ControllerBase
         _logger = logger;
     }
 
-    private async Task<WorkflowState?> FindWorkflowState(Guid workflowId)
+    private async Task<WorkflowState?> FindWorkflowState(Guid id)
     {
-        var workflow = await _context.WorkflowStates
+        return await _context.WorkflowStates
             .Include(w => w.HouseDesigns)
                 .ThenInclude(d => d.CostEstimates)
-            .FirstOrDefaultAsync(w => w.Id == workflowId);
-
-        return workflow;
+            .FirstOrDefaultAsync(w => w.Id == id);
     }
 
     /// <summary>
-    /// Internal endpoint for the Design Agent to submit a new generated layout.
-    /// Used both for initial generation and revisions after validation failure.
-    /// Manages design versioning — marks old versions as not current.
+    /// Internal endpoint for the Design Agent to save generated/revised layouts.
     /// </summary>
     [HttpPost("{id:guid}/design")]
-    public async Task<IActionResult> SubmitDesignRevision(Guid id, [FromBody] JsonElement layoutData)
+    public async Task<IActionResult> SaveDesign(Guid id, [FromBody] JsonElement layoutData)
     {
         try
         {
             var workflow = await FindWorkflowState(id);
             if (workflow is null)
-                return NotFound(new { message = $"Unknown workflow {id}; callback was not persisted." });
+            {
+                _logger.LogWarning("Workflow {WorkflowId} not found when saving design.", id);
+                return NotFound(new { message = $"Workflow {id} not found." });
+            }
 
-            // Extract required fields from the JSON contract
             int floorCount = layoutData.GetProperty("floor_count").GetInt32();
             decimal totalArea = layoutData.TryGetProperty("total_built_up_area_sqft", out var areaProp)
                 ? areaProp.GetDecimal()
@@ -69,6 +66,8 @@ public class InternalWorkflowController : ControllerBase
                 existing.IsCurrent = false;
             }
 
+            var basePlanId = await _context.LandSubmissions.Where(s => s.Id == workflow.LandSubmissionId)
+                .Select(s => s.BasePreDesignedPlanId).FirstOrDefaultAsync();
             var newDesign = new HouseDesign
             {
                 WorkflowStateId = id,
@@ -80,6 +79,8 @@ public class InternalWorkflowController : ControllerBase
                 TerrainType = terrainType,
                 IsCurrent = true, // New design is always current
                 LayoutJson = layoutData.GetRawText(),
+                DesignSource = basePlanId is null ? "ai_generated" : "adapted_pre_designed",
+                BasePreDesignedPlanId = basePlanId,
                 CreatedAt = DateTimeOffset.UtcNow,
                 Rooms = new List<Room>()
             };
@@ -131,6 +132,44 @@ public class InternalWorkflowController : ControllerBase
         {
             _logger.LogError(ex, "Error saving design for workflow {WorkflowId}", id);
             return StatusCode(StatusCodes.Status500InternalServerError, new { message = "An error occurred saving the design." });
+        }
+    }
+
+    /// <summary>
+    /// Internal endpoint for the Validation Agent to update validation status.
+    /// </summary>
+    [HttpPatch("{id:guid}/validation")]
+    public async Task<IActionResult> UpdateValidationStatus(Guid id, [FromBody] JsonElement validationData)
+    {
+        try
+        {
+            var workflow = await FindWorkflowState(id);
+            if (workflow is null) return NotFound(new { message = $"Unknown workflow {id}." });
+
+            bool passed = validationData.TryGetProperty("passed", out var pProp) && pProp.GetBoolean();
+            if (passed)
+            {
+                workflow.Status = "awaiting_approval";
+                workflow.ApprovalStatus = "pending";
+                workflow.FailureReason = null;
+            }
+            else
+            {
+                string? reason = validationData.TryGetProperty("summary", out var sProp) ? sProp.GetString() :
+                                 validationData.TryGetProperty("revision_reason", out var rProp) ? rProp.GetString() : "Validation failed";
+                workflow.FailureReason = reason?[..Math.Min(reason.Length, 1000)];
+            }
+
+            workflow.UpdatedAt = DateTimeOffset.UtcNow;
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Validation status updated for workflow {WorkflowId}: passed={Passed}, status={Status}", id, passed, workflow.Status);
+            return Ok(new { message = "Validation status updated.", status = workflow.Status, approvalStatus = workflow.ApprovalStatus });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating validation status for workflow {WorkflowId}", id);
+            return StatusCode(StatusCodes.Status500InternalServerError, new { message = "An error occurred updating validation status." });
         }
     }
 
@@ -213,8 +252,8 @@ public class InternalWorkflowController : ControllerBase
     }
 
     /// <summary>
-    /// Internal endpoint for the Cost Estimation Agent to persist a calculated cost estimate.
-    /// Links to the current house design version for the specified workflow.
+    /// Persists the Cost Estimation Agent result for the current design.
+    /// Repeated callbacks update the existing estimate.
     /// </summary>
     [HttpPost("{id:guid}/cost-estimate")]
     public async Task<IActionResult> SaveCostEstimate(Guid id, [FromBody] SaveCostEstimateRequestDto request)
@@ -224,39 +263,28 @@ public class InternalWorkflowController : ControllerBase
             if (request is null)
                 return BadRequest(new { message = "Request body cannot be null." });
 
-            if (request.MaterialCostLkr < 0)
-                return BadRequest(new { message = "Material cost cannot be negative." });
-
-            if (request.LabourCostLkr < 0)
-                return BadRequest(new { message = "Labour cost cannot be negative." });
-
-            if (request.TotalCostLkr < 0)
-                return BadRequest(new { message = "Total cost cannot be negative." });
-
-            if (request.BudgetDeltaPercent < 0)
-                return BadRequest(new { message = "Budget delta percent cannot be negative." });
+            if (request.MaterialCostLkr < 0 || request.LabourCostLkr < 0 ||
+                request.TotalCostLkr < 0 || request.BudgetDeltaPercent < 0)
+                return BadRequest(new { message = "Cost values and budget delta cannot be negative." });
 
             const decimal tolerance = 0.05m;
             if (Math.Abs(request.TotalCostLkr - (request.MaterialCostLkr + request.LabourCostLkr)) > tolerance)
-            {
-                return BadRequest(new { message = $"Total cost ({request.TotalCostLkr}) does not match the sum of material ({request.MaterialCostLkr}) and labour ({request.LabourCostLkr}) within tolerance." });
-            }
+                return BadRequest(new { message = "Total cost must equal material cost plus labour cost." });
 
             var workflow = await FindWorkflowState(id);
             if (workflow is null)
                 return NotFound(new { message = $"Unknown workflow {id}; cost estimate was not persisted." });
 
-            var currentDesign = workflow.HouseDesigns.FirstOrDefault(d => d.IsCurrent);
+            var currentDesign = workflow.HouseDesigns.FirstOrDefault(d => d.IsCurrent && !d.IsArchived);
             if (currentDesign is null)
                 return Conflict(new { message = "No current house design exists for this workflow." });
 
-            // Retry/idempotency: update existing estimate for this current design if present, otherwise create new
             var existingEstimate = currentDesign.CostEstimates
                 .OrderByDescending(c => c.CreatedAt)
                 .FirstOrDefault();
 
             CostEstimate estimate;
-            if (existingEstimate != null)
+            if (existingEstimate is not null)
             {
                 existingEstimate.MaterialCostLkr = request.MaterialCostLkr;
                 existingEstimate.LabourCostLkr = request.LabourCostLkr;
@@ -285,7 +313,6 @@ public class InternalWorkflowController : ControllerBase
             }
             catch (DbUpdateException) when (existingEstimate is null)
             {
-                // A concurrent retry may have inserted the unique row after our read.
                 _context.Entry(estimate).State = EntityState.Detached;
                 var concurrentEstimate = await _context.CostEstimates
                     .SingleOrDefaultAsync(c => c.HouseDesignId == currentDesign.Id);
@@ -300,11 +327,7 @@ public class InternalWorkflowController : ControllerBase
                 estimate = concurrentEstimate;
             }
 
-            _logger.LogInformation(
-                "Successfully saved cost estimate {CostEstimateId} for workflow {WorkflowId}, design {DesignId}",
-                estimate.Id, id, currentDesign.Id);
-
-            var responseDto = new CostEstimateResponseDto
+            return Ok(new CostEstimateResponseDto
             {
                 CostEstimateId = estimate.Id,
                 HouseDesignId = currentDesign.Id,
@@ -312,9 +335,7 @@ public class InternalWorkflowController : ControllerBase
                 LabourCostLkr = estimate.LabourCostLkr,
                 TotalCostLkr = estimate.TotalCostLkr,
                 BudgetDeltaPercent = estimate.BudgetDeltaPercent
-            };
-
-            return Ok(responseDto);
+            });
         }
         catch (Exception ex)
         {

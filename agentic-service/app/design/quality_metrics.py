@@ -7,12 +7,13 @@ from app.design.adjacency import exterior_segments, graph_for
 from app.design.room_rules import CIRCULATION_TYPES, room_kind
 from app.schemas.design_result import DesignResult, RoomLayout
 
-CIRCULATION_GOOD_RATIO = 0.08
-CIRCULATION_ACCEPTABLE_RATIO = 0.12
-CIRCULATION_VERY_POOR_RATIO = 0.15
+from app.design.quality_config import QUALITY
+CIRCULATION_GOOD_RATIO = QUALITY.circulation_excellent
+CIRCULATION_ACCEPTABLE_RATIO = QUALITY.circulation_acceptable
+CIRCULATION_VERY_POOR_RATIO = QUALITY.circulation_reject
 NARROW_PLOT_THRESHOLD_FT = 28.0
-HALLWAY_PREFERRED_MAX_LENGTH_FT = 20.0
-HALLWAY_EXTREME_LENGTH_FT = 32.0
+HALLWAY_PREFERRED_MAX_LENGTH_FT = QUALITY.hallway_preferred_ft
+HALLWAY_EXTREME_LENGTH_FT = QUALITY.hallway_max_ft
 
 
 def _centre(room: RoomLayout) -> tuple[float, float]:

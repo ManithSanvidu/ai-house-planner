@@ -28,4 +28,7 @@
     <ProjectReference Include="..\HousePlanner.API\HousePlanner.API.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="..\HousePlanner.API\Data\Seed\pre-designed-plans.json" Link="Data\Seed\pre-designed-plans.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

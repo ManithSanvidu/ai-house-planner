@@ -3,6 +3,7 @@ using HousePlanner.API.Controllers;
 using HousePlanner.API.Data;
 using HousePlanner.API.DTOs;
 using HousePlanner.API.Entities;
+using HousePlanner.API.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -19,7 +20,8 @@ public class ProceduralContractTests
     {
         var clients = new Mock<IHttpClientFactory>();
         clients.Setup(f => f.CreateClient(It.IsAny<string>())).Returns(new HttpClient());
-        return new WorkflowController(db, NullLogger<WorkflowController>.Instance, clients.Object);
+        return new WorkflowController(db, NullLogger<WorkflowController>.Instance, clients.Object,
+            Mock.Of<IWorkflowService>(), Mock.Of<ICurrentUserContextService>());
     }
 
     [Fact]
