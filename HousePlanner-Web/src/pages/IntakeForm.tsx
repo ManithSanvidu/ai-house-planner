@@ -174,7 +174,7 @@ const IntakeForm: React.FC = () => {
   }
 
   return (
-    <div className="max-w-3xl mx-auto p-8 sm:p-10 bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.3)] border border-white/60 dark:border-gray-800/80 relative overflow-hidden transition-colors duration-300">
+    <div className="max-w-3xl mx-auto p-4 sm:p-10 bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.3)] border border-white/60 dark:border-gray-800/80 relative overflow-hidden transition-colors duration-300">
       {/* Decorative background blur inside the card */}
       <div className="absolute -top-40 -right-40 w-80 h-80 bg-indigo-100/50 dark:bg-indigo-900/20 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-3xl opacity-50"></div>
       
@@ -213,7 +213,7 @@ const IntakeForm: React.FC = () => {
               />
             </div>
             
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-4 sm:gap-2">
               <div className="flex-1">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Land Size</label>
                 <input 
@@ -226,7 +226,7 @@ const IntakeForm: React.FC = () => {
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 transition-colors"
                 />
               </div>
-              <div className="w-1/3">
+              <div className="w-full sm:w-1/3">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Unit</label>
                 <select 
                   name="landUnit" 
@@ -413,7 +413,7 @@ const IntakeForm: React.FC = () => {
               <option value="outdoor_garden">Outdoor / Garden Priority</option>
             </select>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {([['openPlan', 'Open-plan Living / Dining'], ['masterEnsuite', 'Master Bedroom with Attached Bathroom'],
               ['separateDining', 'Separate Dining Area'], ['homeOffice', 'Home Office'], ['balcony', 'Balcony'],
               ['veranda', 'Veranda'], ['utilityRoom', 'Utility / Laundry'], ['parkingRequired', 'Parking Required'],

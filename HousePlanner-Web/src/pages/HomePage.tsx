@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Html, useGLTF } from '@react-three/drei';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
-import { Mic, ArrowRight, Sparkles, Box, Moon, Sun, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Mic, ArrowRight, Sparkles, Box, Moon, Sun, ChevronRight, ChevronLeft, Menu, X } from 'lucide-react';
 import * as THREE from 'three';
 
 // ---------------------------------------------------------
@@ -287,6 +287,7 @@ const HomePage: React.FC = () => {
   const [prompt, setPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleGenerate = (e: React.FormEvent) => {
     e.preventDefault();
@@ -323,28 +324,53 @@ const HomePage: React.FC = () => {
             <Link to="/dashboard" className="hover:text-gray-900 dark:hover:text-white transition-colors">MY PLANS</Link>
           </div>
 
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4 sm:gap-6">
             <button onClick={() => setIsDark(!isDark)} className="text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
               {isDark ? <Sun size={20} /> : <Moon size={20} />}
             </button>
-            <Link to="/login" className="text-[11px] font-bold tracking-[0.15em] text-gray-900 dark:text-white hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+            <Link to="/login" className="hidden sm:block text-[11px] font-bold tracking-[0.15em] text-gray-900 dark:text-white hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
               SIGN IN
             </Link>
             <Link 
               to="/login" 
-              className="bg-gray-900 dark:bg-white hover:bg-black dark:hover:bg-gray-200 text-white dark:text-gray-900 px-7 py-3.5 rounded-none text-[11px] font-bold tracking-[0.15em] transition-all"
+              className="hidden sm:flex bg-gray-900 dark:bg-white hover:bg-black dark:hover:bg-gray-200 text-white dark:text-gray-900 px-7 py-3.5 rounded-none text-[11px] font-bold tracking-[0.15em] transition-all"
             >
               START DESIGNING
             </Link>
+            <button 
+              className="lg:hidden text-gray-900 dark:text-white"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            >
+              {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
           </div>
         </div>
       </motion.nav>
 
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="fixed inset-0 z-40 bg-white/95 dark:bg-gray-950/95 backdrop-blur-xl flex flex-col items-center justify-center gap-8 lg:hidden"
+          >
+            <Link to="/" onClick={() => setIsMobileMenuOpen(false)} className="text-2xl font-semibold tracking-widest text-gray-900 dark:text-white">HOME</Link>
+            <Link to="/dashboard/new-project" onClick={() => setIsMobileMenuOpen(false)} className="text-2xl font-semibold tracking-widest text-gray-900 dark:text-white">AI DESIGN</Link>
+            <Link to="/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="text-2xl font-semibold tracking-widest text-gray-900 dark:text-white">MY PLANS</Link>
+            <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} className="text-2xl font-semibold tracking-widest text-gray-500">SIGN IN</Link>
+            <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} className="mt-8 bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-8 py-4 text-sm font-bold tracking-[0.15em]">
+              START DESIGNING
+            </Link>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* MAIN HERO */}
-      <section className="relative h-[100vh] w-full flex items-center pt-24 pb-12 lg:pt-0 lg:pb-0">
+      <section className="relative min-h-[100vh] w-full flex flex-col lg:flex-row items-center pt-28 pb-12 lg:pt-0 lg:pb-0">
         
         {/* 3D Canvas on the Right (60% width) */}
-        <div className="absolute inset-0 z-0 lg:left-[40%] lg:w-[60%] pointer-events-auto">
+        <div className="relative w-full h-[50vh] lg:absolute lg:inset-0 lg:z-0 lg:left-[40%] lg:w-[60%] lg:h-full pointer-events-auto order-2 lg:order-none">
           <Canvas shadows camera={{ position: [20, 10, 20], fov: 35 }} className="w-full h-full cursor-grab active:cursor-grabbing">
             <HouseScene isDark={isDark} />
             <OrbitControls 
@@ -364,9 +390,9 @@ const HomePage: React.FC = () => {
         {/* Hero Content on the Left (40% width) */}
         <motion.div 
           style={{ opacity: heroOpacity, y: heroY }}
-          className="relative z-10 w-full max-w-[1600px] mx-auto px-8 pointer-events-none flex flex-col justify-center h-full"
+          className="relative z-10 w-full max-w-[1600px] mx-auto px-6 sm:px-8 pointer-events-none flex flex-col justify-center h-full order-1 lg:order-none mt-10 lg:mt-0"
         >
-          <div className="max-w-[45%] pointer-events-auto mt-20 lg:mt-0">
+          <div className="w-full lg:max-w-[45%] pointer-events-auto">
             <div className="inline-block mb-6">
               <p className="text-[10px] font-bold tracking-[0.2em] text-gray-500 dark:text-gray-400 flex items-center gap-2">
                 <span className="w-8 h-[1px] bg-gray-300 dark:bg-gray-700 transition-colors"></span>
@@ -374,14 +400,14 @@ const HomePage: React.FC = () => {
               </p>
             </div>
             
-            <h1 className="text-5xl lg:text-[5rem] font-medium text-gray-900 dark:text-white tracking-tight leading-[1.05] mb-6 font-serif transition-colors">
+            <h1 className="text-4xl sm:text-5xl lg:text-[5rem] font-medium text-gray-900 dark:text-white tracking-tight leading-[1.1] lg:leading-[1.05] mb-6 font-serif transition-colors">
               Design the Home<br/>
               <span className="relative inline-block text-gray-800 dark:text-gray-300 transition-colors">
                 You Imagine.
               </span>
             </h1>
             
-            <p className="text-lg text-gray-500 dark:text-gray-400 mb-10 leading-relaxed font-light pr-10 transition-colors">
+            <p className="text-base sm:text-lg text-gray-500 dark:text-gray-400 mb-10 leading-relaxed font-light lg:pr-10 transition-colors">
               Turn your ideas into intelligent architecture, immersive 3D spaces, and build-ready plans.
             </p>
             
@@ -492,7 +518,7 @@ const HomePage: React.FC = () => {
       <section className="py-32 bg-white dark:bg-gray-900 relative z-10 border-t border-gray-100 dark:border-gray-800 transition-colors duration-300">
         <div className="max-w-[1400px] mx-auto px-6 grid lg:grid-cols-2 gap-16 items-center">
           {/* Left: Tall Image Carousel */}
-          <div className="relative h-[600px] rounded-3xl overflow-hidden group">
+          <div className="relative h-[400px] lg:h-[600px] rounded-3xl overflow-hidden group">
             <AnimatePresence initial={false}>
               <motion.img 
                 key={currentImgIndex}
@@ -568,7 +594,7 @@ const HomePage: React.FC = () => {
 
             <div className="grid lg:grid-cols-3 gap-8">
               {/* Left Large Image */}
-              <div className="lg:col-span-2 relative rounded-3xl overflow-hidden h-[500px]">
+              <div className="lg:col-span-2 relative rounded-3xl overflow-hidden h-[300px] sm:h-[400px] lg:h-[500px]">
                 <img src="https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?q=80&w=1200&auto=format&fit=crop" alt="Living Room" className="w-full h-full object-cover" />
                 {/* Interactive Tags */}
                 <div className="absolute top-1/3 left-1/3 w-8 h-8 bg-black/50 backdrop-blur-md rounded-full flex items-center justify-center border border-white/30 cursor-pointer animate-pulse hover:scale-125 transition-transform">
@@ -584,7 +610,7 @@ const HomePage: React.FC = () => {
               </div>
 
               {/* Right Products */}
-              <div className="flex flex-col justify-between h-[500px]">
+              <div className="flex flex-col justify-between h-[auto] lg:h-[500px] gap-6 lg:gap-0 mt-6 lg:mt-0">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <div className="bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-4 aspect-square flex items-center justify-center mb-3 transition-colors">

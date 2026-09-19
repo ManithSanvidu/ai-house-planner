@@ -31,19 +31,22 @@ const DashboardPage: React.FC = () => {
           Ready to design something extraordinary today?
         </p>
 
-        <div className="flex flex-wrap gap-3 justify-center">
-          <Link to="/dashboard/new-project">
+        <div className="flex flex-col sm:flex-row gap-3 justify-center w-full">
+          <Link to="/dashboard/new-project" className="w-full sm:w-auto">
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="group relative flex items-center gap-3 px-8 py-4 bg-zinc-900 dark:bg-white hover:bg-zinc-800 dark:hover:bg-gray-200 text-white dark:text-zinc-900 rounded-2xl font-semibold shadow-[0_1px_2px_rgba(0,0,0,0.24)] transition-all overflow-hidden"
+              className="w-full sm:w-auto group relative flex items-center justify-center gap-3 px-8 py-4 bg-zinc-900 dark:bg-white hover:bg-zinc-800 dark:hover:bg-gray-200 text-white dark:text-zinc-900 rounded-2xl font-semibold shadow-[0_1px_2px_rgba(0,0,0,0.24)] transition-all overflow-hidden"
             >
               <div className="absolute inset-0 w-1/4 h-full bg-gradient-to-r from-transparent via-white/10 dark:via-black/10 to-transparent -skew-x-12 -translate-x-full group-hover:animate-shine"></div>
               <Plus size={20} className="text-zinc-300 dark:text-zinc-600 group-hover:text-white dark:group-hover:text-zinc-900 transition-colors" />
               <span>Start New Project</span>
             </motion.button>
           </Link>
-          <Link to="/dashboard/plans" className="flex items-center gap-2 px-8 py-4 border border-zinc-300 dark:border-gray-700 rounded-2xl font-semibold"><Library size={20}/>Browse Plans</Link>
+          <Link to="/dashboard/plans" className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 border border-zinc-300 dark:border-gray-700 rounded-2xl font-semibold text-zinc-900 dark:text-white hover:bg-zinc-50 dark:hover:bg-gray-800 transition-colors">
+            <Library size={20}/>
+            Browse Plans
+          </Link>
         </div>
       </motion.div>
     </div>
