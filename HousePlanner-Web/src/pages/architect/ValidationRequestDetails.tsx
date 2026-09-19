@@ -22,7 +22,7 @@ const ValidationRequestDetails: React.FC = () => {
         if (!id) return;
         const data = await validationRequestService.getById(id);
         setRequest(data);
-      } catch (err) {
+      } catch {
         setError('Failed to load validation request details.');
       } finally {
         setLoading(false);

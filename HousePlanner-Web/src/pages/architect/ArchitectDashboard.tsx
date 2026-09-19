@@ -21,7 +21,7 @@ const ArchitectDashboard: React.FC = () => {
           approved: approved.length,
           rejected: rejected.length
         });
-      } catch (err) {
+      } catch {
         setError('Failed to load dashboard statistics.');
       } finally {
         setLoading(false);

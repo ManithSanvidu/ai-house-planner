@@ -524,12 +524,15 @@ def validation_node(state: WorkflowState) -> WorkflowState:
     print(f"[Validation Agent] Validating constraints for workflow {state.workflow_id}...")
     val_result = validate_house_plan(state)
     state.validation_result = val_result.model_dump()
+    # Keep compatibility with consumers that use the earlier result field name.
+    state.validation_result["is_valid"] = val_result.passed
 
     if val_result.passed:
         state.status = "awaiting_approval"
         state.approval_status = "pending"
         state.current_agent = "rendering"
     else:
+        state.status = "rejected"
         state.approval_status = "not_requested"
         if state.retry_count < MAX_VALIDATION_RETRIES:
             state.retry_count += 1

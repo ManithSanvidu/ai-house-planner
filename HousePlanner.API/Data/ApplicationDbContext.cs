@@ -20,8 +20,6 @@ namespace HousePlanner.API.Data
         public DbSet<ConstructorWorkflowLog> ConstructorWorkflowLogs { get; set; }
         public DbSet<PricingData> PricingItems { get; set; }
         public DbSet<CostEstimate> CostEstimates { get; set; }
-        public DbSet<PricingData> PricingItems { get; set; }
-        public DbSet<CostEstimate> CostEstimates { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -32,9 +30,6 @@ namespace HousePlanner.API.Data
                 new Role { Id = 1, Name = "User" },
                 new Role { Id = 2, Name = "Admin" }
             );
-
-            modelBuilder.Entity<PricingData>()
-                .OwnsOne(p => p.TerrainMultiplier, owned => owned.ToJson());
 
             modelBuilder.Entity<PricingData>()
                 .OwnsOne(p => p.TerrainMultiplier, owned => owned.ToJson());
@@ -69,17 +64,6 @@ namespace HousePlanner.API.Data
             modelBuilder.Entity<Room>(entity =>
             {
                 entity.HasIndex(e => e.HouseDesignId).HasDatabaseName("IX_Rooms_HouseDesignId");
-            });
-
-            modelBuilder.Entity<CostEstimate>(entity =>
-            {
-                entity.HasIndex(e => e.HouseDesignId)
-                    .IsUnique()
-                    .HasDatabaseName("IX_CostEstimates_HouseDesignId");
-                entity.HasOne(e => e.HouseDesign)
-                    .WithMany(d => d.CostEstimates)
-                    .HasForeignKey(e => e.HouseDesignId);
-                entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()");
             });
 
             modelBuilder.Entity<CostEstimate>(entity =>

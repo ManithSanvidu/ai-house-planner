@@ -80,7 +80,7 @@ export const WorkflowReviewPage: React.FC = () => {
     let failureData = null;
     try {
       failureData = JSON.parse(workflow.failureReason || '');
-    } catch (e) {
+    } catch {
       // Ignored
     }
 

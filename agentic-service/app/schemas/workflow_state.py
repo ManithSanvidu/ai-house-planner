@@ -13,6 +13,7 @@ class ExecutionLogEntry(BaseModel):
 class CoordinatorInput(BaseModel):
     submission_id:UUID
     land_size_perches:float
+    budget_lkr:Optional[float]=None
     manual_terrain_type:Optional[str]=None
     preferences:Dict[str,Any]
     plot_constraints:Optional[Dict[str,Any]]=None

@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace HousePlanner.API.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260916180145_AddCostEstimates")]
+    [Migration("20260917100000_AddCostEstimates")]
     partial class AddCostEstimates
     {
         /// <inheritdoc />
