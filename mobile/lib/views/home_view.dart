@@ -61,7 +61,7 @@ class HomeView extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: AppTokens.cardGlass,
                           borderRadius: BorderRadius.circular(AppTokens.radiusCardGlass),
-                          border: Border.all(color: Colors.white.withOpacity(0.7)),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.7)),
                           boxShadow: const [BoxShadow(color: Color(0x380B0B14), blurRadius: 50, offset: Offset(0, 20))],
                         ),
                         child: Column(

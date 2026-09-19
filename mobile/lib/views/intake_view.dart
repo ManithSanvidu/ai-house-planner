@@ -447,7 +447,7 @@ class _IntakeViewState extends ConsumerState<IntakeView>{
             onTap: () => ref.read(intakeProvider.notifier).clearPhoto(),
             child: CircleAvatar(
               radius: 16,
-              backgroundColor: Colors.black.withOpacity(0.6),
+              backgroundColor: Colors.black.withValues(alpha: 0.6),
               child: const Icon(Icons.close, color: Colors.white, size: 18),
             ),
           ),

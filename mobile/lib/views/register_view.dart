@@ -80,7 +80,7 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
           decoration: BoxDecoration(
             color: isSelected ? const Color(0xFF1A1A2E) : Colors.transparent,
             borderRadius: BorderRadius.circular(32),
-            boxShadow: isSelected ? [BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 12, offset: const Offset(0, 4))] : [],
+            boxShadow: isSelected ? [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 12, offset: const Offset(0, 4))] : [],
           ),
           alignment: Alignment.center,
           child: Text(
@@ -248,7 +248,7 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
                           backgroundColor: const Color(0xFF1A1A2E),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                           elevation: 8,
-                          shadowColor: const Color(0xFF1A1A2E).withOpacity(0.3),
+                          shadowColor: const Color(0xFF1A1A2E).withValues(alpha: 0.3),
                         ),
                         child: _isLoading 
                           ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
