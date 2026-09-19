@@ -30,17 +30,6 @@ namespace HousePlanner.API.Services
                         Role = "Architect"
                     };
                 }
-                
-                if (token == "mock_constructor")
-                {
-                    _logger.LogInformation("Using local mock_token bypass for Constructor.");
-                    return new UserInfoResponseDto
-                    {
-                        Uid = "mock-const",
-                        Email = "constructor@homeplanner.com",
-                        Role = "Constructor"
-                    };
-                }
 
                 // 1. If Firebase Admin is initialized with credentials, perform real cryptographic verification
                 if (FirebaseAuth.DefaultInstance != null)
@@ -73,8 +62,6 @@ namespace HousePlanner.API.Services
                 {
                     if (email.Contains("architect", StringComparison.OrdinalIgnoreCase))
                         role = "Architect";
-                    else if (email.Contains("constructor", StringComparison.OrdinalIgnoreCase))
-                        role = "Constructor";
                     else if (email.Contains("contractor", StringComparison.OrdinalIgnoreCase))
                         role = "Contractor";
                     else if (email.Contains("admin", StringComparison.OrdinalIgnoreCase))

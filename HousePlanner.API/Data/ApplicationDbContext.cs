@@ -16,8 +16,7 @@ namespace HousePlanner.API.Data
         public DbSet<ValidationRequest> ValidationRequests { get; set; }
         public DbSet<PreDesignedHousePlan> PreDesignedHousePlans { get; set; }
         public DbSet<Project> Projects { get; set; }
-        public DbSet<ConstructionPhase> ConstructionPhases { get; set; } = null!;
-        public DbSet<ConstructorWorkflowLog> ConstructorWorkflowLogs { get; set; } = null!;
+        public DbSet<ConstructionPhase> ConstructionPhases { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -33,6 +32,7 @@ namespace HousePlanner.API.Data
             {
                 entity.HasIndex(e => e.WorkflowStateId).HasDatabaseName("IX_HouseDesigns_WorkflowStateId");
                 entity.HasIndex(e => new { e.WorkflowStateId, e.IsCurrent }).HasDatabaseName("IX_HouseDesigns_WorkflowState_IsCurrent");
+                entity.HasIndex(e => new { e.WorkflowStateId, e.IsArchived }).HasDatabaseName("IX_HouseDesigns_WorkflowState_IsArchived");
                 entity.HasIndex(e => new { e.WorkflowStateId, e.Version })
                     .IsUnique()
                     .HasDatabaseName("UX_HouseDesigns_WorkflowState_Version");
@@ -45,6 +45,15 @@ namespace HousePlanner.API.Data
                     // Ignore for in-memory provider 
                 }
             });
+
+            modelBuilder.Entity<WorkflowState>()
+                .HasIndex(e => e.PreferredHouseDesignId)
+                .HasDatabaseName("IX_WorkflowStates_PreferredHouseDesignId");
+            modelBuilder.Entity<WorkflowState>()
+                .HasOne<HouseDesign>()
+                .WithMany()
+                .HasForeignKey(e => e.PreferredHouseDesignId)
+                .OnDelete(DeleteBehavior.SetNull);
 
             modelBuilder.Entity<Room>(entity =>
             {

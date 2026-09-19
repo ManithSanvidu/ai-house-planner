@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace HousePlanner.API.Entities
@@ -29,7 +29,5 @@ namespace HousePlanner.API.Entities
 
         [Required]
         public int SequenceOrder { get; set; }
-
-        public int EstimatedDurationDays { get; set; } = 7;
     }
 }

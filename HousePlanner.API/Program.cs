@@ -69,7 +69,7 @@ builder.Services.AddScoped<ICurrentUserContextService, CurrentUserContextService
 builder.Services.AddScoped<IPreDesignedPlanLayoutValidator, PreDesignedPlanLayoutValidator>();
 builder.Services.AddScoped<PreDesignedPlanSeeder>();
 builder.Services.AddScoped<IWorkflowService, WorkflowService>();
-builder.Services.AddScoped<IConstructorWorkflowService, ConstructorWorkflowService>();
+builder.Services.AddScoped<IDesignOptionsService, DesignOptionsService>();
 builder.Services.AddHttpClient("AgenticService", client =>
 {
     client.BaseAddress = new Uri(builder.Configuration["AgenticService:BaseUrl"] ?? "http://localhost:8001");

@@ -83,12 +83,12 @@ def build_connections(rooms: list[RoomLayout], open_plan: bool) -> list[Connecti
                 continue
             shared = shared_wall(a, b)
             allowed = (ak in CIRCULATION_TYPES or bk in CIRCULATION_TYPES or
-                       {ak, bk} <= {'living_room', 'dining', 'kitchen'} or
+                       {ak, bk} <= {'living_room', 'dining', 'kitchen', 'family_room', 'family_lounge', 'study', 'home_office'} or
                        {a.room_type, b.room_type} == {'bedroom_1', 'bathroom_attached'})
             if not shared or not allowed:
                 continue
             wall, lo, hi = shared
-            kind = 'open' if open_plan and {ak, bk} <= {'living_room', 'dining', 'kitchen'} else 'door'
+            kind = 'open' if open_plan and {ak, bk} <= {'living_room', 'dining', 'kitchen', 'family_room', 'family_lounge', 'study', 'home_office'} else 'door'
             width = min(6, hi-lo) if kind == 'open' else MIN_DOOR_WIDTH
             start = (lo+hi-width)/2
             for room, side in [(a, wall), (b, OPPOSITE[wall])]:

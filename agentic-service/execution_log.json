@@ -4,7 +4,7 @@
     "action": "Design generation failed; no layout submitted",
     "tool_called": "layout_generation_tool",
     "duration_ms": null,
-    "result": "Invalid design requirements: 1 validation error for Requirements\nfloors\n  Input should be less than or equal to 3 [type=less_than_equal, input_value=4, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/less_than_equal",
-    "created_at_utc": "2026-09-18T07:38:47.216964+00:00"
+    "result": "Architectural quality validation failed.",
+    "created_at_utc": "2026-09-19T13:03:51.370501+00:00"
   }
 ]

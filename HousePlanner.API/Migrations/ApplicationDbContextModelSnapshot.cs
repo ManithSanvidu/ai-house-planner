@@ -31,9 +31,6 @@ namespace HousePlanner.API.Migrations
                     b.Property<DateTimeOffset?>("CompletedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("EstimatedDurationDays")
-                        .HasColumnType("integer");
-
                     b.Property<string>("PhaseName")
                         .IsRequired()
                         .HasMaxLength(150)
@@ -58,71 +55,6 @@ namespace HousePlanner.API.Migrations
                     b.HasIndex("ProjectId");
 
                     b.ToTable("ConstructionPhases");
-                });
-
-            modelBuilder.Entity("HousePlanner.API.Entities.ConstructorWorkflowLog", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("AdditionalNotes")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Challenges")
-                        .HasColumnType("text");
-
-                    b.Property<string>("CompletedWork")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<Guid?>("ConstructionPhaseId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("ConstructorId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTimeOffset>("Date")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("DayNumber")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Issues")
-                        .HasColumnType("text");
-
-                    b.Property<int>("ProgressPercentage")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("ProjectId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Resolution")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<string>("TomorrowPlan")
-                        .HasColumnType("text");
-
-                    b.Property<DateTimeOffset>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ConstructionPhaseId");
-
-                    b.HasIndex("ConstructorId");
-
-                    b.HasIndex("ProjectId");
-
-                    b.ToTable("ConstructorWorkflowLogs");
                 });
 
             modelBuilder.Entity("HousePlanner.API.Entities.HouseDesign", b =>
@@ -155,6 +87,9 @@ namespace HousePlanner.API.Migrations
                     b.Property<bool>("IsCurrent")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("IsArchived")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("LayoutJson")
                         .IsRequired()
                         .HasColumnType("jsonb");
@@ -185,6 +120,9 @@ namespace HousePlanner.API.Migrations
 
                     b.HasIndex("WorkflowStateId", "IsCurrent")
                         .HasDatabaseName("IX_HouseDesigns_WorkflowState_IsCurrent");
+
+                    b.HasIndex("WorkflowStateId", "IsArchived")
+                        .HasDatabaseName("IX_HouseDesigns_WorkflowState_IsArchived");
 
                     b.HasIndex("WorkflowStateId", "Version")
                         .IsUnique()
@@ -282,7 +220,16 @@ namespace HousePlanner.API.Migrations
                     b.Property<bool>("HasBalcony")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("HasMasterEnsuite")
+                        .HasColumnType("boolean");
+
                     b.Property<bool>("HasOffice")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("HasOpenPlan")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("HasSeparateDining")
                         .HasColumnType("boolean");
 
                     b.Property<bool>("HasUtilityRoom")
@@ -593,6 +540,9 @@ namespace HousePlanner.API.Migrations
                     b.Property<string>("NotableFeatures")
                         .HasColumnType("jsonb");
 
+                    b.Property<Guid?>("PreferredHouseDesignId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("SlopeEstimate")
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)");
@@ -615,6 +565,9 @@ namespace HousePlanner.API.Migrations
 
                     b.HasIndex("LandSubmissionId");
 
+                    b.HasIndex("PreferredHouseDesignId")
+                        .HasDatabaseName("IX_WorkflowStates_PreferredHouseDesignId");
+
                     b.ToTable("WorkflowStates");
                 });
 
@@ -625,31 +578,6 @@ namespace HousePlanner.API.Migrations
                         .HasForeignKey("ProjectId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Project");
-                });
-
-            modelBuilder.Entity("HousePlanner.API.Entities.ConstructorWorkflowLog", b =>
-                {
-                    b.HasOne("HousePlanner.API.Entities.ConstructionPhase", "ConstructionPhase")
-                        .WithMany()
-                        .HasForeignKey("ConstructionPhaseId");
-
-                    b.HasOne("HousePlanner.API.Entities.User", "Constructor")
-                        .WithMany()
-                        .HasForeignKey("ConstructorId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("HousePlanner.API.Entities.Project", "Project")
-                        .WithMany()
-                        .HasForeignKey("ProjectId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("ConstructionPhase");
-
-                    b.Navigation("Constructor");
 
                     b.Navigation("Project");
                 });
@@ -756,6 +684,11 @@ namespace HousePlanner.API.Migrations
 
             modelBuilder.Entity("HousePlanner.API.Entities.WorkflowState", b =>
                 {
+                    b.HasOne("HousePlanner.API.Entities.HouseDesign", null)
+                        .WithMany()
+                        .HasForeignKey("PreferredHouseDesignId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("HousePlanner.API.Entities.User", "ApprovedByUser")
                         .WithMany()
                         .HasForeignKey("ApprovedByUserId");

@@ -125,6 +125,6 @@ def select_best(req: Requirements, plot: PlotConstraints, advice: Optional[Conce
                         'score_breakdown': c.candidate_summary['score_breakdown']} for c in candidates],
         'rejected': rejected,
         'notes': (best.program or {}).get('notes', []) +
-                 (['Plot dimensions are estimated from land area using a conceptual 1:1.3 aspect ratio (or one supplied dimension).'] if plot.dimensions_estimated else []),
+                 (['Plot dimensions are estimated from land area using a conceptual aspect ratio (or one supplied dimension).'] if plot.dimension_source != 'user_supplied' else []),
     })
     return best

@@ -64,3 +64,36 @@ public record CostSummaryDto(
     decimal TotalCostLkr,
     decimal BudgetDeltaPercent
 );
+
+public record DesignHistoryDto(
+    Guid DesignId,
+    int Version,
+    bool IsCurrent,
+    bool IsPreferred,
+    bool IsArchived,
+    string? Topology,
+    int Bedrooms,
+    int Bathrooms,
+    int FloorCount,
+    decimal TotalBuiltUpAreaSqft,
+    string FoundationType,
+    string? GenerationMode,
+    string? SelectedBasePlan,
+    string? GeometryFingerprint,
+    decimal? SuitabilityScore,
+    decimal? ArchitecturalQualityScore,
+    List<DesignPreviewRoomDto> PreviewRooms,
+    DateTimeOffset CreatedAt
+);
+
+public record DesignPreviewRoomDto(
+    string RoomType, int Floor, decimal X, decimal Y, decimal Width, decimal Length
+);
+
+public record WorkflowDesignHistoryDto(
+    Guid WorkflowId,
+    string Status,
+    Guid? PreferredHouseDesignId,
+    DateTimeOffset CreatedAt,
+    List<DesignHistoryDto> Designs
+);

@@ -162,19 +162,6 @@ const LoginPage: React.FC = () => {
             Test Login as Architect
           </button>
 
-          <button 
-            type="button"
-            onClick={() => {
-              dispatch(setMockAuth({ uid: 'mock-const', email: 'constructor@homeplanner.com', role: 'Constructor' }));
-              setInMemoryToken('mock_constructor');
-              navigate('/dashboard');
-            }}
-            className="w-full bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 font-semibold py-3.5 rounded-xl flex items-center justify-center gap-3 transition-colors mt-3"
-          >
-            <Sparkles size={20} />
-            Test Login as Constructor
-          </button>
-
           <div className="mt-8 text-center text-sm text-gray-500">
             Don't have an account?{' '}
             <a href="#" className="font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400">Contact Administrator</a>

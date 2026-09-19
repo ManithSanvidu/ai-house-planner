@@ -4,6 +4,7 @@ using HousePlanner.API.Entities;
 using System.Text;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using HousePlanner.API.Services;
 
 namespace HousePlanner.API.Controllers
 {
@@ -13,16 +14,41 @@ namespace HousePlanner.API.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly HttpClient _agenticServiceClient;
+        private readonly IDesignOptionsService _designOptionsService;
 
-        public AiGenerationController(ApplicationDbContext context, IHttpClientFactory httpClientFactory)
+        public AiGenerationController(ApplicationDbContext context, IHttpClientFactory httpClientFactory, IDesignOptionsService designOptionsService)
         {
             _context = context;
             _agenticServiceClient = httpClientFactory.CreateClient("AgenticService");
+            _designOptionsService = designOptionsService;
         }
 
         [HttpPost("generate")]
-        public async Task<IActionResult> Generate([FromBody] AiGenerationRequest request)
+        public async Task<IActionResult> Generate([FromBody] AiGenerationRequest request, CancellationToken cancellationToken)
         {
+            if (!string.IsNullOrEmpty(request.ManualTerrainType))
+            {
+                if (request.ManualTerrainType.StartsWith("flat", StringComparison.OrdinalIgnoreCase))
+                    request.ManualTerrainType = "flat";
+                else if (request.ManualTerrainType.StartsWith("hillside", StringComparison.OrdinalIgnoreCase))
+                    request.ManualTerrainType = "hillside";
+                else if (request.ManualTerrainType.StartsWith("coastal", StringComparison.OrdinalIgnoreCase))
+                    request.ManualTerrainType = "coastal";
+                else
+                    request.ManualTerrainType = "unknown";
+            }
+
+            var validation = await _designOptionsService.ValidateFinalSelectionAsync(request, cancellationToken);
+            if (!validation.IsValid)
+            {
+                return BadRequest(new { 
+                    code = validation.ErrorCode, 
+                    message = validation.Message,
+                    conflicts = validation.Conflicts,
+                    suggestions = validation.Suggestions 
+                });
+            }
+
             WorkflowState workflowState;
             object payload;
             try 

@@ -96,6 +96,8 @@ public class InternalWorkflowControllerTests
             ""foundation_type"": ""stepped"",
             ""template_id"": ""TEST_TEMPLATE"",
             ""terrain_type"": ""hillside"",
+            ""geometry_fingerprint"": ""abc123"",
+            ""candidate_summary"": { ""selected_plan_code"": ""HP-TEST"", ""generation_mode"": ""deterministic_template_selection"" },
             ""rooms"": [
                 {
                     ""room_type"": ""kitchen"",
@@ -111,7 +113,7 @@ public class InternalWorkflowControllerTests
         var element = JsonDocument.Parse(json).RootElement;
 
         // Act
-        var result = await _controller.SubmitDesignRevision(workflowId, element);
+        var result = await _controller.SaveDesign(workflowId, element);
 
         // Assert
         Assert.IsType<OkObjectResult>(result);
@@ -134,6 +136,12 @@ public class InternalWorkflowControllerTests
         Assert.Equal(2, newDbDesign.FloorCount);
         Assert.Equal(1500.5m, newDbDesign.TotalBuiltUpAreaSqft);
         Assert.Equal("stepped", newDbDesign.FoundationType);
+        using (var persisted = JsonDocument.Parse(newDbDesign.LayoutJson))
+        {
+            Assert.Equal("abc123", persisted.RootElement.GetProperty("geometry_fingerprint").GetString());
+            Assert.Equal("HP-TEST", persisted.RootElement.GetProperty("candidate_summary")
+                .GetProperty("selected_plan_code").GetString());
+        }
         
         Assert.Single(newDbDesign.Rooms);
         var room = newDbDesign.Rooms.First();
@@ -159,7 +167,7 @@ public class InternalWorkflowControllerTests
         Assert.IsType<NotFoundObjectResult>(
             await _controller.UpdateTerrain(workflowId, terrainJson.RootElement));
         Assert.IsType<NotFoundObjectResult>(
-            await _controller.SubmitDesignRevision(workflowId, designJson.RootElement));
+            await _controller.SaveDesign(workflowId, designJson.RootElement));
         Assert.Empty(_dbContext.WorkflowStates);
         Assert.Empty(_dbContext.HouseDesigns);
     }

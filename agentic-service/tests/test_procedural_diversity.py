@@ -1,59 +1,53 @@
+"""Seed and diversity contracts for the current validated-template flow."""
 import pytest
-from app.design.models import Requirements
-from app.design.plot_constraints import PlotConstraints
-from app.design.candidate_generator import select_best, geometry_fingerprint
 
-def test_multiple_seeds_produce_layout_diversity():
-    req_dict = {
-        "bedrooms": 3,
-        "floors": 1,
-        "style": "modern"
-    }
-    
-    plot_dict = {
-        "land_size_perches": 12.0,
-        "terrain_type": "flat",
-        "road_side": "south"
-    }
-    
-    fingerprints = set()
-    
-    for seed in range(1, 11):
-        req = Requirements.model_validate({**req_dict, "design_seed": seed})
-        plot = PlotConstraints.model_validate(plot_dict)
-        
-        design = select_best(req, plot)
-        
-        # Verify valid counts
-        assert len(design.rooms) > 0
-        
-        fp = geometry_fingerprint(design)
-        fingerprints.add(fp)
+from app.design.diversity import geometry_fingerprint
+from app.tools import layout_generation_tool as generation
 
-    # We should get at least 3 different diverse layouts from 10 different seeds
-    # for a standard flat 3-bedroom case
-    assert len(fingerprints) >= 3, f"Expected at least 3 distinct layouts, got {len(fingerprints)}"
+
+PREFERENCES = {'bedrooms': 3, 'bathrooms': 1, 'floors': 2, 'style': 'modern'}
+PLOT = {'plot_width_ft': 70, 'plot_length_ft': 75}
+
+
+@pytest.fixture(autouse=True)
+def deterministic_fallback(monkeypatch):
+    monkeypatch.setattr(generation, 'get_available_design_provider', lambda: None)
+
+
+def generate(seed, previous=None):
+    return generation.generate_layout(
+        20, 'flat', PREFERENCES, design_seed=seed, plot_constraints=PLOT,
+        previous_design=previous.model_dump() if previous is not None else None,
+        revision_reason='Generate Another' if previous is not None else None)
+
 
 def test_same_seed_is_reproducible():
-    req_dict = {
-        "bedrooms": 3,
-        "floors": 1,
-        "style": "modern",
-        "design_seed": 42
-    }
-    
-    plot_dict = {
-        "land_size_perches": 12.0,
-        "terrain_type": "flat",
-        "road_side": "south"
-    }
-    
-    req1 = Requirements.model_validate(req_dict)
-    plot1 = PlotConstraints.model_validate(plot_dict)
-    design1 = select_best(req1, plot1)
-    
-    req2 = Requirements.model_validate(req_dict)
-    plot2 = PlotConstraints.model_validate(plot_dict)
-    design2 = select_best(req2, plot2)
-    
-    assert geometry_fingerprint(design1) == geometry_fingerprint(design2)
+    first = generate(42)
+    second = generate(42)
+    assert first.candidate_summary['normalized_input'] == second.candidate_summary['normalized_input']
+    assert first.candidate_summary['selected_plan_code'] == second.candidate_summary['selected_plan_code']
+    assert geometry_fingerprint(first) == geometry_fingerprint(second)
+    assert first.candidate_summary['generation_mode'] == 'deterministic_template_selection'
+
+
+def test_different_seeds_do_not_require_different_geometry():
+    # A single compatible geometry is a valid catalogue, regardless of seed.
+    # Exercise the real catalogue's one-geometry 3-bedroom/single-floor coverage.
+    fingerprints = set()
+    for seed in (1, 2, 42):
+        result = generation.generate_layout(
+            20, 'flat', {**PREFERENCES, 'floors': 1}, design_seed=seed, plot_constraints=PLOT)
+        assert result.design_seed == seed
+        assert result.candidate_summary['generation_mode'] == 'deterministic_template_selection'
+        assert result.candidate_status == 'VALID_HIGH_QUALITY'
+        fingerprints.add(geometry_fingerprint(result))
+    assert len(fingerprints) == 1
+
+
+def test_generate_another_is_novel_without_changing_seed():
+    previous = generate(42)
+    result = generate(42, previous)
+    assert result.design_seed == previous.design_seed
+    assert result.geometry_fingerprint != previous.geometry_fingerprint
+    assert result.candidate_summary['previous_fingerprint'] == previous.geometry_fingerprint
+    assert result.candidate_status == 'VALID_HIGH_QUALITY'
