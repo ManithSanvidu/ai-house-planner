@@ -70,6 +70,7 @@ public record DesignHistoryDto(
     int Version,
     bool IsCurrent,
     bool IsPreferred,
+    bool IsArchived,
     string? Topology,
     int Bedrooms,
     int Bathrooms,
@@ -79,7 +80,14 @@ public record DesignHistoryDto(
     string? GenerationMode,
     string? SelectedBasePlan,
     string? GeometryFingerprint,
+    decimal? SuitabilityScore,
+    decimal? ArchitecturalQualityScore,
+    List<DesignPreviewRoomDto> PreviewRooms,
     DateTimeOffset CreatedAt
+);
+
+public record DesignPreviewRoomDto(
+    string RoomType, int Floor, decimal X, decimal Y, decimal Width, decimal Length
 );
 
 public record WorkflowDesignHistoryDto(

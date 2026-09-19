@@ -58,7 +58,7 @@ public class WorkflowController : ControllerBase
                     w.ConstructionPlan,
                     // Pick the current (or latest) design version
                     LatestDesign = w.HouseDesigns
-                        .Where(d => designId == null || d.Id == designId)
+                        .Where(d => !d.IsArchived && (designId == null || d.Id == designId))
                         .OrderByDescending(d => d.IsCurrent)
                         .ThenByDescending(d => d.Version)
                         .Select(d => new
@@ -263,13 +263,13 @@ public class WorkflowController : ControllerBase
     }
 
     [HttpGet("{id:guid}/designs")]
-    public async Task<IActionResult> GetDesigns(Guid id)
+    public async Task<IActionResult> GetDesigns(Guid id, [FromQuery] bool includeArchived = true)
     {
         var workflow = await _context.WorkflowStates.AsNoTracking()
             .Include(w => w.HouseDesigns).ThenInclude(d => d.Rooms)
             .FirstOrDefaultAsync(w => w.Id == id);
         if (workflow is null) return NotFound(new { message = $"Workflow {id} not found." });
-        return Ok(ToHistory(workflow));
+        return Ok(ToHistory(workflow, includeArchived));
     }
 
     [HttpGet("designs")]
@@ -282,7 +282,7 @@ public class WorkflowController : ControllerBase
             .Include(w => w.HouseDesigns).ThenInclude(d => d.Rooms)
             .OrderByDescending(w => w.UpdatedAt)
             .ToListAsync();
-        return Ok(workflows.Where(w => w.HouseDesigns.Count > 0).Select(ToHistory));
+        return Ok(workflows.Select(w => ToHistory(w, false)).Where(w => w.Designs.Count > 0));
     }
 
     [HttpPost("{id:guid}/designs/{designId:guid}/select")]
@@ -291,7 +291,7 @@ public class WorkflowController : ControllerBase
         var workflow = await _context.WorkflowStates.Include(w => w.HouseDesigns)
             .FirstOrDefaultAsync(w => w.Id == id);
         if (workflow is null) return NotFound(new { message = $"Workflow {id} not found." });
-        if (!workflow.HouseDesigns.Any(d => d.Id == designId))
+        if (!workflow.HouseDesigns.Any(d => d.Id == designId && !d.IsArchived))
             return BadRequest(new { message = "The selected design does not belong to this workflow." });
         workflow.PreferredHouseDesignId = designId;
         workflow.Status = "selected_by_client";
@@ -299,6 +299,46 @@ public class WorkflowController : ControllerBase
         workflow.UpdatedAt = DateTimeOffset.UtcNow;
         await _context.SaveChangesAsync();
         return Ok(new { workflowId = id, preferredHouseDesignId = designId, status = workflow.Status });
+    }
+
+    [HttpDelete("{id:guid}/design-selection")]
+    public async Task<IActionResult> ClearDesignSelection(Guid id)
+    {
+        var workflow = await _context.WorkflowStates.FirstOrDefaultAsync(w => w.Id == id);
+        if (workflow is null) return NotFound(new { message = $"Workflow {id} not found." });
+        workflow.PreferredHouseDesignId = null;
+        if (workflow.Status == "selected_by_client") workflow.Status = "design_generated";
+        if (workflow.ApprovalStatus == "selected_by_client") workflow.ApprovalStatus = "client_review";
+        workflow.UpdatedAt = DateTimeOffset.UtcNow;
+        await _context.SaveChangesAsync();
+        return Ok(new { workflowId = id, preferredHouseDesignId = (Guid?)null, status = workflow.Status });
+    }
+
+    [HttpDelete("{id:guid}/designs/{designId:guid}")]
+    public async Task<IActionResult> RemoveDesign(Guid id, Guid designId)
+    {
+        var workflow = await _context.WorkflowStates.Include(w => w.HouseDesigns)
+            .FirstOrDefaultAsync(w => w.Id == id);
+        if (workflow is null) return NotFound(new { message = $"Workflow {id} not found." });
+        var design = workflow.HouseDesigns.FirstOrDefault(d => d.Id == designId && !d.IsArchived);
+        if (design is null) return NotFound(new { message = "Design version not found." });
+        if (workflow.Status == "approved" || workflow.ApprovalStatus == "approved")
+            return Conflict(new { message = "Approved designs cannot be deleted or archived." });
+
+        var submitted = workflow.Status == "awaiting_architect_review" ||
+            workflow.ApprovalStatus == "awaiting_architect_review" ||
+            await _context.ValidationRequests.AnyAsync(r => r.WorkflowStateId == id &&
+                (r.Status == "Pending" || r.Status == "Under Review"));
+        design.IsArchived = true;
+        design.IsCurrent = false;
+        if (workflow.PreferredHouseDesignId == designId) workflow.PreferredHouseDesignId = null;
+        var newestRemaining = workflow.HouseDesigns.Where(d => !d.IsArchived && d.Id != designId)
+            .OrderByDescending(d => d.Version).FirstOrDefault();
+        if (newestRemaining is not null && !workflow.HouseDesigns.Any(d => !d.IsArchived && d.Id != designId && d.IsCurrent))
+            newestRemaining.IsCurrent = true;
+        workflow.UpdatedAt = DateTimeOffset.UtcNow;
+        await _context.SaveChangesAsync();
+        return Ok(new { workflowId = id, designId, action = submitted ? "archived" : "deleted", selectionCleared = workflow.PreferredHouseDesignId is null });
     }
 
     [HttpPost("{id:guid}/submit-architect-review")]
@@ -326,9 +366,9 @@ public class WorkflowController : ControllerBase
         return Ok(new { workflowId = id, status = workflow.Status });
     }
 
-    private static WorkflowDesignHistoryDto ToHistory(HousePlanner.API.Entities.WorkflowState workflow) =>
+    private static WorkflowDesignHistoryDto ToHistory(HousePlanner.API.Entities.WorkflowState workflow, bool includeArchived = true) =>
         new(workflow.Id, workflow.Status, workflow.PreferredHouseDesignId, workflow.CreatedAt,
-            workflow.HouseDesigns.OrderByDescending(d => d.Version).Select(d =>
+            workflow.HouseDesigns.Where(d => includeArchived || !d.IsArchived).OrderByDescending(d => d.Version).Select(d =>
             {
                 using var document = ParseLayout(d.LayoutJson);
                 var root = document.RootElement;
@@ -336,14 +376,19 @@ public class WorkflowController : ControllerBase
                     ? value : default;
                 string? SummaryString(string key) => summary.ValueKind == JsonValueKind.Object &&
                     summary.TryGetProperty(key, out var item) && item.ValueKind == JsonValueKind.String ? item.GetString() : null;
+                decimal? Number(JsonElement container, string key) => container.ValueKind == JsonValueKind.Object &&
+                    container.TryGetProperty(key, out var item) && item.ValueKind == JsonValueKind.Number ? item.GetDecimal() : null;
                 var bedrooms = d.Rooms.Count(r => r.RoomType.Contains("bedroom", StringComparison.OrdinalIgnoreCase));
                 var bathrooms = d.Rooms.Count(r => r.RoomType.Contains("bathroom", StringComparison.OrdinalIgnoreCase));
                 return new DesignHistoryDto(
-                    d.Id, d.Version, d.IsCurrent, workflow.PreferredHouseDesignId == d.Id,
+                    d.Id, d.Version, d.IsCurrent, workflow.PreferredHouseDesignId == d.Id, d.IsArchived,
                     root.TryGetProperty("template_family", out var topology) ? topology.GetString() : d.TemplateId,
                     bedrooms, bathrooms, d.FloorCount, d.TotalBuiltUpAreaSqft, d.FoundationType,
                     SummaryString("generation_mode"), SummaryString("selected_plan_code") ?? SummaryString("base_plan_code"),
                     root.TryGetProperty("geometry_fingerprint", out var fingerprint) ? fingerprint.GetString() : null,
+                    Number(summary, "compatibility_score") ?? Number(summary, "suitability_score"),
+                    Number(root, "design_score"),
+                    d.Rooms.Select(r => new DesignPreviewRoomDto(r.RoomType, r.FloorNumber, r.X, r.Y, r.Width, r.Length)).ToList(),
                     d.CreatedAt);
             }).ToList());
 

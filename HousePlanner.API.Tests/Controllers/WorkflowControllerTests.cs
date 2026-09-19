@@ -189,6 +189,67 @@ public class WorkflowControllerTests
     }
 
     [Fact]
+    public async Task SelectDesign_ReplacesPreviousSelection_AndCanUnselect()
+    {
+        var workflowId = Guid.NewGuid(); var first = Design(workflowId, 1, false); var second = Design(workflowId, 2, true);
+        _dbContext.WorkflowStates.Add(new WorkflowState { Id = workflowId, LandSubmissionId = Guid.NewGuid(), Status = "design_generated", HouseDesigns = [first, second] });
+        await _dbContext.SaveChangesAsync();
+
+        await _controller.SelectDesign(workflowId, first.Id);
+        await _controller.SelectDesign(workflowId, second.Id);
+        Assert.Equal(second.Id, (await _dbContext.WorkflowStates.FindAsync(workflowId))!.PreferredHouseDesignId);
+        Assert.IsType<OkObjectResult>(await _controller.ClearDesignSelection(workflowId));
+        Assert.Null((await _dbContext.WorkflowStates.FindAsync(workflowId))!.PreferredHouseDesignId);
+    }
+
+    [Fact]
+    public async Task RemoveDesign_ArchivesUnsubmittedVersion()
+    {
+        var workflowId = Guid.NewGuid(); var design = Design(workflowId, 1, true);
+        _dbContext.WorkflowStates.Add(new WorkflowState { Id = workflowId, LandSubmissionId = Guid.NewGuid(), Status = "design_generated", HouseDesigns = [design] });
+        await _dbContext.SaveChangesAsync();
+
+        Assert.IsType<OkObjectResult>(await _controller.RemoveDesign(workflowId, design.Id));
+        Assert.True((await _dbContext.HouseDesigns.FindAsync(design.Id))!.IsArchived);
+        var historyResult = Assert.IsType<OkObjectResult>(await _controller.GetDesigns(workflowId));
+        Assert.True(Assert.Single(Assert.IsType<WorkflowDesignHistoryDto>(historyResult.Value).Designs).IsArchived);
+    }
+
+    [Fact]
+    public async Task RemoveDesign_ClearsSelectionWhenSelected()
+    {
+        var workflowId = Guid.NewGuid(); var design = Design(workflowId, 1, true);
+        _dbContext.WorkflowStates.Add(new WorkflowState { Id = workflowId, LandSubmissionId = Guid.NewGuid(), Status = "selected_by_client", PreferredHouseDesignId = design.Id, HouseDesigns = [design] });
+        await _dbContext.SaveChangesAsync();
+
+        await _controller.RemoveDesign(workflowId, design.Id);
+        Assert.Null((await _dbContext.WorkflowStates.FindAsync(workflowId))!.PreferredHouseDesignId);
+    }
+
+    [Fact]
+    public async Task RemoveDesign_SubmittedVersionIsArchived()
+    {
+        var workflowId = Guid.NewGuid(); var design = Design(workflowId, 1, true);
+        _dbContext.WorkflowStates.Add(new WorkflowState { Id = workflowId, LandSubmissionId = Guid.NewGuid(), Status = "awaiting_architect_review", PreferredHouseDesignId = design.Id, HouseDesigns = [design] });
+        await _dbContext.SaveChangesAsync();
+
+        var result = Assert.IsType<OkObjectResult>(await _controller.RemoveDesign(workflowId, design.Id));
+        Assert.Contains("archived", System.Text.Json.JsonSerializer.Serialize(result.Value));
+        Assert.True((await _dbContext.HouseDesigns.FindAsync(design.Id))!.IsArchived);
+    }
+
+    [Fact]
+    public async Task RemoveDesign_ApprovedVersionIsRejected()
+    {
+        var workflowId = Guid.NewGuid(); var design = Design(workflowId, 1, true);
+        _dbContext.WorkflowStates.Add(new WorkflowState { Id = workflowId, LandSubmissionId = Guid.NewGuid(), Status = "approved", ApprovalStatus = "approved", PreferredHouseDesignId = design.Id, HouseDesigns = [design] });
+        await _dbContext.SaveChangesAsync();
+
+        Assert.IsType<ConflictObjectResult>(await _controller.RemoveDesign(workflowId, design.Id));
+        Assert.False((await _dbContext.HouseDesigns.FindAsync(design.Id))!.IsArchived);
+    }
+
+    [Fact]
     public async Task SubmitArchitectReview_UsesPersistedSelectedDesign()
     {
         var clientId = Guid.NewGuid(); var submissionId = Guid.NewGuid(); var workflowId = Guid.NewGuid();

@@ -87,6 +87,9 @@ namespace HousePlanner.API.Migrations
                     b.Property<bool>("IsCurrent")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("IsArchived")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("LayoutJson")
                         .IsRequired()
                         .HasColumnType("jsonb");
@@ -117,6 +120,9 @@ namespace HousePlanner.API.Migrations
 
                     b.HasIndex("WorkflowStateId", "IsCurrent")
                         .HasDatabaseName("IX_HouseDesigns_WorkflowState_IsCurrent");
+
+                    b.HasIndex("WorkflowStateId", "IsArchived")
+                        .HasDatabaseName("IX_HouseDesigns_WorkflowState_IsArchived");
 
                     b.HasIndex("WorkflowStateId", "Version")
                         .IsUnique()

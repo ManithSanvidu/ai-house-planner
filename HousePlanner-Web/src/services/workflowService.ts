@@ -67,10 +67,12 @@ export interface WorkflowStatusResponseDto {
 }
 
 export interface DesignHistoryDto {
-  designId: string; version: number; isCurrent: boolean; isPreferred: boolean; topology: string | null;
+  designId: string; version: number; isCurrent: boolean; isPreferred: boolean; isArchived: boolean; topology: string | null;
   bedrooms: number; bathrooms: number; floorCount: number; totalBuiltUpAreaSqft: number;
   foundationType: string; generationMode: string | null; selectedBasePlan: string | null;
   geometryFingerprint: string | null; createdAt: string;
+  suitabilityScore: number | null; architecturalQualityScore: number | null;
+  previewRooms: { roomType: string; floor: number; x: number; y: number; width: number; length: number }[];
 }
 export interface WorkflowDesignHistoryDto {
   workflowId: string; status: string; preferredHouseDesignId: string | null; createdAt: string;
@@ -116,6 +118,10 @@ export const workflowService = {
     (await apiClient.get<WorkflowDesignHistoryDto>(`/workflows/${id}/designs`)).data,
   selectDesign: async (workflowId: string, designId: string) =>
     (await apiClient.post(`/workflows/${workflowId}/designs/${designId}/select`)).data,
+  clearDesignSelection: async (workflowId: string) =>
+    (await apiClient.delete(`/workflows/${workflowId}/design-selection`)).data,
+  removeDesign: async (workflowId: string, designId: string) =>
+    (await apiClient.delete(`/workflows/${workflowId}/designs/${designId}`)).data,
   submitArchitectReview: async (workflowId: string) =>
     (await apiClient.post(`/workflows/${workflowId}/submit-architect-review`)).data,
 

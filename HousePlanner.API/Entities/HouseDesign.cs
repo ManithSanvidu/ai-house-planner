@@ -48,6 +48,10 @@ public class HouseDesign
     [Required]
     public bool IsCurrent { get; set; } = true;
 
+    /// <summary>Hidden from customer design lists while retained for audit/version history.</summary>
+    [Required]
+    public bool IsArchived { get; set; }
+
     /// <summary>
     /// Stores the shared JSON layout contract (rooms, coordinates, openings) as native PostgreSQL JSONB.
     /// </summary>
