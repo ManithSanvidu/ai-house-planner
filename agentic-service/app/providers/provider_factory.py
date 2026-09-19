@@ -32,3 +32,17 @@ def get_available_design_provider() -> Optional[ModelProvider]:
 
     print("[Provider Factory] No LLM providers available. Falling back to procedural strategy.")
     return None
+
+
+def get_next_design_provider(after_provider: str) -> Optional[ModelProvider]:
+    """Return the next healthy configured provider after a failed runtime call."""
+    ordered = list(dict.fromkeys([*DESIGN_PROVIDER_ORDER, *_PROVIDERS.keys()]))
+    try:
+        start = ordered.index(after_provider.lower()) + 1
+    except ValueError:
+        return None
+    for provider_name in ordered[start:]:
+        provider = get_provider(provider_name)
+        if provider and provider.health_check():
+            return provider
+    return None

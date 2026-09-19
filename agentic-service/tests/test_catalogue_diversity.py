@@ -95,7 +95,8 @@ def test_fallback_uses_distinct_geometry(plans, monkeypatch, provider_fails):
         provider.generate_json.side_effect = RuntimeError('offline')
     result = generate(previous_design(plans[0]))
     assert result.candidate_summary['selected_plan_code'] == 'B'
-    assert result.candidate_summary['generation_mode'] == 'deterministic_template_selection'
+    assert result.candidate_summary['generation_mode'] == (
+        'deterministic_fallback' if provider_fails else 'deterministic_template_selection')
     assert result.geometry_fingerprint != plans[0].geometry_fingerprint
 
 

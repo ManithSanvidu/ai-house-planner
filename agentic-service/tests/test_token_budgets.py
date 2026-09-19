@@ -76,14 +76,14 @@ def test_ten_perch_failure_still_calls_ai_once_with_compact_prompt(provider):
 
 def test_generate_another_calls_ai_once_per_request(provider):
     previous = generation.generate_layout(20, 'flat', PREFERENCES, design_seed=42, plot_constraints=PLOT)
-    assert previous.candidate_summary['generation_mode'] == 'deterministic_template_selection'
+    assert previous.candidate_summary['generation_mode'] == 'deterministic_fallback'
     provider.generate_json.assert_called_once()
     assert_compact_prompt(provider.generate_json.call_args)
 
     result = generation.generate_layout(
         20, 'flat', PREFERENCES, previous_design=previous.model_dump(),
         revision_reason='Generate Another', design_seed=43, plot_constraints=PLOT)
-    assert result.candidate_summary['generation_mode'] == 'deterministic_template_selection'
+    assert result.candidate_summary['generation_mode'] == 'deterministic_fallback'
     assert result.geometry_fingerprint != previous.geometry_fingerprint
     assert provider.generate_json.call_count == 2
     payload = assert_compact_prompt(provider.generate_json.call_args)

@@ -37,14 +37,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -121,13 +121,14 @@
           "length": 10
         },
         {
-          "room_id": "stair_1",
-          "room_type": "staircase",
+          "room_id": "foyer_1",
+          "room_type": "foyer",
           "floor": 1,
           "x": 11,
           "y": 20.0,
           "width": 8,
-          "length": 10
+          "length": 10,
+          "name": "Foyer"
         }
       ],
       "connections": [
@@ -138,7 +139,7 @@
         },
         {
           "from_room": "bed_1",
-          "to_room": "stair_1",
+          "to_room": "foyer_1",
           "kind": "door"
         },
         {
@@ -163,12 +164,12 @@
         },
         {
           "from_room": "hall_1",
-          "to_room": "stair_1",
+          "to_room": "foyer_1",
           "kind": "door"
         },
         {
           "from_room": "bath_1",
-          "to_room": "stair_1",
+          "to_room": "foyer_1",
           "kind": "door"
         }
       ],
@@ -181,7 +182,8 @@
         }
       ],
       "floor_count": 1,
-      "foundation_type": "stepped"
+      "foundation_type": "stepped",
+      "geometry_fingerprint": "73543fd065a84d53cf6ba6140c74432bb31a09d657d28cc8ace29e45fa4df175"
     }
   },
   {
@@ -222,14 +224,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -306,13 +308,14 @@
           "length": 10
         },
         {
-          "room_id": "stair_1",
-          "room_type": "staircase",
+          "room_id": "foyer_1",
+          "room_type": "foyer",
           "floor": 1,
           "x": 11,
           "y": 20.0,
           "width": 8,
-          "length": 10
+          "length": 10,
+          "name": "Foyer"
         }
       ],
       "connections": [
@@ -323,7 +326,7 @@
         },
         {
           "from_room": "bed_1",
-          "to_room": "stair_1",
+          "to_room": "foyer_1",
           "kind": "door"
         },
         {
@@ -348,12 +351,12 @@
         },
         {
           "from_room": "hall_1",
-          "to_room": "stair_1",
+          "to_room": "foyer_1",
           "kind": "door"
         },
         {
           "from_room": "bath_1",
-          "to_room": "stair_1",
+          "to_room": "foyer_1",
           "kind": "door"
         }
       ],
@@ -366,7 +369,8 @@
         }
       ],
       "floor_count": 1,
-      "foundation_type": "stepped"
+      "foundation_type": "stepped",
+      "geometry_fingerprint": "73543fd065a84d53cf6ba6140c74432bb31a09d657d28cc8ace29e45fa4df175"
     }
   },
   {
@@ -407,14 +411,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -491,13 +495,14 @@
           "length": 10
         },
         {
-          "room_id": "stair_1",
-          "room_type": "staircase",
+          "room_id": "foyer_1",
+          "room_type": "foyer",
           "floor": 1,
           "x": 11,
           "y": 20.0,
           "width": 8,
-          "length": 10
+          "length": 10,
+          "name": "Foyer"
         }
       ],
       "connections": [
@@ -508,7 +513,7 @@
         },
         {
           "from_room": "bed_1",
-          "to_room": "stair_1",
+          "to_room": "foyer_1",
           "kind": "door"
         },
         {
@@ -533,12 +538,12 @@
         },
         {
           "from_room": "hall_1",
-          "to_room": "stair_1",
+          "to_room": "foyer_1",
           "kind": "door"
         },
         {
           "from_room": "bath_1",
-          "to_room": "stair_1",
+          "to_room": "foyer_1",
           "kind": "door"
         }
       ],
@@ -551,7 +556,8 @@
         }
       ],
       "floor_count": 1,
-      "foundation_type": "stepped"
+      "foundation_type": "stepped",
+      "geometry_fingerprint": "73543fd065a84d53cf6ba6140c74432bb31a09d657d28cc8ace29e45fa4df175"
     }
   },
   {
@@ -592,14 +598,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -904,14 +910,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -1216,14 +1222,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -1528,14 +1534,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -1612,13 +1618,14 @@
           "length": 10
         },
         {
-          "room_id": "stair_1",
-          "room_type": "staircase",
+          "room_id": "foyer_1",
+          "room_type": "foyer",
           "floor": 1,
           "x": 11,
           "y": 20.0,
           "width": 8,
-          "length": 10
+          "length": 10,
+          "name": "Foyer"
         }
       ],
       "connections": [
@@ -1629,7 +1636,7 @@
         },
         {
           "from_room": "bed_1",
-          "to_room": "stair_1",
+          "to_room": "foyer_1",
           "kind": "door"
         },
         {
@@ -1654,12 +1661,12 @@
         },
         {
           "from_room": "hall_1",
-          "to_room": "stair_1",
+          "to_room": "foyer_1",
           "kind": "door"
         },
         {
           "from_room": "bath_1",
-          "to_room": "stair_1",
+          "to_room": "foyer_1",
           "kind": "door"
         }
       ],
@@ -1672,7 +1679,8 @@
         }
       ],
       "floor_count": 1,
-      "foundation_type": "stepped"
+      "foundation_type": "stepped",
+      "geometry_fingerprint": "8aa5e998b4ef85dd63a2c0bdfc77776f0a59f8f22194e8608cdf3d3664487d11"
     }
   },
   {
@@ -1713,14 +1721,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -1797,13 +1805,14 @@
           "length": 10
         },
         {
-          "room_id": "stair_1",
-          "room_type": "staircase",
+          "room_id": "foyer_1",
+          "room_type": "foyer",
           "floor": 1,
           "x": 11,
           "y": 20.0,
           "width": 8,
-          "length": 10
+          "length": 10,
+          "name": "Foyer"
         }
       ],
       "connections": [
@@ -1814,7 +1823,7 @@
         },
         {
           "from_room": "bed_1",
-          "to_room": "stair_1",
+          "to_room": "foyer_1",
           "kind": "door"
         },
         {
@@ -1839,12 +1848,12 @@
         },
         {
           "from_room": "hall_1",
-          "to_room": "stair_1",
+          "to_room": "foyer_1",
           "kind": "door"
         },
         {
           "from_room": "bath_1",
-          "to_room": "stair_1",
+          "to_room": "foyer_1",
           "kind": "door"
         }
       ],
@@ -1857,7 +1866,8 @@
         }
       ],
       "floor_count": 1,
-      "foundation_type": "stepped"
+      "foundation_type": "stepped",
+      "geometry_fingerprint": "8aa5e998b4ef85dd63a2c0bdfc77776f0a59f8f22194e8608cdf3d3664487d11"
     }
   },
   {
@@ -1898,14 +1908,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -1982,13 +1992,14 @@
           "length": 10
         },
         {
-          "room_id": "stair_1",
-          "room_type": "staircase",
+          "room_id": "foyer_1",
+          "room_type": "foyer",
           "floor": 1,
           "x": 11,
           "y": 20.0,
           "width": 8,
-          "length": 10
+          "length": 10,
+          "name": "Foyer"
         }
       ],
       "connections": [
@@ -1999,7 +2010,7 @@
         },
         {
           "from_room": "bed_1",
-          "to_room": "stair_1",
+          "to_room": "foyer_1",
           "kind": "door"
         },
         {
@@ -2024,12 +2035,12 @@
         },
         {
           "from_room": "hall_1",
-          "to_room": "stair_1",
+          "to_room": "foyer_1",
           "kind": "door"
         },
         {
           "from_room": "bath_1",
-          "to_room": "stair_1",
+          "to_room": "foyer_1",
           "kind": "door"
         }
       ],
@@ -2042,7 +2053,8 @@
         }
       ],
       "floor_count": 1,
-      "foundation_type": "stepped"
+      "foundation_type": "stepped",
+      "geometry_fingerprint": "8aa5e998b4ef85dd63a2c0bdfc77776f0a59f8f22194e8608cdf3d3664487d11"
     }
   },
   {
@@ -2083,14 +2095,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -2395,14 +2407,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -2707,14 +2719,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -3019,14 +3031,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -3331,14 +3343,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -3643,14 +3655,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -3955,14 +3967,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -4262,14 +4274,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -4569,14 +4581,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -4876,14 +4888,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -5178,14 +5190,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -5480,14 +5492,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -5782,14 +5794,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -5866,13 +5878,14 @@
           "length": 10
         },
         {
-          "room_id": "stair_1",
-          "room_type": "staircase",
+          "room_id": "foyer_1",
+          "room_type": "foyer",
           "floor": 1,
           "x": 11,
           "y": 20.0,
           "width": 8,
-          "length": 10
+          "length": 10,
+          "name": "Foyer"
         }
       ],
       "connections": [
@@ -5883,7 +5896,7 @@
         },
         {
           "from_room": "bed_1",
-          "to_room": "stair_1",
+          "to_room": "foyer_1",
           "kind": "door"
         },
         {
@@ -5908,12 +5921,12 @@
         },
         {
           "from_room": "hall_1",
-          "to_room": "stair_1",
+          "to_room": "foyer_1",
           "kind": "door"
         },
         {
           "from_room": "bath_1",
-          "to_room": "stair_1",
+          "to_room": "foyer_1",
           "kind": "door"
         }
       ],
@@ -5926,7 +5939,8 @@
         }
       ],
       "floor_count": 1,
-      "foundation_type": "stepped"
+      "foundation_type": "stepped",
+      "geometry_fingerprint": "87e798885a53f4673f5f7be94626f7e5257bcb069ecdb73832b325266ececcf6"
     }
   },
   {
@@ -5967,14 +5981,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -6051,13 +6065,14 @@
           "length": 10
         },
         {
-          "room_id": "stair_1",
-          "room_type": "staircase",
+          "room_id": "foyer_1",
+          "room_type": "foyer",
           "floor": 1,
           "x": 11,
           "y": 20.0,
           "width": 8,
-          "length": 10
+          "length": 10,
+          "name": "Foyer"
         }
       ],
       "connections": [
@@ -6068,7 +6083,7 @@
         },
         {
           "from_room": "bed_1",
-          "to_room": "stair_1",
+          "to_room": "foyer_1",
           "kind": "door"
         },
         {
@@ -6093,12 +6108,12 @@
         },
         {
           "from_room": "hall_1",
-          "to_room": "stair_1",
+          "to_room": "foyer_1",
           "kind": "door"
         },
         {
           "from_room": "bath_1",
-          "to_room": "stair_1",
+          "to_room": "foyer_1",
           "kind": "door"
         }
       ],
@@ -6111,7 +6126,8 @@
         }
       ],
       "floor_count": 1,
-      "foundation_type": "stepped"
+      "foundation_type": "stepped",
+      "geometry_fingerprint": "87e798885a53f4673f5f7be94626f7e5257bcb069ecdb73832b325266ececcf6"
     }
   },
   {
@@ -6152,14 +6168,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -6236,13 +6252,14 @@
           "length": 10
         },
         {
-          "room_id": "stair_1",
-          "room_type": "staircase",
+          "room_id": "foyer_1",
+          "room_type": "foyer",
           "floor": 1,
           "x": 11,
           "y": 20.0,
           "width": 8,
-          "length": 10
+          "length": 10,
+          "name": "Foyer"
         }
       ],
       "connections": [
@@ -6253,7 +6270,7 @@
         },
         {
           "from_room": "bed_1",
-          "to_room": "stair_1",
+          "to_room": "foyer_1",
           "kind": "door"
         },
         {
@@ -6278,12 +6295,12 @@
         },
         {
           "from_room": "hall_1",
-          "to_room": "stair_1",
+          "to_room": "foyer_1",
           "kind": "door"
         },
         {
           "from_room": "bath_1",
-          "to_room": "stair_1",
+          "to_room": "foyer_1",
           "kind": "door"
         }
       ],
@@ -6296,7 +6313,8 @@
         }
       ],
       "floor_count": 1,
-      "foundation_type": "stepped"
+      "foundation_type": "stepped",
+      "geometry_fingerprint": "87e798885a53f4673f5f7be94626f7e5257bcb069ecdb73832b325266ececcf6"
     }
   },
   {
@@ -6337,14 +6355,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -6649,14 +6667,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -6961,14 +6979,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -7273,14 +7291,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -7712,14 +7730,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -8151,14 +8169,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -8590,14 +8608,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -8902,14 +8920,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -9214,14 +9232,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -9526,14 +9544,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -9965,14 +9983,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -10404,14 +10422,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -10843,14 +10861,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -11150,14 +11168,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -11457,14 +11475,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -11764,14 +11782,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -12203,14 +12221,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -12642,14 +12660,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -13081,14 +13099,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -13383,14 +13401,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -13685,14 +13703,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -13987,14 +14005,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -14421,14 +14439,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -14855,14 +14873,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -15289,14 +15307,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -15591,14 +15609,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -15893,14 +15911,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -16195,14 +16213,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -16624,14 +16642,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -17053,14 +17071,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -17482,14 +17500,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -17789,14 +17807,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -18096,14 +18114,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -18403,14 +18421,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -18837,14 +18855,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -19271,14 +19289,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -19705,14 +19723,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -20012,14 +20030,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -20319,14 +20337,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -20626,14 +20644,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -21060,14 +21078,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -21494,14 +21512,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -21928,14 +21946,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -22230,14 +22248,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -22532,14 +22550,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -22834,14 +22852,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -23268,14 +23286,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -23702,14 +23720,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -24136,14 +24154,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -24438,14 +24456,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -24740,14 +24758,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -25042,14 +25060,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -25471,14 +25489,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -25900,14 +25918,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -26329,14 +26347,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -26758,14 +26776,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -27187,14 +27205,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -27616,14 +27634,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -27918,14 +27936,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -28220,14 +28238,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -28522,14 +28540,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -28951,14 +28969,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -29380,14 +29398,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -29809,14 +29827,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -30111,14 +30129,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -30413,14 +30431,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -30715,14 +30733,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -31144,14 +31162,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -31573,14 +31591,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -32002,14 +32020,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -32304,14 +32322,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -32606,14 +32624,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -32908,14 +32926,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -33337,14 +33355,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -33766,14 +33784,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -34195,14 +34213,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -34624,14 +34642,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -35053,14 +35071,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -35482,14 +35500,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -35784,14 +35802,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -36086,14 +36104,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -36388,14 +36406,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -36817,14 +36835,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -37246,14 +37264,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -37675,14 +37693,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -37977,14 +37995,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -38279,14 +38297,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -38581,14 +38599,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -39010,14 +39028,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -39439,14 +39457,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -39868,14 +39886,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -40297,14 +40315,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -40726,14 +40744,14 @@
       "traditional"
     ],
     "capabilities": {
-      "open_plan": true,
-      "master_ensuite": true,
-      "separate_dining": true,
-      "home_office": true,
-      "balcony": true,
-      "veranda": true,
-      "utility_room": true,
-      "parking_required": true,
+      "open_plan": false,
+      "master_ensuite": false,
+      "separate_dining": false,
+      "home_office": false,
+      "balcony": false,
+      "veranda": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -41145,12 +41163,12 @@
     "capabilities": {
       "open_plan": false,
       "master_ensuite": false,
-      "separate_dining": true,
+      "separate_dining": false,
       "home_office": false,
       "balcony": false,
       "veranda": false,
-      "utility_room": true,
-      "parking": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -41665,8 +41683,8 @@
       "home_office": false,
       "balcony": false,
       "veranda": false,
-      "utility_room": true,
-      "parking": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -42227,8 +42245,8 @@
       "home_office": false,
       "balcony": false,
       "veranda": false,
-      "utility_room": true,
-      "parking": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -42839,8 +42857,8 @@
       "home_office": false,
       "balcony": false,
       "veranda": false,
-      "utility_room": true,
-      "parking": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -43462,12 +43480,12 @@
     "capabilities": {
       "open_plan": false,
       "master_ensuite": false,
-      "separate_dining": true,
+      "separate_dining": false,
       "home_office": false,
       "balcony": false,
       "veranda": false,
-      "utility_room": true,
-      "parking": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -44003,8 +44021,8 @@
       "home_office": false,
       "balcony": false,
       "veranda": false,
-      "utility_room": true,
-      "parking": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -44611,8 +44629,8 @@
       "home_office": false,
       "balcony": false,
       "veranda": false,
-      "utility_room": true,
-      "parking": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -45274,12 +45292,12 @@
     "capabilities": {
       "open_plan": false,
       "master_ensuite": false,
-      "separate_dining": true,
+      "separate_dining": false,
       "home_office": false,
       "balcony": false,
       "veranda": false,
-      "utility_room": true,
-      "parking": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -45882,9 +45900,9 @@
       "home_office": true,
       "balcony": false,
       "veranda": false,
-      "utility_room": true,
-      "parking": false,
-      "accessibility": false
+      "utility_room": false,
+      "parking_required": false,
+      "accessibility": true
     },
     "architecturalMetrics": {
       "curated": 1.0
@@ -47268,9 +47286,9 @@
       "home_office": true,
       "balcony": false,
       "veranda": false,
-      "utility_room": true,
-      "parking": false,
-      "accessibility": false
+      "utility_room": false,
+      "parking_required": false,
+      "accessibility": true
     },
     "architecturalMetrics": {
       "curated": 1.0
@@ -48629,9 +48647,9 @@
       "home_office": true,
       "balcony": false,
       "veranda": false,
-      "utility_room": true,
-      "parking": false,
-      "accessibility": false
+      "utility_room": false,
+      "parking_required": false,
+      "accessibility": true
     },
     "architecturalMetrics": {
       "curated": 1.0
@@ -50015,9 +50033,9 @@
       "home_office": true,
       "balcony": false,
       "veranda": false,
-      "utility_room": true,
-      "parking": false,
-      "accessibility": false
+      "utility_room": false,
+      "parking_required": false,
+      "accessibility": true
     },
     "architecturalMetrics": {
       "curated": 1.0
@@ -51236,12 +51254,12 @@
     "capabilities": {
       "open_plan": false,
       "master_ensuite": false,
-      "separate_dining": true,
+      "separate_dining": false,
       "home_office": false,
       "balcony": false,
       "veranda": false,
-      "utility_room": true,
-      "parking": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -51620,8 +51638,8 @@
       "home_office": false,
       "balcony": false,
       "veranda": false,
-      "utility_room": true,
-      "parking": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -52042,12 +52060,12 @@
     "capabilities": {
       "open_plan": false,
       "master_ensuite": false,
-      "separate_dining": true,
+      "separate_dining": false,
       "home_office": false,
       "balcony": false,
       "veranda": false,
-      "utility_room": true,
-      "parking": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -52533,12 +52551,12 @@
     "capabilities": {
       "open_plan": false,
       "master_ensuite": false,
-      "separate_dining": true,
+      "separate_dining": false,
       "home_office": false,
       "balcony": false,
       "veranda": false,
-      "utility_room": true,
-      "parking": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -52984,12 +53002,12 @@
     "capabilities": {
       "open_plan": false,
       "master_ensuite": false,
-      "separate_dining": true,
+      "separate_dining": false,
       "home_office": false,
       "balcony": false,
       "veranda": false,
-      "utility_room": true,
-      "parking": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -53485,8 +53503,8 @@
       "home_office": false,
       "balcony": false,
       "veranda": false,
-      "utility_room": true,
-      "parking": false,
+      "utility_room": false,
+      "parking_required": false,
       "accessibility": true
     },
     "architecturalMetrics": {
@@ -53957,9 +53975,9 @@
       "home_office": true,
       "balcony": false,
       "veranda": false,
-      "utility_room": true,
-      "parking": false,
-      "accessibility": false
+      "utility_room": false,
+      "parking_required": false,
+      "accessibility": true
     },
     "architecturalMetrics": {
       "curated": 1.0
@@ -55343,9 +55361,9 @@
       "home_office": true,
       "balcony": false,
       "veranda": false,
-      "utility_room": true,
-      "parking": false,
-      "accessibility": false
+      "utility_room": false,
+      "parking_required": false,
+      "accessibility": true
     },
     "architecturalMetrics": {
       "curated": 1.0
@@ -56568,9 +56586,9 @@
       "home_office": false,
       "balcony": false,
       "veranda": false,
-      "utility_room": true,
-      "parking": false,
-      "accessibility": false
+      "utility_room": false,
+      "parking_required": false,
+      "accessibility": true
     },
     "architecturalMetrics": {
       "curated": 1.0
@@ -57638,9 +57656,9 @@
       "home_office": true,
       "balcony": false,
       "veranda": false,
-      "utility_room": true,
-      "parking": false,
-      "accessibility": false
+      "utility_room": false,
+      "parking_required": false,
+      "accessibility": true
     },
     "architecturalMetrics": {
       "curated": 1.0
@@ -58974,9 +58992,9 @@
       "home_office": false,
       "balcony": false,
       "veranda": false,
-      "utility_room": true,
-      "parking": false,
-      "accessibility": false
+      "utility_room": false,
+      "parking_required": false,
+      "accessibility": true
     },
     "architecturalMetrics": {
       "curated": 1.0
@@ -60019,9 +60037,9 @@
       "home_office": true,
       "balcony": false,
       "veranda": false,
-      "utility_room": true,
-      "parking": false,
-      "accessibility": false
+      "utility_room": false,
+      "parking_required": false,
+      "accessibility": true
     },
     "architecturalMetrics": {
       "curated": 1.0

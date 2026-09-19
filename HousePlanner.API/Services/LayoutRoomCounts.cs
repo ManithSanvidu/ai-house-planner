@@ -22,10 +22,11 @@ public static class LayoutRoomCounts
             !layout.TryGetProperty("rooms", out var rooms) || rooms.ValueKind != JsonValueKind.Array)
             return false;
 
-        return rooms.EnumerateArray().Any(room =>
-            room.ValueKind == JsonValueKind.Object &&
-            room.TryGetProperty("room_type", out var type) && type.ValueKind == JsonValueKind.String &&
-            type.GetString() == "bathroom_attached");
+        var ensuiteIds = rooms.EnumerateArray().Where(room => RoomType(room) == "bathroom_attached")
+            .Select(RoomId).Where(id => id != null).Cast<string>().ToHashSet();
+        if (ensuiteIds.Count == 0 || !layout.TryGetProperty("connections", out var connections) || connections.ValueKind != JsonValueKind.Array)
+            return false;
+        return ensuiteIds.Any(id => Neighbours(connections, id).SetEquals(["bedroom_1"]));
     }
 
     public static bool HasSeparateDining(JsonElement layout)
@@ -54,12 +55,12 @@ public static class LayoutRoomCounts
 
     public static bool HasBalcony(JsonElement layout)
     {
-        return HasRoomType(layout, "balcony");
+        return HasConnectedRoom(layout, "balcony", floor => floor > 1);
     }
 
     public static bool HasVeranda(JsonElement layout)
     {
-        return HasRoomType(layout, "veranda");
+        return HasConnectedRoom(layout, "veranda", floor => floor == 1);
     }
 
     public static bool HasOffice(JsonElement layout)
@@ -69,7 +70,11 @@ public static class LayoutRoomCounts
 
     public static bool HasUtilityRoom(JsonElement layout)
     {
-        return HasRoomType(layout, "utility") || HasRoomType(layout, "utility_room");
+        if (!TryRoomsAndConnections(layout, out var rooms, out var connections)) return false;
+        var kitchenIds = rooms.EnumerateArray().Where(r => RoomType(r) == "kitchen").Select(RoomId).Where(x => x != null).Cast<string>().ToHashSet();
+        return rooms.EnumerateArray().Where(r => RoomType(r) is "utility" or "utility_room")
+            .Select(RoomId).Where(x => x != null).Cast<string>()
+            .Any(id => Neighbours(connections, id).Overlaps(kitchenIds));
     }
 
     private static bool HasRoomType(JsonElement layout, string expectedType)
@@ -89,7 +94,9 @@ public static class LayoutRoomCounts
         if (layout.ValueKind != JsonValueKind.Object) return false;
         if (layout.TryGetProperty("site_features", out var siteFeatures) && siteFeatures.ValueKind == JsonValueKind.Array)
         {
-            return siteFeatures.GetArrayLength() > 0;
+            return siteFeatures.EnumerateArray().Any(feature =>
+                feature.ValueKind == JsonValueKind.Object &&
+                feature.TryGetProperty("type", out var type) && type.GetString() == "parking");
         }
         return false;
     }
@@ -135,5 +142,44 @@ public static class LayoutRoomCounts
         }
 
         return hasBedroom && hasBathroom && usableHalls;
+    }
+
+    private static bool HasConnectedRoom(JsonElement layout, string type, Func<int, bool> floorRule)
+    {
+        if (!TryRoomsAndConnections(layout, out var rooms, out var connections)) return false;
+        return rooms.EnumerateArray().Where(r => RoomType(r) == type && floorRule(RoomFloor(r)))
+            .Select(RoomId).Where(x => x != null).Cast<string>()
+            .Any(id => Neighbours(connections, id).Count > 0);
+    }
+
+    private static bool TryRoomsAndConnections(JsonElement layout, out JsonElement rooms, out JsonElement connections)
+    {
+        rooms = default;
+        connections = default;
+        return layout.ValueKind == JsonValueKind.Object &&
+               layout.TryGetProperty("rooms", out rooms) && rooms.ValueKind == JsonValueKind.Array &&
+               layout.TryGetProperty("connections", out connections) && connections.ValueKind == JsonValueKind.Array;
+    }
+
+    private static string? RoomId(JsonElement room) =>
+        room.TryGetProperty("room_id", out var id) && id.ValueKind == JsonValueKind.String ? id.GetString() : null;
+
+    private static string RoomType(JsonElement room) =>
+        room.TryGetProperty("room_type", out var type) && type.ValueKind == JsonValueKind.String ? type.GetString() ?? "" : "";
+
+    private static int RoomFloor(JsonElement room) =>
+        room.TryGetProperty("floor", out var floor) && floor.ValueKind == JsonValueKind.Number ? floor.GetInt32() : 0;
+
+    private static HashSet<string> Neighbours(JsonElement connections, string roomId)
+    {
+        var result = new HashSet<string>();
+        foreach (var connection in connections.EnumerateArray())
+        {
+            var from = connection.TryGetProperty("from_room", out var f) ? f.GetString() : null;
+            var to = connection.TryGetProperty("to_room", out var t) ? t.GetString() : null;
+            if (from == roomId && to != null) result.Add(to);
+            if (to == roomId && from != null) result.Add(from);
+        }
+        return result;
     }
 }

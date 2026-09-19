@@ -43,7 +43,7 @@ from app.design.scoring import family_affinity
 
 from app.design.topology_registry import eligible_topologies, topology_dict
 
-from app.providers import get_available_design_provider
+from app.providers import get_available_design_provider, get_next_design_provider
 
 from app.schemas.ai_plan_decision import AIPlanDecision
 
@@ -426,11 +426,17 @@ def generate_layout(
     candidate_pool = _candidate_pool(req, plot, excluded_fingerprint)
     shortlist = candidate_pool[:7]
 
+    request_type = ('generate_another' if requests_another_design(revision_reason)
+                    else 'revision' if revision_reason else 'generation')
     provider = get_available_design_provider()
-    provider_name = getattr(provider, 'provider_name', None) if provider else None
-    model_name = getattr(provider, 'model_name', None) if provider else None
+    provider_name = None
+    model_name = None
+    attempted_providers = []
     decision = None
-    if provider:
+    while provider:
+        provider_name = getattr(provider, 'provider_name', None)
+        model_name = getattr(provider, 'model_name', None)
+        attempted_providers.append(provider_name)
         print(f'[Design Agent] Calling provider {provider.provider_name} for base-plan selection...')
         user_prompt = _build_ai_prompt(normalized, shortlist, req, plot, previous_plan_code,
                                        previous_fingerprint, revision_reason)
@@ -440,8 +446,12 @@ def generate_layout(
             logger.info('[AI Selection] provider=%s model=%s selected_plan=%s alternatives=%s reason_codes=%s',
                         provider_name, model_name, decision.selected_plan_code,
                         decision.alternative_plan_codes, decision.reason_codes)
+            break
         except Exception as exc:
-            print(f'[Design Agent] AI decision failed ({exc}); using deterministic selection.')
+            print(f'[Design Agent] {provider_name} decision failed ({type(exc).__name__}); trying next provider.')
+            provider = get_next_design_provider(provider_name or '')
+            provider_name = None
+            model_name = None
 
     adapter = PlanAdapter()
     tried_codes: list[str] = []
@@ -469,8 +479,13 @@ def generate_layout(
                 selection, tried_codes, candidate_pool)
             logger.info('[Validation] plan_code=%s architectural_score=%s geometry_passed=%s',
                         plan.plan_code, final_design.design_score, True)
+            generation_mode = ('ai_adapted_template' if selected_provider else
+                               'deterministic_fallback' if attempted_providers else
+                               'deterministic_template_selection')
             final_design.candidate_summary.update({
-                'generation_mode': 'ai_adapted_template' if selected_provider else 'deterministic_template_selection',
+                'generation_mode': generation_mode,
+                'ai_ran': bool(attempted_providers),
+                'attempted_providers': attempted_providers,
                 'base_plan_name': plan.name,
                 'base_plan_code': plan.plan_code,
                 'template_id': final_design.template_id,
@@ -489,6 +504,10 @@ def generate_layout(
             logger.info('[Final Design] selected_base_plan=%s topology=%s fingerprint=%s generation_mode=%s',
                         plan.plan_code, final_design.template_family,
                         final_design.geometry_fingerprint,
+                        final_design.candidate_summary.get('generation_mode'))
+            logger.info('[AI Agent] request_type=%s provider=%s model=%s candidate_count=%s selected_plan=%s reason_codes=%s generation_mode=%s',
+                        request_type, selected_provider or 'deterministic', selected_model or 'none',
+                        len(shortlist), plan.plan_code, selection.reason_codes,
                         final_design.candidate_summary.get('generation_mode'))
             return final_design
         except GenerationFailure as exc:

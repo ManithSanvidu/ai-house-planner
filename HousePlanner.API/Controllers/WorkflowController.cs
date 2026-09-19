@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using System.Text.Json;
 using HousePlanner.API.Data;
 using HousePlanner.API.DTOs;
@@ -139,10 +139,10 @@ public class WorkflowController : ControllerBase
                     IsCurrent: workflow.LatestDesign.IsCurrent,
                     Rooms: roomDtos,
                     TemplateFamily: root.TryGetProperty("template_family", out var tf) ? tf.GetString() : null,
-                    DesignSeed: root.TryGetProperty("design_seed", out var ds) ? ds.GetInt64() : null,
-                    DesignScore: root.TryGetProperty("design_score", out var sc) ? sc.GetDecimal() : null,
-                    GeometryFingerprint: root.TryGetProperty("geometry_fingerprint", out var fp) ? fp.GetString() : null,
-                    GroundFootprintSqft: root.TryGetProperty("ground_footprint_sqft", out var gf) ? gf.GetDecimal() : null,
+                    DesignSeed: root.TryGetProperty("design_seed", out var ds) && ds.ValueKind != JsonValueKind.Null ? ds.GetInt64() : null,
+                    DesignScore: root.TryGetProperty("design_score", out var sc) && sc.ValueKind != JsonValueKind.Null ? sc.GetDecimal() : null,
+                    GeometryFingerprint: root.TryGetProperty("geometry_fingerprint", out var fp) && fp.ValueKind != JsonValueKind.Null ? fp.GetString() : null,
+                    GroundFootprintSqft: root.TryGetProperty("ground_footprint_sqft", out var gf) && gf.ValueKind != JsonValueKind.Null ? gf.GetDecimal() : null,
                     Connections: GetMetadata(root, "room_connections"),
                     Entrances: GetMetadata(root, "entrances"),
                     PlotConstraints: GetMetadata(root, "plot_constraints"),

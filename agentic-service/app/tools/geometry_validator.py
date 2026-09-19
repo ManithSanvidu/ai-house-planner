@@ -208,6 +208,8 @@ def _validate_spatial_rules(result: GeometryValidationResult, rooms: List[RoomLa
         result.fail('duplicate_room_id', 'Room IDs must be unique across all floors.')
     if {r.floor for r in rooms} != set(range(1, expected_floors+1)):
         result.fail('floor_count', 'Floors must be contiguous starting at 1.')
+    if expected_floors == 1 and any(room_kind(r.room_type) == 'staircase' for r in rooms):
+        result.fail('stair_forbidden', 'Single-floor designs must not contain a staircase or stair core.')
     for room in rooms:
         rule = rule_for(room.room_type)
         dims, minimum = sorted((room.width, room.length)), sorted((rule.min_width, rule.min_length))

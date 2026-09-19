@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Iterable, Optional
 
 from app.design.architectural_quality import validate_architectural_quality
+from app.design.adjacency import exterior_segments, graph_for
 from app.design.diversity import geometry_fingerprint
 from app.design.models import Requirements
 from app.design.plan_adapter import transform_design
@@ -16,6 +17,7 @@ from app.design.plot_constraints import PlotConstraints
 from app.design.plan_suitability import accessibility_details, suitability_breakdown
 from app.design.quality_metrics import calculate_quality_metrics
 from app.design.room_counts import count_bathrooms
+from app.design.room_rules import room_kind
 from app.schemas.design_result import DesignResult
 
 
@@ -119,15 +121,26 @@ def _supported_styles(topology_family: str, design: DesignResult) -> list[str]:
 
 def _capabilities(design: DesignResult) -> dict[str, bool]:
     room_types = {room.room_type for room in design.rooms}
+    graph = graph_for(design.rooms, design.connections)
+    master = next((room for room in design.rooms if room.room_type == 'bedroom_1'), None)
+    ensuite = [room for room in design.rooms if room.room_type == 'bathroom_attached']
+    balconies = [room for room in design.rooms if room_kind(room.room_type) == 'balcony']
+    verandas = [room for room in design.rooms if room_kind(room.room_type) == 'veranda']
+    utilities = [room for room in design.rooms if room_kind(room.room_type) == 'utility']
+    kitchens = [room for room in design.rooms if room_kind(room.room_type) == 'kitchen']
     return {
         'open_plan': any(connection.kind == 'open' for connection in design.connections),
-        'master_ensuite': 'bathroom_attached' in room_types,
+        'master_ensuite': bool(master and any(graph.get(room.room_id) == {master.room_id} for room in ensuite)),
         'separate_dining': 'dining' in room_types,
         'home_office': 'home_office' in room_types,
-        'balcony': 'balcony' in room_types,
-        'veranda': 'veranda' in room_types,
-        'utility_room': 'utility' in room_types or 'utility_room' in room_types,
-        'parking': bool(design.site_features),
+        'balcony': any(room.floor > 1 and exterior_segments(room, design.rooms) and
+                       any(other.room_id in graph.get(room.room_id, set()) and other.floor == room.floor
+                           and room_kind(other.room_type) not in {'balcony', 'veranda'} for other in design.rooms)
+                       for room in balconies),
+        'veranda': any(room.floor == 1 and exterior_segments(room, design.rooms) for room in verandas),
+        'utility_room': any(any(kitchen.room_id in graph.get(room.room_id, set()) for kitchen in kitchens)
+                            for room in utilities),
+        'parking': any(feature.get('type') == 'parking' for feature in design.site_features),
         'accessibility': accessibility_details(design)[0],
     }
 

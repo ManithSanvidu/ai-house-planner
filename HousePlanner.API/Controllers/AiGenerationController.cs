@@ -43,7 +43,8 @@ namespace HousePlanner.API.Controllers
             {
                 return BadRequest(new { 
                     code = validation.ErrorCode, 
-                    message = validation.Message, 
+                    message = validation.Message,
+                    conflicts = validation.Conflicts,
                     suggestions = validation.Suggestions 
                 });
             }

@@ -1,4 +1,4 @@
-from app.providers.provider_factory import get_available_design_provider, get_provider
+from app.providers.provider_factory import get_available_design_provider, get_next_design_provider, get_provider
 from app.providers.base_provider import (
     ModelProvider,
     ProviderError,
@@ -13,6 +13,7 @@ from app.providers.base_provider import (
 
 __all__ = [
     "get_available_design_provider",
+    "get_next_design_provider",
     "get_provider",
     "ModelProvider",
     "ProviderError",

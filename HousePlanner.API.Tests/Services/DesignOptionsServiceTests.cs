@@ -148,4 +148,29 @@ public class DesignOptionsServiceTests
         Assert.False(validation.IsValid);
         Assert.Equal("UNSUPPORTED_DESIGN_CONFIGURATION", validation.ErrorCode);
     }
+
+    [Fact]
+    public async Task ValidateFinalSelection_ConflictingSelection_GeneratesSuggestions()
+    {
+        var context = GetDbContext();
+        await SeedData(context); 
+        var service = new DesignOptionsService(context);
+
+        var req = new AiGenerationRequest
+        {
+            LandSizePerches = 25,
+            Preferences = new PreferencesDto
+            {
+                Floors = 2,
+                Bedrooms = 4,
+                Bathrooms = 3, // Valid for Plan 2
+                ParkingRequired = true // Invalid for Plan 2
+            }
+        };
+
+        var validation = await service.ValidateFinalSelectionAsync(req);
+        Assert.False(validation.IsValid);
+        Assert.Contains("parking", validation.Conflicts);
+        Assert.Contains(validation.Suggestions, s => s.Field == "parkingRequired" && (bool)s.Value == false);
+    }
 }

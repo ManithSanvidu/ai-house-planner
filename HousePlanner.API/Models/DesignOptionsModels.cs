@@ -22,7 +22,8 @@ public record DesignOptionsResponseDto(
     [property: JsonPropertyName("bathrooms")] List<int> Bathrooms,
     [property: JsonPropertyName("floors")] List<int> Floors,
     [property: JsonPropertyName("architecturalStyles")] List<string> ArchitecturalStyles,
-    [property: JsonPropertyName("features")] Dictionary<string, FeatureAvailabilityDto> Features
+    [property: JsonPropertyName("features")] Dictionary<string, FeatureAvailabilityDto> Features,
+    [property: JsonPropertyName("validatedDesignCount")] int ValidatedDesignCount
 );
 
 public class DesignOptionsRequestDto
@@ -44,12 +45,28 @@ public class DesignOptionsRequestDto
 
     [JsonPropertyName("architecturalStyle")]
     public string? ArchitecturalStyle { get; set; }
+    public bool? OpenPlan { get; set; }
+    public bool? MasterEnsuite { get; set; }
+    public bool? SeparateDining { get; set; }
+    public bool? HomeOffice { get; set; }
+    public bool? Balcony { get; set; }
+    public bool? Veranda { get; set; }
+    public bool? UtilityRoom { get; set; }
+    public bool? ParkingRequired { get; set; }
+    public bool? Accessibility { get; set; }
 }
+
+public record SuggestionDto(
+    [property: JsonPropertyName("field")] string Field,
+    [property: JsonPropertyName("value")] object Value,
+    [property: JsonPropertyName("label")] string Label
+);
 
 public class DesignOptionsValidationResult
 {
     public bool IsValid { get; set; }
     public string? ErrorCode { get; set; }
     public string? Message { get; set; }
-    public List<string> Suggestions { get; set; } = new();
+    public List<string> Conflicts { get; set; } = new();
+    public List<SuggestionDto> Suggestions { get; set; } = new();
 }

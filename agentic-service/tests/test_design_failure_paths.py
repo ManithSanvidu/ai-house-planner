@@ -112,7 +112,7 @@ def test_seeded_request_still_calls_remote_advice_once():
     with patch('app.tools.layout_generation_tool.get_available_design_provider', return_value=mock_provider):
         result = generate_layout(20, 'flat', {'floors':1}, design_seed=8)
 
-    assert result.candidate_summary['generation_mode'] == 'deterministic_template_selection'
+    assert result.candidate_summary['generation_mode'] == 'deterministic_fallback'
     assert mock_provider.generate_json.call_count == 1
 
 

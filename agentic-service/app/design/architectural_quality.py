@@ -4,7 +4,7 @@ from dataclasses import asdict, dataclass
 from heapq import heappop, heappush
 from math import inf, hypot
 
-from app.design.adjacency import graph_for, shared_wall
+from app.design.adjacency import exterior_segments, graph_for, shared_wall
 from app.design.quality_config import QUALITY, WEIGHTS
 from app.design.quality_metrics import calculate_quality_metrics
 from app.design.room_rules import CIRCULATION_TYPES, room_kind
@@ -150,7 +150,22 @@ def _preference_failures(design, req, plot=None):
             failures.append(f'preference_{kind}')
 
     graph = graph_for(rooms, design.connections)
-    if req.attached_bathroom:
+    stairs = [room for room in rooms if room_kind(room.room_type) == 'staircase']
+    if req.floors == 1 and stairs:
+        failures.append('program_stair_forbidden_single_floor')
+    if req.floors > 1:
+        for floor in range(1, req.floors + 1):
+            floor_stairs = [room for room in stairs if room.floor == floor]
+            if not floor_stairs:
+                failures.append('program_stair_required')
+            if floor > 1 and floor_stairs and not any(
+                any(other.floor == floor and room_kind(other.room_type) in
+                    {'hallway', 'foyer', 'family_lounge', 'living_room'} and
+                    other.room_id in graph.get(stair.room_id, set()) for other in rooms)
+                for stair in floor_stairs
+            ):
+                failures.append('program_upper_landing_connection')
+    if getattr(req, 'attached_bathroom', False) or getattr(req, 'master_bedroom', False):
         master = next((room for room in rooms if room.room_type == 'bedroom_1'), None)
         attached = [room for room in rooms if room.room_type == 'bathroom_attached']
         if not master or not any(graph.get(bath.room_id) == {master.room_id} for bath in attached):
@@ -159,10 +174,28 @@ def _preference_failures(design, req, plot=None):
         failures.append('preference_open_plan')
     if req.accessibility:
         ground = {room_kind(room.room_type) for room in rooms if room.floor == 1}
-        if not {'bedroom', 'bathroom', 'kitchen', 'living_room'} <= ground or any(
-            min(room.width, room.length) < 4 for room in rooms if room_kind(room.room_type) == 'hallway'
+        if not {'bedroom', 'bathroom'} <= ground or any(
+            min(room.width, room.length) < 3.5 for room in rooms
+            if room.floor == 1 and room_kind(room.room_type) == 'hallway'
         ):
             failures.append('preference_accessibility')
+    for balcony in [room for room in rooms if room_kind(room.room_type) == 'balcony']:
+        attached = any(other.floor == balcony.floor and room_kind(other.room_type) not in OUTDOOR
+                       and other.room_id in graph.get(balcony.room_id, set()) for other in rooms)
+        if req.floors < 2 or balcony.floor == 1 or not attached or not exterior_segments(balcony, rooms):
+            failures.append('program_balcony')
+    for veranda in [room for room in rooms if room_kind(room.room_type) == 'veranda']:
+        if veranda.floor != 1 or not exterior_segments(veranda, rooms):
+            failures.append('program_veranda')
+    if req.utility_room:
+        utilities = [room for room in rooms if room_kind(room.room_type) == 'utility']
+        kitchens = [room for room in rooms if room_kind(room.room_type) == 'kitchen']
+        if not utilities or not kitchens or not any(
+            kitchen.room_id in graph.get(utility.room_id, set()) or
+            hypot(centre(utility)[0] - centre(kitchen)[0], centre(utility)[1] - centre(kitchen)[1]) <= 20
+            for utility in utilities for kitchen in kitchens
+        ):
+            failures.append('preference_utility_service_zone')
     if req.parking:
         valid = False
         if plot:

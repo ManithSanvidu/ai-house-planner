@@ -12,6 +12,7 @@ interface DesignOptionsResponseDto {
   floors: number[];
   architecturalStyles: string[];
   features: Record<string, FeatureAvailabilityDto>;
+  validatedDesignCount: number;
 }
 
 interface IntakeFormData {
@@ -56,6 +57,16 @@ const IntakeForm: React.FC = () => {
   const [isSuccess, setIsSuccess] = useState(false);
   const [workflowId, setWorkflowId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
+  const [conflicts, setConflicts] = useState<string[]>([]);
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+
+  const applySuggestion = (field: string, value: any) => {
+    const nextData = { ...formData, [field]: value };
+    setFormData(nextData);
+    setConflicts([]);
+    setErrorMessage('');
+    fetchCompatibleOptions(nextData);
+  };
 
   // Initial fetch
   useEffect(() => {
@@ -78,7 +89,16 @@ const IntakeForm: React.FC = () => {
         floors: currentData.floors ? parseInt(currentData.floors) : undefined,
         bedrooms: currentData.bedrooms ? parseInt(currentData.bedrooms) : undefined,
         bathrooms: currentData.bathrooms ? parseInt(currentData.bathrooms) : undefined,
-        architecturalStyle: currentData.architecturalStyle || undefined
+        architecturalStyle: currentData.architecturalStyle || undefined,
+        openPlan: currentData.openPlan,
+        masterEnsuite: currentData.masterEnsuite,
+        separateDining: currentData.separateDining,
+        homeOffice: currentData.homeOffice,
+        balcony: currentData.balcony,
+        veranda: currentData.veranda,
+        utilityRoom: currentData.utilityRoom,
+        parkingRequired: currentData.parkingRequired,
+        accessibility: currentData.accessibility
       };
       
       const res = await fetch('http://localhost:5265/api/v1/design-options/compatible', {
@@ -113,6 +133,7 @@ const IntakeForm: React.FC = () => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     const nextData = { ...formData, [name]: value };
+    if (name === 'floors' && value === '1') nextData.balcony = false;
     setFormData(nextData);
     
     if (['landRangeId', 'plotShape', 'floors', 'bedrooms', 'bathrooms', 'architecturalStyle'].includes(name)) {
@@ -122,11 +143,14 @@ const IntakeForm: React.FC = () => {
 
   const handleToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, checked } = e.target;
-    setFormData(prev => ({ ...prev, [name]: checked }));
+    const nextData = { ...formData, [name]: checked };
+    setFormData(nextData);
+    fetchCompatibleOptions(nextData);
   };
 
   const nextStep = () => {
     setErrorMessage('');
+    setConflicts([]);
     if (step === 1 && formData.plotShape === 'CUSTOM_DIMENSIONS') {
       if (!formData.plotWidth || !formData.plotLength) {
         setErrorMessage("Please enter both width and length for custom dimensions.");
@@ -190,13 +214,20 @@ const IntakeForm: React.FC = () => {
       
       if (!res.ok) {
         const err = await res.json();
+        if (err.code === 'UNSUPPORTED_DESIGN_CONFIGURATION') {
+            setConflicts(err.conflicts || []);
+            setSuggestions(err.suggestions || []);
+            throw new Error('');
+        }
         throw new Error(err.message || "Failed to generate design");
       }
       const result = await res.json();
       setWorkflowId(result.workflowId);
       setIsSuccess(true);
     } catch (error: any) {
-      setErrorMessage(error.message || 'An error occurred while connecting to the server.');
+      if (error.message) {
+        setErrorMessage(error.message || 'An error occurred while connecting to the server.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -376,7 +407,32 @@ const IntakeForm: React.FC = () => {
               <p><strong>Land:</strong> {options.landRanges.find(r => r.id === formData.landRangeId)?.label}, {formData.plotShape}</p>
               <p><strong>House:</strong> {formData.floors} floors, {formData.bedrooms} beds, {formData.bathrooms} baths</p>
               <p><strong>Style:</strong> {formData.architecturalStyle}</p>
+              <p><strong>Priority:</strong> {formData.spacePriority}</p>
+              <p><strong>Selected extras:</strong> {[
+                ['openPlan', 'Open plan'], ['masterEnsuite', 'Master ensuite'], ['separateDining', 'Separate dining'],
+                ['homeOffice', 'Home office'], ['balcony', 'Balcony'], ['veranda', 'Veranda'],
+                ['utilityRoom', 'Utility room'], ['parkingRequired', 'Parking'], ['accessibility', 'Accessibility']
+              ].filter(([key]) => Boolean(formData[key as keyof IntakeFormData])).map(([, label]) => label).join(', ') || 'None'}</p>
             </div>
+            <p className={`font-semibold ${options.validatedDesignCount === 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+              Validated designs available: {options.validatedDesignCount}
+            </p>
+            
+            {conflicts.length > 0 && (
+                <div className="mt-6 p-6 border rounded-2xl bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800/30 text-center">
+                    <p className="text-red-700 dark:text-red-400 font-medium mb-4">This combination is not currently available.</p>
+                    <div className="flex flex-col gap-3">
+                        {suggestions.map((s: any, idx: number) => (
+                            <button key={idx} type="button" onClick={() => applySuggestion(s.field, s.value)} className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
+                                {s.label}
+                            </button>
+                        ))}
+                        <button type="button" onClick={() => { setErrorMessage(''); setConflicts([]); }} className="text-indigo-600 dark:text-indigo-400 text-sm font-medium hover:underline mt-2">
+                            Edit configuration
+                        </button>
+                    </div>
+                </div>
+            )}
           </div>
         )}
 
@@ -392,7 +448,7 @@ const IntakeForm: React.FC = () => {
               Next <ChevronRight size={18} />
             </button>
           ) : (
-            <button type="button" onClick={handleSubmit} disabled={isSubmitting} className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl flex items-center gap-2 disabled:opacity-70">
+            <button type="button" onClick={handleSubmit} disabled={isSubmitting || options.validatedDesignCount === 0} className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl flex items-center gap-2 disabled:opacity-70">
               {isSubmitting ? "Validating..." : "Generate AI Plan"}
             </button>
           )}

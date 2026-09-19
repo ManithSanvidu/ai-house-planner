@@ -52,6 +52,16 @@ public class DesignOptionsService : IDesignOptionsService
         if (!string.IsNullOrEmpty(request.ArchitecturalStyle))
             plans = plans.Where(p => p.Style == request.ArchitecturalStyle).ToList();
 
+        if (request.OpenPlan == true) plans = plans.Where(p => p.HasOpenPlan).ToList();
+        if (request.MasterEnsuite == true) plans = plans.Where(p => p.HasMasterEnsuite).ToList();
+        if (request.SeparateDining == true) plans = plans.Where(p => p.HasSeparateDining).ToList();
+        if (request.HomeOffice == true) plans = plans.Where(p => p.HasOffice).ToList();
+        if (request.Balcony == true) plans = plans.Where(p => p.HasBalcony && p.FloorCount >= 2).ToList();
+        if (request.Veranda == true) plans = plans.Where(p => p.HasVeranda).ToList();
+        if (request.UtilityRoom == true) plans = plans.Where(p => p.HasUtilityRoom).ToList();
+        if (request.ParkingRequired == true) plans = plans.Where(p => p.ParkingSpaces > 0).ToList();
+        if (request.Accessibility == true) plans = plans.Where(p => p.IsAccessibleFriendly).ToList();
+
         // Extract available options from remaining plans
         var bedrooms = plans.Select(p => p.Bedrooms).Distinct().OrderBy(x => x).ToList();
         var bathrooms = plans.Select(p => p.Bathrooms).Distinct().OrderBy(x => x).ToList();
@@ -64,7 +74,9 @@ public class DesignOptionsService : IDesignOptionsService
             ["master_ensuite"] = GetFeatureAvailability(plans, p => p.HasMasterEnsuite),
             ["separate_dining"] = GetFeatureAvailability(plans, p => p.HasSeparateDining),
             ["home_office"] = GetFeatureAvailability(plans, p => p.HasOffice),
-            ["balcony"] = GetFeatureAvailability(plans, p => p.HasBalcony),
+            ["balcony"] = request.Floors == 1
+                ? new FeatureAvailabilityDto(false, "Balconies require a validated multi-floor design.")
+                : GetFeatureAvailability(plans, p => p.HasBalcony && p.FloorCount >= 2),
             ["veranda"] = GetFeatureAvailability(plans, p => p.HasVeranda),
             ["utility_room"] = GetFeatureAvailability(plans, p => p.HasUtilityRoom),
             ["parking"] = GetFeatureAvailability(plans, p => p.ParkingSpaces > 0),
@@ -78,7 +90,8 @@ public class DesignOptionsService : IDesignOptionsService
             bathrooms,
             floors,
             styles,
-            features
+            features,
+            plans.Count
         );
     }
 
@@ -93,45 +106,98 @@ public class DesignOptionsService : IDesignOptionsService
 
     public async Task<DesignOptionsValidationResult> ValidateFinalSelectionAsync(AiGenerationRequest request, CancellationToken cancellationToken = default)
     {
-        var query = _context.PreDesignedHousePlans.Where(p => p.IsActive);
-        
-        if (request.Preferences != null)
+        if (request.Preferences?.Floors == 1 && request.Preferences.Balcony == true)
+            return new DesignOptionsValidationResult
+            {
+                IsValid = false, ErrorCode = "UNSUPPORTED_DESIGN_CONFIGURATION",
+                Message = "Balconies require a validated multi-floor design.", Conflicts = ["balcony"],
+                Suggestions = [new SuggestionDto("balcony", false, "Continue without balcony")]
+            };
+        IQueryable<PreDesignedHousePlan> BuildQuery(string? skipConstraint = null)
         {
-            if (request.Preferences.Floors > 0)
-                query = query.Where(p => p.FloorCount == request.Preferences.Floors);
-            
-            if (request.Preferences.Bedrooms > 0)
-                query = query.Where(p => p.Bedrooms == request.Preferences.Bedrooms);
+            var query = _context.PreDesignedHousePlans.Where(p => p.IsActive);
+            if (request.Preferences != null)
+            {
+                if (request.Preferences.Floors > 0 && skipConstraint != "floors")
+                    query = query.Where(p => p.FloorCount == request.Preferences.Floors);
+                if (request.Preferences.Bedrooms > 0 && skipConstraint != "bedrooms")
+                    query = query.Where(p => p.Bedrooms == request.Preferences.Bedrooms);
+                if (request.Preferences.Bathrooms.HasValue && request.Preferences.Bathrooms.Value > 0 && skipConstraint != "bathrooms")
+                    query = query.Where(p => p.Bathrooms == request.Preferences.Bathrooms.Value);
+                if (!string.IsNullOrEmpty(request.Preferences.ArchitecturalStyle) && skipConstraint != "style")
+                    query = query.Where(p => p.Style == request.Preferences.ArchitecturalStyle);
                 
-            if (request.Preferences.Bathrooms.HasValue && request.Preferences.Bathrooms.Value > 0)
-                query = query.Where(p => p.Bathrooms == request.Preferences.Bathrooms.Value);
-
-            if (!string.IsNullOrEmpty(request.Preferences.ArchitecturalStyle))
-                query = query.Where(p => p.Style == request.Preferences.ArchitecturalStyle);
-
-            if (request.Preferences.OpenPlan == true) query = query.Where(p => p.HasOpenPlan);
-            if (request.Preferences.MasterEnsuite == true) query = query.Where(p => p.HasMasterEnsuite);
-            if (request.Preferences.SeparateDining == true) query = query.Where(p => p.HasSeparateDining);
-            if (request.Preferences.HomeOffice == true) query = query.Where(p => p.HasOffice);
-            if (request.Preferences.Balcony == true) query = query.Where(p => p.HasBalcony);
-            if (request.Preferences.Veranda == true) query = query.Where(p => p.HasVeranda);
-            if (request.Preferences.UtilityRoom == true) query = query.Where(p => p.HasUtilityRoom);
-            if (request.Preferences.ParkingRequired == true) query = query.Where(p => p.ParkingSpaces > 0);
-            if (request.Preferences.Accessibility == true) query = query.Where(p => p.IsAccessibleFriendly);
+                if (request.Preferences.OpenPlan == true && skipConstraint != "openPlan") query = query.Where(p => p.HasOpenPlan);
+                if (request.Preferences.MasterEnsuite == true && skipConstraint != "masterEnsuite") query = query.Where(p => p.HasMasterEnsuite);
+                if (request.Preferences.SeparateDining == true && skipConstraint != "separateDining") query = query.Where(p => p.HasSeparateDining);
+                if (request.Preferences.HomeOffice == true && skipConstraint != "homeOffice") query = query.Where(p => p.HasOffice);
+                if (request.Preferences.Balcony == true && skipConstraint != "balcony") query = query.Where(p => p.HasBalcony);
+                if (request.Preferences.Veranda == true && skipConstraint != "veranda") query = query.Where(p => p.HasVeranda);
+                if (request.Preferences.UtilityRoom == true && skipConstraint != "utilityRoom") query = query.Where(p => p.HasUtilityRoom);
+                if (request.Preferences.ParkingRequired == true && skipConstraint != "parkingRequired") query = query.Where(p => p.ParkingSpaces > 0);
+                if (request.Preferences.Accessibility == true && skipConstraint != "accessibility") query = query.Where(p => p.IsAccessibleFriendly);
+            }
+            query = query.Where(p => p.MinimumLandSizePerches <= request.LandSizePerches);
+            return query;
         }
 
-        query = query.Where(p => p.MinimumLandSizePerches <= request.LandSizePerches);
-
-        bool exists = await query.AnyAsync(cancellationToken);
+        bool exists = await BuildQuery().AnyAsync(cancellationToken);
 
         if (!exists)
         {
+            var conflicts = new List<string>();
+            var suggestions = new List<SuggestionDto>();
+
+            async Task CheckRelaxation(string field, string label)
+            {
+                var relaxedQuery = BuildQuery(field);
+                if (await relaxedQuery.AnyAsync(cancellationToken))
+                {
+                    conflicts.Add(field == "parkingRequired" ? "parking" : field);
+                    suggestions.Add(new SuggestionDto(field, false, label));
+                }
+            }
+
+            if (request.Preferences?.ParkingRequired == true) await CheckRelaxation("parkingRequired", "Continue without parking");
+            if (request.Preferences?.Balcony == true) await CheckRelaxation("balcony", "Continue without balcony");
+            if (request.Preferences?.Veranda == true) await CheckRelaxation("veranda", "Continue without veranda");
+            if (request.Preferences?.UtilityRoom == true) await CheckRelaxation("utilityRoom", "Continue without utility room");
+            if (request.Preferences?.HomeOffice == true) await CheckRelaxation("homeOffice", "Continue without home office");
+            if (request.Preferences?.SeparateDining == true) await CheckRelaxation("separateDining", "Continue without separate dining");
+            if (request.Preferences?.MasterEnsuite == true) await CheckRelaxation("masterEnsuite", "Continue without master ensuite");
+
+            async Task CheckIntegerRelaxation(string field, string labelPrefix)
+            {
+                var relaxedQuery = BuildQuery(field);
+                var availableValues = await relaxedQuery
+                    .Select(p => field == "bedrooms" ? p.Bedrooms : field == "bathrooms" ? p.Bathrooms : p.FloorCount)
+                    .Distinct()
+                    .ToListAsync(cancellationToken);
+
+                if (availableValues.Any())
+                {
+                    conflicts.Add(field);
+                    int currentVal = field == "bedrooms" ? request.Preferences.Bedrooms : field == "bathrooms" ? (request.Preferences.Bathrooms ?? 1) : request.Preferences.Floors;
+                    int closest = availableValues.OrderBy(x => Math.Abs(x - currentVal)).First();
+                    suggestions.Add(new SuggestionDto(field, closest, $"{labelPrefix} {closest}"));
+                }
+            }
+
+            // Only suggest integer changes if we haven't already found boolean suggestions.
+            if (suggestions.Count == 0 && request.Preferences != null)
+            {
+                if (request.Preferences.Bathrooms > 0) await CheckIntegerRelaxation("bathrooms", "Change bathrooms to");
+                if (request.Preferences.Bedrooms > 0) await CheckIntegerRelaxation("bedrooms", "Change bedrooms to");
+                if (request.Preferences.Floors > 0) await CheckIntegerRelaxation("floors", "Change floors to");
+            }
+
             return new DesignOptionsValidationResult
             {
                 IsValid = false,
                 ErrorCode = "UNSUPPORTED_DESIGN_CONFIGURATION",
-                Message = "No validated design currently fits this exact configuration.",
-                Suggestions = new List<string> { "Please adjust your feature requirements or increase land size." }
+                Message = "No validated design currently supports this exact configuration.",
+                Conflicts = conflicts,
+                Suggestions = suggestions
             };
         }
 

@@ -96,6 +96,44 @@ public class PreDesignedPlanLayoutValidator : IPreDesignedPlanLayoutValidator
             }
         }
 
+        var stairs = rooms.Where(r => r.Type.Contains("stair", StringComparison.OrdinalIgnoreCase)).ToList();
+        if (floors == 1 && stairs.Count > 0)
+            errors.Add("Single-floor layouts must not contain a staircase or stair core.");
+        if (floors > 1)
+        {
+            foreach (var floor in Enumerable.Range(1, floors))
+            {
+                var floorStairs = stairs.Where(r => r.Floor == floor).ToList();
+                if (floorStairs.Count == 0)
+                    errors.Add($"Multi-floor layouts require a staircase on floor {floor}.");
+                if (floor > 1 && floorStairs.Any(stair => !graph[stair.Id].Any(id =>
+                    rooms.Any(r => r.Id == id && r.Floor == floor &&
+                        (r.Type.Contains("hall", StringComparison.OrdinalIgnoreCase) ||
+                         r.Type.Contains("landing", StringComparison.OrdinalIgnoreCase) ||
+                         r.Type.Contains("foyer", StringComparison.OrdinalIgnoreCase) ||
+                         r.Type.Contains("living", StringComparison.OrdinalIgnoreCase))))))
+                    errors.Add($"Upper-floor staircase on floor {floor} requires a connected landing or circulation space.");
+            }
+
+            var groundStairs = stairs.Where(r => r.Floor == 1).ToList();
+            foreach (var upperStair in stairs.Where(r => r.Floor > 1))
+                if (!groundStairs.Any(lower => SameFootprint(lower, upperStair)))
+                    errors.Add($"Stair footprint on floor {upperStair.Floor} is not aligned with floor 1.");
+
+            var lowerRooms = rooms.Where(r => r.Floor == 1).ToList();
+            foreach (var upper in rooms.Where(r => r.Floor > 1))
+            {
+                var supportedArea = lowerRooms.Sum(lower => IntersectionArea(lower, upper));
+                if (supportedArea < upper.W * upper.L - 0.1m)
+                    errors.Add($"Upper room {upper.Id} is not fully supported by the ground-floor footprint.");
+            }
+        }
+
+        if (rooms.Any(r => r.Type.Equals("balcony", StringComparison.OrdinalIgnoreCase) && (floors < 2 || r.Floor < 2)))
+            errors.Add("Balconies require a multi-floor layout and must be on an upper floor.");
+        if (rooms.Any(r => r.Type.Equals("veranda", StringComparison.OrdinalIgnoreCase) && r.Floor != 1))
+            errors.Add("Verandas must be on floor 1.");
+
         var internalArea = rooms.Sum(r => r.W * r.L);
         var circulationRooms = rooms.Where(r => r.Type.Contains("hall", StringComparison.OrdinalIgnoreCase) || r.Type.Contains("corridor", StringComparison.OrdinalIgnoreCase) || r.Type.Contains("foyer", StringComparison.OrdinalIgnoreCase) || r.Type.Contains("entrance", StringComparison.OrdinalIgnoreCase) || r.Type.Contains("stair", StringComparison.OrdinalIgnoreCase)).ToList();
         var circulationArea = circulationRooms.Sum(r => r.W * r.L);
@@ -192,6 +230,17 @@ public class PreDesignedPlanLayoutValidator : IPreDesignedPlanLayoutValidator
         if (Math.Abs((a.Y + a.L) - b.Y) <= epsilon || Math.Abs((b.Y + b.L) - a.Y) <= epsilon)
             return Math.Max(0, Math.Min(a.X + a.W, b.X + b.W) - Math.Max(a.X, b.X));
         return 0;
+    }
+
+    private static bool SameFootprint(Rect a, Rect b) =>
+        Math.Abs(a.X - b.X) <= 0.02m && Math.Abs(a.Y - b.Y) <= 0.02m &&
+        Math.Abs(a.W - b.W) <= 0.02m && Math.Abs(a.L - b.L) <= 0.02m;
+
+    private static decimal IntersectionArea(Rect a, Rect b)
+    {
+        var width = Math.Max(0, Math.Min(a.X + a.W, b.X + b.W) - Math.Max(a.X, b.X));
+        var length = Math.Max(0, Math.Min(a.Y + a.L, b.Y + b.L) - Math.Max(a.Y, b.Y));
+        return width * length;
     }
 
     private static decimal Distance(Rect a, Rect b) =>
