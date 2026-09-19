@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-let inMemoryToken: string | null = null;
+let inMemoryToken: string | null = localStorage.getItem('mockToken') || null;
 
 // Setter to update the in-memory token from our Redux auth flows
 export const setInMemoryToken = (token: string | null) => {

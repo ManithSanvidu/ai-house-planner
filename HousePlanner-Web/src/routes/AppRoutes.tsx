@@ -11,6 +11,11 @@ import PlanLibraryPage from '../pages/PlanLibraryPage';
 import PlanDetailPage from '../pages/PlanDetailPage';
 import AdminPlansPage from '../pages/AdminPlansPage';
 import AdminPlanFormPage from '../pages/AdminPlanFormPage';
+import ArchitectDashboard from '../pages/architect/ArchitectDashboard';
+import ValidationRequestsPage from '../pages/architect/ValidationRequestsPage';
+import ApprovedRequestsPage from '../pages/architect/ApprovedRequestsPage';
+import ValidationRequestDetails from '../pages/architect/ValidationRequestDetails';
+import MyDesignsPage from '../pages/MyDesignsPage';
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -46,6 +51,7 @@ export const AppRoutes: React.FC = () => {
         path="/dashboard/plans"
         element={<ProtectedRoute><PageContainer><PlanLibraryPage /></PageContainer></ProtectedRoute>}
       />
+      <Route path="/dashboard/designs" element={<ProtectedRoute><PageContainer><MyDesignsPage /></PageContainer></ProtectedRoute>} />
       <Route
         path="/dashboard/plans/:id"
         element={<ProtectedRoute><PageContainer><PlanDetailPage /></PageContainer></ProtectedRoute>}
@@ -72,6 +78,23 @@ export const AppRoutes: React.FC = () => {
             </PageContainer>
           </ProtectedRoute>
         }
+      />
+
+            <Route
+        path="/architect/dashboard"
+        element={<ProtectedRoute allowedRoles={['Architect']}><PageContainer><ArchitectDashboard /></PageContainer></ProtectedRoute>}
+      />
+      <Route
+        path="/architect/requests"
+        element={<ProtectedRoute allowedRoles={['Architect']}><PageContainer><ValidationRequestsPage /></PageContainer></ProtectedRoute>}
+      />
+      <Route
+        path="/architect/approved"
+        element={<ProtectedRoute allowedRoles={['Architect']}><PageContainer><ApprovedRequestsPage /></PageContainer></ProtectedRoute>}
+      />
+      <Route
+        path="/architect/requests/:id"
+        element={<ProtectedRoute allowedRoles={['Architect']}><PageContainer><ValidationRequestDetails /></PageContainer></ProtectedRoute>}
       />
 
       {/* Fallback routing */}

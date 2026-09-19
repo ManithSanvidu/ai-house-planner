@@ -54,31 +54,6 @@ export interface HouseDesignSummaryDto {
 
 }
 
-export interface ConstructionPhaseDto {
-  id: number;
-  name: string;
-  description: string;
-  duration_days: number;
-  depends_on: number[];
-  start_day: number;
-  end_day: number;
-  status: string;
-}
-
-export interface ConstructionPlanSummaryDto {
-  project_summary: {
-    estimated_duration_days: number;
-    estimated_duration_months: number;
-    target_duration_days: number | null;
-    schedule_status: string;
-  };
-  phases: ConstructionPhaseDto[];
-  critical_path: string[];
-  assumptions: string[];
-  optimization_notes: string[];
-}
-
-
 export interface WorkflowStatusResponseDto {
   workflowId: string;
   status: string;
@@ -86,15 +61,27 @@ export interface WorkflowStatusResponseDto {
   slopeEstimate: string | null;
   design: HouseDesignSummaryDto | null;
   cost: any | null; // Expand when Component C is integrated
-  constructionPlan:ConstructionPlanSummaryDto|null;
   approvalStatus: string;
   failureReason?: string | null;
+  constructionPlan?: any | null;
 }
 
-export interface GenerateDesignRequest {
+export interface DesignHistoryDto {
+  designId: string; version: number; isCurrent: boolean; isPreferred: boolean; isArchived: boolean; topology: string | null;
+  bedrooms: number; bathrooms: number; floorCount: number; totalBuiltUpAreaSqft: number;
+  foundationType: string; generationMode: string | null; selectedBasePlan: string | null;
+  geometryFingerprint: string | null; createdAt: string;
+  suitabilityScore: number | null; architecturalQualityScore: number | null;
+  previewRooms: { roomType: string; floor: number; x: number; y: number; width: number; length: number }[];
+}
+export interface WorkflowDesignHistoryDto {
+  workflowId: string; status: string; preferredHouseDesignId: string | null; createdAt: string;
+  designs: DesignHistoryDto[];
+}
+
+export interface StartDesignRequest {
   basePreDesignedPlanId?: string;
-  planSelectionMode?: 'use' | 'adapt';
-  budgetLkr?: number;
+  planSelectionMode?: 'use' | 'reference' | 'override';
   landSizePerches: number;
   manualTerrainType?: string;
   designSeed?: number;
@@ -117,14 +104,26 @@ export interface GenerateDesignRequest {
 // ──────────────────────────────────────────────────
 
 export const workflowService = {
-  startDesign: async (request: GenerateDesignRequest): Promise<{ workflowId: string }> => {
+  startDesign: async (request: StartDesignRequest): Promise<{ workflowId: string }> => {
     const response = await apiClient.post('/ai-generation/generate', request);
     return response.data;
   },
-  getWorkflowStatus: async (id: string): Promise<WorkflowStatusResponseDto> => {
-    const response = await apiClient.get<WorkflowStatusResponseDto>(`/workflows/${id}/status`);
+  getWorkflowStatus: async (id: string, designId?: string): Promise<WorkflowStatusResponseDto> => {
+    const response = await apiClient.get<WorkflowStatusResponseDto>(`/workflows/${id}/status`, { params: designId ? { designId } : undefined });
     return response.data;
   },
+  getMyDesigns: async (): Promise<WorkflowDesignHistoryDto[]> =>
+    (await apiClient.get<WorkflowDesignHistoryDto[]>('/workflows/designs')).data,
+  getDesigns: async (id: string): Promise<WorkflowDesignHistoryDto> =>
+    (await apiClient.get<WorkflowDesignHistoryDto>(`/workflows/${id}/designs`)).data,
+  selectDesign: async (workflowId: string, designId: string) =>
+    (await apiClient.post(`/workflows/${workflowId}/designs/${designId}/select`)).data,
+  clearDesignSelection: async (workflowId: string) =>
+    (await apiClient.delete(`/workflows/${workflowId}/design-selection`)).data,
+  removeDesign: async (workflowId: string, designId: string) =>
+    (await apiClient.delete(`/workflows/${workflowId}/designs/${designId}`)).data,
+  submitArchitectReview: async (workflowId: string) =>
+    (await apiClient.post(`/workflows/${workflowId}/submit-architect-review`)).data,
 
   approveWorkflow: async (id: string, decision: 'approve' | 'reject' | 'request_revision', notes?: string) => {
     const response = await apiClient.post(`/workflows/${id}/approve`, { decision, revisionNotes: notes });

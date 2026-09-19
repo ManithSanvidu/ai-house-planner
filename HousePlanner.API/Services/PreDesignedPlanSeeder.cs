@@ -11,13 +11,17 @@ public sealed class PreDesignedPlanSeeder(
     IWebHostEnvironment environment,
     ILogger<PreDesignedPlanSeeder> logger)
 {
+    private sealed record SeedCapabilities(
+        bool? balcony, bool? veranda, bool? home_office, bool? utility_room,
+        bool? parking_required, bool? accessibility);
+
     private sealed record SeedPlan(
-        string Name, string Slug, string DesignCode, string? Description, string Style,
-        int Bedrooms, int Bathrooms, int FloorCount, decimal TotalBuiltUpAreaSqft,
-        decimal MinimumLandSizePerches, decimal? MinimumPlotWidthFt, decimal? MinimumPlotLengthFt,
-        string SuitableTerrain, int ParkingSpaces, bool HasBalcony, bool HasVeranda,
-        bool HasOffice, bool HasUtilityRoom, bool IsAccessibleFriendly, string? Category,
-        string[] Tags, JsonElement Layout, bool IsActive);
+        string designCode, string name,
+        int bedrooms, int bathrooms, int floors,
+        decimal minimumLandSizePerches, decimal? minimumPlotWidthFt, decimal? minimumPlotLengthFt,
+        List<string>? supportedTerrains, List<string>? supportedStyles,
+        SeedCapabilities? capabilities,
+        JsonElement layout);
 
     public async Task SeedAsync(CancellationToken cancellationToken = default)
     {
@@ -31,45 +35,73 @@ public sealed class PreDesignedPlanSeeder(
         await using var stream = File.OpenRead(path);
         var plans = await JsonSerializer.DeserializeAsync<List<SeedPlan>>(stream,
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true }, cancellationToken) ?? [];
-        var existingCodes = (await db.PreDesignedHousePlans
-            .Select(plan => plan.DesignCode)
-            .ToListAsync(cancellationToken)).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var existingPlans = (await db.PreDesignedHousePlans.ToListAsync(cancellationToken))
+            .ToDictionary(plan => plan.DesignCode, StringComparer.OrdinalIgnoreCase);
 
-        foreach (var seed in plans.Where(plan => !existingCodes.Contains(plan.DesignCode)))
+        foreach (var seed in plans)
         {
-            var errors = layoutValidator.Validate(seed.Layout, seed.Bedrooms, seed.FloorCount);
-            if (errors.Count > 0)
-                throw new InvalidDataException($"Seed plan {seed.DesignCode} is invalid: {string.Join(" ", errors)}");
-
-            db.PreDesignedHousePlans.Add(new PreDesignedHousePlan
+            var actualBathrooms = LayoutRoomCounts.Bathrooms(seed.layout);
+            if (seed.bathrooms != actualBathrooms)
             {
-                Name = seed.Name,
-                Slug = seed.Slug,
-                DesignCode = seed.DesignCode,
-                Description = seed.Description,
-                Style = seed.Style,
-                Bedrooms = seed.Bedrooms,
-                Bathrooms = seed.Bathrooms,
-                FloorCount = seed.FloorCount,
-                TotalBuiltUpAreaSqft = seed.TotalBuiltUpAreaSqft,
-                MinimumLandSizePerches = seed.MinimumLandSizePerches,
-                MinimumPlotWidthFt = seed.MinimumPlotWidthFt,
-                MinimumPlotLengthFt = seed.MinimumPlotLengthFt,
-                SuitableTerrain = seed.SuitableTerrain,
-                ParkingSpaces = seed.ParkingSpaces,
-                HasBalcony = seed.HasBalcony,
-                HasVeranda = seed.HasVeranda,
-                HasOffice = seed.HasOffice,
-                HasUtilityRoom = seed.HasUtilityRoom,
-                IsAccessibleFriendly = seed.IsAccessibleFriendly,
-                Category = seed.Category,
-                TagsJson = JsonSerializer.Serialize(seed.Tags),
-                LayoutJson = seed.Layout.GetRawText(),
-                IsActive = seed.IsActive
-            });
+                logger.LogWarning("Skipping catalogue plan {Code}: bathroom count mismatch (declared {Declared}, actual {Actual}).",
+                    seed.designCode, seed.bathrooms, actualBathrooms);
+                continue;
+            }
+            var errors = layoutValidator.Validate(seed.layout, seed.bedrooms, seed.floors);
+            if (errors.Count > 0)
+                throw new InvalidDataException($"Seed plan {seed.designCode} is invalid: {string.Join(" ", errors)}");
+
+            decimal totalArea = 0;
+            if (seed.layout.TryGetProperty("rooms", out var roomsJson) && roomsJson.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var r in roomsJson.EnumerateArray())
+                {
+                    totalArea += r.GetProperty("width").GetDecimal() * r.GetProperty("length").GetDecimal();
+                }
+            }
+
+            var entity = existingPlans.GetValueOrDefault(seed.designCode);
+            if (entity is null)
+            {
+                entity = new PreDesignedHousePlan
+                {
+                Name = seed.name,
+                Slug = seed.designCode.ToLowerInvariant(),
+                DesignCode = seed.designCode,
+                Description = "AI Generated Plan",
+                Style = seed.supportedStyles?.FirstOrDefault() ?? "Modern",
+                Bedrooms = seed.bedrooms,
+                Bathrooms = seed.bathrooms,
+                FloorCount = seed.floors,
+                TotalBuiltUpAreaSqft = totalArea,
+                MinimumLandSizePerches = seed.minimumLandSizePerches,
+                MinimumPlotWidthFt = seed.minimumPlotWidthFt,
+                MinimumPlotLengthFt = seed.minimumPlotLengthFt,
+                SuitableTerrain = seed.supportedTerrains?.FirstOrDefault() ?? "Flat",
+                Category = "Standard",
+                TagsJson = "[]",
+                LayoutJson = seed.layout.GetRawText(),
+                IsActive = true
+                };
+                db.PreDesignedHousePlans.Add(entity);
+            }
+
+            // Capabilities are always re-derived from geometry so an existing database
+            // cannot retain stale feature flags after program rules change.
+            entity.ParkingSpaces = LayoutRoomCounts.HasParking(seed.layout) ? 1 : 0;
+            entity.HasBalcony = LayoutRoomCounts.HasBalcony(seed.layout);
+            entity.HasVeranda = LayoutRoomCounts.HasVeranda(seed.layout);
+            entity.HasOffice = LayoutRoomCounts.HasOffice(seed.layout);
+            entity.HasUtilityRoom = LayoutRoomCounts.HasUtilityRoom(seed.layout);
+            entity.HasOpenPlan = LayoutRoomCounts.HasOpenPlan(seed.layout);
+            entity.HasMasterEnsuite = LayoutRoomCounts.HasMasterEnsuite(seed.layout);
+            entity.HasSeparateDining = LayoutRoomCounts.HasSeparateDining(seed.layout);
+            entity.IsAccessibleFriendly = LayoutRoomCounts.IsAccessibleFriendly(seed.layout);
+            entity.UpdatedAt = DateTimeOffset.UtcNow;
         }
 
         await db.SaveChangesAsync(cancellationToken);
-        logger.LogInformation("Pre-designed plan catalog ready with {Count} entries", plans.Count);
+        logger.LogInformation("Pre-designed plan catalog ready with {Count} entries",
+            await db.PreDesignedHousePlans.CountAsync(cancellationToken));
     }
 }

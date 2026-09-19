@@ -25,6 +25,9 @@ public class PreDesignedHousePlan
     public bool HasVeranda { get; set; }
     public bool HasOffice { get; set; }
     public bool HasUtilityRoom { get; set; }
+    public bool HasOpenPlan { get; set; }
+    public bool HasMasterEnsuite { get; set; }
+    public bool HasSeparateDining { get; set; }
     public bool IsAccessibleFriendly { get; set; }
     [MaxLength(80)] public string? Category { get; set; }
     [Column(TypeName = "jsonb")] public string TagsJson { get; set; } = "[]";

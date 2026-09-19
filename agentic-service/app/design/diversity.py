@@ -1,6 +1,7 @@
 import hashlib
 import json
 import random
+from decimal import Decimal
 from uuid import UUID, uuid5
 
 DESIGN_NAMESPACE = UUID('b1a10b30-c1f4-4e11-95a0-b10dbd583b01')
@@ -19,11 +20,35 @@ def stable_id(key: str) -> str:
 
 
 def geometry_fingerprint(layout) -> str:
-    normalized = sorted(
-        (r.room_type, r.floor, round(r.x, 3), round(r.y, 3),
-         round(r.width, 3), round(r.length, 3))
+    """Hash geometry and access topology, independent of IDs and metadata.
+
+    Coordinates are not rounded or transformed. Connections are undirected;
+    their kind and multiplicity, and entrance placement, remain significant.
+    """
+    def number(value):
+        value = Decimal(str(value))
+        if not value.is_finite():
+            raise ValueError('Geometry coordinates must be finite.')
+        return format(value.normalize(), 'f') if value else '0'
+
+    rooms = {
+        r.room_id: (r.room_type, r.floor, number(r.x), number(r.y),
+                    number(r.width), number(r.length))
         for r in layout.rooms
-    )
+    }
+    if len(rooms) != len(layout.rooms):
+        raise ValueError('Geometry fingerprint requires unique room IDs.')
+    normalized = {
+        'rooms': sorted(rooms.values()),
+        'connections': sorted(
+            (tuple(sorted((rooms[c.from_room], rooms[c.to_room]))), c.kind)
+            for c in layout.connections
+        ),
+        'entrances': sorted(
+            (rooms[e.room_id], e.wall, number(e.offset), number(e.width))
+            for e in layout.entrances
+        ),
+    }
     return hashlib.sha256(
-        json.dumps(normalized, separators=(',', ':')).encode('utf-8')
+        json.dumps(normalized, sort_keys=True, separators=(',', ':')).encode('utf-8')
     ).hexdigest()

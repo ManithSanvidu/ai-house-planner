@@ -68,6 +68,8 @@ builder.Services.AddScoped<IFirebaseAuthService, FirebaseAuthService>();
 builder.Services.AddScoped<ICurrentUserContextService, CurrentUserContextService>();
 builder.Services.AddScoped<IPreDesignedPlanLayoutValidator, PreDesignedPlanLayoutValidator>();
 builder.Services.AddScoped<PreDesignedPlanSeeder>();
+builder.Services.AddScoped<IWorkflowService, WorkflowService>();
+builder.Services.AddScoped<IDesignOptionsService, DesignOptionsService>();
 builder.Services.AddHttpClient("AgenticService", client =>
 {
     client.BaseAddress = new Uri(builder.Configuration["AgenticService:BaseUrl"] ?? "http://localhost:8001");
@@ -160,10 +162,6 @@ if (app.Environment.IsDevelopment())
 // Disable default HTTPS redirect for ease of local testing in CORS environments if desired,
 // but keep it active and ensure client URLs match.
 app.UseHttpsRedirection();
-
-// Apply CORS Policy
-// Moved to the top to ensure CORS headers are sent on all responses, including exceptions.
-// (Already applied at the top)
 
 app.UseAuthorization();
 

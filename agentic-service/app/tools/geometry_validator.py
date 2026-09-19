@@ -146,7 +146,59 @@ def validate_geometry(
             )
 
     _validate_spatial_rules(result, rooms, expected_floors, plot, design)
+    if expected_floors > 1:
+        _validate_vertical_alignment(result, rooms)
     return result
+
+def _validate_vertical_alignment(result: GeometryValidationResult, rooms: List[RoomLayout]) -> None:
+    # Build Floor 1 structural footprint polygons (bounding boxes of enclosed rooms)
+    floor1_rooms = [r for r in rooms if r.floor == 1 and room_kind(r.room_type) not in ('balcony', 'veranda')]
+    
+    # Check if upper floor rooms are supported by Floor 1
+    # Simple bounding box containment: all enclosed rooms on Floor 2 must fall within the union of Floor 1 bounds.
+    # For a perfect check, we verify if every corner of an upper room falls inside at least one Floor 1 room, 
+    # but since rooms are contiguous banks, we can check if the upper room is fully contained in the Floor 1 bounding box union.
+    # Better: check if the upper room's area is fully covered by Floor 1 rooms.
+    for r2 in rooms:
+        if r2.floor > 1 and room_kind(r2.room_type) not in ('balcony', 'veranda'):
+            # Check if r2 is supported by any floor 1 room(s)
+            # We assume orthogonal geometry
+            # Does r2 completely overlap with the union of floor1_rooms?
+            # A simple safe check: r2 must be fully inside at least one r1, OR fully inside the overall Floor 1 bounding box if Floor 1 is a simple rectangle.
+            # Since topologies are L-shape, T-shape, etc., we can do a point-in-polygon or rectangle intersection check.
+            
+            # Simple approximation: find all overlapping Floor 1 rooms. Sum their intersection area with r2.
+            # If intersection area == r2 area, it's fully supported.
+            supported_area = 0.0
+            for r1 in floor1_rooms:
+                ix_min = max(r2.x, r1.x)
+                ix_max = min(r2.x + r2.width, r1.x + r1.width)
+                iy_min = max(r2.y, r1.y)
+                iy_max = min(r2.y + r2.length, r1.y + r1.length)
+                
+                if ix_max > ix_min and iy_max > iy_min:
+                    supported_area += (ix_max - ix_min) * (iy_max - iy_min)
+                    
+            r2_area = r2.width * r2.length
+            if supported_area < r2_area - 0.1:  # Allow small floating point tolerance
+                result.fail("unsupported_upper_room", f"Upper room '{r2.room_type}' is not fully supported by the ground floor footprint.")
+
+    # Validate stair shaft alignment across floors
+    stair_cores = {}
+    for r in rooms:
+        if room_kind(r.room_type) == 'staircase':
+            if r.floor not in stair_cores:
+                stair_cores[r.floor] = []
+            stair_cores[r.floor].append(r)
+            
+    if stair_cores and 1 in stair_cores:
+        for s1 in stair_cores[1]:
+            for floor in range(2, max(stair_cores.keys()) + 1):
+                if floor in stair_cores:
+                    # Find a matching stair on this floor
+                    matching = [s2 for s2 in stair_cores[floor] if abs(s1.x - s2.x) < 0.01 and abs(s1.y - s2.y) < 0.01 and abs(s1.width - s2.width) < 0.01 and abs(s1.length - s2.length) < 0.01]
+                    if not matching:
+                        result.fail("stair_shaft_mismatch", f"Staircase on floor 1 does not perfectly align with a staircase on floor {floor}.")
 
 
 def _validate_spatial_rules(result: GeometryValidationResult, rooms: List[RoomLayout],
@@ -156,6 +208,9 @@ def _validate_spatial_rules(result: GeometryValidationResult, rooms: List[RoomLa
         result.fail('duplicate_room_id', 'Room IDs must be unique across all floors.')
     if {r.floor for r in rooms} != set(range(1, expected_floors+1)):
         result.fail('floor_count', 'Floors must be contiguous starting at 1.')
+    if expected_floors == 1 and any(room_kind(r.room_type) == 'staircase' for r in rooms):
+        result.fail('stair_forbidden', 'Single-floor designs must not contain a staircase or stair core.')
+    out_of_bounds = []
     for room in rooms:
         rule = rule_for(room.room_type)
         dims, minimum = sorted((room.width, room.length)), sorted((rule.min_width, rule.min_length))
@@ -165,11 +220,18 @@ def _validate_spatial_rules(result: GeometryValidationResult, rooms: List[RoomLa
             result.fail('aspect_ratio', f'{room.name} is excessively narrow.')
         if room.x < -0.001 or room.y < -0.001 or (plot and
                 (room.x+room.width > plot.buildable_width+0.001 or room.y+room.length > plot.buildable_length+0.001)):
-            result.fail('building_bounds', f'{room.name} lies outside the buildable boundary.')
+            out_of_bounds.append(room.name or room.room_id)
         for opening in room.doors + room.windows:
             span = room.width if opening.wall in ('north', 'south') else room.length
             if not all(isfinite(v) for v in (opening.offset, opening.width)) or opening.offset < 0 or opening.width <= 0 or opening.offset+opening.width > span+0.001:
                 result.fail('opening_bounds', f'{room.name} has an opening outside its wall.')
+    if out_of_bounds:
+        import json
+        result.fail('building_bounds', json.dumps({
+            "code": "BUILDABLE_ENVELOPE_VIOLATION",
+            "message": "The selected design does not fit within the available building area after setbacks.",
+            "affectedRooms": out_of_bounds
+        }))
     # Geometric components are checked even for legacy callers without metadata.
     for floor in range(1, expected_floors+1):
         rs = [r for r in rooms if r.floor == floor]

@@ -9,7 +9,7 @@ System prompt enforces JSON-only output with controlled enum values.
 """
 import json
 from app.schemas.terrain_result import TerrainResult
-from app.config import GOOGLE_API_KEY
+from app.config import OPENAI_API_KEY
 
 # The strict system prompt — forces JSON-only output with controlled values
 LAND_ANALYSIS_SYSTEM_PROMPT = """You are the Land Analysis Agent in an AI-assisted home design planning system.
@@ -50,79 +50,50 @@ RETRY_PROMPT = """Return ONLY a JSON object. No text before or after.
 
 
 def vision_classify_tool(photo_url: str) -> TerrainResult:
-    """
-    Analyze a land photo using Google Gemini Vision API.
-
-    Flow:
-    1. Call Gemini with the photo and strict JSON prompt
-    2. Parse and validate the response
-    3. On invalid JSON: retry once with stricter prompt
-    4. On second failure: return safe fallback
-
-    Args:
-        photo_url: URL of the land photograph
-
-    Returns:
-        TerrainResult: Validated terrain classification
-    """
-    if not GOOGLE_API_KEY:
-        print("[Vision Tool] No GOOGLE_API_KEY set. Returning mock result for development.")
-        return TerrainResult(
-            terrain_type="unknown",
-            slope_estimate="unknown",
-            notable_features=["no_api_key_mock"]
-        )
+    if not OPENAI_API_KEY:
+        print("[Vision Tool] No OPENAI_API_KEY set. Returning manual terrain required.")
+        return _safe_fallback("manual_terrain_required")
 
     try:
-        from google import genai
-
-        client = genai.Client(api_key=GOOGLE_API_KEY)
-
-        # First attempt
-        result_text = _call_gemini_vision(client, photo_url, LAND_ANALYSIS_SYSTEM_PROMPT)
+        result_text = _call_groq_vision(photo_url, LAND_ANALYSIS_SYSTEM_PROMPT)
         terrain = _parse_terrain_result(result_text)
         if terrain:
             return terrain
-
-        # Retry with stricter prompt
-        print("[Vision Tool] First attempt returned invalid JSON. Retrying with stricter prompt...")
-        result_text = _call_gemini_vision(client, photo_url, RETRY_PROMPT)
-        terrain = _parse_terrain_result(result_text)
-        if terrain:
-            return terrain
-
-        # Both attempts failed
-        print(f"[Vision Tool] Both attempts failed. Last response: {result_text[:200]}")
         return _safe_fallback("vision_parse_failed")
-
-    except ImportError:
-        print("[Vision Tool] google-genai package not available. Returning mock.")
-        return _safe_fallback('no_genai_package')
     except Exception as e:
         print(f"[Vision Tool] Vision API error: {e}")
         return _safe_fallback(f"api_error: {str(e)[:100]}")
 
-
-def _call_gemini_vision(client, photo_url: str, prompt: str) -> str:
-    """Call Gemini Vision API with an image URL and return the raw text."""
-    from google.genai import types
-
-    response = client.models.generate_content(
-        model="gemini-3.6-flash",
-        contents=[
-            types.Content(
-                parts=[
-                    types.Part.from_uri(file_uri=photo_url, mime_type="image/jpeg"),
-                    types.Part.from_text(text=prompt),
-                ]
-            )
-        ],
-        config=types.GenerateContentConfig(
-            temperature=0.1,  # Low temperature for deterministic output
-            max_output_tokens=256,
-        ),
+def _call_groq_vision(photo_url: str, prompt: str) -> str:
+    """Call OpenAI Vision API with an image URL and return the raw text."""
+    import requests
+    response = requests.post(
+        "https://api.openai.com/v1/chat/completions",
+        headers={
+            "Authorization": f"Bearer {OPENAI_API_KEY}",
+            "Content-Type": "application/json"
+        },
+        json={
+            "model": "gpt-4o",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt},
+                        {"type": "image_url", "image_url": {"url": photo_url}}
+                    ]
+                }
+            ],
+            "max_tokens": 256,
+            "temperature": 0.1
+        },
+        timeout=120
     )
-    return response.text.strip()
+    response.raise_for_status()
+    data = response.json()
+    if 'choices' in data and len(data['choices']) > 0:
+        return data['choices'][0]['message']['content'].strip()
+    return "{}"
 
 
 from typing import Optional

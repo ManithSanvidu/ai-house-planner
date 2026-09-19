@@ -77,11 +77,11 @@ export const FloorPlanViewer: React.FC<FloorPlanViewerProps> = ({ data, pixelsPe
     );
   }
 
-  // Calculate bounding box for the displayed rooms
-  const minX = Math.min(...displayRooms.map((r) => r.x));
-  const minY = Math.min(...displayRooms.map((r) => r.y));
-  const maxX = Math.max(...displayRooms.map((r) => r.x + r.width));
-  const maxY = Math.max(...displayRooms.map((r) => r.y + r.length));
+  // Calculate bounding box for the entire building to ensure consistent scale
+  const minX = Math.min(...data.rooms.map((r) => r.x));
+  const minY = Math.min(...data.rooms.map((r) => r.y));
+  const maxX = Math.max(...data.rooms.map((r) => r.x + r.width));
+  const maxY = Math.max(...data.rooms.map((r) => r.y + r.length));
 
   const totalWidth = (maxX - minX) * pixelsPerFoot;
   const totalHeight = (maxY - minY) * pixelsPerFoot;
@@ -134,6 +134,28 @@ export const FloorPlanViewer: React.FC<FloorPlanViewerProps> = ({ data, pixelsPe
         }}
       >
         <g transform={`translate(${padding}, ${padding})`}>
+          {/* Lower Floor Outline */}
+          {displayedFloor > 1 && data.rooms.filter(r => r.floor === displayedFloor - 1).map((lowerRoom) => {
+            const lSvgX = (lowerRoom.x - minX) * pixelsPerFoot;
+            const lSvgY = (maxY - (lowerRoom.y + lowerRoom.length)) * pixelsPerFoot;
+            const lSvgWidth = lowerRoom.width * pixelsPerFoot;
+            const lSvgHeight = lowerRoom.length * pixelsPerFoot;
+            
+            return (
+              <rect
+                key={`lower-${lowerRoom.room_id}`}
+                x={lSvgX}
+                y={lSvgY}
+                width={lSvgWidth}
+                height={lSvgHeight}
+                fill="transparent"
+                stroke="#d1d5db"
+                strokeWidth="1.5"
+                strokeDasharray="5,5"
+              />
+            );
+          })}
+
           {displayRooms.map((room) => {
             // Transform coordinates: SVG (0,0) is top-left, JSON (0,0) is bottom-left
             const svgX = (room.x - minX) * pixelsPerFoot;

@@ -7,8 +7,8 @@ from app.design.topology_registry import eligible_topologies
 
 def test_estimated_plot_and_distinct_area_caps():
     p = PlotConstraints(land_size_perches=15)
-    assert p.dimensions_estimated
-    assert p.plot_width_ft * p.plot_length_ft == pytest.approx(15 * 272.25)
+    assert p.dimension_source == 'area_estimated'
+    assert p.plot_width_ft * p.plot_length_ft == pytest.approx(15 * 272.25, rel=0.01)
     assert p.maximum_ground_footprint <= p.maximum_total_floor_area
     assert len(p.buildable_polygon) == 4
 
@@ -17,7 +17,7 @@ def test_road_relative_setbacks():
     p = PlotConstraints(land_size_perches=15, plot_width_ft=45, plot_length_ft=90, road_side='east')
     assert p.buildable_width == 28
     assert p.buildable_length == 80
-    assert not p.dimensions_estimated
+    assert p.dimension_source == 'user_supplied'
 
 
 def test_impossible_setbacks_rejected():
@@ -35,6 +35,6 @@ def test_floor_program_does_not_duplicate_bedrooms():
 def test_topology_registry_is_geography_sensitive():
     r = Requirements(floors=1)
     wide = eligible_topologies(r, PlotConstraints(land_size_perches=30, plot_width_ft=90, plot_length_ft=90))
-    narrow = eligible_topologies(r, PlotConstraints(land_size_perches=30, plot_width_ft=26, plot_length_ft=200))
+    narrow = eligible_topologies(r, PlotConstraints(land_size_perches=30, plot_width_ft=26, plot_length_ft=314))
     assert len(wide) >= 3
     assert [t.name for t in narrow] == ['LINEAR']

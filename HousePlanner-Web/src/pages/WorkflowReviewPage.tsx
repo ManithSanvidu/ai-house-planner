@@ -1,17 +1,20 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { workflowService, type WorkflowStatusResponseDto } from '../services/workflowService';
 import { FloorPlanViewer, type FloorPlanData } from '../components/floorplan/FloorPlanViewer';
 import { Menu } from 'lucide-react';
 
 export const WorkflowReviewPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
+  const previewDesignId = searchParams.get('design') || undefined;
   const [workflow, setWorkflow] = useState<WorkflowStatusResponseDto | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedFloor, setSelectedFloor] = useState<number>(1);
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<'floorplan' | 'construction'>('floorplan');
+  const [pollCycle, setPollCycle] = useState(0);
 
   useEffect(() => {
     if (!id) return;
@@ -20,7 +23,7 @@ export const WorkflowReviewPage: React.FC = () => {
 
     const fetchWorkflow = async () => {
       try {
-        const data = await workflowService.getWorkflowStatus(id);
+        const data = await workflowService.getWorkflowStatus(id, previewDesignId);
         setWorkflow(data);
         setError(null);
         setLoading(false);
@@ -43,7 +46,7 @@ export const WorkflowReviewPage: React.FC = () => {
     fetchWorkflow();
     interval = setInterval(() => { fetchWorkflow(); }, 3000);
     return () => clearInterval(interval);
-  }, [id]);
+  }, [id, pollCycle, previewDesignId]);
 
   if (loading) {
     return (
@@ -74,9 +77,26 @@ export const WorkflowReviewPage: React.FC = () => {
   }
 
   if (workflow?.status === 'failed') {
-    return <div role="alert" className="p-8 text-center">
-      <h2>Design generation could not complete</h2>
-      <p>{workflow.failureReason || (workflow.terrainType === 'unknown'
+    let failureData = null;
+    try {
+      failureData = JSON.parse(workflow.failureReason || '');
+    } catch (e) {
+      // Ignored
+    }
+
+    if (failureData?.code === 'BUILDABLE_ENVELOPE_VIOLATION') {
+      return <div role="alert" className="p-8 max-w-xl mx-auto text-center mt-10 bg-white rounded-3xl shadow-sm border border-zinc-200">
+        <h2 className="text-2xl font-bold text-red-600 mb-3">Design generation could not complete</h2>
+        <p className="text-zinc-600 mb-6">{failureData.message}</p>
+        <div className="flex justify-center gap-4">
+           <Link to="/dashboard/new-project" className="px-5 py-2.5 rounded-xl border border-zinc-300 font-bold hover:bg-zinc-50">Edit Land Details</Link>
+        </div>
+      </div>;
+    }
+
+    return <div role="alert" className="p-8 text-center mt-10">
+      <h2 className="text-2xl font-bold text-red-600 mb-3">Design generation could not complete</h2>
+      <p className="text-zinc-600">{workflow.failureReason || (workflow.terrainType === 'unknown'
         ? 'Provide a manual terrain classification and submit again.'
         : 'No valid layout was saved. Review plot dimensions and room requirements, then submit again.')}</p>
     </div>;
@@ -128,14 +148,18 @@ export const WorkflowReviewPage: React.FC = () => {
 
   const floorNumbers = Array.from({ length: workflow.design.floorCount }, (_, i) => i + 1);
 
-  const handleAction = async (decision: 'approve' | 'reject' | 'request_revision') => {
+  const handleAction = async (decision: 'approve' | 'reject' | 'request_revision', fixedNotes?: string) => {
     if (!id) return;
     try {
-      const notes = decision === 'request_revision'
+      const notes = fixedNotes ?? (decision === 'request_revision'
         ? window.prompt('Describe the design change you want:')
-        : decision === 'reject' ? 'Architect rejected' : undefined;
+        : decision === 'reject' ? 'Architect rejected' : undefined);
       if (decision === 'request_revision' && !notes) return;
       await workflowService.approveWorkflow(id, decision, notes || undefined);
+      if (decision === 'request_revision') {
+        setWorkflow(current => current ? { ...current, status: 'running' } : current);
+        setPollCycle(cycle => cycle + 1);
+      }
       alert(`Workflow ${decision} submitted successfully!`);
     } catch (e: any) {
       alert(`Error: ${e.message}`);
@@ -173,6 +197,8 @@ export const WorkflowReviewPage: React.FC = () => {
               <li className="flex justify-between items-center"><span className="font-medium text-zinc-500">Terrain</span> <span className="font-bold capitalize">{workflow.terrainType || 'N/A'}</span></li>
               <li className="flex justify-between items-center"><span className="font-medium text-zinc-500">Foundation</span> <span className="font-bold capitalize">{workflow.design.foundationType}</span></li>
               <li className="flex justify-between items-center"><span className="font-medium text-zinc-500">Floors</span> <span className="font-bold">{workflow.design.floorCount}</span></li>
+              <li className="flex justify-between items-center"><span className="font-medium text-zinc-500">Topology</span> <span className="font-bold">{workflow.design.templateFamily?.replace(/_/g, ' ') || 'N/A'}</span></li>
+              <li className="flex justify-between items-center"><span className="font-medium text-zinc-500">Quality</span> <span className="font-bold">{workflow.design.designScore ?? 'N/A'}</span></li>
               <li className="flex justify-between items-center"><span className="font-medium text-zinc-500">Area</span> <span className="font-bold">{workflow.design.totalBuiltUpAreaSqft} sqft</span></li>
             </ul>
           </div>
@@ -199,14 +225,14 @@ export const WorkflowReviewPage: React.FC = () => {
 
         {/* Action Buttons */}
         <div className="p-6 border-t border-zinc-200 flex flex-col gap-3 bg-white">
-          <button onClick={() => handleAction('approve')} className="w-full py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl font-bold hover:from-emerald-600 hover:to-emerald-700 transition-all text-sm shadow-[0_4px_14px_0_rgb(16,185,129,0.39)] hover:shadow-[0_6px_20px_rgba(16,185,129,0.23)]">
-            ✓ Approve Design
-          </button>
+          <Link to="/dashboard/designs" className="w-full py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-bold text-center text-sm shadow-sm">
+            Select from My Designs
+          </Link>
           <button onClick={() => handleAction('request_revision')} className="w-full py-3 bg-white text-indigo-600 border-2 border-indigo-100 rounded-xl font-bold hover:bg-indigo-50 hover:border-indigo-200 transition-all text-sm">
             ↻ Request Revision
           </button>
-          <button onClick={() => handleAction('reject')} className="w-full py-3 bg-white text-red-500 border-2 border-red-100 rounded-xl font-bold hover:bg-red-50 hover:border-red-200 transition-all text-sm mt-2">
-            ✕ Reject
+          <button onClick={() => handleAction('request_revision', 'Generate Another')} className="w-full py-3 bg-indigo-50 text-indigo-700 border-2 border-indigo-200 rounded-xl font-bold hover:bg-indigo-100 transition-all text-sm">
+            Generate Another
           </button>
         </div>
       </div>
@@ -320,7 +346,7 @@ export const WorkflowReviewPage: React.FC = () => {
                   <div>
                     <h3 className="text-lg font-bold text-slate-800 mb-4">Construction Phases</h3>
                     <div className="space-y-3">
-                      {workflow.constructionPlan.phases.map(phase => (
+                      {workflow.constructionPlan.phases.map((phase: any) => (
                         <div key={phase.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between hover:border-indigo-200 transition-colors">
                           <div className="flex items-center gap-4">
                             <div className="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 font-bold flex items-center justify-center shrink-0">
@@ -349,7 +375,7 @@ export const WorkflowReviewPage: React.FC = () => {
                     <div className="bg-indigo-50/50 p-5 rounded-2xl border border-indigo-100">
                       <h4 className="font-bold text-indigo-900 mb-3">Critical Path</h4>
                       <ol className="list-decimal list-inside text-sm text-indigo-700/80 space-y-1">
-                        {workflow.constructionPlan.critical_path.map(cp => <li key={cp}>{cp}</li>)}
+                        {workflow.constructionPlan.critical_path.map((cp: any) => <li key={cp}>{cp}</li>)}
                       </ol>
                     </div>
                     
@@ -358,7 +384,7 @@ export const WorkflowReviewPage: React.FC = () => {
                         <div className="bg-amber-50 p-5 rounded-2xl border border-amber-100">
                           <h4 className="font-bold text-amber-900 mb-3">Optimization Notes</h4>
                           <ul className="list-disc list-inside text-sm text-amber-700/80 space-y-1">
-                            {workflow.constructionPlan.optimization_notes.map(note => <li key={note}>{note}</li>)}
+                            {workflow.constructionPlan.optimization_notes.map((note: any) => <li key={note}>{note}</li>)}
                           </ul>
                         </div>
                       )}
@@ -366,7 +392,7 @@ export const WorkflowReviewPage: React.FC = () => {
                       <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200">
                         <h4 className="font-bold text-slate-700 mb-3">AI Assumptions</h4>
                         <ul className="list-disc list-inside text-sm text-slate-500 space-y-1">
-                          {workflow.constructionPlan.assumptions.map(assumption => <li key={assumption}>{assumption}</li>)}
+                          {workflow.constructionPlan.assumptions.map((assumption: any) => <li key={assumption}>{assumption}</li>)}
                         </ul>
                       </div>
                     </div>

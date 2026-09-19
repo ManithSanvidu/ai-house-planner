@@ -9,8 +9,7 @@ async def run_graph_demo():
         status="running",
         input_data=CoordinatorInput(
             submission_id=uuid4(),
-            budget_lkr=15000000,
-            land_size_perches=10,
+            land_size_perches=10.0,
             manual_terrain_type="flat/urban",
             preferences={"bedrooms": 3, "floors": 1, "architecturalStyle": "Modern"}
         )

@@ -18,7 +18,7 @@ class Topology:
 
 TOPOLOGIES = [
     Topology('LINEAR', 14, 28, (1, 2, 3), (1, 8), ('flat', 'hillside', 'coastal'), 'single bank on a longitudinal circulation spine', ('entrance-circulation-rooms',)),
-    Topology('COMPACT_RECTANGLE', 24, 24, (1, 2, 3), (1, 8), ('flat', 'hillside', 'coastal'), 'balanced double bank', ('living-kitchen', 'hall-bedrooms')),
+    Topology('COMPACT_RECTANGLE', 22, 22, (1, 2, 3), (1, 8), ('flat', 'hillside', 'coastal'), 'balanced double bank', ('living-kitchen', 'hall-bedrooms')),
     Topology('L_SHAPE', 32, 30, (1,), (2, 6), ('flat',), 'public garden wing and private return wing', ('living-kitchen', 'hall-bedrooms')),
     Topology('T_SHAPE', 38, 32, (1,), (3, 8), ('flat',), 'public crossbar and private stem', ('living-kitchen', 'hall-bedrooms')),
     Topology('CENTRAL_CORE', 28, 26, (1, 2, 3), (1, 6), ('flat',), 'wide central foyer between banks', ('foyer-rooms',)),

@@ -5,6 +5,26 @@ adjustments keep the demo fallback useful without pretending to understand
 arbitrary architectural instructions.
 """
 from typing import Any, Optional
+from app.design.models import Requirements
+from app.design.room_counts import count_bathrooms
+
+
+def preserve_revision_preferences(preferences: dict, previous_design: Optional[dict]) -> dict:
+    """Explicit request values override saved requirements, then room counts."""
+    previous = previous_design or {}
+    summary = previous.get('candidate_summary') or {}
+    normalized = summary.get('normalized_input') or {}
+    aliases = {'architectural_style': 'style', 'master_ensuite': 'attached_bathroom',
+               'separate_dining': 'dining_required', 'parking_required': 'parking'}
+    preserved = {aliases.get(key, key): value for key, value in normalized.items()
+                 if aliases.get(key, key) in Requirements.model_fields and value is not None}
+    preserved.update({aliases.get(key, key): value for key, value in preferences.items() if value is not None})
+    if preserved.get('bathrooms') is None:
+        bathrooms = count_bathrooms(previous.get('rooms') or [])
+        if bathrooms < 1:
+            raise ValueError('Revision requires a bathroom count from the request or previous design.')
+        preserved['bathrooms'] = bathrooms
+    return preserved
 
 
 def apply_supported_revision(preferences: dict[str, Any], prompt: Optional[str]) -> tuple[dict[str, Any], list[str]]:
@@ -39,6 +59,6 @@ def requests_another_design(prompt: Optional[str]) -> bool:
         return False
     text = prompt.lower()
     return any(term in text for term in (
-        'another design', 'another layout', 'another floor plan',
+        'generate another', 'another design', 'another layout', 'another floor plan',
         'change topology', 'try another', 'different design', 'different layout',
     ))
