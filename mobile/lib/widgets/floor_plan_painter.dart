@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import '../core/theme/app_tokens.dart';
 
 /// Data model for a single room opening (door or window).
 class Opening {
@@ -64,30 +65,30 @@ class RoomLayout {
 
 /// Color palette for distinguishing rooms by type.
 final Map<String, Color> _roomColors = {
-  'living_room': const Color(0xFFE0F2FE),
-  'dining': const Color(0xFFFCE7F3),
-  'hallway': const Color(0xFFF1F5F9),
-  'foyer': const Color(0xFFF1F5F9),
-  'entrance': const Color(0xFFCCFBF1),
-  'utility': const Color(0xFFFEF3C7),
-  'home_office': const Color(0xFFEDE9FE),
-  'family_lounge': const Color(0xFFE0F2FE),
-  'balcony': const Color(0xFFDCFCE7),
-  'veranda': const Color(0xFFDCFCE7),
-  'dining_room': const Color(0xFFFCE7F3),
-  'kitchen': const Color(0xFFFEF3C7),
-  'bedroom_1': const Color(0xFFDBEAFE),
-  'bedroom_2': const Color(0xFFE0E7FF),
-  'bedroom_3': const Color(0xFFEDE9FE),
-  'bedroom_4': const Color(0xFFF3E8FF),
-  'bathroom_1': const Color(0xFFD1FAE5),
-  'bathroom_2': const Color(0xFFD1FAE5),
-  'bathroom_3': const Color(0xFFD1FAE5),
-  'staircase': const Color(0xFFF1F5F9),
-  'staircase_upper': const Color(0xFFF1F5F9),
+  'living_room': AppTokens.roomLiving,
+  'dining': AppTokens.roomLiving, // Uses same base as living for open plans
+  'hallway': AppTokens.roomHallway,
+  'foyer': AppTokens.roomHallway,
+  'entrance': AppTokens.roomHallway,
+  'utility': AppTokens.roomKitchen,
+  'home_office': AppTokens.roomBed,
+  'family_lounge': AppTokens.roomLiving,
+  'balcony': AppTokens.roomOutdoor,
+  'veranda': AppTokens.roomOutdoor,
+  'dining_room': AppTokens.roomLiving,
+  'kitchen': AppTokens.roomKitchen,
+  'bedroom_1': AppTokens.roomBed,
+  'bedroom_2': AppTokens.roomBed,
+  'bedroom_3': AppTokens.roomBed,
+  'bedroom_4': AppTokens.roomBed,
+  'bathroom_1': AppTokens.roomBath,
+  'bathroom_2': AppTokens.roomBath,
+  'bathroom_3': AppTokens.roomBath,
+  'staircase': AppTokens.roomHallway,
+  'staircase_upper': AppTokens.roomHallway,
 };
 
-const Color _defaultRoomColor = Color(0xFFF8FAFC);
+const Color _defaultRoomColor = AppTokens.card;
 
 /// Stateless widget that wraps the CustomPainter and handles layout calculations.
 /// Supports filtering rooms by floor number.
