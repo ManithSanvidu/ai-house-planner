@@ -22,6 +22,9 @@ export const Sidebar: React.FC = () => {
       { to: '/architect/dashboard', label: 'Architect Dashboard', icon: LayoutDashboard },
       { to: '/architect/requests', label: 'Validation Requests', icon: Library },
     ] : []),
+    ...(user.role === 'Constructor' ? [
+      { to: '/constructor/dashboard', label: 'Constructor Dashboard', icon: LayoutDashboard },
+    ] : []),
   ];
 
   return (

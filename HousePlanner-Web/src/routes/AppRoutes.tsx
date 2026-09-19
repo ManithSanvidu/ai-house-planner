@@ -16,6 +16,8 @@ import ValidationRequestsPage from '../pages/architect/ValidationRequestsPage';
 import ApprovedRequestsPage from '../pages/architect/ApprovedRequestsPage';
 import ValidationRequestDetails from '../pages/architect/ValidationRequestDetails';
 import MyDesignsPage from '../pages/MyDesignsPage';
+import ConstructorDashboard from '../pages/constructor/ConstructorDashboard';
+import ConstructorWorkflowPage from '../pages/constructor/ConstructorWorkflowPage';
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -95,6 +97,16 @@ export const AppRoutes: React.FC = () => {
       <Route
         path="/architect/requests/:id"
         element={<ProtectedRoute allowedRoles={['Architect']}><PageContainer><ValidationRequestDetails /></PageContainer></ProtectedRoute>}
+      />
+
+      {/* Constructor Routes */}
+      <Route
+        path="/constructor/dashboard"
+        element={<ProtectedRoute allowedRoles={['Constructor']}><PageContainer><ConstructorDashboard /></PageContainer></ProtectedRoute>}
+      />
+      <Route
+        path="/constructor/workflows/:id"
+        element={<ProtectedRoute allowedRoles={['Constructor']}><PageContainer><ConstructorWorkflowPage /></PageContainer></ProtectedRoute>}
       />
 
       {/* Fallback routing */}
