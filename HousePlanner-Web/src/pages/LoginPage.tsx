@@ -156,10 +156,23 @@ const LoginPage: React.FC = () => {
               setInMemoryToken('mock_token');
               navigate('/architect/dashboard');
             }}
-            className="w-full bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 font-semibold py-3.5 rounded-xl flex items-center justify-center gap-3 transition-colors"
+            className="w-full bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 font-semibold py-3.5 rounded-xl flex items-center justify-center gap-3 transition-colors mb-3"
           >
             <Sparkles size={20} />
             Test Login as Architect
+          </button>
+
+          <button 
+            type="button"
+            onClick={() => {
+              dispatch(setMockAuth({ uid: 'mock-constructor', email: 'constructor@homeplanner.com', role: 'Constructor' }));
+              setInMemoryToken('mock_token');
+              navigate('/constructor/dashboard');
+            }}
+            className="w-full bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 font-semibold py-3.5 rounded-xl flex items-center justify-center gap-3 transition-colors"
+          >
+            <Box size={20} />
+            Test Login as Constructor
           </button>
 
           <div className="mt-8 text-center text-sm text-gray-500">
