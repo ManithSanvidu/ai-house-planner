@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import '../providers/intake_provider.dart';
 import '../models/land_submission.dart';
+import 'package:go_router/go_router.dart';
 
 class IntakeView extends ConsumerStatefulWidget{
   const IntakeView({super.key});
@@ -26,12 +27,12 @@ class _IntakeViewState extends ConsumerState<IntakeView>{
    void _submit() async {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
-      final success = await ref.read(intakeProvider.notifier).submitIntake();
-      if (success && mounted) {
+      final workflowId = await ref.read(intakeProvider.notifier).submitIntake();
+      if (workflowId != null && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Analyzing land and generating design...'), backgroundColor: Colors.green),
         );
-        // Navigate to workflow status view
+        context.go('/design/$workflowId');
       }
     }
   }
