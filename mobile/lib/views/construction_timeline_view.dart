@@ -38,7 +38,7 @@ class ConstructionTimelineView extends ConsumerWidget {
                     subtitle: Text('Days ${phase['start_day']} - ${phase['end_day']} (${phase['duration_days']} days)'),
                   ),
                 );
-              }).toList(),
+              }),
             ],
           );
         }
