@@ -12,6 +12,7 @@ class AppTokens {
   static const Color accent = Color(0xFF4F46E5);
   static const Color accentSoft = Color(0xFFE0E7FF);
   static const Color card = Colors.white;
+  static const Color cardGlass = Color(0x80FFFFFF);
 
   // Status Colors
   static const Color amberSoft = Color(0xFFFEF3C7);
@@ -31,6 +32,7 @@ class AppTokens {
   // Corner Radii
   static const double radiusPill = 999.0;
   static const double radiusButton = 8.0;
+  static const double radiusField = 12.0;
   static const double radiusCardSolid = 16.0;
   static const double radiusCardGlass = 24.0;
   static const double radiusSection = 32.0;
