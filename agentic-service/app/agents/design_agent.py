@@ -1,4 +1,4 @@
-"""
+﻿"""
 Design Agent — LangGraph node.
 
 Generates validated procedural house layouts and
