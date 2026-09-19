@@ -96,7 +96,7 @@ class FloorPlanViewer extends StatelessWidget {
   final List<RoomLayout> rooms;
   final int? floorFilter;
 
-  const FloorPlanViewer({Key? key, required this.rooms, this.floorFilter}) : super(key: key);
+  const FloorPlanViewer({super.key, required this.rooms, this.floorFilter});
 
   @override
   Widget build(BuildContext context) {
