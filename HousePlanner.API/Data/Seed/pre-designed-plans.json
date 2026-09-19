@@ -61340,5 +61340,2780 @@
       "candidate_summary": {}
     },
     "isActive": true
+  },
+  {
+    "designCode": "PRO_3B2B1F_COMPACT_CORE",
+    "name": "PRO 3B2B1F - CORE",
+    "bedrooms": 3,
+    "bathrooms": 2,
+    "floors": 1,
+    "topologyFamily": "COMPACT_RECTANGLE",
+    "minimumLandSizePerches": 12.0,
+    "maximumLandSizePerches": 20.0,
+    "minimumPlotWidthFt": 40.0,
+    "minimumPlotLengthFt": 50.0,
+    "supportedPlotShapes": [
+      "BALANCED",
+      "DEEP",
+      "WIDE"
+    ],
+    "supportedTerrains": [
+      "FLAT",
+      "GENTLE_SLOPE"
+    ],
+    "supportedStyles": [
+      "Modern Minimalist",
+      "Tropical Modern",
+      "Contemporary",
+      "Classic"
+    ],
+    "capabilities": {
+      "balcony": false,
+      "veranda": false,
+      "parking": false,
+      "home_office": false,
+      "utility_room": false,
+      "dining_required": true,
+      "servant_quarters": false,
+      "pool": false
+    },
+    "architecturalMetrics": {
+      "usable_room_area": 1140.0,
+      "circulation_area": 120.0,
+      "circulation_ratio": 0.0952,
+      "bounding_box_area": 1260.0,
+      "actual_room_footprint_area": 1260.0,
+      "compactness_ratio": 1.0,
+      "unused_internal_void_area": 0.0,
+      "longest_hallway_ft": 20.0,
+      "dead_end_hallways": 0,
+      "single_use_hallways": 0,
+      "longest_access_chain": 3,
+      "wet_average_distance_ft": 21.27,
+      "bathroom_cluster_distance_ft": 16.37,
+      "exterior_wall_ratio": 1.0,
+      "extreme_room_proportions": 0
+    },
+    "layout": {
+      "design_id": "8ef86b27-23e3-4a84-8cb9-4d7ebe30d419",
+      "floor_count": 1,
+      "total_built_up_area_sqft": 1260.0,
+      "foundation_type": "slab",
+      "terrain_type": "flat",
+      "template_id": "PRO_3B2B1F_COMPACT_CORE",
+      "rooms": [
+        {
+          "room_id": "606a0c1e-ce1f-448b-bcea-620b2da64643",
+          "room_type": "bedroom_1",
+          "name": "Master",
+          "floor": 1,
+          "x": 0.0,
+          "y": 0.0,
+          "width": 13.0,
+          "length": 13.0,
+          "area_sqft": 169.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "east",
+              "offset": 9.0,
+              "width": 3.0
+            },
+            {
+              "wall": "east",
+              "offset": 2.5,
+              "width": 3.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "1fc61b6a-0b67-4d77-acc3-e71675c9692b",
+          "room_type": "bedroom",
+          "name": "Bed 2",
+          "floor": 1,
+          "x": 0.0,
+          "y": 13.0,
+          "width": 13.0,
+          "length": 12.0,
+          "area_sqft": 156.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "east",
+              "offset": 4.5,
+              "width": 3.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "ab0f2fd5-4615-408d-8f6b-6b422a3d06a8",
+          "room_type": "bedroom",
+          "name": "Bed 3",
+          "floor": 1,
+          "x": 0.0,
+          "y": 25.0,
+          "width": 13.0,
+          "length": 11.0,
+          "area_sqft": 143.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "east",
+              "offset": 0.0,
+              "width": 3.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "f5574d98-7d4f-438b-8511-c62d783a7bdf",
+          "room_type": "bathroom_attached",
+          "name": "Master Bath",
+          "floor": 1,
+          "x": 13.0,
+          "y": 0.0,
+          "width": 6.0,
+          "length": 8.0,
+          "area_sqft": 48.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "west",
+              "offset": 2.5,
+              "width": 3.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "314a4eee-7288-4be9-918a-f72689689f50",
+          "room_type": "hallway",
+          "name": "Hall",
+          "floor": 1,
+          "x": 13.0,
+          "y": 8.0,
+          "width": 6.0,
+          "length": 20.0,
+          "area_sqft": 120.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "east",
+              "offset": 1.0,
+              "width": 6.0
+            },
+            {
+              "wall": "east",
+              "offset": 10.0,
+              "width": 6.0
+            },
+            {
+              "wall": "west",
+              "offset": 1.0,
+              "width": 3.0
+            },
+            {
+              "wall": "west",
+              "offset": 9.5,
+              "width": 3.0
+            },
+            {
+              "wall": "west",
+              "offset": 17.0,
+              "width": 3.0
+            },
+            {
+              "wall": "north",
+              "offset": 1.5,
+              "width": 3.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "233c3d58-3624-438d-933d-ca77c226f32d",
+          "room_type": "bathroom",
+          "name": "Shared Bath",
+          "floor": 1,
+          "x": 13.0,
+          "y": 28.0,
+          "width": 6.0,
+          "length": 8.0,
+          "area_sqft": 48.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "south",
+              "offset": 1.5,
+              "width": 3.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "d35e9ef6-502f-4ec1-b063-6a72068d61ff",
+          "room_type": "living_room",
+          "name": "Living",
+          "floor": 1,
+          "x": 19.0,
+          "y": 0.0,
+          "width": 16.0,
+          "length": 16.0,
+          "area_sqft": 256.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "north",
+              "offset": 5.0,
+              "width": 6.0
+            },
+            {
+              "wall": "west",
+              "offset": 9.0,
+              "width": 6.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "1c627f2d-36b9-49c8-963f-c1cca2b52b66",
+          "room_type": "kitchen",
+          "name": "Kitchen",
+          "floor": 1,
+          "x": 19.0,
+          "y": 16.0,
+          "width": 16.0,
+          "length": 10.0,
+          "area_sqft": 160.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "south",
+              "offset": 5.0,
+              "width": 6.0
+            },
+            {
+              "wall": "north",
+              "offset": 5.0,
+              "width": 6.0
+            },
+            {
+              "wall": "west",
+              "offset": 2.0,
+              "width": 6.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "1a56f264-8cb6-48c7-92b7-d53757384206",
+          "room_type": "dining_room",
+          "name": "Dining",
+          "floor": 1,
+          "x": 19.0,
+          "y": 26.0,
+          "width": 16.0,
+          "length": 10.0,
+          "area_sqft": 160.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "south",
+              "offset": 5.0,
+              "width": 6.0
+            }
+          ],
+          "windows": []
+        }
+      ],
+      "template_family": "COMPACT_RECTANGLE",
+      "connections": [
+        {
+          "from_room": "d35e9ef6-502f-4ec1-b063-6a72068d61ff",
+          "to_room": "1c627f2d-36b9-49c8-963f-c1cca2b52b66",
+          "kind": "open"
+        },
+        {
+          "from_room": "1c627f2d-36b9-49c8-963f-c1cca2b52b66",
+          "to_room": "1a56f264-8cb6-48c7-92b7-d53757384206",
+          "kind": "open"
+        },
+        {
+          "from_room": "d35e9ef6-502f-4ec1-b063-6a72068d61ff",
+          "to_room": "314a4eee-7288-4be9-918a-f72689689f50",
+          "kind": "open"
+        },
+        {
+          "from_room": "1c627f2d-36b9-49c8-963f-c1cca2b52b66",
+          "to_room": "314a4eee-7288-4be9-918a-f72689689f50",
+          "kind": "open"
+        },
+        {
+          "from_room": "314a4eee-7288-4be9-918a-f72689689f50",
+          "to_room": "606a0c1e-ce1f-448b-bcea-620b2da64643",
+          "kind": "door"
+        },
+        {
+          "from_room": "314a4eee-7288-4be9-918a-f72689689f50",
+          "to_room": "1fc61b6a-0b67-4d77-acc3-e71675c9692b",
+          "kind": "door"
+        },
+        {
+          "from_room": "314a4eee-7288-4be9-918a-f72689689f50",
+          "to_room": "ab0f2fd5-4615-408d-8f6b-6b422a3d06a8",
+          "kind": "door"
+        },
+        {
+          "from_room": "314a4eee-7288-4be9-918a-f72689689f50",
+          "to_room": "233c3d58-3624-438d-933d-ca77c226f32d",
+          "kind": "door"
+        },
+        {
+          "from_room": "606a0c1e-ce1f-448b-bcea-620b2da64643",
+          "to_room": "f5574d98-7d4f-438b-8511-c62d783a7bdf",
+          "kind": "door"
+        }
+      ],
+      "entrances": [
+        {
+          "room_id": "d35e9ef6-502f-4ec1-b063-6a72068d61ff",
+          "wall": "south",
+          "offset": 6.0,
+          "width": 3.0
+        }
+      ],
+      "site_features": [],
+      "candidate_summary": {}
+    }
+  },
+  {
+    "designCode": "PRO_3B2B1F_COMPACT_REVERSE",
+    "name": "PRO 3B2B1F - REVERSE",
+    "bedrooms": 3,
+    "bathrooms": 2,
+    "floors": 1,
+    "topologyFamily": "COMPACT_RECTANGLE",
+    "minimumLandSizePerches": 12.0,
+    "maximumLandSizePerches": 20.0,
+    "minimumPlotWidthFt": 40.0,
+    "minimumPlotLengthFt": 50.0,
+    "supportedPlotShapes": [
+      "BALANCED",
+      "DEEP",
+      "WIDE"
+    ],
+    "supportedTerrains": [
+      "FLAT",
+      "GENTLE_SLOPE"
+    ],
+    "supportedStyles": [
+      "Modern Minimalist",
+      "Tropical Modern",
+      "Contemporary",
+      "Classic"
+    ],
+    "capabilities": {
+      "balcony": false,
+      "veranda": false,
+      "parking": false,
+      "home_office": false,
+      "utility_room": false,
+      "dining_required": true,
+      "servant_quarters": false,
+      "pool": false
+    },
+    "architecturalMetrics": {
+      "usable_room_area": 1140.0,
+      "circulation_area": 120.0,
+      "circulation_ratio": 0.0952,
+      "bounding_box_area": 1260.0,
+      "actual_room_footprint_area": 1260.0,
+      "compactness_ratio": 1.0,
+      "unused_internal_void_area": 0.0,
+      "longest_hallway_ft": 20.0,
+      "dead_end_hallways": 0,
+      "single_use_hallways": 0,
+      "longest_access_chain": 3,
+      "wet_average_distance_ft": 21.27,
+      "bathroom_cluster_distance_ft": 16.37,
+      "exterior_wall_ratio": 1.0,
+      "extreme_room_proportions": 0
+    },
+    "layout": {
+      "design_id": "51359b57-61b7-49c4-bde3-70c29c184bf0",
+      "floor_count": 1,
+      "total_built_up_area_sqft": 1260.0,
+      "foundation_type": "slab",
+      "terrain_type": "flat",
+      "template_id": "PRO_3B2B1F_COMPACT_REVERSE",
+      "rooms": [
+        {
+          "room_id": "0c2e15e1-503a-4224-b463-1cccb83791ee",
+          "room_type": "bedroom",
+          "name": "Bed 3",
+          "floor": 1,
+          "x": 0.0,
+          "y": 0.0,
+          "width": 13.0,
+          "length": 11.0,
+          "area_sqft": 143.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "east",
+              "offset": 8.0,
+              "width": 3.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "0d945ebc-f86e-40b4-8486-4db1e9894245",
+          "room_type": "bedroom",
+          "name": "Bed 2",
+          "floor": 1,
+          "x": 0.0,
+          "y": 11.0,
+          "width": 13.0,
+          "length": 12.0,
+          "area_sqft": 156.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "east",
+              "offset": 4.5,
+              "width": 3.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "5e619643-899a-4d0a-8ec0-e0fcb84e4b29",
+          "room_type": "bedroom_1",
+          "name": "Master",
+          "floor": 1,
+          "x": 0.0,
+          "y": 23.0,
+          "width": 13.0,
+          "length": 13.0,
+          "area_sqft": 169.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "east",
+              "offset": 1.0,
+              "width": 3.0
+            },
+            {
+              "wall": "east",
+              "offset": 7.5,
+              "width": 3.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "1785a5cf-6a9c-465f-9283-b68f320c39f8",
+          "room_type": "bathroom",
+          "name": "Shared Bath",
+          "floor": 1,
+          "x": 13.0,
+          "y": 0.0,
+          "width": 6.0,
+          "length": 8.0,
+          "area_sqft": 48.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "north",
+              "offset": 1.5,
+              "width": 3.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "c6e05eac-26fb-439b-a813-219fcfe5cc28",
+          "room_type": "hallway",
+          "name": "Hall",
+          "floor": 1,
+          "x": 13.0,
+          "y": 8.0,
+          "width": 6.0,
+          "length": 20.0,
+          "area_sqft": 120.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "east",
+              "offset": 13.0,
+              "width": 6.0
+            },
+            {
+              "wall": "east",
+              "offset": 4.0,
+              "width": 6.0
+            },
+            {
+              "wall": "west",
+              "offset": 16.0,
+              "width": 3.0
+            },
+            {
+              "wall": "west",
+              "offset": 7.5,
+              "width": 3.0
+            },
+            {
+              "wall": "west",
+              "offset": 0.0,
+              "width": 3.0
+            },
+            {
+              "wall": "south",
+              "offset": 1.5,
+              "width": 3.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "8ee6f1d9-a7ad-42d0-9242-feb56d64346a",
+          "room_type": "bathroom_attached",
+          "name": "Master Bath",
+          "floor": 1,
+          "x": 13.0,
+          "y": 28.0,
+          "width": 6.0,
+          "length": 8.0,
+          "area_sqft": 48.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "west",
+              "offset": 2.5,
+              "width": 3.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "78e54920-1bde-48a2-acef-1be43fa57ba9",
+          "room_type": "dining_room",
+          "name": "Dining",
+          "floor": 1,
+          "x": 19.0,
+          "y": 0.0,
+          "width": 16.0,
+          "length": 10.0,
+          "area_sqft": 160.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "north",
+              "offset": 5.0,
+              "width": 6.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "847de981-0a86-4194-9320-376da2a07d66",
+          "room_type": "kitchen",
+          "name": "Kitchen",
+          "floor": 1,
+          "x": 19.0,
+          "y": 10.0,
+          "width": 16.0,
+          "length": 10.0,
+          "area_sqft": 160.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "north",
+              "offset": 5.0,
+              "width": 6.0
+            },
+            {
+              "wall": "south",
+              "offset": 5.0,
+              "width": 6.0
+            },
+            {
+              "wall": "west",
+              "offset": 2.0,
+              "width": 6.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "ffaa15fd-8681-444b-a4cd-fa5fae4b2eb7",
+          "room_type": "living_room",
+          "name": "Living",
+          "floor": 1,
+          "x": 19.0,
+          "y": 20.0,
+          "width": 16.0,
+          "length": 16.0,
+          "area_sqft": 256.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "south",
+              "offset": 5.0,
+              "width": 6.0
+            },
+            {
+              "wall": "west",
+              "offset": 1.0,
+              "width": 6.0
+            }
+          ],
+          "windows": []
+        }
+      ],
+      "template_family": "COMPACT_RECTANGLE",
+      "connections": [
+        {
+          "from_room": "ffaa15fd-8681-444b-a4cd-fa5fae4b2eb7",
+          "to_room": "847de981-0a86-4194-9320-376da2a07d66",
+          "kind": "open"
+        },
+        {
+          "from_room": "847de981-0a86-4194-9320-376da2a07d66",
+          "to_room": "78e54920-1bde-48a2-acef-1be43fa57ba9",
+          "kind": "open"
+        },
+        {
+          "from_room": "ffaa15fd-8681-444b-a4cd-fa5fae4b2eb7",
+          "to_room": "c6e05eac-26fb-439b-a813-219fcfe5cc28",
+          "kind": "open"
+        },
+        {
+          "from_room": "847de981-0a86-4194-9320-376da2a07d66",
+          "to_room": "c6e05eac-26fb-439b-a813-219fcfe5cc28",
+          "kind": "open"
+        },
+        {
+          "from_room": "c6e05eac-26fb-439b-a813-219fcfe5cc28",
+          "to_room": "5e619643-899a-4d0a-8ec0-e0fcb84e4b29",
+          "kind": "door"
+        },
+        {
+          "from_room": "c6e05eac-26fb-439b-a813-219fcfe5cc28",
+          "to_room": "0d945ebc-f86e-40b4-8486-4db1e9894245",
+          "kind": "door"
+        },
+        {
+          "from_room": "c6e05eac-26fb-439b-a813-219fcfe5cc28",
+          "to_room": "0c2e15e1-503a-4224-b463-1cccb83791ee",
+          "kind": "door"
+        },
+        {
+          "from_room": "c6e05eac-26fb-439b-a813-219fcfe5cc28",
+          "to_room": "1785a5cf-6a9c-465f-9283-b68f320c39f8",
+          "kind": "door"
+        },
+        {
+          "from_room": "5e619643-899a-4d0a-8ec0-e0fcb84e4b29",
+          "to_room": "8ee6f1d9-a7ad-42d0-9242-feb56d64346a",
+          "kind": "door"
+        }
+      ],
+      "entrances": [
+        {
+          "room_id": "ffaa15fd-8681-444b-a4cd-fa5fae4b2eb7",
+          "wall": "south",
+          "offset": 6.0,
+          "width": 3.0
+        }
+      ],
+      "site_features": [],
+      "candidate_summary": {}
+    }
+  },
+  {
+    "designCode": "PRO_3B2B1F_COMPACT_REVERSE_Y",
+    "name": "PRO 3B2B1F - Y",
+    "bedrooms": 3,
+    "bathrooms": 2,
+    "floors": 1,
+    "topologyFamily": "COMPACT_RECTANGLE",
+    "minimumLandSizePerches": 12.0,
+    "maximumLandSizePerches": 20.0,
+    "minimumPlotWidthFt": 40.0,
+    "minimumPlotLengthFt": 50.0,
+    "supportedPlotShapes": [
+      "BALANCED",
+      "DEEP",
+      "WIDE"
+    ],
+    "supportedTerrains": [
+      "FLAT",
+      "GENTLE_SLOPE"
+    ],
+    "supportedStyles": [
+      "Modern Minimalist",
+      "Tropical Modern",
+      "Contemporary",
+      "Classic"
+    ],
+    "capabilities": {
+      "balcony": false,
+      "veranda": false,
+      "parking": false,
+      "home_office": false,
+      "utility_room": false,
+      "dining_required": true,
+      "servant_quarters": false,
+      "pool": false
+    },
+    "architecturalMetrics": {
+      "usable_room_area": 1140.0,
+      "circulation_area": 120.0,
+      "circulation_ratio": 0.0952,
+      "bounding_box_area": 1260.0,
+      "actual_room_footprint_area": 1260.0,
+      "compactness_ratio": 1.0,
+      "unused_internal_void_area": 0.0,
+      "longest_hallway_ft": 20.0,
+      "dead_end_hallways": 0,
+      "single_use_hallways": 0,
+      "longest_access_chain": 3,
+      "wet_average_distance_ft": 21.27,
+      "bathroom_cluster_distance_ft": 16.37,
+      "exterior_wall_ratio": 1.0,
+      "extreme_room_proportions": 0
+    },
+    "layout": {
+      "design_id": "4c2cc0a5-93de-4ed9-8d18-4b6e420a95eb",
+      "floor_count": 1,
+      "total_built_up_area_sqft": 1260.0,
+      "foundation_type": "slab",
+      "terrain_type": "flat",
+      "template_id": "PRO_3B2B1F_COMPACT_REVERSE_Y",
+      "rooms": [
+        {
+          "room_id": "b1561287-3348-4af6-a949-42dee1f15d5a",
+          "room_type": "bedroom_1",
+          "name": "Master",
+          "floor": 1,
+          "x": 0.0,
+          "y": 23.0,
+          "width": 13.0,
+          "length": 13.0,
+          "area_sqft": 169.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "east",
+              "offset": 1.0,
+              "width": 3.0
+            },
+            {
+              "wall": "east",
+              "offset": 7.5,
+              "width": 3.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "155b0d43-320c-4ebf-bfca-af4767242cf6",
+          "room_type": "bedroom",
+          "name": "Bed 2",
+          "floor": 1,
+          "x": 0.0,
+          "y": 11.0,
+          "width": 13.0,
+          "length": 12.0,
+          "area_sqft": 156.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "east",
+              "offset": 4.5,
+              "width": 3.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "9e0ab6d4-eeda-4434-8d8f-dd69d5cae316",
+          "room_type": "bedroom",
+          "name": "Bed 3",
+          "floor": 1,
+          "x": 0.0,
+          "y": 0.0,
+          "width": 13.0,
+          "length": 11.0,
+          "area_sqft": 143.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "east",
+              "offset": 8.0,
+              "width": 3.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "faad804d-a768-4261-b7e0-bf2b2f455f83",
+          "room_type": "bathroom_attached",
+          "name": "Master Bath",
+          "floor": 1,
+          "x": 13.0,
+          "y": 28.0,
+          "width": 6.0,
+          "length": 8.0,
+          "area_sqft": 48.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "west",
+              "offset": 2.5,
+              "width": 3.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "ac69d8bb-5d91-44ba-b8b7-8a5826fb4f0b",
+          "room_type": "hallway",
+          "name": "Hall",
+          "floor": 1,
+          "x": 13.0,
+          "y": 8.0,
+          "width": 6.0,
+          "length": 20.0,
+          "area_sqft": 120.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "east",
+              "offset": 13.0,
+              "width": 6.0
+            },
+            {
+              "wall": "east",
+              "offset": 4.0,
+              "width": 6.0
+            },
+            {
+              "wall": "west",
+              "offset": 16.0,
+              "width": 3.0
+            },
+            {
+              "wall": "west",
+              "offset": 7.5,
+              "width": 3.0
+            },
+            {
+              "wall": "west",
+              "offset": 0.0,
+              "width": 3.0
+            },
+            {
+              "wall": "south",
+              "offset": 1.5,
+              "width": 3.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "209c9f7c-729a-4992-9218-8b29f1d0fd3c",
+          "room_type": "bathroom",
+          "name": "Shared Bath",
+          "floor": 1,
+          "x": 13.0,
+          "y": 0.0,
+          "width": 6.0,
+          "length": 8.0,
+          "area_sqft": 48.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "north",
+              "offset": 1.5,
+              "width": 3.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "8c8a79cb-6867-4062-8474-396f3f5d77b7",
+          "room_type": "living_room",
+          "name": "Living",
+          "floor": 1,
+          "x": 19.0,
+          "y": 20.0,
+          "width": 16.0,
+          "length": 16.0,
+          "area_sqft": 256.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "south",
+              "offset": 5.0,
+              "width": 6.0
+            },
+            {
+              "wall": "west",
+              "offset": 1.0,
+              "width": 6.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "c73e2459-ee87-4e36-b7b6-b3aebb4194da",
+          "room_type": "kitchen",
+          "name": "Kitchen",
+          "floor": 1,
+          "x": 19.0,
+          "y": 10.0,
+          "width": 16.0,
+          "length": 10.0,
+          "area_sqft": 160.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "north",
+              "offset": 5.0,
+              "width": 6.0
+            },
+            {
+              "wall": "south",
+              "offset": 5.0,
+              "width": 6.0
+            },
+            {
+              "wall": "west",
+              "offset": 2.0,
+              "width": 6.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "b3665fca-6733-4ace-9837-1c10ade5a640",
+          "room_type": "dining_room",
+          "name": "Dining",
+          "floor": 1,
+          "x": 19.0,
+          "y": 0.0,
+          "width": 16.0,
+          "length": 10.0,
+          "area_sqft": 160.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "north",
+              "offset": 5.0,
+              "width": 6.0
+            }
+          ],
+          "windows": []
+        }
+      ],
+      "template_family": "COMPACT_RECTANGLE",
+      "connections": [
+        {
+          "from_room": "8c8a79cb-6867-4062-8474-396f3f5d77b7",
+          "to_room": "c73e2459-ee87-4e36-b7b6-b3aebb4194da",
+          "kind": "open"
+        },
+        {
+          "from_room": "c73e2459-ee87-4e36-b7b6-b3aebb4194da",
+          "to_room": "b3665fca-6733-4ace-9837-1c10ade5a640",
+          "kind": "open"
+        },
+        {
+          "from_room": "8c8a79cb-6867-4062-8474-396f3f5d77b7",
+          "to_room": "ac69d8bb-5d91-44ba-b8b7-8a5826fb4f0b",
+          "kind": "open"
+        },
+        {
+          "from_room": "c73e2459-ee87-4e36-b7b6-b3aebb4194da",
+          "to_room": "ac69d8bb-5d91-44ba-b8b7-8a5826fb4f0b",
+          "kind": "open"
+        },
+        {
+          "from_room": "ac69d8bb-5d91-44ba-b8b7-8a5826fb4f0b",
+          "to_room": "b1561287-3348-4af6-a949-42dee1f15d5a",
+          "kind": "door"
+        },
+        {
+          "from_room": "ac69d8bb-5d91-44ba-b8b7-8a5826fb4f0b",
+          "to_room": "155b0d43-320c-4ebf-bfca-af4767242cf6",
+          "kind": "door"
+        },
+        {
+          "from_room": "ac69d8bb-5d91-44ba-b8b7-8a5826fb4f0b",
+          "to_room": "9e0ab6d4-eeda-4434-8d8f-dd69d5cae316",
+          "kind": "door"
+        },
+        {
+          "from_room": "ac69d8bb-5d91-44ba-b8b7-8a5826fb4f0b",
+          "to_room": "209c9f7c-729a-4992-9218-8b29f1d0fd3c",
+          "kind": "door"
+        },
+        {
+          "from_room": "b1561287-3348-4af6-a949-42dee1f15d5a",
+          "to_room": "faad804d-a768-4261-b7e0-bf2b2f455f83",
+          "kind": "door"
+        }
+      ],
+      "entrances": [
+        {
+          "room_id": "8c8a79cb-6867-4062-8474-396f3f5d77b7",
+          "wall": "south",
+          "offset": 6.0,
+          "width": 3.0
+        }
+      ],
+      "site_features": [],
+      "candidate_summary": {}
+    }
+  },
+  {
+    "designCode": "PRO_3B2B1F_COMPACT_MIRROR_X",
+    "name": "PRO 3B2B1F - X",
+    "bedrooms": 3,
+    "bathrooms": 2,
+    "floors": 1,
+    "topologyFamily": "COMPACT_RECTANGLE",
+    "minimumLandSizePerches": 12.0,
+    "maximumLandSizePerches": 20.0,
+    "minimumPlotWidthFt": 40.0,
+    "minimumPlotLengthFt": 50.0,
+    "supportedPlotShapes": [
+      "BALANCED",
+      "DEEP",
+      "WIDE"
+    ],
+    "supportedTerrains": [
+      "FLAT",
+      "GENTLE_SLOPE"
+    ],
+    "supportedStyles": [
+      "Modern Minimalist",
+      "Tropical Modern",
+      "Contemporary",
+      "Classic"
+    ],
+    "capabilities": {
+      "balcony": false,
+      "veranda": false,
+      "parking": false,
+      "home_office": false,
+      "utility_room": false,
+      "dining_required": true,
+      "servant_quarters": false,
+      "pool": false
+    },
+    "architecturalMetrics": {
+      "usable_room_area": 1140.0,
+      "circulation_area": 120.0,
+      "circulation_ratio": 0.0952,
+      "bounding_box_area": 1260.0,
+      "actual_room_footprint_area": 1260.0,
+      "compactness_ratio": 1.0,
+      "unused_internal_void_area": 0.0,
+      "longest_hallway_ft": 20.0,
+      "dead_end_hallways": 0,
+      "single_use_hallways": 0,
+      "longest_access_chain": 3,
+      "wet_average_distance_ft": 21.27,
+      "bathroom_cluster_distance_ft": 16.37,
+      "exterior_wall_ratio": 1.0,
+      "extreme_room_proportions": 0
+    },
+    "layout": {
+      "design_id": "121bac1c-4aec-4cc7-adc8-a5c74e9900c5",
+      "floor_count": 1,
+      "total_built_up_area_sqft": 1260.0,
+      "foundation_type": "slab",
+      "terrain_type": "flat",
+      "template_id": "PRO_3B2B1F_COMPACT_MIRROR_X",
+      "rooms": [
+        {
+          "room_id": "1388f314-0067-4d5b-ae0d-e83a2185d546",
+          "room_type": "bedroom_1",
+          "name": "Master",
+          "floor": 1,
+          "x": 22.0,
+          "y": 0.0,
+          "width": 13.0,
+          "length": 13.0,
+          "area_sqft": 169.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "west",
+              "offset": 9.0,
+              "width": 3.0
+            },
+            {
+              "wall": "west",
+              "offset": 2.5,
+              "width": 3.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "50a4eb5a-d1b8-48ec-a35d-2c9dccca132c",
+          "room_type": "bedroom",
+          "name": "Bed 2",
+          "floor": 1,
+          "x": 22.0,
+          "y": 13.0,
+          "width": 13.0,
+          "length": 12.0,
+          "area_sqft": 156.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "west",
+              "offset": 4.5,
+              "width": 3.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "5ee28818-d4ca-494e-ad7a-c59c78e9592f",
+          "room_type": "bedroom",
+          "name": "Bed 3",
+          "floor": 1,
+          "x": 22.0,
+          "y": 25.0,
+          "width": 13.0,
+          "length": 11.0,
+          "area_sqft": 143.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "west",
+              "offset": 0.0,
+              "width": 3.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "d9fefa22-cabd-4da9-b70d-e9fe5468f6a5",
+          "room_type": "bathroom_attached",
+          "name": "Master Bath",
+          "floor": 1,
+          "x": 16.0,
+          "y": 0.0,
+          "width": 6.0,
+          "length": 8.0,
+          "area_sqft": 48.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "east",
+              "offset": 2.5,
+              "width": 3.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "121816b0-3f21-4534-a29b-43a1c947a139",
+          "room_type": "hallway",
+          "name": "Hall",
+          "floor": 1,
+          "x": 16.0,
+          "y": 8.0,
+          "width": 6.0,
+          "length": 20.0,
+          "area_sqft": 120.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "west",
+              "offset": 1.0,
+              "width": 6.0
+            },
+            {
+              "wall": "west",
+              "offset": 10.0,
+              "width": 6.0
+            },
+            {
+              "wall": "east",
+              "offset": 1.0,
+              "width": 3.0
+            },
+            {
+              "wall": "east",
+              "offset": 9.5,
+              "width": 3.0
+            },
+            {
+              "wall": "east",
+              "offset": 17.0,
+              "width": 3.0
+            },
+            {
+              "wall": "north",
+              "offset": 1.5,
+              "width": 3.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "3a0c9d72-c681-4c21-bd89-389c27c1c724",
+          "room_type": "bathroom",
+          "name": "Shared Bath",
+          "floor": 1,
+          "x": 16.0,
+          "y": 28.0,
+          "width": 6.0,
+          "length": 8.0,
+          "area_sqft": 48.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "south",
+              "offset": 1.5,
+              "width": 3.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "74c18ec1-af48-41b4-837b-d6d0f0eabd98",
+          "room_type": "living_room",
+          "name": "Living",
+          "floor": 1,
+          "x": 0.0,
+          "y": 0.0,
+          "width": 16.0,
+          "length": 16.0,
+          "area_sqft": 256.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "north",
+              "offset": 5.0,
+              "width": 6.0
+            },
+            {
+              "wall": "east",
+              "offset": 9.0,
+              "width": 6.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "6c9c13b2-72d8-4fcc-8cb4-cb4e5a3a8760",
+          "room_type": "kitchen",
+          "name": "Kitchen",
+          "floor": 1,
+          "x": 0.0,
+          "y": 16.0,
+          "width": 16.0,
+          "length": 10.0,
+          "area_sqft": 160.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "south",
+              "offset": 5.0,
+              "width": 6.0
+            },
+            {
+              "wall": "north",
+              "offset": 5.0,
+              "width": 6.0
+            },
+            {
+              "wall": "east",
+              "offset": 2.0,
+              "width": 6.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "60fb54df-a52e-40a7-8bb0-475e32bb7055",
+          "room_type": "dining_room",
+          "name": "Dining",
+          "floor": 1,
+          "x": 0.0,
+          "y": 26.0,
+          "width": 16.0,
+          "length": 10.0,
+          "area_sqft": 160.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "south",
+              "offset": 5.0,
+              "width": 6.0
+            }
+          ],
+          "windows": []
+        }
+      ],
+      "template_family": "COMPACT_RECTANGLE",
+      "connections": [
+        {
+          "from_room": "74c18ec1-af48-41b4-837b-d6d0f0eabd98",
+          "to_room": "6c9c13b2-72d8-4fcc-8cb4-cb4e5a3a8760",
+          "kind": "open"
+        },
+        {
+          "from_room": "6c9c13b2-72d8-4fcc-8cb4-cb4e5a3a8760",
+          "to_room": "60fb54df-a52e-40a7-8bb0-475e32bb7055",
+          "kind": "open"
+        },
+        {
+          "from_room": "74c18ec1-af48-41b4-837b-d6d0f0eabd98",
+          "to_room": "121816b0-3f21-4534-a29b-43a1c947a139",
+          "kind": "open"
+        },
+        {
+          "from_room": "6c9c13b2-72d8-4fcc-8cb4-cb4e5a3a8760",
+          "to_room": "121816b0-3f21-4534-a29b-43a1c947a139",
+          "kind": "open"
+        },
+        {
+          "from_room": "121816b0-3f21-4534-a29b-43a1c947a139",
+          "to_room": "1388f314-0067-4d5b-ae0d-e83a2185d546",
+          "kind": "door"
+        },
+        {
+          "from_room": "121816b0-3f21-4534-a29b-43a1c947a139",
+          "to_room": "50a4eb5a-d1b8-48ec-a35d-2c9dccca132c",
+          "kind": "door"
+        },
+        {
+          "from_room": "121816b0-3f21-4534-a29b-43a1c947a139",
+          "to_room": "5ee28818-d4ca-494e-ad7a-c59c78e9592f",
+          "kind": "door"
+        },
+        {
+          "from_room": "121816b0-3f21-4534-a29b-43a1c947a139",
+          "to_room": "3a0c9d72-c681-4c21-bd89-389c27c1c724",
+          "kind": "door"
+        },
+        {
+          "from_room": "1388f314-0067-4d5b-ae0d-e83a2185d546",
+          "to_room": "d9fefa22-cabd-4da9-b70d-e9fe5468f6a5",
+          "kind": "door"
+        }
+      ],
+      "entrances": [
+        {
+          "room_id": "74c18ec1-af48-41b4-837b-d6d0f0eabd98",
+          "wall": "south",
+          "offset": 6.0,
+          "width": 3.0
+        }
+      ],
+      "site_features": [],
+      "candidate_summary": {}
+    }
+  },
+  {
+    "designCode": "PRO_3B2B1F_COMPACT_OPPOSITE",
+    "name": "PRO 3B2B1F - OPPOSITE",
+    "bedrooms": 3,
+    "bathrooms": 2,
+    "floors": 1,
+    "topologyFamily": "COMPACT_RECTANGLE",
+    "minimumLandSizePerches": 12.0,
+    "maximumLandSizePerches": 20.0,
+    "minimumPlotWidthFt": 40.0,
+    "minimumPlotLengthFt": 50.0,
+    "supportedPlotShapes": [
+      "BALANCED",
+      "DEEP",
+      "WIDE"
+    ],
+    "supportedTerrains": [
+      "FLAT",
+      "GENTLE_SLOPE"
+    ],
+    "supportedStyles": [
+      "Modern Minimalist",
+      "Tropical Modern",
+      "Contemporary",
+      "Classic"
+    ],
+    "capabilities": {
+      "balcony": false,
+      "veranda": false,
+      "parking": false,
+      "home_office": false,
+      "utility_room": false,
+      "dining_required": true,
+      "servant_quarters": false,
+      "pool": false
+    },
+    "architecturalMetrics": {
+      "usable_room_area": 1140.0,
+      "circulation_area": 120.0,
+      "circulation_ratio": 0.0952,
+      "bounding_box_area": 1260.0,
+      "actual_room_footprint_area": 1260.0,
+      "compactness_ratio": 1.0,
+      "unused_internal_void_area": 0.0,
+      "longest_hallway_ft": 20.0,
+      "dead_end_hallways": 0,
+      "single_use_hallways": 0,
+      "longest_access_chain": 3,
+      "wet_average_distance_ft": 21.27,
+      "bathroom_cluster_distance_ft": 16.37,
+      "exterior_wall_ratio": 1.0,
+      "extreme_room_proportions": 0
+    },
+    "layout": {
+      "design_id": "6488c976-4e10-4db6-8e11-1b792388f271",
+      "floor_count": 1,
+      "total_built_up_area_sqft": 1260.0,
+      "foundation_type": "slab",
+      "terrain_type": "flat",
+      "template_id": "PRO_3B2B1F_COMPACT_OPPOSITE",
+      "rooms": [
+        {
+          "room_id": "07c7744d-ab41-4392-8c33-8fa3dbb97fa8",
+          "room_type": "bedroom_1",
+          "name": "Master",
+          "floor": 1,
+          "x": 22.0,
+          "y": 23.0,
+          "width": 13.0,
+          "length": 13.0,
+          "area_sqft": 169.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "west",
+              "offset": 1.0,
+              "width": 3.0
+            },
+            {
+              "wall": "west",
+              "offset": 7.5,
+              "width": 3.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "f566f429-09e9-4d4e-9f82-0802bf0dc797",
+          "room_type": "bedroom",
+          "name": "Bed 2",
+          "floor": 1,
+          "x": 22.0,
+          "y": 11.0,
+          "width": 13.0,
+          "length": 12.0,
+          "area_sqft": 156.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "west",
+              "offset": 4.5,
+              "width": 3.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "4333dd7f-0bc3-4309-991c-d70b6443bfab",
+          "room_type": "bedroom",
+          "name": "Bed 3",
+          "floor": 1,
+          "x": 22.0,
+          "y": 0.0,
+          "width": 13.0,
+          "length": 11.0,
+          "area_sqft": 143.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "west",
+              "offset": 8.0,
+              "width": 3.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "6e60d0f4-21ec-4bab-a114-47f2366bcb48",
+          "room_type": "bathroom_attached",
+          "name": "Master Bath",
+          "floor": 1,
+          "x": 16.0,
+          "y": 28.0,
+          "width": 6.0,
+          "length": 8.0,
+          "area_sqft": 48.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "east",
+              "offset": 2.5,
+              "width": 3.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "1952db0e-ccd1-44d3-81ef-00f47c28d841",
+          "room_type": "hallway",
+          "name": "Hall",
+          "floor": 1,
+          "x": 16.0,
+          "y": 8.0,
+          "width": 6.0,
+          "length": 20.0,
+          "area_sqft": 120.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "west",
+              "offset": 13.0,
+              "width": 6.0
+            },
+            {
+              "wall": "west",
+              "offset": 4.0,
+              "width": 6.0
+            },
+            {
+              "wall": "east",
+              "offset": 16.0,
+              "width": 3.0
+            },
+            {
+              "wall": "east",
+              "offset": 7.5,
+              "width": 3.0
+            },
+            {
+              "wall": "east",
+              "offset": 0.0,
+              "width": 3.0
+            },
+            {
+              "wall": "south",
+              "offset": 1.5,
+              "width": 3.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "72e9e593-a579-482b-8c3a-ed52f2709c75",
+          "room_type": "bathroom",
+          "name": "Shared Bath",
+          "floor": 1,
+          "x": 16.0,
+          "y": 0.0,
+          "width": 6.0,
+          "length": 8.0,
+          "area_sqft": 48.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "north",
+              "offset": 1.5,
+              "width": 3.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "8096ca96-55ca-46fe-a9de-6486adfb7f6e",
+          "room_type": "living_room",
+          "name": "Living",
+          "floor": 1,
+          "x": 0.0,
+          "y": 20.0,
+          "width": 16.0,
+          "length": 16.0,
+          "area_sqft": 256.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "south",
+              "offset": 5.0,
+              "width": 6.0
+            },
+            {
+              "wall": "east",
+              "offset": 1.0,
+              "width": 6.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "3d8f0de5-77ca-44fb-80c5-303aa801cf64",
+          "room_type": "kitchen",
+          "name": "Kitchen",
+          "floor": 1,
+          "x": 0.0,
+          "y": 10.0,
+          "width": 16.0,
+          "length": 10.0,
+          "area_sqft": 160.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "north",
+              "offset": 5.0,
+              "width": 6.0
+            },
+            {
+              "wall": "south",
+              "offset": 5.0,
+              "width": 6.0
+            },
+            {
+              "wall": "east",
+              "offset": 2.0,
+              "width": 6.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "cd056d6a-1e4c-45fb-809f-0a0a452a0818",
+          "room_type": "dining_room",
+          "name": "Dining",
+          "floor": 1,
+          "x": 0.0,
+          "y": 0.0,
+          "width": 16.0,
+          "length": 10.0,
+          "area_sqft": 160.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "north",
+              "offset": 5.0,
+              "width": 6.0
+            }
+          ],
+          "windows": []
+        }
+      ],
+      "template_family": "COMPACT_RECTANGLE",
+      "connections": [
+        {
+          "from_room": "8096ca96-55ca-46fe-a9de-6486adfb7f6e",
+          "to_room": "3d8f0de5-77ca-44fb-80c5-303aa801cf64",
+          "kind": "open"
+        },
+        {
+          "from_room": "3d8f0de5-77ca-44fb-80c5-303aa801cf64",
+          "to_room": "cd056d6a-1e4c-45fb-809f-0a0a452a0818",
+          "kind": "open"
+        },
+        {
+          "from_room": "8096ca96-55ca-46fe-a9de-6486adfb7f6e",
+          "to_room": "1952db0e-ccd1-44d3-81ef-00f47c28d841",
+          "kind": "open"
+        },
+        {
+          "from_room": "3d8f0de5-77ca-44fb-80c5-303aa801cf64",
+          "to_room": "1952db0e-ccd1-44d3-81ef-00f47c28d841",
+          "kind": "open"
+        },
+        {
+          "from_room": "1952db0e-ccd1-44d3-81ef-00f47c28d841",
+          "to_room": "07c7744d-ab41-4392-8c33-8fa3dbb97fa8",
+          "kind": "door"
+        },
+        {
+          "from_room": "1952db0e-ccd1-44d3-81ef-00f47c28d841",
+          "to_room": "f566f429-09e9-4d4e-9f82-0802bf0dc797",
+          "kind": "door"
+        },
+        {
+          "from_room": "1952db0e-ccd1-44d3-81ef-00f47c28d841",
+          "to_room": "4333dd7f-0bc3-4309-991c-d70b6443bfab",
+          "kind": "door"
+        },
+        {
+          "from_room": "1952db0e-ccd1-44d3-81ef-00f47c28d841",
+          "to_room": "72e9e593-a579-482b-8c3a-ed52f2709c75",
+          "kind": "door"
+        },
+        {
+          "from_room": "07c7744d-ab41-4392-8c33-8fa3dbb97fa8",
+          "to_room": "6e60d0f4-21ec-4bab-a114-47f2366bcb48",
+          "kind": "door"
+        }
+      ],
+      "entrances": [
+        {
+          "room_id": "8096ca96-55ca-46fe-a9de-6486adfb7f6e",
+          "wall": "south",
+          "offset": 6.0,
+          "width": 3.0
+        }
+      ],
+      "site_features": [],
+      "candidate_summary": {}
+    }
+  },
+  {
+    "designCode": "PRO_3B2B1F_LINEAR",
+    "name": "PRO 3B2B1F - LINEAR",
+    "bedrooms": 3,
+    "bathrooms": 2,
+    "floors": 1,
+    "topologyFamily": "LINEAR",
+    "minimumLandSizePerches": 12.0,
+    "maximumLandSizePerches": 20.0,
+    "minimumPlotWidthFt": 40.0,
+    "minimumPlotLengthFt": 50.0,
+    "supportedPlotShapes": [
+      "BALANCED",
+      "DEEP",
+      "WIDE"
+    ],
+    "supportedTerrains": [
+      "FLAT",
+      "GENTLE_SLOPE"
+    ],
+    "supportedStyles": [
+      "Modern Minimalist",
+      "Tropical Modern",
+      "Contemporary",
+      "Classic"
+    ],
+    "capabilities": {
+      "balcony": false,
+      "veranda": false,
+      "parking": false,
+      "home_office": false,
+      "utility_room": false,
+      "dining_required": true,
+      "servant_quarters": false,
+      "pool": false
+    },
+    "architecturalMetrics": {
+      "usable_room_area": 1108.0,
+      "circulation_area": 120.0,
+      "circulation_ratio": 0.0977,
+      "bounding_box_area": 1300.0,
+      "actual_room_footprint_area": 1228.0,
+      "compactness_ratio": 0.9446,
+      "unused_internal_void_area": 72.0,
+      "longest_hallway_ft": 20.0,
+      "dead_end_hallways": 0,
+      "single_use_hallways": 0,
+      "longest_access_chain": 3,
+      "wet_average_distance_ft": 25.92,
+      "bathroom_cluster_distance_ft": 11.04,
+      "exterior_wall_ratio": 1.0,
+      "extreme_room_proportions": 0
+    },
+    "layout": {
+      "design_id": "aeb94ac0-7172-4454-ad51-2832ea9b3b3a",
+      "floor_count": 1,
+      "total_built_up_area_sqft": 1228.0,
+      "foundation_type": "slab",
+      "terrain_type": "flat",
+      "template_id": "PRO_3B2B1F_LINEAR",
+      "rooms": [
+        {
+          "room_id": "5be8d119-d6e7-4eb4-ad51-545ede053bd0",
+          "room_type": "living_room",
+          "name": "Living",
+          "floor": 1,
+          "x": 0.0,
+          "y": 0.0,
+          "width": 16.0,
+          "length": 18.0,
+          "area_sqft": 288.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "east",
+              "offset": 6.0,
+              "width": 6.0
+            },
+            {
+              "wall": "north",
+              "offset": 10.0,
+              "width": 6.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "91c41fde-65e9-4df3-8f87-95fb1f979fea",
+          "room_type": "kitchen",
+          "name": "Kitchen",
+          "floor": 1,
+          "x": 16.0,
+          "y": 0.0,
+          "width": 10.0,
+          "length": 18.0,
+          "area_sqft": 180.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "west",
+              "offset": 6.0,
+              "width": 6.0
+            },
+            {
+              "wall": "north",
+              "offset": 2.0,
+              "width": 6.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "100ac8bb-de7d-4a29-8453-e9960d3b6eb4",
+          "room_type": "hallway",
+          "name": "Hall",
+          "floor": 1,
+          "x": 10.0,
+          "y": 18.0,
+          "width": 6.0,
+          "length": 20.0,
+          "area_sqft": 120.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "south",
+              "offset": 0.0,
+              "width": 6.0
+            },
+            {
+              "wall": "east",
+              "offset": 2.0,
+              "width": 6.0
+            },
+            {
+              "wall": "west",
+              "offset": 5.5,
+              "width": 3.0
+            },
+            {
+              "wall": "east",
+              "offset": 13.5,
+              "width": 3.0
+            },
+            {
+              "wall": "north",
+              "offset": 1.5,
+              "width": 3.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "b0653395-126c-416c-9b91-48d8d8ac554c",
+          "room_type": "dining_room",
+          "name": "Dining",
+          "floor": 1,
+          "x": 16.0,
+          "y": 18.0,
+          "width": 10.0,
+          "length": 10.0,
+          "area_sqft": 100.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "south",
+              "offset": 2.0,
+              "width": 6.0
+            },
+            {
+              "wall": "west",
+              "offset": 2.0,
+              "width": 6.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "77dba7e1-9ed1-4c00-a7c0-2228d6a9788c",
+          "room_type": "bedroom_1",
+          "name": "Master",
+          "floor": 1,
+          "x": 0.0,
+          "y": 18.0,
+          "width": 10.0,
+          "length": 14.0,
+          "area_sqft": 140.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "east",
+              "offset": 5.5,
+              "width": 3.0
+            },
+            {
+              "wall": "north",
+              "offset": 3.5,
+              "width": 3.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "59f7f888-4c5a-447b-97d4-15ed38463d89",
+          "room_type": "bathroom_attached",
+          "name": "Master Bath",
+          "floor": 1,
+          "x": 0.0,
+          "y": 32.0,
+          "width": 10.0,
+          "length": 6.0,
+          "area_sqft": 60.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "south",
+              "offset": 3.5,
+              "width": 3.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "1a7eb0ec-5c4f-4844-9faf-7efbc746c049",
+          "room_type": "bedroom",
+          "name": "Bed 2",
+          "floor": 1,
+          "x": 16.0,
+          "y": 28.0,
+          "width": 10.0,
+          "length": 10.0,
+          "area_sqft": 100.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "west",
+              "offset": 3.5,
+              "width": 3.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "0ed2551e-4a59-4d0a-b615-19adce50b425",
+          "room_type": "bedroom",
+          "name": "Bed 3",
+          "floor": 1,
+          "x": 16.0,
+          "y": 38.0,
+          "width": 10.0,
+          "length": 12.0,
+          "area_sqft": 120.0,
+          "wall_height": 9.0,
+          "doors": [],
+          "windows": []
+        },
+        {
+          "room_id": "d0a957f1-d4f4-4a10-9372-de0ca9bfba61",
+          "room_type": "bathroom",
+          "name": "Shared Bath",
+          "floor": 1,
+          "x": 6.0,
+          "y": 38.0,
+          "width": 10.0,
+          "length": 12.0,
+          "area_sqft": 120.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "south",
+              "offset": 5.5,
+              "width": 3.0
+            }
+          ],
+          "windows": []
+        }
+      ],
+      "template_family": "LINEAR",
+      "connections": [
+        {
+          "from_room": "5be8d119-d6e7-4eb4-ad51-545ede053bd0",
+          "to_room": "91c41fde-65e9-4df3-8f87-95fb1f979fea",
+          "kind": "open"
+        },
+        {
+          "from_room": "91c41fde-65e9-4df3-8f87-95fb1f979fea",
+          "to_room": "b0653395-126c-416c-9b91-48d8d8ac554c",
+          "kind": "open"
+        },
+        {
+          "from_room": "5be8d119-d6e7-4eb4-ad51-545ede053bd0",
+          "to_room": "100ac8bb-de7d-4a29-8453-e9960d3b6eb4",
+          "kind": "open"
+        },
+        {
+          "from_room": "100ac8bb-de7d-4a29-8453-e9960d3b6eb4",
+          "to_room": "b0653395-126c-416c-9b91-48d8d8ac554c",
+          "kind": "open"
+        },
+        {
+          "from_room": "100ac8bb-de7d-4a29-8453-e9960d3b6eb4",
+          "to_room": "77dba7e1-9ed1-4c00-a7c0-2228d6a9788c",
+          "kind": "door"
+        },
+        {
+          "from_room": "100ac8bb-de7d-4a29-8453-e9960d3b6eb4",
+          "to_room": "1a7eb0ec-5c4f-4844-9faf-7efbc746c049",
+          "kind": "door"
+        },
+        {
+          "from_room": "100ac8bb-de7d-4a29-8453-e9960d3b6eb4",
+          "to_room": "d0a957f1-d4f4-4a10-9372-de0ca9bfba61",
+          "kind": "door"
+        },
+        {
+          "from_room": "77dba7e1-9ed1-4c00-a7c0-2228d6a9788c",
+          "to_room": "59f7f888-4c5a-447b-97d4-15ed38463d89",
+          "kind": "door"
+        }
+      ],
+      "entrances": [
+        {
+          "room_id": "5be8d119-d6e7-4eb4-ad51-545ede053bd0",
+          "wall": "south",
+          "offset": 6.0,
+          "width": 3.0
+        }
+      ],
+      "site_features": [],
+      "candidate_summary": {}
+    }
+  },
+  {
+    "designCode": "PRO_3B2B1F_LSHAPE",
+    "name": "PRO 3B2B1F - LSHAPE",
+    "bedrooms": 3,
+    "bathrooms": 2,
+    "floors": 1,
+    "topologyFamily": "L_SHAPE",
+    "minimumLandSizePerches": 12.0,
+    "maximumLandSizePerches": 20.0,
+    "minimumPlotWidthFt": 40.0,
+    "minimumPlotLengthFt": 50.0,
+    "supportedPlotShapes": [
+      "BALANCED",
+      "DEEP",
+      "WIDE"
+    ],
+    "supportedTerrains": [
+      "FLAT",
+      "GENTLE_SLOPE"
+    ],
+    "supportedStyles": [
+      "Modern Minimalist",
+      "Tropical Modern",
+      "Contemporary",
+      "Classic"
+    ],
+    "capabilities": {
+      "balcony": false,
+      "veranda": false,
+      "parking": false,
+      "home_office": false,
+      "utility_room": false,
+      "dining_required": true,
+      "servant_quarters": false,
+      "pool": false
+    },
+    "architecturalMetrics": {
+      "usable_room_area": 1112.0,
+      "circulation_area": 152.0,
+      "circulation_ratio": 0.1203,
+      "bounding_box_area": 1444.0,
+      "actual_room_footprint_area": 1264.0,
+      "compactness_ratio": 0.8753,
+      "unused_internal_void_area": 180.0,
+      "longest_hallway_ft": 22.0,
+      "dead_end_hallways": 0,
+      "single_use_hallways": 1,
+      "longest_access_chain": 3,
+      "wet_average_distance_ft": 24.03,
+      "bathroom_cluster_distance_ft": 12.87,
+      "exterior_wall_ratio": 1.0,
+      "extreme_room_proportions": 0
+    },
+    "layout": {
+      "design_id": "1dbca4b7-476f-4a0b-930a-181c24273120",
+      "floor_count": 1,
+      "total_built_up_area_sqft": 1264.0,
+      "foundation_type": "slab",
+      "terrain_type": "flat",
+      "template_id": "PRO_3B2B1F_LSHAPE",
+      "rooms": [
+        {
+          "room_id": "9e15601a-4a6a-4e7d-9b9b-6c66153e583e",
+          "room_type": "living_room",
+          "name": "Living",
+          "floor": 1,
+          "x": 0.0,
+          "y": 0.0,
+          "width": 16.0,
+          "length": 16.0,
+          "area_sqft": 256.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "east",
+              "offset": 2.0,
+              "width": 6.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "5ed017ad-ce16-47f0-a04c-3f4d4dc301c1",
+          "room_type": "kitchen",
+          "name": "Kitchen",
+          "floor": 1,
+          "x": 16.0,
+          "y": 0.0,
+          "width": 10.0,
+          "length": 10.0,
+          "area_sqft": 100.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "west",
+              "offset": 2.0,
+              "width": 6.0
+            },
+            {
+              "wall": "east",
+              "offset": 2.0,
+              "width": 6.0
+            },
+            {
+              "wall": "north",
+              "offset": 2.0,
+              "width": 6.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "63a96f27-6333-4cf0-8c0e-25e1e922fd81",
+          "room_type": "dining_room",
+          "name": "Dining",
+          "floor": 1,
+          "x": 26.0,
+          "y": 0.0,
+          "width": 12.0,
+          "length": 10.0,
+          "area_sqft": 120.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "west",
+              "offset": 2.0,
+              "width": 6.0
+            },
+            {
+              "wall": "north",
+              "offset": 3.0,
+              "width": 6.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "4b88c239-8703-4b12-8ab5-54a8035a4965",
+          "room_type": "hallway",
+          "name": "Hall 1",
+          "floor": 1,
+          "x": 16.0,
+          "y": 10.0,
+          "width": 22.0,
+          "length": 4.0,
+          "area_sqft": 88.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "south",
+              "offset": 2.0,
+              "width": 6.0
+            },
+            {
+              "wall": "south",
+              "offset": 13.0,
+              "width": 6.0
+            },
+            {
+              "wall": "north",
+              "offset": 3.5,
+              "width": 3.0
+            },
+            {
+              "wall": "north",
+              "offset": 14.5,
+              "width": 3.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "8399aca6-ff0b-4e50-9a99-88e9604f0805",
+          "room_type": "hallway",
+          "name": "Hall",
+          "floor": 1,
+          "x": 12.0,
+          "y": 14.0,
+          "width": 4.0,
+          "length": 16.0,
+          "area_sqft": 64.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "west",
+              "offset": 7.5,
+              "width": 3.0
+            },
+            {
+              "wall": "north",
+              "offset": 0.5,
+              "width": 3.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "68393a57-2172-4a29-befa-96b1f3e39e50",
+          "room_type": "bedroom",
+          "name": "Bed 2",
+          "floor": 1,
+          "x": 16.0,
+          "y": 14.0,
+          "width": 10.0,
+          "length": 14.0,
+          "area_sqft": 140.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "south",
+              "offset": 3.5,
+              "width": 3.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "e0ca91a8-fc0d-44aa-a1b3-9d4beb67b500",
+          "room_type": "bedroom",
+          "name": "Bed 3",
+          "floor": 1,
+          "x": 26.0,
+          "y": 14.0,
+          "width": 12.0,
+          "length": 14.0,
+          "area_sqft": 168.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "south",
+              "offset": 4.5,
+              "width": 3.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "a819f351-4d91-4a9a-98b1-e1671556a13e",
+          "room_type": "bedroom_1",
+          "name": "Master",
+          "floor": 1,
+          "x": 0.0,
+          "y": 16.0,
+          "width": 12.0,
+          "length": 14.0,
+          "area_sqft": 168.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "east",
+              "offset": 5.5,
+              "width": 3.0
+            },
+            {
+              "wall": "north",
+              "offset": 4.5,
+              "width": 3.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "57002433-35ef-4c4d-a105-1ef6796153be",
+          "room_type": "bathroom_attached",
+          "name": "Master Bath",
+          "floor": 1,
+          "x": 0.0,
+          "y": 30.0,
+          "width": 12.0,
+          "length": 8.0,
+          "area_sqft": 96.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "south",
+              "offset": 4.5,
+              "width": 3.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "57c59846-8957-4a6c-a827-a5e6d9dc2353",
+          "room_type": "bathroom",
+          "name": "Shared Bath",
+          "floor": 1,
+          "x": 12.0,
+          "y": 30.0,
+          "width": 8.0,
+          "length": 8.0,
+          "area_sqft": 64.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "south",
+              "offset": 0.5,
+              "width": 3.0
+            }
+          ],
+          "windows": []
+        }
+      ],
+      "template_family": "L_SHAPE",
+      "connections": [
+        {
+          "from_room": "9e15601a-4a6a-4e7d-9b9b-6c66153e583e",
+          "to_room": "5ed017ad-ce16-47f0-a04c-3f4d4dc301c1",
+          "kind": "open"
+        },
+        {
+          "from_room": "5ed017ad-ce16-47f0-a04c-3f4d4dc301c1",
+          "to_room": "63a96f27-6333-4cf0-8c0e-25e1e922fd81",
+          "kind": "open"
+        },
+        {
+          "from_room": "5ed017ad-ce16-47f0-a04c-3f4d4dc301c1",
+          "to_room": "4b88c239-8703-4b12-8ab5-54a8035a4965",
+          "kind": "open"
+        },
+        {
+          "from_room": "63a96f27-6333-4cf0-8c0e-25e1e922fd81",
+          "to_room": "4b88c239-8703-4b12-8ab5-54a8035a4965",
+          "kind": "open"
+        },
+        {
+          "from_room": "8399aca6-ff0b-4e50-9a99-88e9604f0805",
+          "to_room": "a819f351-4d91-4a9a-98b1-e1671556a13e",
+          "kind": "door"
+        },
+        {
+          "from_room": "8399aca6-ff0b-4e50-9a99-88e9604f0805",
+          "to_room": "57c59846-8957-4a6c-a827-a5e6d9dc2353",
+          "kind": "door"
+        },
+        {
+          "from_room": "4b88c239-8703-4b12-8ab5-54a8035a4965",
+          "to_room": "68393a57-2172-4a29-befa-96b1f3e39e50",
+          "kind": "door"
+        },
+        {
+          "from_room": "4b88c239-8703-4b12-8ab5-54a8035a4965",
+          "to_room": "e0ca91a8-fc0d-44aa-a1b3-9d4beb67b500",
+          "kind": "door"
+        },
+        {
+          "from_room": "a819f351-4d91-4a9a-98b1-e1671556a13e",
+          "to_room": "57002433-35ef-4c4d-a105-1ef6796153be",
+          "kind": "door"
+        }
+      ],
+      "entrances": [
+        {
+          "room_id": "9e15601a-4a6a-4e7d-9b9b-6c66153e583e",
+          "wall": "south",
+          "offset": 6.0,
+          "width": 3.0
+        }
+      ],
+      "site_features": [],
+      "candidate_summary": {}
+    }
+  },
+  {
+    "designCode": "PRO_3B2B1F_COMPACT_ALT",
+    "name": "PRO 3B2B1F - ALT",
+    "bedrooms": 3,
+    "bathrooms": 2,
+    "floors": 1,
+    "topologyFamily": "COMPACT_RECTANGLE",
+    "minimumLandSizePerches": 12.0,
+    "maximumLandSizePerches": 20.0,
+    "minimumPlotWidthFt": 40.0,
+    "minimumPlotLengthFt": 50.0,
+    "supportedPlotShapes": [
+      "BALANCED",
+      "DEEP",
+      "WIDE"
+    ],
+    "supportedTerrains": [
+      "FLAT",
+      "GENTLE_SLOPE"
+    ],
+    "supportedStyles": [
+      "Modern Minimalist",
+      "Tropical Modern",
+      "Contemporary",
+      "Classic"
+    ],
+    "capabilities": {
+      "balcony": false,
+      "veranda": false,
+      "parking": false,
+      "home_office": false,
+      "utility_room": false,
+      "dining_required": true,
+      "servant_quarters": false,
+      "pool": false
+    },
+    "architecturalMetrics": {
+      "usable_room_area": 1140.0,
+      "circulation_area": 120.0,
+      "circulation_ratio": 0.0952,
+      "bounding_box_area": 1260.0,
+      "actual_room_footprint_area": 1260.0,
+      "compactness_ratio": 1.0,
+      "unused_internal_void_area": 0.0,
+      "longest_hallway_ft": 20.0,
+      "dead_end_hallways": 0,
+      "single_use_hallways": 0,
+      "longest_access_chain": 3,
+      "wet_average_distance_ft": 21.27,
+      "bathroom_cluster_distance_ft": 16.37,
+      "exterior_wall_ratio": 1.0,
+      "extreme_room_proportions": 0
+    },
+    "layout": {
+      "design_id": "fbc709be-a7e7-4f67-a8f3-8c8763ef5e86",
+      "floor_count": 1,
+      "total_built_up_area_sqft": 1260.0,
+      "foundation_type": "slab",
+      "terrain_type": "flat",
+      "template_id": "PRO_3B2B1F_COMPACT_ALT",
+      "rooms": [
+        {
+          "room_id": "b661cd80-60f6-471e-9801-daa783867858",
+          "room_type": "bedroom_1",
+          "name": "Master",
+          "floor": 1,
+          "x": 0.0,
+          "y": 0.0,
+          "width": 13.0,
+          "length": 13.0,
+          "area_sqft": 169.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "east",
+              "offset": 9.0,
+              "width": 3.0
+            },
+            {
+              "wall": "east",
+              "offset": 2.5,
+              "width": 3.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "d775099a-18e5-47e7-8030-a056b7a09846",
+          "room_type": "bedroom",
+          "name": "Bed 2",
+          "floor": 1,
+          "x": 0.0,
+          "y": 13.0,
+          "width": 13.0,
+          "length": 12.0,
+          "area_sqft": 156.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "east",
+              "offset": 4.5,
+              "width": 3.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "9cc4d55a-462b-4037-ba89-0ebd1cfa0a49",
+          "room_type": "bedroom",
+          "name": "Bed 3",
+          "floor": 1,
+          "x": 0.0,
+          "y": 25.0,
+          "width": 13.0,
+          "length": 11.0,
+          "area_sqft": 143.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "east",
+              "offset": 0.0,
+              "width": 3.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "9c9b54f1-057d-4cc2-a560-6309ee753ef4",
+          "room_type": "bathroom_attached",
+          "name": "Master Bath",
+          "floor": 1,
+          "x": 13.0,
+          "y": 0.0,
+          "width": 6.0,
+          "length": 8.0,
+          "area_sqft": 48.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "west",
+              "offset": 2.5,
+              "width": 3.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "ef421e7b-983b-4dff-9f1d-265c8d50d3de",
+          "room_type": "hallway",
+          "name": "Hall",
+          "floor": 1,
+          "x": 13.0,
+          "y": 8.0,
+          "width": 6.0,
+          "length": 20.0,
+          "area_sqft": 120.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "east",
+              "offset": 13.0,
+              "width": 6.0
+            },
+            {
+              "wall": "east",
+              "offset": 4.0,
+              "width": 6.0
+            },
+            {
+              "wall": "west",
+              "offset": 1.0,
+              "width": 3.0
+            },
+            {
+              "wall": "west",
+              "offset": 9.5,
+              "width": 3.0
+            },
+            {
+              "wall": "west",
+              "offset": 17.0,
+              "width": 3.0
+            },
+            {
+              "wall": "north",
+              "offset": 1.5,
+              "width": 3.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "6511e61e-8a38-4fe4-b9f5-fea68a651cf4",
+          "room_type": "bathroom",
+          "name": "Shared Bath",
+          "floor": 1,
+          "x": 13.0,
+          "y": 28.0,
+          "width": 6.0,
+          "length": 8.0,
+          "area_sqft": 48.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "south",
+              "offset": 1.5,
+              "width": 3.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "d66d5e43-896b-4212-8b51-237bd0970865",
+          "room_type": "living_room",
+          "name": "Living",
+          "floor": 1,
+          "x": 19.0,
+          "y": 20.0,
+          "width": 16.0,
+          "length": 16.0,
+          "area_sqft": 256.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "south",
+              "offset": 5.0,
+              "width": 6.0
+            },
+            {
+              "wall": "west",
+              "offset": 1.0,
+              "width": 6.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "65ecc976-0ff9-4398-8485-414303702296",
+          "room_type": "kitchen",
+          "name": "Kitchen",
+          "floor": 1,
+          "x": 19.0,
+          "y": 10.0,
+          "width": 16.0,
+          "length": 10.0,
+          "area_sqft": 160.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "north",
+              "offset": 5.0,
+              "width": 6.0
+            },
+            {
+              "wall": "south",
+              "offset": 5.0,
+              "width": 6.0
+            },
+            {
+              "wall": "west",
+              "offset": 2.0,
+              "width": 6.0
+            }
+          ],
+          "windows": []
+        },
+        {
+          "room_id": "859608aa-1554-4eb7-ab48-a66e009397b6",
+          "room_type": "dining_room",
+          "name": "Dining",
+          "floor": 1,
+          "x": 19.0,
+          "y": 0.0,
+          "width": 16.0,
+          "length": 10.0,
+          "area_sqft": 160.0,
+          "wall_height": 9.0,
+          "doors": [
+            {
+              "wall": "north",
+              "offset": 5.0,
+              "width": 6.0
+            }
+          ],
+          "windows": []
+        }
+      ],
+      "template_family": "COMPACT_RECTANGLE",
+      "connections": [
+        {
+          "from_room": "d66d5e43-896b-4212-8b51-237bd0970865",
+          "to_room": "65ecc976-0ff9-4398-8485-414303702296",
+          "kind": "open"
+        },
+        {
+          "from_room": "65ecc976-0ff9-4398-8485-414303702296",
+          "to_room": "859608aa-1554-4eb7-ab48-a66e009397b6",
+          "kind": "open"
+        },
+        {
+          "from_room": "d66d5e43-896b-4212-8b51-237bd0970865",
+          "to_room": "ef421e7b-983b-4dff-9f1d-265c8d50d3de",
+          "kind": "open"
+        },
+        {
+          "from_room": "65ecc976-0ff9-4398-8485-414303702296",
+          "to_room": "ef421e7b-983b-4dff-9f1d-265c8d50d3de",
+          "kind": "open"
+        },
+        {
+          "from_room": "ef421e7b-983b-4dff-9f1d-265c8d50d3de",
+          "to_room": "b661cd80-60f6-471e-9801-daa783867858",
+          "kind": "door"
+        },
+        {
+          "from_room": "ef421e7b-983b-4dff-9f1d-265c8d50d3de",
+          "to_room": "d775099a-18e5-47e7-8030-a056b7a09846",
+          "kind": "door"
+        },
+        {
+          "from_room": "ef421e7b-983b-4dff-9f1d-265c8d50d3de",
+          "to_room": "9cc4d55a-462b-4037-ba89-0ebd1cfa0a49",
+          "kind": "door"
+        },
+        {
+          "from_room": "ef421e7b-983b-4dff-9f1d-265c8d50d3de",
+          "to_room": "6511e61e-8a38-4fe4-b9f5-fea68a651cf4",
+          "kind": "door"
+        },
+        {
+          "from_room": "b661cd80-60f6-471e-9801-daa783867858",
+          "to_room": "9c9b54f1-057d-4cc2-a560-6309ee753ef4",
+          "kind": "door"
+        }
+      ],
+      "entrances": [
+        {
+          "room_id": "d66d5e43-896b-4212-8b51-237bd0970865",
+          "wall": "south",
+          "offset": 6.0,
+          "width": 3.0
+        }
+      ],
+      "site_features": [],
+      "candidate_summary": {}
+    }
   }
 ]

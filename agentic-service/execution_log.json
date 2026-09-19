@@ -4,7 +4,7 @@
     "action": "Design generation failed; no layout submitted",
     "tool_called": "layout_generation_tool",
     "duration_ms": null,
-    "result": "Architectural quality validation failed.",
-    "created_at_utc": "2026-09-19T06:28:53.775237+00:00"
+    "result": "No compatible validated base plans exist for the supplied requirements.",
+    "created_at_utc": "2026-09-19T08:28:59.069631+00:00"
   }
 ]

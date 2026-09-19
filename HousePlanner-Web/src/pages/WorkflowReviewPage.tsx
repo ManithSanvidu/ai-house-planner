@@ -77,9 +77,26 @@ export const WorkflowReviewPage: React.FC = () => {
   }
 
   if (workflow?.status === 'failed') {
-    return <div role="alert" className="p-8 text-center">
-      <h2>Design generation could not complete</h2>
-      <p>{workflow.failureReason || (workflow.terrainType === 'unknown'
+    let failureData = null;
+    try {
+      failureData = JSON.parse(workflow.failureReason || '');
+    } catch (e) {
+      // Ignored
+    }
+
+    if (failureData?.code === 'BUILDABLE_ENVELOPE_VIOLATION') {
+      return <div role="alert" className="p-8 max-w-xl mx-auto text-center mt-10 bg-white rounded-3xl shadow-sm border border-zinc-200">
+        <h2 className="text-2xl font-bold text-red-600 mb-3">Design generation could not complete</h2>
+        <p className="text-zinc-600 mb-6">{failureData.message}</p>
+        <div className="flex justify-center gap-4">
+           <Link to="/dashboard/new-project" className="px-5 py-2.5 rounded-xl border border-zinc-300 font-bold hover:bg-zinc-50">Edit Land Details</Link>
+        </div>
+      </div>;
+    }
+
+    return <div role="alert" className="p-8 text-center mt-10">
+      <h2 className="text-2xl font-bold text-red-600 mb-3">Design generation could not complete</h2>
+      <p className="text-zinc-600">{workflow.failureReason || (workflow.terrainType === 'unknown'
         ? 'Provide a manual terrain classification and submit again.'
         : 'No valid layout was saved. Review plot dimensions and room requirements, then submit again.')}</p>
     </div>;

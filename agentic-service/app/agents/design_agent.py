@@ -1,4 +1,4 @@
-﻿"""
+"""
 Design Agent — LangGraph node.
 
 Generates validated procedural house layouts and
@@ -166,4 +166,17 @@ def _safe_failure_reason(state: WorkflowState) -> str:
         messages.extend(item.get('failures', [])[:2])
     if not messages:
         messages = validation.get('failures', ['Design generation failed.'])
+        
+    if messages:
+        first = str(messages[0]).strip()
+        if first.startswith('{"code":'):
+            import json
+            try:
+                data = json.loads(first)
+                # If we exhausted the pool, there are no more alternatives.
+                data['hasAlternatives'] = False 
+                return json.dumps(data)
+            except:
+                return first
+
     return ' '.join(str(message) for message in messages)[:1000]

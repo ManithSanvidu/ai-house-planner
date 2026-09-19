@@ -288,6 +288,15 @@ def compatibility_rejection_reasons(plan: BasePlanRecord, req: Requirements,
         shape = 'NARROW'
     if shape not in plan.supported_plot_shapes and plot.plot_class.split('_')[0] not in plan.supported_plot_shapes:
         reasons.append('plot_shape')
+
+    min_x = min((r.x for r in plan.design.rooms), default=0)
+    min_y = min((r.y for r in plan.design.rooms), default=0)
+    max_x = max((r.x + r.width for r in plan.design.rooms), default=0)
+    max_y = max((r.y + r.length for r in plan.design.rooms), default=0)
+    if max_x - min_x > plot.buildable_width + 0.001:
+        reasons.append('footprint_width')
+    if max_y - min_y > plot.buildable_length + 0.001:
+        reasons.append('footprint_length')
         
     # Hard capability requirements: if the user explicitly selected these, the plan MUST support them.
     # Note: Soft suitability preferences (like space_priority or style) only affect ranking score, not filtering.

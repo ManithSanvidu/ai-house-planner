@@ -210,6 +210,7 @@ def _validate_spatial_rules(result: GeometryValidationResult, rooms: List[RoomLa
         result.fail('floor_count', 'Floors must be contiguous starting at 1.')
     if expected_floors == 1 and any(room_kind(r.room_type) == 'staircase' for r in rooms):
         result.fail('stair_forbidden', 'Single-floor designs must not contain a staircase or stair core.')
+    out_of_bounds = []
     for room in rooms:
         rule = rule_for(room.room_type)
         dims, minimum = sorted((room.width, room.length)), sorted((rule.min_width, rule.min_length))
@@ -219,11 +220,18 @@ def _validate_spatial_rules(result: GeometryValidationResult, rooms: List[RoomLa
             result.fail('aspect_ratio', f'{room.name} is excessively narrow.')
         if room.x < -0.001 or room.y < -0.001 or (plot and
                 (room.x+room.width > plot.buildable_width+0.001 or room.y+room.length > plot.buildable_length+0.001)):
-            result.fail('building_bounds', f'{room.name} lies outside the buildable boundary.')
+            out_of_bounds.append(room.name or room.room_id)
         for opening in room.doors + room.windows:
             span = room.width if opening.wall in ('north', 'south') else room.length
             if not all(isfinite(v) for v in (opening.offset, opening.width)) or opening.offset < 0 or opening.width <= 0 or opening.offset+opening.width > span+0.001:
                 result.fail('opening_bounds', f'{room.name} has an opening outside its wall.')
+    if out_of_bounds:
+        import json
+        result.fail('building_bounds', json.dumps({
+            "code": "BUILDABLE_ENVELOPE_VIOLATION",
+            "message": "The selected design does not fit within the available building area after setbacks.",
+            "affectedRooms": out_of_bounds
+        }))
     # Geometric components are checked even for legacy callers without metadata.
     for floor in range(1, expected_floors+1):
         rs = [r for r in rooms if r.floor == floor]
