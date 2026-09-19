@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/land_submission.dart';
+import '../core/network/api_client.dart';
 
 // Provides the current state of the intake form
 final intakeProvider = StateNotifierProvider<IntakeNotifier, AsyncValue<LandSubmission>>((ref) {
@@ -44,35 +45,49 @@ class IntakeNotifier extends StateNotifier<AsyncValue<LandSubmission>> {
     state = AsyncValue.data(currentData.copyWith(clearPhoto: true));
   }
 
-  Future<bool> submitIntake() async {
+  Future<String?> submitIntake() async {
     final data = state.value;
-    if (data == null || !data.isValid) return false;
+    if (data == null || !data.isValid) return null;
 
     state = const AsyncValue.loading();
     
     try {
-      // TODO: Connect this to your API client (e.g., using Dio)
-      // Example implementation:
-      // final formData = FormData.fromMap({
-      //   'BudgetLkr': data.budgetLkr,
-      //   'LandSizePerches': data.landSizePerches,
-      //   'PreferredBedrooms': data.preferredBedrooms,
-      //   'PreferredFloors': data.preferredFloors,
-      //   'StylePreference': data.stylePreference,
-      //   if (data.manualTerrainType != null) 'ManualTerrainType': data.manualTerrainType,
-      //   if (data.landPhoto != null)
-      //     'LandPhoto': await MultipartFile.fromFile(data.landPhoto!.path),
-      // });
-      // await apiClient.post('/api/v1/intake', data: formData);
-      
-      // Simulating a network delay for the AI orchestration
-      await Future.delayed(const Duration(seconds: 3));
+      final payload = {
+        'landSizePerches': data.landSizePerches,
+        'manualTerrainType': data.manualTerrainType,
+        'budgetLkr': data.budgetLkr,
+        'preferences': {
+          'bedrooms': data.preferredBedrooms ?? 3,
+          'bathrooms': 1,
+          'floors': data.preferredFloors ?? 1,
+          'architecturalStyle': data.stylePreference ?? 'Modern Minimalist',
+          'openPlan': false,
+          'masterEnsuite': false,
+          'separateDining': false,
+          'homeOffice': false,
+          'balcony': false,
+          'veranda': false,
+          'utilityRoom': false,
+          'parkingRequired': false,
+          'accessibility': false,
+          'spacePriority': 'balanced',
+          'circulationPreference': 'space_efficient'
+        },
+        'plotConstraints': {
+          'road_side': 'south',
+          'north_direction': 'north',
+          'entrance_side': 'south'
+        },
+        'designSeed': 12345,
+      };
+
+      final response = await ApiClient.instance.post('/ai-generation/generate', data: payload);
       
       state = AsyncValue.data(data); // Revert to data state on success
-      return true;
+      return response.data['workflowId'] as String?;
     } catch (e, st) {
       state = AsyncValue.error(e, st);
-      return false;
+      return null;
     }
   }
 }

@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import '../providers/intake_provider.dart';
 import '../models/land_submission.dart';
 import 'package:go_router/go_router.dart';
+import '../core/theme/app_tokens.dart';
 
 class IntakeView extends ConsumerStatefulWidget{
   const IntakeView({super.key});
@@ -24,14 +25,12 @@ class _IntakeViewState extends ConsumerState<IntakeView>{
       ref.read(intakeProvider.notifier).setPhoto(File(image.path));
     }
   }
-   void _submit() async {
+  
+  void _submit() async {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
       final workflowId = await ref.read(intakeProvider.notifier).submitIntake();
       if (workflowId != null && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Analyzing land and generating design...'), backgroundColor: Colors.green),
-        );
         context.go('/design/$workflowId');
       }
     }
@@ -39,220 +38,394 @@ class _IntakeViewState extends ConsumerState<IntakeView>{
 
   @override
   Widget build(BuildContext context){
-    final intakeState=ref.watch(intakeProvider);
-    final theme=Theme.of(context);
+    final intakeState = ref.watch(intakeProvider);
 
     return Scaffold(
-      extendBodyBehindAppBar: true,
+      backgroundColor: AppTokens.bg,
       appBar: AppBar(
-        title: const Text('New Project', style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppTokens.bg,
         elevation: 0,
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () {
-              Navigator.pushReplacementNamed(context, '/login');
-            },
-          ),
-        ],
-      ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFF3F4F6), Color(0xFFE5E7EB)],
-          ),
-        ),
-        child: intakeState.when(
-          loading: () => _buildLoadingOverlay(),
-          error: (err, stack) => Center(child: Text('Error: $err')),
-          data: (data) => _buildForm(data, theme),
-        ),
-      ),
-    );
-  }
- Widget _buildLoadingOverlay() {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CircularProgressIndicator(color: Colors.indigo),
-          SizedBox(height: 24),
-          Text('AI is processing your requirements...', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
-        ],
-      ),
-    );
-  }
-
-   Widget _buildForm(LandSubmission data, ThemeData theme) {
-    return SafeArea(
-      child: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-          physics: const BouncingScrollPhysics(),
-          children: [
-            _buildSectionHeader('Budget & Land Size'),
-            _buildCard([
-              _buildTextField(
-                label: 'Total Budget (LKR)',
-                icon: Icons.account_balance_wallet_outlined,
-                keyboardType: TextInputType.number,
-                validator: (val) => val == null || val.isEmpty ? 'Required' : null,
-                onSaved: (val) => ref.read(intakeProvider.notifier).updateField(budgetLkr: double.tryParse(val!)),
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 16.0),
+          child: IconButton(
+            icon: const Icon(Icons.arrow_back, color: AppTokens.ink),
+            onPressed: () => context.go('/dashboard'),
+            style: IconButton.styleFrom(
+              backgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: const BorderSide(color: AppTokens.line),
               ),
-              const Divider(height: 30),
-              _buildTextField(
-                label: 'Land Size (Perches)',
-                icon: Icons.landscape_outlined,
-                keyboardType: TextInputType.number,
-                validator: (val) => val == null || val.isEmpty ? 'Required' : null,
-                onSaved: (val) => ref.read(intakeProvider.notifier).updateField(landSizePerches: double.tryParse(val!)),
-              ),
-            ]),
-            const SizedBox(height: 24),
-            _buildSectionHeader('Terrain Analysis'),
-            _buildCard([
-              const Text(
-                'Upload a photo of your land for AI terrain analysis, or select the terrain type manually.',
-                style: TextStyle(color: Colors.grey, fontSize: 13),
-              ),
-              const SizedBox(height: 16),
-              data.landPhoto != null
-                  ? _buildPhotoPreview(data.landPhoto!)
-                  : _buildPhotoUploadButton(),
-              if (data.landPhoto == null) ...[
-                const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
-                  decoration: _inputDecoration('Manual Terrain Type', Icons.terrain_outlined),
-                  items: const [
-                    DropdownMenuItem(value: 'hillside', child: Text('Hillside')),
-                    DropdownMenuItem(value: 'coastal', child: Text('Coastal')),
-                    DropdownMenuItem(value: 'flat', child: Text('Flat/Urban')),
-                    DropdownMenuItem(value: 'forested', child: Text('Forested')),
-                  ],
-                  onChanged: (val) => ref.read(intakeProvider.notifier).updateField(manualTerrainType: val),
-                  validator: (val) => (data.landPhoto == null && val == null) ? 'Required if no photo' : null,
-                ),
-              ]
-            ]),
-
-            const SizedBox(height: 24),
-            _buildSectionHeader('Preferences'),
-            _buildCard([
-              DropdownButtonFormField<int>(
-                decoration: _inputDecoration('Preferred Bedrooms', Icons.bed_outlined),
-                items: [1, 2, 3, 4, 5].map((e) => DropdownMenuItem(value: e, child: Text('$e Bedrooms'))).toList(),
-                onChanged: (val) => ref.read(intakeProvider.notifier).updateField(preferredBedrooms: val),
-                validator: (val) => val == null ? 'Required' : null,
-              ),
-              const Divider(height: 30),
-              DropdownButtonFormField<int>(
-                decoration: _inputDecoration('Preferred Floors', Icons.stairs_outlined),
-                items: [1, 2, 3].map((e) => DropdownMenuItem(value: e, child: Text('$e Floors'))).toList(),
-                onChanged: (val) => ref.read(intakeProvider.notifier).updateField(preferredFloors: val),
-                validator: (val) => val == null ? 'Required' : null,
-              ),
-              const Divider(height: 30),
-              DropdownButtonFormField<String>(
-                decoration: _inputDecoration('Architectural Style', Icons.architecture_outlined),
-                items: const [
-                  DropdownMenuItem(value: 'modern', child: Text('Modern')),
-                  DropdownMenuItem(value: 'traditional', child: Text('Traditional')),
-                  DropdownMenuItem(value: 'minimalist', child: Text('Minimalist')),
-                ],
-                onChanged: (val) => ref.read(intakeProvider.notifier).updateField(stylePreference: val),
-              ),
-            ]),
-            const SizedBox(height: 32),
-            ElevatedButton(
-              onPressed: data.isValid ? _submit : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.indigo,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 18),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                elevation: 2,
-              ),
-              child: const Text('Generate Design & Estimate', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             ),
-            const SizedBox(height: 40),
+          ),
+        ),
+        title: const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('New Project Setup', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18, color: AppTokens.ink)),
+            Text('Land details & preferences', style: TextStyle(fontSize: 12, color: AppTokens.inkMute)),
           ],
         ),
       ),
-    );
-  }
-  Widget _buildSectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12, left: 4),
-      child: Text(
-        title,
-        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF1F2937)),
+      body: intakeState.when(
+        loading: () => const Center(child: CircularProgressIndicator(color: AppTokens.ink)),
+        error: (err, stack) => Center(child: Text('Error: $err')),
+        data: (data) => _buildForm(data),
       ),
     );
   }
-  Widget _buildCard(List<Widget> children) {
+
+  Widget _buildForm(LandSubmission data) {
+    return Column(
+      children: [
+        // Progress Bar
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+          child: Row(
+            children: [
+              Expanded(child: Divider(color: AppTokens.accent, thickness: 3)),
+              SizedBox(width: 4),
+              Expanded(child: Divider(color: AppTokens.line, thickness: 3)),
+              SizedBox(width: 4),
+              Expanded(child: Divider(color: AppTokens.line, thickness: 3)),
+            ],
+          ),
+        ),
+        Expanded(
+          child: Form(
+            key: _formKey,
+            child: ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              physics: const BouncingScrollPhysics(),
+              children: [
+                _buildCard(
+                  title: 'Budget & Land',
+                  icon: Icons.attach_money,
+                  children: [
+                    const Text('Total budget (LKR) · optional', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppTokens.inkSoft)),
+                    const SizedBox(height: 8),
+                    _buildTextField(
+                      hint: 'e.g. 15,000,000',
+                      keyboardType: TextInputType.number,
+                      validator: (val) => null,
+                      onSaved: (val) => ref.read(intakeProvider.notifier).updateField(budgetLkr: double.tryParse(val ?? '')),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 2,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Land size', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppTokens.inkSoft)),
+                              const SizedBox(height: 8),
+                              _buildTextField(
+                                hint: '10',
+                                keyboardType: TextInputType.number,
+                                validator: (val) => val == null || val.isEmpty ? 'Required' : null,
+                                onSaved: (val) => ref.read(intakeProvider.notifier).updateField(landSizePerches: double.tryParse(val!)),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          flex: 1,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Unit', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppTokens.inkSoft)),
+                              const SizedBox(height: 8),
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF6F2F4),
+                                  borderRadius: BorderRadius.circular(AppTokens.radiusField),
+                                  border: Border.all(color: AppTokens.line),
+                                ),
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                                child: const Text('Perches', style: TextStyle(fontSize: 14.5, color: AppTokens.ink)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                
+                _buildCard(
+                  title: 'Terrain',
+                  icon: Icons.terrain,
+                  children: [
+                    data.landPhoto != null
+                        ? _buildPhotoPreview(data.landPhoto!)
+                        : _buildPhotoUploadButton(),
+                    const SizedBox(height: 24),
+                    const Text('Terrain fallback type', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppTokens.inkSoft)),
+                    const SizedBox(height: 8),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF6F2F4),
+                        borderRadius: BorderRadius.circular(AppTokens.radiusField),
+                        border: Border.all(color: AppTokens.line),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: data.manualTerrainType ?? 'flat',
+                          isExpanded: true,
+                          icon: const Icon(Icons.keyboard_arrow_down, color: AppTokens.inkMute),
+                          style: const TextStyle(fontSize: 14.5, color: AppTokens.ink),
+                          items: const [
+                            DropdownMenuItem(value: 'hillside', child: Text('Hillside')),
+                            DropdownMenuItem(value: 'coastal', child: Text('Coastal')),
+                            DropdownMenuItem(value: 'flat', child: Text('Flat / Urban')),
+                            DropdownMenuItem(value: 'forested', child: Text('Forested')),
+                          ],
+                          onChanged: (val) => ref.read(intakeProvider.notifier).updateField(manualTerrainType: val),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                
+                _buildCard(
+                  title: 'Design Preferences',
+                  icon: Icons.grid_view_rounded,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(child: _buildDropdown('Beds', [1, 2, 3, 4, 5], (val) => ref.read(intakeProvider.notifier).updateField(preferredBedrooms: val))),
+                        const SizedBox(width: 12),
+                        Expanded(child: _buildDropdown('Baths', [1, 2, 3, 4], (val) {
+                          // Note: API hardcodes bathrooms to 1 currently, so we don't update provider
+                        })),
+                        const SizedBox(width: 12),
+                        Expanded(child: _buildDropdown('Floors', [1, 2, 3], (val) => ref.read(intakeProvider.notifier).updateField(preferredFloors: val))),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    const Text('Architectural style', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppTokens.inkSoft)),
+                    const SizedBox(height: 8),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF6F2F4),
+                        borderRadius: BorderRadius.circular(AppTokens.radiusField),
+                        border: Border.all(color: AppTokens.line),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: data.stylePreference ?? 'modern',
+                          isExpanded: true,
+                          icon: const Icon(Icons.keyboard_arrow_down, color: AppTokens.inkMute),
+                          style: const TextStyle(fontSize: 14.5, color: AppTokens.ink),
+                          items: const [
+                            DropdownMenuItem(value: 'modern', child: Text('Modern Minimalist')),
+                            DropdownMenuItem(value: 'traditional', child: Text('Traditional')),
+                            DropdownMenuItem(value: 'contemporary', child: Text('Contemporary')),
+                          ],
+                          onChanged: (val) => ref.read(intakeProvider.notifier).updateField(stylePreference: val),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 12,
+                      children: [
+                        _buildChip('Open plan'),
+                        _buildChip('Master ensuite', isActive: true),
+                        _buildChip('Home office'),
+                        _buildChip('Balcony', isActive: true),
+                        _buildChip('Parking'),
+                        _buildChip('Accessible'),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 80),
+              ],
+            ),
+          ),
+        ),
+        
+        // Sticky Submit Bar
+        Container(
+          padding: const EdgeInsets.all(24),
+          decoration: const BoxDecoration(
+            color: AppTokens.bg,
+            border: Border(top: BorderSide(color: AppTokens.line)),
+          ),
+          child: ElevatedButton(
+            onPressed: data.isValid ? _submit : null,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTokens.ink,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 18),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTokens.radiusButton)),
+              minimumSize: const Size(double.infinity, 0),
+              elevation: 0,
+            ),
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text('Generate AI Plan', style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold)),
+                SizedBox(width: 8),
+                Icon(Icons.auto_awesome, size: 16), // ✦
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDropdown(String label, List<int> items, void Function(int?) onChanged) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppTokens.inkSoft)),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFFF6F2F4),
+            borderRadius: BorderRadius.circular(AppTokens.radiusField),
+            border: Border.all(color: AppTokens.line),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<int>(
+              value: items.first, // simple stub for value tracking
+              isExpanded: true,
+              icon: const Icon(Icons.keyboard_arrow_down, color: AppTokens.inkMute, size: 20),
+              style: const TextStyle(fontSize: 14.5, color: AppTokens.ink),
+              items: items.map((e) => DropdownMenuItem(value: e, child: Text('$e'))).toList(),
+              onChanged: onChanged,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildChip(String label, {bool isActive = false}) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4)),
+        color: isActive ? AppTokens.accentSoft : Colors.white,
+        borderRadius: BorderRadius.circular(AppTokens.radiusPill),
+        border: Border.all(color: isActive ? AppTokens.accent : AppTokens.line),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: isActive ? AppTokens.accent : AppTokens.inkSoft,
+          fontSize: 12.5,
+          fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCard({required String title, required IconData icon, required List<Widget> children}) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: AppTokens.card,
+        borderRadius: BorderRadius.circular(AppTokens.radiusCardSolid),
+        border: Border.all(color: AppTokens.line),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x1F0B0B14),
+            blurRadius: 26,
+            offset: Offset(0, 10),
+            spreadRadius: -14,
+          )
         ],
       ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: AppTokens.accentSoft,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: AppTokens.accent, size: 16),
+              ),
+              const SizedBox(width: 12),
+              Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppTokens.ink)),
+            ],
+          ),
+          const SizedBox(height: 24),
+          ...children,
+        ],
+      ),
     );
   }
+
   Widget _buildTextField({
-    required String label,
-    required IconData icon,
+    required String hint,
     required FormFieldSetter<String> onSaved,
     required FormFieldValidator<String> validator,
     TextInputType? keyboardType,
   }) {
-    return TextFormField(
-      keyboardType: keyboardType,
-      decoration: _inputDecoration(label, icon),
-      validator: validator,
-      onSaved: onSaved,
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFF6F2F4),
+        borderRadius: BorderRadius.circular(AppTokens.radiusField),
+        border: Border.all(color: AppTokens.line),
+      ),
+      child: TextFormField(
+        keyboardType: keyboardType,
+        style: const TextStyle(fontSize: 14.5, color: AppTokens.ink),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: const TextStyle(color: AppTokens.inkMute, fontSize: 14.5),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        ),
+        validator: validator,
+        onSaved: onSaved,
+      ),
     );
   }
-  InputDecoration _inputDecoration(String label, IconData icon) {
-    return InputDecoration(
-      labelText: label,
-      prefixIcon: Icon(icon, color: Colors.indigo.shade300),
-      border: InputBorder.none,
-      filled: true,
-      fillColor: Colors.grey.shade50,
-      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade200)),
-      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.indigo, width: 2)),
-      errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.red.shade300)),
-      focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.red.shade400, width: 2)),
-    );
-  }
+
   Widget _buildPhotoUploadButton() {
     return InkWell(
       onTap: _pickImage,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(AppTokens.radiusSection),
       child: Container(
-        height: 100,
+        height: 120,
         width: double.infinity,
         decoration: BoxDecoration(
-          color: Colors.indigo.shade50,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.indigo.shade200, style: BorderStyle.solid),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(AppTokens.radiusSection),
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.add_a_photo_outlined, color: Colors.indigo.shade400, size: 32),
-            const SizedBox(height: 8),
-            Text('Upload Land Photo', style: TextStyle(color: Colors.indigo.shade600, fontWeight: FontWeight.w500)),
-          ],
+        // Faking a dashed border with a solid light border for now
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: AppTokens.line, width: 2),
+            borderRadius: BorderRadius.circular(AppTokens.radiusSection),
+          ),
+          child: const Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.upload_rounded, color: AppTokens.inkMute, size: 32),
+              SizedBox(height: 12),
+              Text('Upload a land photo, or choose terrain manually', 
+                style: TextStyle(color: AppTokens.inkMute, fontSize: 11.5, fontWeight: FontWeight.w500),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -262,7 +435,7 @@ class _IntakeViewState extends ConsumerState<IntakeView>{
     return Stack(
       children: [
         ClipRRect(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppTokens.radiusSection),
           child: kIsWeb 
               ? Image.network(photo.path, height: 160, width: double.infinity, fit: BoxFit.cover)
               : Image.file(photo, height: 160, width: double.infinity, fit: BoxFit.cover),
@@ -282,5 +455,4 @@ class _IntakeViewState extends ConsumerState<IntakeView>{
       ],
     );
   }
-
 }

@@ -36,8 +36,11 @@ class Plan {
   });
 
   factory Plan.fromJson(Map<String, dynamic> json) {
+    String? thumb = json['thumbnailUrl'] as String?;
+    List<String> images = thumb != null && thumb.isNotEmpty ? [thumb] : [];
+    
     return Plan(
-      id: json['id'] ?? '',
+      id: json['id']?.toString() ?? '',
       name: json['name'] ?? '',
       description: json['description'] ?? '',
       style: json['style'] ?? '',
@@ -45,7 +48,7 @@ class Plan {
       squareFootage: json['squareFootage'] ?? 0,
       bedrooms: json['bedrooms'] ?? 0,
       bathrooms: json['bathrooms'] ?? 0,
-      imageUrls: List<String>.from(json['imageUrls'] ?? []),
+      imageUrls: images,
       designCode: json['designCode'] ?? json['id']?.toString().substring(0, 5) ?? 'P-001',
       category: json['category'] ?? 'Standard',
       suitableTerrain: json['suitableTerrain'] ?? 'Flat',
