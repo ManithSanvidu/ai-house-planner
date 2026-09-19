@@ -54,6 +54,13 @@ export interface HouseDesignSummaryDto {
 
 }
 
+export interface CostSummaryDto {
+  materialCostLkr: number;
+  labourCostLkr: number;
+  totalCostLkr: number;
+  budgetDeltaPercent: number;
+}
+
 export interface ConstructionPhaseDto {
   id: number;
   name: string;
@@ -85,7 +92,7 @@ export interface WorkflowStatusResponseDto {
   terrainType: string | null;
   slopeEstimate: string | null;
   design: HouseDesignSummaryDto | null;
-  cost: any | null; // Expand when Component C is integrated
+  cost: CostSummaryDto | null;
   constructionPlan:ConstructionPlanSummaryDto|null;
   approvalStatus: string;
   failureReason?: string | null;

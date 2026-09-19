@@ -13,6 +13,11 @@ def route_from_coordinator(state: WorkflowState) -> str:
     """Conditional edge router from the Coordinator"""
     return state.current_agent
 
+
+def route_after_cost_estimation(state: WorkflowState) -> str:
+    """Stop the workflow when cost calculation or persistence failed."""
+    return "failed" if state.status == "failed" else "validation"
+
 # Initialize the State Graph
 workflow = StateGraph(WorkflowState)
 # Add Nodes
@@ -42,7 +47,11 @@ workflow.add_conditional_edges(
     {"failed": END, "construction_planning": "construction_planning"},
 )
 workflow.add_edge("construction_planning", "cost_estimation")
-workflow.add_edge("cost_estimation", "validation")
+workflow.add_conditional_edges(
+    "cost_estimation",
+    route_after_cost_estimation,
+    {"failed": END, "validation": "validation"},
+)
 workflow.add_edge("validation", END)
 workflow.add_edge("rendering", END)
 app_graph = workflow.compile()

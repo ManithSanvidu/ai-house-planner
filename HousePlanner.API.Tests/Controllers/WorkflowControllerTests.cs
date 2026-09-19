@@ -99,6 +99,16 @@ public class WorkflowControllerTests
             Rooms = new List<Room>
             {
                 new Room { Id = Guid.NewGuid(), RoomType = "living_room", FloorNumber = 1, X = 0, Y = 0, Width = 10, Length = 10, AreaSqft = 100 }
+            },
+            CostEstimates = new List<CostEstimate>
+            {
+                new CostEstimate
+                {
+                    MaterialCostLkr = 500000m,
+                    LabourCostLkr = 150000m,
+                    TotalCostLkr = 650000m,
+                    BudgetDeltaPercent = 65m
+                }
             }
         };
 
@@ -127,5 +137,10 @@ public class WorkflowControllerTests
         Assert.Equal(1500m, response.Design.TotalBuiltUpAreaSqft);
         Assert.Single(response.Design.Rooms);
         Assert.Equal("living_room", response.Design.Rooms[0].RoomType);
+        Assert.NotNull(response.Cost);
+        Assert.Equal(500000m, response.Cost.MaterialCostLkr);
+        Assert.Equal(150000m, response.Cost.LabourCostLkr);
+        Assert.Equal(650000m, response.Cost.TotalCostLkr);
+        Assert.Equal(65m, response.Cost.BudgetDeltaPercent);
     }
 }

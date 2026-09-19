@@ -262,7 +262,6 @@ public class InternalWorkflowController : ControllerBase
                 existingEstimate.LabourCostLkr = request.LabourCostLkr;
                 existingEstimate.TotalCostLkr = request.TotalCostLkr;
                 existingEstimate.BudgetDeltaPercent = request.BudgetDeltaPercent;
-                existingEstimate.CreatedAt = DateTimeOffset.UtcNow;
                 estimate = existingEstimate;
             }
             else
@@ -280,7 +279,26 @@ public class InternalWorkflowController : ControllerBase
             }
 
             workflow.UpdatedAt = DateTimeOffset.UtcNow;
-            await _context.SaveChangesAsync();
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException) when (existingEstimate is null)
+            {
+                // A concurrent retry may have inserted the unique row after our read.
+                _context.Entry(estimate).State = EntityState.Detached;
+                var concurrentEstimate = await _context.CostEstimates
+                    .SingleOrDefaultAsync(c => c.HouseDesignId == currentDesign.Id);
+                if (concurrentEstimate is null)
+                    throw;
+
+                concurrentEstimate.MaterialCostLkr = request.MaterialCostLkr;
+                concurrentEstimate.LabourCostLkr = request.LabourCostLkr;
+                concurrentEstimate.TotalCostLkr = request.TotalCostLkr;
+                concurrentEstimate.BudgetDeltaPercent = request.BudgetDeltaPercent;
+                await _context.SaveChangesAsync();
+                estimate = concurrentEstimate;
+            }
 
             _logger.LogInformation(
                 "Successfully saved cost estimate {CostEstimateId} for workflow {WorkflowId}, design {DesignId}",

@@ -51,6 +51,7 @@ namespace HousePlanner.API.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("HouseDesignId")
+                        .IsUnique()
                         .HasDatabaseName("IX_CostEstimates_HouseDesignId");
 
                     b.ToTable("CostEstimates");

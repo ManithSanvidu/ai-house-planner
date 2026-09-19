@@ -405,4 +405,14 @@ public class InternalWorkflowControllerTests
         Assert.Equal(585000m, currentEstimate.TotalCostLkr);
         Assert.Equal(11.7m, currentEstimate.BudgetDeltaPercent);
     }
+
+    [Fact]
+    public void CostEstimate_HouseDesignIndex_IsUnique()
+    {
+        var entityType = _dbContext.Model.FindEntityType(typeof(CostEstimate));
+        var index = entityType!.GetIndexes()
+            .Single(i => i.Properties.Single().Name == nameof(CostEstimate.HouseDesignId));
+
+        Assert.True(index.IsUnique);
+    }
 }

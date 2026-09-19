@@ -20,6 +20,9 @@ import logging
 from datetime import datetime, timezone
 from typing import List
 
+import requests
+
+from app.config import ASPNET_API_URL, INTERNAL_API_KEY
 from app.schemas.cost_result import CostResult
 from app.schemas.pricing_data import PricingItem
 from app.schemas.workflow_state import ExecutionLogEntry, WorkflowState
@@ -56,6 +59,7 @@ def cost_estimation_node(state: WorkflowState) -> WorkflowState:
 
     try:
         result = _run_estimation(state)
+        _persist_cost_estimate(state, result)
     except _CostEstimationFailure as exc:
         return _fail(state, str(exc))
 
@@ -66,6 +70,37 @@ def cost_estimation_node(state: WorkflowState) -> WorkflowState:
         f"({result.budget_delta_percent:.2f}% of budget)."
     )
     return state
+
+
+def _persist_cost_estimate(state: WorkflowState, result: CostResult) -> None:
+    """Persist the successful estimate through the ASP.NET internal API."""
+    endpoint = (
+        f"{ASPNET_API_URL.rstrip('/')}/internal/workflows/"
+        f"{state.workflow_id}/cost-estimate"
+    )
+    payload = {
+        "materialCostLkr": result.material_cost_lkr,
+        "labourCostLkr": result.labour_cost_lkr,
+        "totalCostLkr": result.total_cost_lkr,
+        "budgetDeltaPercent": result.budget_delta_percent,
+    }
+
+    try:
+        response = requests.post(
+            endpoint,
+            json=payload,
+            headers={"X-Internal-API-Key": INTERNAL_API_KEY},
+            timeout=10,
+        )
+    except requests.RequestException as exc:
+        raise _CostEstimationFailure(
+            f"Could not persist the cost estimate: {type(exc).__name__}."
+        ) from exc
+
+    if not response.ok:
+        raise _CostEstimationFailure(
+            f"Cost estimate persistence returned HTTP {response.status_code}."
+        )
 
 
 # ---------------------------------------------------------------------------

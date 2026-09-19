@@ -8,15 +8,23 @@ Test naming convention:
     test_<scenario>  →  assert exact numeric results or exact failure mode.
 """
 import inspect
+import json
 import uuid
 from typing import List
 from unittest.mock import patch
 
 import pytest
+import responses
 
-from app.agents.cost_estimation_agent import cost_estimation_node
+from app.agents.cost_estimation_agent import (
+    _persist_cost_estimate,
+    cost_estimation_node,
+)
+from app.schemas.cost_result import CostResult
+from app.agents.validation_agent import validation_node
 from app.schemas.pricing_data import PricingItem, TerrainMultiplier
 from app.schemas.workflow_state import CoordinatorInput, WorkflowState
+from app.workflows.house_planning_graph import route_after_cost_estimation
 
 # ---------------------------------------------------------------------------
 # Pricing fixtures (returned by the mocked pricing_lookup_tool)
@@ -152,6 +160,74 @@ def _make_state(
 # ---------------------------------------------------------------------------
 
 PATCH_TARGET = "app.agents.cost_estimation_agent.pricing_lookup_tool"
+PERSIST_TARGET = "app.agents.cost_estimation_agent._persist_cost_estimate"
+
+
+@pytest.fixture(autouse=True)
+def mock_cost_persistence():
+    """Keep unit tests offline while asserting persistence separately."""
+    with patch(PERSIST_TARGET) as mock_persist:
+        yield mock_persist
+
+
+def test_successful_estimate_is_persisted(mock_cost_persistence):
+    with patch(PATCH_TARGET, return_value=STANDARD_PRICING):
+        state = cost_estimation_node(_make_state())
+
+    assert state.status != "failed"
+    mock_cost_persistence.assert_called_once()
+    persisted_state, persisted_result = mock_cost_persistence.call_args.args
+    assert persisted_state is state
+    assert persisted_result.total_cost_lkr == 109_200.0
+
+
+@responses.activate
+def test_persistence_posts_expected_contract():
+    endpoint = "https://api.example/api/v1/internal/workflows/00000000-0000-0000-0000-000000000001/cost-estimate"
+    responses.add(responses.POST, endpoint, json={"costEstimateId": "saved"}, status=200)
+    state = _make_state()
+    state.workflow_id = uuid.UUID("00000000-0000-0000-0000-000000000001")
+    result = CostResult(
+        material_cost_lkr=84_000.0,
+        labour_cost_lkr=25_200.0,
+        total_cost_lkr=109_200.0,
+        budget_delta_percent=2.18,
+        terrain_type="flat",
+        room_count=2,
+        total_area_sqft=420.0,
+    )
+
+    with (
+        patch("app.agents.cost_estimation_agent.ASPNET_API_URL", "https://api.example/api/v1"),
+        patch("app.agents.cost_estimation_agent.INTERNAL_API_KEY", "test-key"),
+    ):
+        _persist_cost_estimate(state, result)
+
+    request = responses.calls[0].request
+    assert request.headers["X-Internal-API-Key"] == "test-key"
+    assert json.loads(request.body) == {
+        "materialCostLkr": 84_000.0,
+        "labourCostLkr": 25_200.0,
+        "totalCostLkr": 109_200.0,
+        "budgetDeltaPercent": 2.18,
+    }
+
+
+def test_validation_uses_total_cost_lkr():
+    state = _make_state(budget_lkr=100_000.0)
+    state.cost_result = {"total_cost_lkr": 120_000.0}
+
+    result = validation_node(state)
+
+    assert result.status == "rejected"
+    assert result.validation_result["is_valid"] is False
+
+
+def test_failed_cost_estimation_stops_before_validation():
+    state = _make_state()
+    state.status = "failed"
+
+    assert route_after_cost_estimation(state) == "failed"
 
 
 # ===========================================================================

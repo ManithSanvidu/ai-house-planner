@@ -238,10 +238,10 @@
           "lib/netstandard2.0/_._": {}
         }
       },
-      "Microsoft.EntityFrameworkCore.InMemory/8.0.4": {
+      "Microsoft.EntityFrameworkCore.InMemory/8.0.8": {
         "type": "package",
         "dependencies": {
-          "Microsoft.EntityFrameworkCore": "8.0.4"
+          "Microsoft.EntityFrameworkCore": "8.0.8"
         },
         "compile": {
           "lib/net8.0/Microsoft.EntityFrameworkCore.InMemory.dll": {
@@ -254,10 +254,10 @@
           }
         }
       },
-      "Microsoft.EntityFrameworkCore.Relational/8.0.4": {
+      "Microsoft.EntityFrameworkCore.Relational/8.0.8": {
         "type": "package",
         "dependencies": {
-          "Microsoft.EntityFrameworkCore": "8.0.4",
+          "Microsoft.EntityFrameworkCore": "8.0.8",
           "Microsoft.Extensions.Configuration.Abstractions": "8.0.0"
         },
         "compile": {
@@ -299,13 +299,13 @@
           "buildTransitive/net6.0/_._": {}
         }
       },
-      "Microsoft.Extensions.Caching.Memory/8.0.0": {
+      "Microsoft.Extensions.Caching.Memory/8.0.1": {
         "type": "package",
         "dependencies": {
           "Microsoft.Extensions.Caching.Abstractions": "8.0.0",
-          "Microsoft.Extensions.DependencyInjection.Abstractions": "8.0.0",
-          "Microsoft.Extensions.Logging.Abstractions": "8.0.0",
-          "Microsoft.Extensions.Options": "8.0.0",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "8.0.2",
+          "Microsoft.Extensions.Logging.Abstractions": "8.0.2",
+          "Microsoft.Extensions.Options": "8.0.2",
           "Microsoft.Extensions.Primitives": "8.0.0"
         },
         "compile": {
@@ -508,7 +508,7 @@
           "buildTransitive/net6.0/_._": {}
         }
       },
-      "Microsoft.Extensions.DependencyInjection.Abstractions/8.0.0": {
+      "Microsoft.Extensions.DependencyInjection.Abstractions/8.0.2": {
         "type": "package",
         "compile": {
           "lib/net8.0/Microsoft.Extensions.DependencyInjection.Abstractions.dll": {
@@ -726,10 +726,10 @@
           "buildTransitive/net6.0/_._": {}
         }
       },
-      "Microsoft.Extensions.Logging.Abstractions/8.0.0": {
+      "Microsoft.Extensions.Logging.Abstractions/8.0.2": {
         "type": "package",
         "dependencies": {
-          "Microsoft.Extensions.DependencyInjection.Abstractions": "8.0.0"
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "8.0.2"
         },
         "compile": {
           "lib/net8.0/Microsoft.Extensions.Logging.Abstractions.dll": {
@@ -863,7 +863,7 @@
           "buildTransitive/net6.0/_._": {}
         }
       },
-      "Microsoft.Extensions.Options/8.0.0": {
+      "Microsoft.Extensions.Options/8.0.2": {
         "type": "package",
         "dependencies": {
           "Microsoft.Extensions.DependencyInjection.Abstractions": "8.0.0",
@@ -1440,11 +1440,8 @@
           }
         }
       },
-      "System.Text.Json/8.0.4": {
+      "System.Text.Json/8.0.5": {
         "type": "package",
-        "dependencies": {
-          "System.Text.Encodings.Web": "8.0.0"
-        },
         "compile": {
           "lib/net8.0/System.Text.Json.dll": {
             "related": ".xml"
@@ -1561,8 +1558,11 @@
         "dependencies": {
           "FirebaseAdmin": "2.4.1",
           "Microsoft.EntityFrameworkCore": "8.0.8",
+          "Microsoft.Extensions.Caching.Memory": "8.0.1",
+          "Newtonsoft.Json": "13.0.1",
           "Npgsql.EntityFrameworkCore.PostgreSQL": "8.0.4",
-          "Swashbuckle.AspNetCore": "6.6.2"
+          "Swashbuckle.AspNetCore": "6.6.2",
+          "System.Text.Json": "8.0.5"
         },
         "compile": {
           "bin/placeholder/HousePlanner.API.dll": {}
@@ -1963,10 +1963,10 @@
         "microsoft.entityframeworkcore.analyzers.nuspec"
       ]
     },
-    "Microsoft.EntityFrameworkCore.InMemory/8.0.4": {
-      "sha512": "3fj0V/NKG66LLwUtoDofSyogku1ueF78uUIdGPEJJhS3MW7w3xLsizMaDYX+ooR74IM96YJI5N3tyOU5FZiiwg==",
+    "Microsoft.EntityFrameworkCore.InMemory/8.0.8": {
+      "sha512": "B4r7MGPHUjuIdoI4dMvGFWK2vIT1svIgR3fITc+62ZHmbkRS+gq0mZ8BU9CXM388MfD5Tsn5KXJjWeu+b9gLlg==",
       "type": "package",
-      "path": "microsoft.entityframeworkcore.inmemory/8.0.4",
+      "path": "microsoft.entityframeworkcore.inmemory/8.0.8",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
@@ -1974,14 +1974,14 @@
         "PACKAGE.md",
         "lib/net8.0/Microsoft.EntityFrameworkCore.InMemory.dll",
         "lib/net8.0/Microsoft.EntityFrameworkCore.InMemory.xml",
-        "microsoft.entityframeworkcore.inmemory.8.0.4.nupkg.sha512",
+        "microsoft.entityframeworkcore.inmemory.8.0.8.nupkg.sha512",
         "microsoft.entityframeworkcore.inmemory.nuspec"
       ]
     },
-    "Microsoft.EntityFrameworkCore.Relational/8.0.4": {
-      "sha512": "aWLT6e9a8oMzXgF0YQpYYa3mDeU+yb2UQSQ+RrIgyGgSpzPfSKgpA7v2kOVDuZr2AQ6NNAlWPaBG7wZuKQI96w==",
+    "Microsoft.EntityFrameworkCore.Relational/8.0.8": {
+      "sha512": "3WnrwdXxKg4L98cDx0lNEEau8U2lsfuBJCs0Yzht+5XVTmahboM7MukKfQHAzVsHUPszm6ci929S7Qas0WfVHA==",
       "type": "package",
-      "path": "microsoft.entityframeworkcore.relational/8.0.4",
+      "path": "microsoft.entityframeworkcore.relational/8.0.8",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
@@ -1989,7 +1989,7 @@
         "PACKAGE.md",
         "lib/net8.0/Microsoft.EntityFrameworkCore.Relational.dll",
         "lib/net8.0/Microsoft.EntityFrameworkCore.Relational.xml",
-        "microsoft.entityframeworkcore.relational.8.0.4.nupkg.sha512",
+        "microsoft.entityframeworkcore.relational.8.0.8.nupkg.sha512",
         "microsoft.entityframeworkcore.relational.nuspec"
       ]
     },
@@ -2254,10 +2254,10 @@
         "useSharedDesignerContext.txt"
       ]
     },
-    "Microsoft.Extensions.Caching.Memory/8.0.0": {
-      "sha512": "7pqivmrZDzo1ADPkRwjy+8jtRKWRCPag9qPI+p7sgu7Q4QreWhcvbiWXsbhP+yY8XSiDvZpu2/LWdBv7PnmOpQ==",
+    "Microsoft.Extensions.Caching.Memory/8.0.1": {
+      "sha512": "HFDnhYLccngrzyGgHkjEDU5FMLn4MpOsr5ElgsBMC4yx6lJh4jeWO7fHS8+TXPq+dgxCmUa/Trl8svObmwW4QA==",
       "type": "package",
-      "path": "microsoft.extensions.caching.memory/8.0.0",
+      "path": "microsoft.extensions.caching.memory/8.0.1",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
@@ -2279,7 +2279,7 @@
         "lib/net8.0/Microsoft.Extensions.Caching.Memory.xml",
         "lib/netstandard2.0/Microsoft.Extensions.Caching.Memory.dll",
         "lib/netstandard2.0/Microsoft.Extensions.Caching.Memory.xml",
-        "microsoft.extensions.caching.memory.8.0.0.nupkg.sha512",
+        "microsoft.extensions.caching.memory.8.0.1.nupkg.sha512",
         "microsoft.extensions.caching.memory.nuspec",
         "useSharedDesignerContext.txt"
       ]
@@ -2573,10 +2573,10 @@
         "useSharedDesignerContext.txt"
       ]
     },
-    "Microsoft.Extensions.DependencyInjection.Abstractions/8.0.0": {
-      "sha512": "cjWrLkJXK0rs4zofsK4bSdg+jhDLTaxrkXu4gS6Y7MAlCvRyNNgwY/lJi5RDlQOnSZweHqoyvgvbdvQsRIW+hg==",
+    "Microsoft.Extensions.DependencyInjection.Abstractions/8.0.2": {
+      "sha512": "3iE7UF7MQkCv1cxzCahz+Y/guQbTqieyxyaWKhrRO91itI9cOKO76OHeQDahqG4MmW5umr3CcCvGmK92lWNlbg==",
       "type": "package",
-      "path": "microsoft.extensions.dependencyinjection.abstractions/8.0.0",
+      "path": "microsoft.extensions.dependencyinjection.abstractions/8.0.2",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
@@ -2600,7 +2600,7 @@
         "lib/netstandard2.0/Microsoft.Extensions.DependencyInjection.Abstractions.xml",
         "lib/netstandard2.1/Microsoft.Extensions.DependencyInjection.Abstractions.dll",
         "lib/netstandard2.1/Microsoft.Extensions.DependencyInjection.Abstractions.xml",
-        "microsoft.extensions.dependencyinjection.abstractions.8.0.0.nupkg.sha512",
+        "microsoft.extensions.dependencyinjection.abstractions.8.0.2.nupkg.sha512",
         "microsoft.extensions.dependencyinjection.abstractions.nuspec",
         "useSharedDesignerContext.txt"
       ]
@@ -2877,10 +2877,10 @@
         "useSharedDesignerContext.txt"
       ]
     },
-    "Microsoft.Extensions.Logging.Abstractions/8.0.0": {
-      "sha512": "arDBqTgFCyS0EvRV7O3MZturChstm50OJ0y9bDJvAcmEPJm0FFpFyjU/JLYyStNGGey081DvnQYlncNX5SJJGA==",
+    "Microsoft.Extensions.Logging.Abstractions/8.0.2": {
+      "sha512": "nroMDjS7hNBPtkZqVBbSiQaQjWRDxITI8Y7XnDs97rqG3EbzVTNLZQf7bIeUJcaHOV8bca47s1Uxq94+2oGdxA==",
       "type": "package",
-      "path": "microsoft.extensions.logging.abstractions/8.0.0",
+      "path": "microsoft.extensions.logging.abstractions/8.0.2",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
@@ -2945,7 +2945,7 @@
         "lib/net8.0/Microsoft.Extensions.Logging.Abstractions.xml",
         "lib/netstandard2.0/Microsoft.Extensions.Logging.Abstractions.dll",
         "lib/netstandard2.0/Microsoft.Extensions.Logging.Abstractions.xml",
-        "microsoft.extensions.logging.abstractions.8.0.0.nupkg.sha512",
+        "microsoft.extensions.logging.abstractions.8.0.2.nupkg.sha512",
         "microsoft.extensions.logging.abstractions.nuspec",
         "useSharedDesignerContext.txt"
       ]
@@ -3097,10 +3097,10 @@
         "useSharedDesignerContext.txt"
       ]
     },
-    "Microsoft.Extensions.Options/8.0.0": {
-      "sha512": "JOVOfqpnqlVLUzINQ2fox8evY2SKLYJ3BV8QDe/Jyp21u1T7r45x/R/5QdteURMR5r01GxeJSBBUOCOyaNXA3g==",
+    "Microsoft.Extensions.Options/8.0.2": {
+      "sha512": "dWGKvhFybsaZpGmzkGCbNNwBD1rVlWzrZKANLW/CcbFJpCEceMCGzT7zZwHOGBCbwM0SzBuceMj5HN1LKV1QqA==",
       "type": "package",
-      "path": "microsoft.extensions.options/8.0.0",
+      "path": "microsoft.extensions.options/8.0.2",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
@@ -3139,7 +3139,7 @@
         "lib/netstandard2.0/Microsoft.Extensions.Options.xml",
         "lib/netstandard2.1/Microsoft.Extensions.Options.dll",
         "lib/netstandard2.1/Microsoft.Extensions.Options.xml",
-        "microsoft.extensions.options.8.0.0.nupkg.sha512",
+        "microsoft.extensions.options.8.0.2.nupkg.sha512",
         "microsoft.extensions.options.nuspec",
         "useSharedDesignerContext.txt"
       ]
@@ -3799,10 +3799,10 @@
         "useSharedDesignerContext.txt"
       ]
     },
-    "System.Text.Json/8.0.4": {
-      "sha512": "bAkhgDJ88XTsqczoxEMliSrpijKZHhbJQldhAmObj/RbrN3sU5dcokuXmWJWsdQAhiMJ9bTayWsL1C9fbbCRhw==",
+    "System.Text.Json/8.0.5": {
+      "sha512": "0f1B50Ss7rqxXiaBJyzUu9bWFOO2/zSlifZ/UNMdiIpDYe4cY4LQQicP4nirK1OS31I43rn062UIJ1Q9bpmHpg==",
       "type": "package",
-      "path": "system.text.json/8.0.4",
+      "path": "system.text.json/8.0.5",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
@@ -3867,7 +3867,7 @@
         "lib/net8.0/System.Text.Json.xml",
         "lib/netstandard2.0/System.Text.Json.dll",
         "lib/netstandard2.0/System.Text.Json.xml",
-        "system.text.json.8.0.4.nupkg.sha512",
+        "system.text.json.8.0.5.nupkg.sha512",
         "system.text.json.nuspec",
         "useSharedDesignerContext.txt"
       ]
@@ -4022,29 +4022,31 @@
     "net8.0": [
       "HousePlanner.API >= 1.0.0",
       "Microsoft.AspNetCore.Mvc.Testing >= 8.0.8",
-      "Microsoft.EntityFrameworkCore.InMemory >= 8.0.4",
-      "Microsoft.EntityFrameworkCore.Relational >= 8.0.4",
+      "Microsoft.EntityFrameworkCore.InMemory >= 8.0.8",
+      "Microsoft.EntityFrameworkCore.Relational >= 8.0.8",
+      "Microsoft.Extensions.Caching.Memory >= 8.0.1",
       "Microsoft.NET.Test.Sdk >= 17.14.1",
       "Moq >= 4.20.72",
+      "System.Text.Json >= 8.0.5",
       "coverlet.collector >= 6.0.4",
       "xunit >= 2.9.3",
       "xunit.runner.visualstudio >= 3.1.4"
     ]
   },
   "packageFolders": {
-    "/Users/kushancs/.nuget/packages/": {}
+    "C:\\Users\\dewmi fernando\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "/Users/kushancs/Desktop/ai-house-system/HousePlanner.API.Tests/HousePlanner.API.Tests.csproj",
+      "projectUniqueName": "C:\\Users\\dewmi fernando\\Documents\\GitHub\\ai-house-planner\\HousePlanner.API.Tests\\HousePlanner.API.Tests.csproj",
       "projectName": "HousePlanner.API.Tests",
-      "projectPath": "/Users/kushancs/Desktop/ai-house-system/HousePlanner.API.Tests/HousePlanner.API.Tests.csproj",
-      "packagesPath": "/Users/kushancs/.nuget/packages/",
-      "outputPath": "/Users/kushancs/Desktop/ai-house-system/HousePlanner.API.Tests/obj/",
+      "projectPath": "C:\\Users\\dewmi fernando\\Documents\\GitHub\\ai-house-planner\\HousePlanner.API.Tests\\HousePlanner.API.Tests.csproj",
+      "packagesPath": "C:\\Users\\dewmi fernando\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\dewmi fernando\\Documents\\GitHub\\ai-house-planner\\HousePlanner.API.Tests\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "/Users/kushancs/.nuget/NuGet/NuGet.Config"
+        "C:\\Users\\dewmi fernando\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net8.0"
@@ -4057,8 +4059,8 @@
           "framework": "net8.0",
           "targetAlias": "net8.0",
           "projectReferences": {
-            "/Users/kushancs/Desktop/ai-house-system/HousePlanner.API/HousePlanner.API.csproj": {
-              "projectPath": "/Users/kushancs/Desktop/ai-house-system/HousePlanner.API/HousePlanner.API.csproj"
+            "C:\\Users\\dewmi fernando\\Documents\\GitHub\\ai-house-planner\\HousePlanner.API\\HousePlanner.API.csproj": {
+              "projectPath": "C:\\Users\\dewmi fernando\\Documents\\GitHub\\ai-house-planner\\HousePlanner.API\\HousePlanner.API.csproj"
             }
           }
         }
@@ -4086,11 +4088,15 @@
           },
           "Microsoft.EntityFrameworkCore.InMemory": {
             "target": "Package",
-            "version": "[8.0.4, )"
+            "version": "[8.0.8, )"
           },
           "Microsoft.EntityFrameworkCore.Relational": {
             "target": "Package",
-            "version": "[8.0.4, )"
+            "version": "[8.0.8, )"
+          },
+          "Microsoft.Extensions.Caching.Memory": {
+            "target": "Package",
+            "version": "[8.0.1, )"
           },
           "Microsoft.NET.Test.Sdk": {
             "target": "Package",
@@ -4099,6 +4105,10 @@
           "Moq": {
             "target": "Package",
             "version": "[4.20.72, )"
+          },
+          "System.Text.Json": {
+            "target": "Package",
+            "version": "[8.0.5, )"
           },
           "coverlet.collector": {
             "target": "Package",
@@ -4127,11 +4137,15 @@
         "downloadDependencies": [
           {
             "name": "Microsoft.AspNetCore.App.Ref",
-            "version": "[8.0.29, 8.0.29]"
+            "version": "[8.0.30, 8.0.30]"
           },
           {
             "name": "Microsoft.NETCore.App.Ref",
-            "version": "[8.0.29, 8.0.29]"
+            "version": "[8.0.30, 8.0.30]"
+          },
+          {
+            "name": "Microsoft.WindowsDesktop.App.Ref",
+            "version": "[8.0.30, 8.0.30]"
           }
         ],
         "frameworkReferences": {
@@ -4139,7 +4153,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/10.0.302/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.303/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

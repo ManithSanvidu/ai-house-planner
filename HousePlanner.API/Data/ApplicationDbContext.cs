@@ -56,7 +56,9 @@ namespace HousePlanner.API.Data
 
             modelBuilder.Entity<CostEstimate>(entity =>
             {
-                entity.HasIndex(e => e.HouseDesignId).HasDatabaseName("IX_CostEstimates_HouseDesignId");
+                entity.HasIndex(e => e.HouseDesignId)
+                    .IsUnique()
+                    .HasDatabaseName("IX_CostEstimates_HouseDesignId");
                 entity.HasOne(e => e.HouseDesign)
                     .WithMany(d => d.CostEstimates)
                     .HasForeignKey(e => e.HouseDesignId);
