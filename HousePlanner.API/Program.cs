@@ -5,6 +5,7 @@ using HousePlanner.API.Services;
 using Microsoft.OpenApi.Models;
 using Microsoft.EntityFrameworkCore;
 using HousePlanner.API.Data;
+using Microsoft.AspNetCore.Authentication;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,6 +27,10 @@ builder.Services.AddCors(options =>
 // 2. Add controllers and endpoints API exploration
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddAuthentication(FirebaseAuthenticationHandler.SchemeName)
+    .AddScheme<AuthenticationSchemeOptions, FirebaseAuthenticationHandler>(
+        FirebaseAuthenticationHandler.SchemeName, _ => { });
+builder.Services.AddAuthorization();
 
 // 3. Configure Swagger/OpenAPI
 builder.Services.AddSwaggerGen(c =>
@@ -65,6 +70,10 @@ builder.Services.AddSwaggerGen(c =>
 
 // 4. Register application services
 builder.Services.AddScoped<IFirebaseAuthService, FirebaseAuthService>();
+builder.Services.AddScoped<IApplicationUserSyncService, ApplicationUserSyncService>();
+builder.Services.AddScoped<IFirebaseStaffAccountService, FirebaseStaffAccountService>();
+builder.Services.AddScoped<IStaffAccountService, StaffAccountService>();
+builder.Services.AddScoped<ApplicationRoleSeeder>();
 builder.Services.AddScoped<ICurrentUserContextService, CurrentUserContextService>();
 builder.Services.AddScoped<IPreDesignedPlanLayoutValidator, PreDesignedPlanLayoutValidator>();
 builder.Services.AddScoped<PreDesignedPlanSeeder>();
@@ -138,11 +147,14 @@ var app = builder.Build();
 // Apply CORS Policy early to ensure all responses (including errors) get the headers
 app.UseCors("AllowReactApp");
 
-// Apply checked-in migrations without deleting persisted designs.
-using (var scope = app.Services.CreateScope())
+// Apply checked-in migrations without deleting persisted designs. Integration tests
+// exercise routing with substituted services and do not need a database connection.
+if (!app.Environment.IsEnvironment("Testing"))
 {
+    using var scope = app.Services.CreateScope();
     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     context.Database.Migrate();
+    await scope.ServiceProvider.GetRequiredService<ApplicationRoleSeeder>().SeedAsync();
     await scope.ServiceProvider.GetRequiredService<PreDesignedPlanSeeder>().SeedAsync();
 }
 
@@ -164,6 +176,7 @@ if (app.Environment.IsDevelopment())
 // but keep it active and ensure client URLs match.
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 // Python callbacks are internal service-to-service requests.
@@ -185,3 +198,5 @@ app.UseWhen(context => context.Request.Path.StartsWithSegments("/api/v1/internal
 app.MapControllers();
 
 app.Run();
+
+public partial class Program;

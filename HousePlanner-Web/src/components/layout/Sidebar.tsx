@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { DollarSign, LayoutDashboard, Library, PlusSquare, Shield, X } from 'lucide-react';
+import { Building2, DollarSign, FolderKanban, LayoutDashboard, Library, PlusSquare, Shield, UserCog, X } from 'lucide-react';
 import useAuth from '../../features/auth/useAuth';
 
 interface SidebarProps {
@@ -12,24 +12,30 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const { user } = useAuth();
   if (!user) return null;
 
-  const links = [
-    { to: '/dashboard', label: 'Overview', icon: LayoutDashboard },
-    { to: '/dashboard/new-project', label: 'New Project (Intake)', icon: PlusSquare },
-    { to: '/dashboard/plans', label: 'Plan Library', icon: Library },
-    ...(user.role === 'Contractor'
-      ? [{ to: '/dashboard/cost-estimator', label: 'Cost Estimator', icon: DollarSign }]
-      : []),
-    ...(user.role === 'Admin'
-      ? [{ to: '/dashboard/admin/plans', label: 'Manage Plans', icon: Shield }]
-      : []),
-    ...(user.role === 'Architect' ? [
+  const links = user.role === 'Customer'
+    ? [
+      { to: '/dashboard', label: 'Overview', icon: LayoutDashboard },
+      { to: '/dashboard/new-project', label: 'New Project', icon: PlusSquare },
+      { to: '/dashboard/plans', label: 'Plan Library', icon: Library },
+      { to: '/dashboard/designs', label: 'My Designs', icon: FolderKanban },
+      { to: '/dashboard/construction', label: 'Construction', icon: Building2 },
+    ]
+    : user.role === 'Architect'
+    ? [
       { to: '/architect/dashboard', label: 'Architect Dashboard', icon: LayoutDashboard },
       { to: '/architect/requests', label: 'Validation Requests', icon: Library },
-    ] : []),
-    ...(user.role === 'Constructor' ? [
-      { to: '/constructor/dashboard', label: 'Constructor Dashboard', icon: LayoutDashboard },
-    ] : []),
-  ];
+      { to: '/architect/approved', label: 'Approved Requests', icon: Shield },
+    ]
+    : user.role === 'Constructor'
+    ? [
+      { to: '/constructor/dashboard', label: 'Assigned Projects', icon: LayoutDashboard },
+      { to: '/dashboard/cost-estimator', label: 'Pricing Management', icon: DollarSign },
+    ]
+    : [
+      { to: '/dashboard', label: 'Admin Overview', icon: LayoutDashboard },
+      { to: '/dashboard/admin/plans', label: 'Manage Plans', icon: Shield },
+      { to: '/dashboard/admin/staff', label: 'Manage Staff', icon: UserCog },
+    ];
 
   return (
     <>

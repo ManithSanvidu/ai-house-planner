@@ -18,6 +18,7 @@ namespace HousePlanner.API.Data
         public DbSet<Project> Projects { get; set; }
         public DbSet<ConstructionPhase> ConstructionPhases { get; set; }
         public DbSet<ConstructorWorkflowLog> ConstructorWorkflowLogs { get; set; }
+        public DbSet<ConstructorProjectRequest> ConstructorProjectRequests { get; set; }
         public DbSet<PricingData> PricingItems { get; set; }
         public DbSet<CostEstimate> CostEstimates { get; set; }
 
@@ -30,6 +31,11 @@ namespace HousePlanner.API.Data
                 new Role { Id = 1, Name = "User" },
                 new Role { Id = 2, Name = "Admin" }
             );
+
+            modelBuilder.Entity<User>()
+                .HasIndex(e => e.FirebaseUid)
+                .IsUnique()
+                .HasDatabaseName("UX_Users_FirebaseUid");
 
             modelBuilder.Entity<PricingData>()
                 .OwnsOne(p => p.TerrainMultiplier, owned => owned.ToJson());
@@ -60,6 +66,30 @@ namespace HousePlanner.API.Data
                 .WithMany()
                 .HasForeignKey(e => e.PreferredHouseDesignId)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<ValidationRequest>()
+                .HasOne(x => x.HouseDesign).WithMany().HasForeignKey(x => x.HouseDesignId)
+                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<ValidationRequest>()
+                .HasIndex(x => new { x.WorkflowStateId, x.HouseDesignId, x.Status })
+                .HasDatabaseName("IX_ValidationRequests_Workflow_Design_Status");
+
+            modelBuilder.Entity<Project>()
+                .HasOne(x => x.HouseDesign).WithMany().HasForeignKey(x => x.HouseDesignId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ConstructorProjectRequest>(entity =>
+            {
+                entity.HasOne(x => x.Project).WithMany().HasForeignKey(x => x.ProjectId).OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(x => x.Customer).WithMany().HasForeignKey(x => x.CustomerId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(x => x.Constructor).WithMany().HasForeignKey(x => x.ConstructorId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(x => x.HouseDesign).WithMany().HasForeignKey(x => x.HouseDesignId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasIndex(x => new { x.HouseDesignId, x.ConstructorId, x.Status })
+                    .IsUnique().HasFilter("\"Status\" = 'Pending'");
+                entity.HasIndex(x => new { x.ConstructorId, x.Status });
+                entity.HasIndex(x => new { x.ProjectId, x.Status })
+                    .IsUnique().HasFilter("\"Status\" = 'Accepted'");
+            });
 
             modelBuilder.Entity<Room>(entity =>
             {
@@ -103,4 +133,3 @@ namespace HousePlanner.API.Data
         }
     }
 }
-

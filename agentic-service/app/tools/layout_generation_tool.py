@@ -167,9 +167,15 @@ def prepare_inputs(
 NO_DISTINCT_LAYOUT = 'No distinct compatible layout is currently available for these requirements.'
 
 
-def _candidate_pool(req: Requirements, plot: PlotConstraints, previous_fingerprint=None):
+def _candidate_pool(req: Requirements, plot: PlotConstraints, previous_fingerprint=None,
+                    preferred_plan_code: Optional[str] = None):
 
     compatible = filter_compatible_base_plans(req, plot)
+
+    if preferred_plan_code:
+        compatible = [plan for plan in compatible if plan.plan_code == preferred_plan_code]
+        if not compatible:
+            raise GenerationFailure('The selected base plan is not compatible with these requirements.')
 
     rejected = Counter(reason for plan in load_base_plan_catalog()
                        for reason in compatibility_rejection_reasons(plan, req, plot))
@@ -366,6 +372,7 @@ def generate_layout(
     plot_constraints: Union[dict, Optional[PlotConstraints]] = None,
 
     design_seed: Optional[int] = None,
+    preferred_plan_code: Optional[str] = None,
 
 ) -> DesignResult:
 
@@ -423,7 +430,7 @@ def generate_layout(
             previous_fingerprint = None
 
     excluded_fingerprint = previous_fingerprint if requests_another_design(revision_reason) else None
-    candidate_pool = _candidate_pool(req, plot, excluded_fingerprint)
+    candidate_pool = _candidate_pool(req, plot, excluded_fingerprint, preferred_plan_code)
     shortlist = candidate_pool[:7]
 
     request_type = ('generate_another' if requests_another_design(revision_reason)

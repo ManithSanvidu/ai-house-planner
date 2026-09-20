@@ -8,6 +8,9 @@ export interface ValidationRequest {
   bedrooms: number | null;
   floors: number | null;
   style: string | null;
+  designVersion?: number | null;
+  bathrooms?: number | null;
+  area?: number | null;
 }
 
 export interface ValidationRequestDetails extends ValidationRequest {
@@ -17,6 +20,9 @@ export interface ValidationRequestDetails extends ValidationRequest {
   decisionAt: string | null;
   design: {
     designId: string;
+    version: number;
+    floorCount: number;
+    totalBuiltUpAreaSqft: number;
     layoutJson: string;
   } | null;
 }

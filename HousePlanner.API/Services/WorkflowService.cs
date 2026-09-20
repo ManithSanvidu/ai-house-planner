@@ -119,14 +119,14 @@ namespace HousePlanner.API.Services
                     $"Cannot approve workflow '{workflowId}': Safety validation has not passed or is in a failed state.");
             }
 
-            // 4.5. Enforce role-based access if role information is available (Architect, Client, Admin, User are authorized)
+            // 4.5. Enforce the authoritative application roles.
             if (!string.IsNullOrEmpty(userRole))
             {
                 var lowerRole = userRole.ToLowerInvariant();
-                if (lowerRole != "architect" && lowerRole != "client" && lowerRole != "admin" && lowerRole != "user")
+                if (lowerRole != "architect" && lowerRole != "customer" && lowerRole != "admin")
                 {
                     _logger.LogWarning("Approval rejected for Workflow '{WorkflowId}': User role '{Role}' is not authorized.", workflowId, userRole);
-                    return ApprovalServiceResult.Unauthorized("Only Architects, Clients, or Admins are authorized to review workflows.");
+                    return ApprovalServiceResult.Unauthorized("Only Architects, Customers, or Admins are authorized to review workflows.");
                 }
             }
 

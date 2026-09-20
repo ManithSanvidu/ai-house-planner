@@ -1,11 +1,9 @@
 import axios from 'axios';
+import { auth } from './firebase';
 
-let inMemoryToken: string | null = localStorage.getItem('mockToken') || null;
-
-// Setter to update the in-memory token from our Redux auth flows
-export const setInMemoryToken = (token: string | null) => {
-  inMemoryToken = token;
-};
+// Remove tokens created by the retired mock-login implementation. Firebase owns session persistence.
+localStorage.removeItem('mockToken');
+localStorage.removeItem('mockUser');
 
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api/v1',
@@ -16,9 +14,12 @@ const apiClient = axios.create({
 
 // Axios request interceptor to inject the Bearer token dynamically
 apiClient.interceptors.request.use(
-  (config) => {
-    if (inMemoryToken && config.headers) {
-      config.headers.Authorization = `Bearer ${inMemoryToken}`;
+  async (config) => {
+    const user = auth.currentUser;
+    if (user && config.headers) {
+      // Firebase refreshes an expiring ID token as needed. Never persist it ourselves.
+      const idToken = await user.getIdToken();
+      config.headers.Authorization = `Bearer ${idToken}`;
     }
     return config;
   },

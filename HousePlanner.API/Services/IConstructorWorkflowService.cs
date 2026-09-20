@@ -10,5 +10,15 @@ namespace HousePlanner.API.Services
         Task<ConstructorWorkflowLog> CreateWorkflowLogAsync(Guid constructorId, ConstructorWorkflowLog log);
         Task<ConstructorWorkflowLog> UpdateWorkflowLogAsync(Guid constructorId, Guid logId, ConstructorWorkflowLog updatedLog);
         Task<object> GetProjectProgressAsync(Guid projectId, Guid constructorId, string userRole);
+        
+        // New Assignment Methods
+        Task<Project?> SearchProjectByIdAsync(Guid projectId);
+        Task<ConstructorProjectRequest> RequestProjectAssignmentAsync(Guid projectId, Guid constructorId);
+        Task<ConstructorProjectRequest> ApproveConstructorRequestAsync(Guid requestId, Guid ownerId);
+        Task<IEnumerable<ConstructorProjectRequest>> GetPendingRequestsForProjectAsync(Guid projectId, Guid ownerId);
+        Task<IEnumerable<ConstructorProjectRequest>> GetConstructorRequestsAsync(Guid constructorId);
+        
+        // Setup Duration Method
+        Task<bool> SetProjectEstimatedDurationAsync(Guid projectId, Guid constructorId, int estimatedDays);
     }
 }

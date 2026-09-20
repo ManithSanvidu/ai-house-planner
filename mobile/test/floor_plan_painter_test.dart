@@ -24,7 +24,7 @@ void main() {
       ),
     ));
 
-    expect(find.byType(CustomPaint), findsOneWidget);
+    expect(find.byWidgetPredicate((w) => w is CustomPaint && w.painter is FloorPlanPainter), findsOneWidget);
     // The painter should be drawing the layout, we can just verify it doesn't crash
   });
 

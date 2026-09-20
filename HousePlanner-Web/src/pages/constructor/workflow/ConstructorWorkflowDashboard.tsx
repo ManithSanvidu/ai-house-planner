@@ -14,12 +14,13 @@ import type { ConstructorWorkflowProject } from '../../../services/constructorWo
 export const ConstructorWorkflowDashboard: React.FC = () => {
   const [projects, setProjects] = useState<ConstructorWorkflowProject[]>([]);
   const [loading, setLoading] = useState(true);
+  const [requests, setRequests] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        const data = await constructorWorkflowService.getProjects();
-        setProjects(data);
+        const [data, incoming] = await Promise.all([constructorWorkflowService.getProjects(), constructorWorkflowService.getConstructorRequests()]);
+        setProjects(data); setRequests(incoming);
       } catch (error) {
         console.error('Failed to fetch projects', error);
       } finally {
@@ -49,6 +50,8 @@ export const ConstructorWorkflowDashboard: React.FC = () => {
           Manage and track daily logs for your active construction projects.
         </p>
       </div>
+
+      <section className="mb-8 rounded-2xl border bg-white p-6 dark:bg-gray-900 dark:border-gray-800"><h2 className="text-lg font-semibold mb-4">Construction Requests</h2>{!requests.filter(r=>r.status==='Pending').length?<p className="text-sm text-gray-500">No new requests.</p>:<div className="space-y-3">{requests.filter(r=>r.status==='Pending').map(request=><div key={request.id} className="rounded-xl border p-4 flex flex-wrap justify-between gap-3"><div><b>{request.customerName}</b><p className="text-sm text-gray-500">Design v{request.designVersion} · {Number(request.area).toLocaleString()} sq ft · Architect Approved</p></div><div className="flex gap-2"><button onClick={async()=>{await constructorWorkflowService.acceptRequest(request.id);location.reload();}} className="rounded-lg bg-emerald-600 px-3 py-2 text-white text-sm font-semibold">Accept</button><button onClick={async()=>{const reason=window.prompt('Optional reason for declining')||undefined;await constructorWorkflowService.declineRequest(request.id,reason);location.reload();}} className="rounded-lg border px-3 py-2 text-sm font-semibold">Decline</button></div></div>)}</div>}</section>
 
       <div className="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
@@ -96,7 +99,7 @@ export const ConstructorWorkflowDashboard: React.FC = () => {
           {projects.map((project) => (
             <li key={project.id}>
               <Link
-                to={`/constructor/workflow/${project.id}`}
+                to={`/constructor/workflows/${project.id}`}
                 className="block p-6 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
               >
                 <div className="flex items-center justify-between">
