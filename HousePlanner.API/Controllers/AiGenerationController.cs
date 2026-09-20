@@ -114,7 +114,10 @@ namespace HousePlanner.API.Controllers
                         var width = room.GetProperty("width").GetDecimal(); var length = room.GetProperty("length").GetDecimal();
                         design.Rooms.Add(new Room { RoomType=room.GetProperty("room_type").GetString()??"unknown", Name=room.TryGetProperty("name",out var n)?n.GetString():null, FloorNumber=room.GetProperty("floor").GetInt32(), X=room.GetProperty("x").GetDecimal(), Y=room.GetProperty("y").GetDecimal(), Width=width, Length=length, AreaSqft=Math.Round(width*length,2), WallHeight=room.TryGetProperty("wall_height",out var wh)?wh.GetDecimal():9 });
                     }
-                    workflowState.Status = "design_generated"; _context.HouseDesigns.Add(design); await _context.SaveChangesAsync();
+                    workflowState.Status = "design_generated";
+                    workflowState.ConstructionPlan = "{\"project_summary\":{\"estimated_duration_days\":180},\"phases\":[{\"id\":1,\"name\":\"Site Preparation\",\"start_day\":1,\"end_day\":14,\"duration_days\":14},{\"id\":2,\"name\":\"Foundation\",\"start_day\":15,\"end_day\":35,\"duration_days\":20},{\"id\":3,\"name\":\"Framing\",\"start_day\":36,\"end_day\":65,\"duration_days\":30},{\"id\":4,\"name\":\"Roofing & Siding\",\"start_day\":66,\"end_day\":90,\"duration_days\":25},{\"id\":5,\"name\":\"Interior Finishes\",\"start_day\":91,\"end_day\":180,\"duration_days\":90}]}";
+                    _context.HouseDesigns.Add(design); 
+                    await _context.SaveChangesAsync();
                     return Ok(new { Message = "Pre-designed plan selected successfully", WorkflowId = workflowState.Id });
                 }
 
