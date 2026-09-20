@@ -95,5 +95,6 @@ public record WorkflowDesignHistoryDto(
     string Status,
     Guid? PreferredHouseDesignId,
     DateTimeOffset CreatedAt,
-    List<DesignHistoryDto> Designs
+    List<DesignHistoryDto> Designs,
+    Guid? ProjectId = null
 );

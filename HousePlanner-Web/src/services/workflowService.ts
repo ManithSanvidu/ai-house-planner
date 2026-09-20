@@ -119,6 +119,7 @@ export interface WorkflowDesignHistoryDto {
   preferredHouseDesignId: string | null;
   createdAt: string;
   designs: DesignHistoryDto[];
+  projectId?: string;
 }
 
 export interface StartDesignRequest {
