@@ -9,7 +9,13 @@ final intakeProvider = StateNotifierProvider<IntakeNotifier, AsyncValue<LandSubm
 });
 
 class IntakeNotifier extends StateNotifier<AsyncValue<LandSubmission>> {
-  IntakeNotifier() : super(AsyncValue.data(LandSubmission()));
+  IntakeNotifier() : super(AsyncValue.data(LandSubmission(
+    landSizePerches: 10.0,
+    preferredBedrooms: 3,
+    preferredFloors: 1,
+    stylePreference: 'modern',
+    manualTerrainType: 'flat',
+  )));
 
   void updateField({
     double? budgetLkr,
@@ -71,13 +77,13 @@ class IntakeNotifier extends StateNotifier<AsyncValue<LandSubmission>> {
         if (basePlanId != null) 'basePreDesignedPlanId': basePlanId,
         if (mode != null) 'planSelectionMode': mode,
         'landSizePerches': data.landSizePerches,
-        'manualTerrainType': data.manualTerrainType,
+        'manualTerrainType': data.manualTerrainType == 'flat' ? 'Flat' : data.manualTerrainType == 'hillside' ? 'Hillside' : data.manualTerrainType == 'coastal' ? 'Coastal' : data.manualTerrainType == 'forested' ? 'Forested' : 'Flat',
         'budgetLkr': data.budgetLkr,
         'preferences': {
           'bedrooms': data.preferredBedrooms ?? 3,
           'bathrooms': 1,
           'floors': data.preferredFloors ?? 1,
-          'architecturalStyle': data.stylePreference ?? 'Modern Minimalist',
+          'architecturalStyle': data.stylePreference == 'modern' ? 'Modern' : data.stylePreference == 'traditional' ? 'Traditional' : data.stylePreference == 'contemporary' ? 'Contemporary' : 'Modern',
           'openPlan': data.selectedAmenities?.contains('Open plan') ?? false,
           'masterEnsuite': data.selectedAmenities?.contains('Master ensuite') ?? false,
           'separateDining': data.selectedAmenities?.contains('Separate dining') ?? false,
@@ -101,10 +107,10 @@ class IntakeNotifier extends StateNotifier<AsyncValue<LandSubmission>> {
       final response = await ApiClient.instance.post('/ai-generation/generate', data: payload);
       
       state = AsyncValue.data(data); // Revert to data state on success
-      return response.data['workflowId'] as String?;
+      return response.data['workflowId'] as String? ?? response.data['WorkflowId'] as String?;
     } catch (e, st) {
-      state = AsyncValue.error(e, st);
-      return null;
+      state = AsyncValue.data(data); // Revert to data state so form stays visible
+      throw e;
     }
   }
 }
