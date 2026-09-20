@@ -18,6 +18,7 @@ class CoordinatorInput(BaseModel):
     preferences:Dict[str,Any]
     plot_constraints:Optional[Dict[str,Any]]=None
     design_seed:Optional[int]=None
+    preferred_plan_code:Optional[str]=None
 
 class WorkflowState(BaseModel):
     workflow_id:UUID

@@ -15,6 +15,11 @@ namespace HousePlanner.API.Entities
         [ForeignKey("WorkflowStateId")]
         public virtual WorkflowState WorkflowState { get; set; } = null!;
 
+        public Guid? HouseDesignId { get; set; }
+
+        [ForeignKey("HouseDesignId")]
+        public virtual HouseDesign? HouseDesign { get; set; }
+
         [Required]
         public Guid ClientId { get; set; }
 

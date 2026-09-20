@@ -1,30 +1,102 @@
-import { GoogleAuthProvider, signInWithEmailAndPassword, signInWithPopup, signOut as firebaseSignOut, type UserCredential, setPersistence, browserSessionPersistence } from 'firebase/auth';
+import {
+  GoogleAuthProvider,
+  createUserWithEmailAndPassword,
+  deleteUser,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  signOut as firebaseSignOut,
+  type UserCredential,
+  setPersistence,
+  browserSessionPersistence,
+} from 'firebase/auth';
 import { auth } from '../../services/firebase';
-import apiClient, { setInMemoryToken } from '../../services/apiClient';
+import apiClient from '../../services/apiClient';
 import type { UserProfile } from '../../types/auth.types';
+
+/** Shape returned by all /auth/* endpoints. */
+interface BackendUserDto {
+  uid: string;
+  email: string;
+  fullName: string;
+  role: UserProfile['role'];
+}
 
 /**
  * Service to manage Firebase Authentication and backend token exchange.
  */
 const authService = {
+  /**
+   * Registers a new user:
+   *   1. Creates a Firebase identity (email + password).
+   *   2. Retrieves a fresh Firebase ID token.
+   *   3. Calls POST /auth/register with the requested role and full name.
+   *
+   * If the backend profile creation fails after Firebase creation succeeds,
+   * the error is propagated so the caller can inform the user and offer retry.
+   */
+  register: async (
+    email: string,
+    password: string,
+    fullName: string,
+  ): Promise<{ user: UserProfile; token: string }> => {
+    await setPersistence(auth, browserSessionPersistence);
+    const credential: UserCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const fbUser = credential.user;
+    const token = await fbUser.getIdToken();
+
+    try {
+      const response = await apiClient.post<BackendUserDto>('/auth/register', {
+        fullName,
+      });
+      return {
+        user: {
+          uid: response.data.uid,
+          email: response.data.email,
+          fullName: response.data.fullName,
+          role: response.data.role,
+        },
+        token,
+      };
+    } catch (err) {
+      // Keep registration atomic where possible: if the application profile cannot be
+      // created, remove the just-created Firebase identity so the email can be retried.
+      await deleteUser(fbUser).catch(async () => {
+        await firebaseSignOut(auth).catch(() => undefined);
+      });
+      throw err;
+    }
+  },
+
   googleLogin: async (): Promise<{ user: UserProfile; token: string }> => {
     await setPersistence(auth, browserSessionPersistence);
     const credential = await signInWithPopup(auth, new GoogleAuthProvider());
     const token = await credential.user.getIdToken();
-    setInMemoryToken(token);
-    
-    // Ensure user exists in local database before verifying
-    await apiClient.post('/auth/register', { token });
-    
-    const response = await apiClient.post<{ uid:string; email:string; role:UserProfile['role'] }>('/auth/verify',{token});
-    return { user:{uid:response.data.uid,email:response.data.email,role:response.data.role}, token };
+
+    try {
+      const response = await apiClient.post<BackendUserDto>('/auth/session');
+      return {
+        user: {
+          uid: response.data.uid,
+          email: response.data.email,
+          fullName: response.data.fullName,
+          role: response.data.role,
+        },
+        token,
+      };
+    } catch (error: any) {
+      if (error.response?.status === 404 && error.response?.data?.error === 'registration_required') {
+        // Leave Firebase session active, throw specific error for UI to handle onboarding
+        throw new Error('registration_required');
+      }
+      throw error;
+    }
   },
+
   /**
    * Signs in user using Firebase, retrieves the token, verifies it with the backend,
-   * and returns the user's role/details.
+   * and returns the user's role/details from the database (not from local state).
    */
   login: async (email: string, password: string): Promise<{ user: UserProfile; token: string }> => {
-    // 1. Authenticate with Firebase Authentication (Production mode)
     await setPersistence(auth, browserSessionPersistence);
     const credential: UserCredential = await signInWithEmailAndPassword(auth, email, password);
     const fbUser = credential.user;
@@ -33,39 +105,36 @@ const authService = {
       throw new Error('Failed to retrieve user from Firebase Authentication.');
     }
 
-    // 2. Fetch the ID token
     const token = await fbUser.getIdToken();
 
-    // 3. Set token in memory for Axios requests
-    setInMemoryToken(token);
-
-    // Ensure user exists in local database
-    await apiClient.post('/auth/register', { token });
-
-    // 4. Verify token with backend database
-    const response = await apiClient.post<{ uid: string; email: string; role: import('../../types/auth.types').UserRole }>(
-      '/auth/verify',
-      { token }
-    );
-
-    // Return the authenticated details
-    return {
-      user: {
-        uid: response.data.uid,
-        email: response.data.email,
-        role: response.data.role,
-      },
-      token,
-    };
+    // Role comes from the backend (PostgreSQL), not from client state.
+    try {
+      const response = await apiClient.post<BackendUserDto>('/auth/session');
+      return {
+        user: {
+          uid: response.data.uid,
+          email: response.data.email,
+          fullName: response.data.fullName,
+          role: response.data.role,
+        },
+        token,
+      };
+    } catch (error: any) {
+      if (error.response?.status === 404 && error.response?.data?.error === 'registration_required') {
+        throw new Error('registration_required');
+      }
+      throw error;
+    }
   },
 
   /**
    * Verifies the current Firebase session on reload.
+   * Role is always reloaded from the backend.
    */
   verifySession: async (): Promise<{ user: UserProfile; token: string }> => {
     return new Promise((resolve, reject) => {
       const unsubscribe = auth.onAuthStateChanged(async (fbUser) => {
-        unsubscribe(); // Only run once
+        unsubscribe();
 
         if (!fbUser) {
           return reject(new Error('No active session'));
@@ -73,37 +142,23 @@ const authService = {
 
         try {
           const token = await fbUser.getIdToken();
-          setInMemoryToken(token);
-
-          let response;
-          try {
-            response = await apiClient.post<{ uid: string; email: string; role: import('../../types/auth.types').UserRole }>(
-              '/auth/verify',
-              { token }
-            );
-          } catch (error: any) {
-            // If the local DB returns 401, they might be missing from Postgres. Register and retry.
-            if (error.response && error.response.status === 401) {
-              await apiClient.post('/auth/register', { token });
-              response = await apiClient.post<{ uid: string; email: string; role: import('../../types/auth.types').UserRole }>(
-                '/auth/verify',
-                { token }
-              );
-            } else {
-              throw error;
-            }
-          }
+          const response = await apiClient.post<BackendUserDto>('/auth/session');
 
           resolve({
             user: {
               uid: response.data.uid,
               email: response.data.email,
+              fullName: response.data.fullName,
               role: response.data.role,
             },
             token,
           });
-        } catch (error) {
-          reject(error);
+        } catch (error: any) {
+          if (error.response?.status === 404 && error.response?.data?.error === 'registration_required') {
+            reject(new Error('registration_required'));
+          } else {
+            reject(error);
+          }
         }
       });
     });
@@ -114,7 +169,6 @@ const authService = {
    */
   logout: async (): Promise<void> => {
     await firebaseSignOut(auth);
-    setInMemoryToken(null);
   },
 };
 

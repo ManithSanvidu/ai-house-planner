@@ -15,14 +15,18 @@ vi.mock('../components/floorplan/FloorPlanViewer', () => ({
 }));
 
 const status = (version: number) => ({
-  workflowId: 'workflow-1', status: 'awaiting_approval', terrainType: 'flat', slopeEstimate: 'flat',
+  workflowId: 'workflow-1', status: 'design_generated', terrainType: 'flat', slopeEstimate: 'flat',
   approvalStatus: 'pending', cost: null, constructionPlan: null,
   design: {
     designId: `design-${version}`, version, floorCount: 1, totalBuiltUpAreaSqft: 900,
     foundationType: 'slab', templateId: 'HP-TEST', templateFamily: 'COMPACT_RECTANGLE',
     terrainType: 'flat', isCurrent: true, designScore: 91,
-    rooms: [{ roomId: 'bed-1', roomType: 'bedroom_1', name: 'Bedroom', floorNumber: 1,
-      x: 0, y: 0, width: 10, length: 10, areaSqft: 100, wallHeight: 9, doors: [], windows: [] }],
+    rooms: [
+      { roomId: 'bed-1', roomType: 'bedroom_1', name: 'Bedroom 1', floorNumber: 1, x: 0, y: 0, width: 10, length: 10, areaSqft: 100, wallHeight: 9, doors: [], windows: [] },
+      { roomId: 'bed-2', roomType: 'bedroom_2', name: 'Bedroom 2', floorNumber: 1, x: 10, y: 0, width: 10, length: 10, areaSqft: 100, wallHeight: 9, doors: [], windows: [] },
+      { roomId: 'bed-3', roomType: 'bedroom_3', name: 'Bedroom 3', floorNumber: 1, x: 20, y: 0, width: 10, length: 10, areaSqft: 100, wallHeight: 9, doors: [], windows: [] },
+      { roomId: 'bath-1', roomType: 'bathroom_1', name: 'Bathroom', floorNumber: 1, x: 0, y: 10, width: 6, length: 8, areaSqft: 48, wallHeight: 9, doors: [], windows: [] },
+    ],
   },
 });
 
@@ -48,7 +52,19 @@ describe('WorkflowReviewPage revision refresh', () => {
     await waitFor(() => expect(workflowService.approveWorkflow)
       .toHaveBeenCalledWith('workflow-1', 'request_revision', 'Generate Another'));
     expect(await screen.findByText('viewer:design-2')).toBeDefined();
-    expect(screen.getByText('COMPACT RECTANGLE')).toBeDefined();
-    expect(screen.getByText('91')).toBeDefined();
+    expect(screen.getByText('Compact Rectangle')).toBeDefined();
+    expect(screen.getByText('Architectural quality score: 91')).toBeDefined();
+  });
+
+  it('shows a homeowner summary and friendly workflow status', async () => {
+    vi.mocked(workflowService.getWorkflowStatus).mockResolvedValue(status(1));
+    render(<MemoryRouter initialEntries={['/dashboard/workflows/workflow-1']}>
+      <Routes><Route path="/dashboard/workflows/:id" element={<WorkflowReviewPage />} /></Routes>
+    </MemoryRouter>);
+
+    expect(await screen.findByText('Design Ready')).toBeTruthy();
+    expect(screen.getByText(/3 Bedrooms.*1 Bathroom.*1 Floor.*900 sq ft/)).toBeTruthy();
+    expect(screen.getAllByText('Bedrooms').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Bathrooms').length).toBeGreaterThan(0);
   });
 });

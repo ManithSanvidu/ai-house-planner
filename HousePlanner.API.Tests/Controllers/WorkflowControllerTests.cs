@@ -7,6 +7,7 @@ using HousePlanner.API.DTOs;
 using HousePlanner.API.Entities;
 using HousePlanner.API.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -19,6 +20,7 @@ public class WorkflowControllerTests
     private readonly ApplicationDbContext _dbContext;
     private readonly Mock<ILogger<WorkflowController>> _loggerMock;
     private readonly WorkflowController _controller;
+    private readonly Guid _clientId = Guid.NewGuid();
 
     public WorkflowControllerTests()
     {
@@ -29,8 +31,22 @@ public class WorkflowControllerTests
         _loggerMock = new Mock<ILogger<WorkflowController>>();
         var clients = new Mock<IHttpClientFactory>();
         clients.Setup(f => f.CreateClient(It.IsAny<string>())).Returns(new HttpClient());
+        var currentUser = new Mock<ICurrentUserContextService>();
+        currentUser.Setup(x => x.GetAsync(It.IsAny<HttpContext>())).Returns(async () =>
+        {
+            var submissionIds = await _dbContext.LandSubmissions.Select(x => x.Id).ToListAsync();
+            foreach (var id in await _dbContext.WorkflowStates.Select(x => x.LandSubmissionId).ToListAsync())
+                if (!submissionIds.Contains(id))
+                    _dbContext.LandSubmissions.Add(new LandSubmission
+                    {
+                        Id = id, ClientId = _clientId, LandSizePerches = 10,
+                        PreferredBedrooms = 3, PreferredFloors = 1
+                    });
+            await _dbContext.SaveChangesAsync();
+            return new CurrentUserContext(_clientId, "customer@example.com", "Customer");
+        });
         _controller = new WorkflowController(_dbContext, _loggerMock.Object, clients.Object,
-            Mock.Of<IWorkflowService>(), Mock.Of<ICurrentUserContextService>());
+            Mock.Of<IWorkflowService>(), currentUser.Object);
     }
 
     [Fact]
@@ -267,7 +283,7 @@ public class WorkflowControllerTests
     [Fact]
     public async Task SubmitArchitectReview_UsesPersistedSelectedDesign()
     {
-        var clientId = Guid.NewGuid(); var submissionId = Guid.NewGuid(); var workflowId = Guid.NewGuid();
+        var clientId = _clientId; var submissionId = Guid.NewGuid(); var workflowId = Guid.NewGuid();
         var selected = Design(workflowId, 1, true);
         var submission = new LandSubmission
         {
@@ -286,7 +302,9 @@ public class WorkflowControllerTests
         Assert.IsType<OkObjectResult>(await _controller.SubmitArchitectReview(workflowId));
         var persisted = await _dbContext.WorkflowStates.SingleAsync(w => w.Id == workflowId);
         Assert.Equal("awaiting_architect_review", persisted.Status);
-        Assert.Single(await _dbContext.ValidationRequests.Where(r => r.WorkflowStateId == workflowId).ToListAsync());
+        var request=Assert.Single(await _dbContext.ValidationRequests.Where(r => r.WorkflowStateId == workflowId).ToListAsync());
+        Assert.Equal(selected.Id,request.HouseDesignId);
+        Assert.IsType<ConflictObjectResult>(await _controller.SubmitArchitectReview(workflowId));
     }
 
     private static HouseDesign Design(Guid workflowId, int version, bool current) => new()

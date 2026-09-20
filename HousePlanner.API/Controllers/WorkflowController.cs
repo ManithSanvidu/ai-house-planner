@@ -5,6 +5,7 @@ using HousePlanner.API.DTOs;
 using HousePlanner.API.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 
 namespace HousePlanner.API.Controllers;
 
@@ -37,16 +38,20 @@ public class WorkflowController : ControllerBase
     /// </summary>
     /// <param name="id">The WorkflowState unique ID</param>
     [HttpGet("{id:guid}/status")]
+    [Authorize(Roles = "Customer")]
     [ProducesResponseType(typeof(WorkflowStatusResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<WorkflowStatusResponseDto>> GetWorkflowStatus(Guid id, [FromQuery] Guid? designId = null)
     {
+        var user = await _currentUserService.GetAsync(HttpContext);
+        if (user?.Id is null) return Unauthorized();
+        if (!string.Equals(user.Role, "Customer", StringComparison.OrdinalIgnoreCase)) return Forbid();
         try
         {
             var workflow = await _context.WorkflowStates
                 .AsNoTracking()
-                .Where(w => w.Id == id)
+                .Where(w => w.Id == id && w.LandSubmission.ClientId == user.Id.Value)
                 .Select(w => new
                 {
                     w.Id,
@@ -54,6 +59,7 @@ public class WorkflowController : ControllerBase
                     w.TerrainType,
                     w.SlopeEstimate,
                     w.ApprovalStatus,
+                    w.PreferredHouseDesignId,
                     w.FailureReason,
                     w.ConstructionPlan,
                     // Pick the current (or latest) design version
@@ -195,7 +201,14 @@ public class WorkflowController : ControllerBase
                 Cost: costDto,
                 ConstructionPlan: parsedConstructionPlan,
                 ApprovalStatus: workflow.ApprovalStatus,
-                FailureReason: workflow.FailureReason
+                FailureReason: workflow.FailureReason,
+                PreferredHouseDesignId: workflow.PreferredHouseDesignId,
+                ArchitectReviewStatus: designDto is null ? null : await _context.ValidationRequests.AsNoTracking()
+                    .Where(r=>r.WorkflowStateId==workflow.Id && r.HouseDesignId==designDto.DesignId)
+                    .OrderByDescending(r=>r.CreatedAt).Select(r=>r.Status).FirstOrDefaultAsync(),
+                ArchitectFeedback: designDto is null ? null : await _context.ValidationRequests.AsNoTracking()
+                    .Where(r=>r.WorkflowStateId==workflow.Id && r.HouseDesignId==designDto.DesignId)
+                    .OrderByDescending(r=>r.CreatedAt).Select(r=>r.ArchitectReview).FirstOrDefaultAsync()
             );
 
             return Ok(responseDto);
@@ -284,33 +297,50 @@ public class WorkflowController : ControllerBase
     }
 
     [HttpGet("{id:guid}/designs")]
+    [Authorize(Roles = "Customer")]
     public async Task<IActionResult> GetDesigns(Guid id, [FromQuery] bool includeArchived = true)
     {
+        var user = await _currentUserService.GetAsync(HttpContext);
+        if (user?.Id is null) return Unauthorized();
+        if (!string.Equals(user.Role, "Customer", StringComparison.OrdinalIgnoreCase)) return Forbid();
         var workflow = await _context.WorkflowStates.AsNoTracking()
             .Include(w => w.HouseDesigns).ThenInclude(d => d.Rooms)
-            .FirstOrDefaultAsync(w => w.Id == id);
+            .FirstOrDefaultAsync(w => w.Id == id && w.LandSubmission.ClientId == user.Id.Value);
         if (workflow is null) return NotFound(new { message = $"Workflow {id} not found." });
-        return Ok(ToHistory(workflow, includeArchived));
+        var review = await _context.ValidationRequests.AsNoTracking().Where(r=>r.WorkflowStateId==id)
+            .OrderByDescending(r=>r.CreatedAt).Select(r=>new {r.Status,r.ArchitectReview}).FirstOrDefaultAsync();
+        var approvedDesignId = await _context.ValidationRequests.AsNoTracking().Where(r=>r.WorkflowStateId==id && r.Status=="Approved").Select(r=>r.HouseDesignId).FirstOrDefaultAsync();
+        return Ok(ToHistory(workflow, includeArchived, null, review?.Status, review?.ArchitectReview, approvedDesignId));
     }
 
     [HttpGet("designs")]
+    [Authorize(Roles = "Customer")]
     public async Task<IActionResult> GetMyDesigns()
     {
         var user = await _currentUserService.GetAsync(HttpContext);
         if (user?.Id is null) return Unauthorized(new { message = "User not identified." });
+        if (!string.Equals(user.Role, "Customer", StringComparison.OrdinalIgnoreCase)) return Forbid();
         var workflows = await _context.WorkflowStates.AsNoTracking()
             .Where(w => w.LandSubmission.ClientId == user.Id.Value)
             .Include(w => w.HouseDesigns).ThenInclude(d => d.Rooms)
             .OrderByDescending(w => w.UpdatedAt)
             .ToListAsync();
-        return Ok(workflows.Select(w => ToHistory(w, false)).Where(w => w.Designs.Count > 0));
+        var workflowIds = workflows.Select(w => w.Id).ToList();
+        var projects = await _context.Projects.AsNoTracking().Where(p => workflowIds.Contains(p.WorkflowStateId)).ToDictionaryAsync(p => p.WorkflowStateId, p => p.Id);
+        var reviews = await _context.ValidationRequests.AsNoTracking().Where(r=>workflowIds.Contains(r.WorkflowStateId))
+            .OrderByDescending(r=>r.CreatedAt).ToListAsync();
+        return Ok(workflows.Select(w => {var review=reviews.FirstOrDefault(r=>r.WorkflowStateId==w.Id);var approved=reviews.FirstOrDefault(r=>r.WorkflowStateId==w.Id&&r.Status=="Approved")?.HouseDesignId;return ToHistory(w, false, projects.TryGetValue(w.Id, out var pid) ? pid : null,review?.Status,review?.ArchitectReview,approved);}).Where(w => w.Designs.Count > 0));
     }
 
     [HttpPost("{id:guid}/designs/{designId:guid}/select")]
+    [Authorize(Roles = "Customer")]
     public async Task<IActionResult> SelectDesign(Guid id, Guid designId)
     {
+        var user = await _currentUserService.GetAsync(HttpContext);
+        if (user?.Id is null) return Unauthorized();
+        if (!string.Equals(user.Role, "Customer", StringComparison.OrdinalIgnoreCase)) return Forbid();
         var workflow = await _context.WorkflowStates.Include(w => w.HouseDesigns)
-            .FirstOrDefaultAsync(w => w.Id == id);
+            .FirstOrDefaultAsync(w => w.Id == id && w.LandSubmission.ClientId == user.Id.Value);
         if (workflow is null) return NotFound(new { message = $"Workflow {id} not found." });
         if (!workflow.HouseDesigns.Any(d => d.Id == designId && !d.IsArchived))
             return BadRequest(new { message = "The selected design does not belong to this workflow." });
@@ -323,9 +353,13 @@ public class WorkflowController : ControllerBase
     }
 
     [HttpDelete("{id:guid}/design-selection")]
+    [Authorize(Roles = "Customer")]
     public async Task<IActionResult> ClearDesignSelection(Guid id)
     {
-        var workflow = await _context.WorkflowStates.FirstOrDefaultAsync(w => w.Id == id);
+        var user = await _currentUserService.GetAsync(HttpContext);
+        if (user?.Id is null) return Unauthorized();
+        if (!string.Equals(user.Role, "Customer", StringComparison.OrdinalIgnoreCase)) return Forbid();
+        var workflow = await _context.WorkflowStates.FirstOrDefaultAsync(w => w.Id == id && w.LandSubmission.ClientId == user.Id.Value);
         if (workflow is null) return NotFound(new { message = $"Workflow {id} not found." });
         workflow.PreferredHouseDesignId = null;
         if (workflow.Status == "selected_by_client") workflow.Status = "design_generated";
@@ -336,10 +370,14 @@ public class WorkflowController : ControllerBase
     }
 
     [HttpDelete("{id:guid}/designs/{designId:guid}")]
+    [Authorize(Roles = "Customer")]
     public async Task<IActionResult> RemoveDesign(Guid id, Guid designId)
     {
+        var user = await _currentUserService.GetAsync(HttpContext);
+        if (user?.Id is null) return Unauthorized();
+        if (!string.Equals(user.Role, "Customer", StringComparison.OrdinalIgnoreCase)) return Forbid();
         var workflow = await _context.WorkflowStates.Include(w => w.HouseDesigns)
-            .FirstOrDefaultAsync(w => w.Id == id);
+            .FirstOrDefaultAsync(w => w.Id == id && w.LandSubmission.ClientId == user.Id.Value);
         if (workflow is null) return NotFound(new { message = $"Workflow {id} not found." });
         var design = workflow.HouseDesigns.FirstOrDefault(d => d.Id == designId && !d.IsArchived);
         if (design is null) return NotFound(new { message = "Design version not found." });
@@ -363,23 +401,32 @@ public class WorkflowController : ControllerBase
     }
 
     [HttpPost("{id:guid}/submit-architect-review")]
+    [Authorize(Roles = "Customer")]
     public async Task<IActionResult> SubmitArchitectReview(Guid id)
     {
+        var user = await _currentUserService.GetAsync(HttpContext);
+        if (user?.Id is null) return Unauthorized();
+        if (!string.Equals(user.Role, "Customer", StringComparison.OrdinalIgnoreCase)) return Forbid();
         var workflow = await _context.WorkflowStates.Include(w => w.LandSubmission)
-            .Include(w => w.HouseDesigns).FirstOrDefaultAsync(w => w.Id == id);
+            .Include(w => w.HouseDesigns).FirstOrDefaultAsync(w => w.Id == id && w.LandSubmission.ClientId == user.Id.Value);
         if (workflow is null) return NotFound(new { message = $"Workflow {id} not found." });
-        if (workflow.PreferredHouseDesignId is null ||
-            !workflow.HouseDesigns.Any(d => d.Id == workflow.PreferredHouseDesignId))
+        var selected = workflow.PreferredHouseDesignId is Guid selectedId
+            ? workflow.HouseDesigns.FirstOrDefault(d => d.Id == selectedId && !d.IsArchived) : null;
+        if (selected is null)
             return BadRequest(new { message = "Select a design before submitting it for architect review." });
+        if (string.Equals(workflow.Status, "approved", StringComparison.OrdinalIgnoreCase))
+            return Conflict(new { message = "Architect-approved designs cannot be resubmitted." });
         var active = await _context.ValidationRequests.AnyAsync(r => r.WorkflowStateId == id &&
             (r.Status == "Pending" || r.Status == "Under Review"));
-        if (!active)
-            _context.ValidationRequests.Add(new HousePlanner.API.Entities.ValidationRequest
-            {
-                WorkflowStateId = id,
-                ClientId = workflow.LandSubmission.ClientId,
-                Status = "Pending"
-            });
+        if (active) return Conflict(new { message = "This workflow already has an active architect review." });
+        var alreadyReviewed = await _context.ValidationRequests.AnyAsync(r => r.WorkflowStateId == id &&
+            r.HouseDesignId == selected.Id && (r.Status == "Approved" || r.Status == "Rejected"));
+        if (alreadyReviewed) return Conflict(new { message = "Select a new design version before submitting another review." });
+        _context.ValidationRequests.Add(new HousePlanner.API.Entities.ValidationRequest
+        {
+            WorkflowStateId = id, HouseDesignId = selected.Id,
+            ClientId = workflow.LandSubmission.ClientId, Status = "Pending"
+        });
         workflow.Status = "awaiting_architect_review";
         workflow.ApprovalStatus = "awaiting_architect_review";
         workflow.UpdatedAt = DateTimeOffset.UtcNow;
@@ -387,7 +434,7 @@ public class WorkflowController : ControllerBase
         return Ok(new { workflowId = id, status = workflow.Status });
     }
 
-    private static WorkflowDesignHistoryDto ToHistory(HousePlanner.API.Entities.WorkflowState workflow, bool includeArchived = true) =>
+    private static WorkflowDesignHistoryDto ToHistory(HousePlanner.API.Entities.WorkflowState workflow, bool includeArchived = true, Guid? projectId = null, string? reviewStatus=null, string? architectFeedback=null, Guid? approvedDesignId=null) =>
         new(workflow.Id, workflow.Status, workflow.PreferredHouseDesignId, workflow.CreatedAt,
             workflow.HouseDesigns.Where(d => includeArchived || !d.IsArchived).OrderByDescending(d => d.Version).Select(d =>
             {
@@ -402,7 +449,7 @@ public class WorkflowController : ControllerBase
                 var bedrooms = d.Rooms.Count(r => r.RoomType.Contains("bedroom", StringComparison.OrdinalIgnoreCase));
                 var bathrooms = d.Rooms.Count(r => r.RoomType.Contains("bathroom", StringComparison.OrdinalIgnoreCase));
                 return new DesignHistoryDto(
-                    d.Id, d.Version, d.IsCurrent, workflow.PreferredHouseDesignId == d.Id, d.IsArchived,
+                    d.Id, d.Version, d.IsCurrent, workflow.PreferredHouseDesignId == d.Id, d.IsArchived, approvedDesignId == d.Id,
                     root.TryGetProperty("template_family", out var topology) ? topology.GetString() : d.TemplateId,
                     bedrooms, bathrooms, d.FloorCount, d.TotalBuiltUpAreaSqft, d.FoundationType,
                     SummaryString("generation_mode"), SummaryString("selected_plan_code") ?? SummaryString("base_plan_code"),
@@ -411,12 +458,29 @@ public class WorkflowController : ControllerBase
                     Number(root, "design_score"),
                     d.Rooms.Select(r => new DesignPreviewRoomDto(r.RoomType, r.FloorNumber, r.X, r.Y, r.Width, r.Length)).ToList(),
                     d.CreatedAt);
-            }).ToList());
+            }).ToList(),projectId,reviewStatus,architectFeedback);
 
     [HttpPost("{id}/approve")]
+    [Authorize(Roles = "Customer,Architect,Admin")]
     public async Task<IActionResult> ApproveWorkflow(Guid id, [FromBody] ApprovalRequestDto request)
     {
         var user = await _currentUserService.GetAsync(HttpContext);
+        if (user?.Id is null) return Unauthorized();
+        if (string.Equals(user.Role, "Customer", StringComparison.OrdinalIgnoreCase))
+        {
+            var ownsWorkflow = await _context.WorkflowStates.AnyAsync(w =>
+                w.Id == id && w.LandSubmission.ClientId == user.Id.Value);
+            if (!ownsWorkflow) return NotFound(new { message = $"Workflow {id} not found." });
+        }
+        else if (string.Equals(user.Role, "Architect", StringComparison.OrdinalIgnoreCase))
+        {
+            var submittedForReview = await _context.ValidationRequests.AnyAsync(r => r.WorkflowStateId == id);
+            if (!submittedForReview) return NotFound(new { message = $"Workflow {id} not found." });
+        }
+        else if (!string.Equals(user.Role, "Admin", StringComparison.OrdinalIgnoreCase))
+        {
+            return Forbid();
+        }
         var result = await _workflowService.ProcessApprovalAsync(id, request, user?.Email, user?.Role);
 
         switch (result.Outcome)

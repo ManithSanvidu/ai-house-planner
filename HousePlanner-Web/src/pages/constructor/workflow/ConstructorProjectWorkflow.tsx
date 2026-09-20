@@ -49,7 +49,7 @@ export const ConstructorProjectWorkflow: React.FC = () => {
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <Link
-        to="/constructor/workflow"
+        to="/constructor/dashboard"
         className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
       >
         <ArrowLeft className="h-4 w-4" />
@@ -139,7 +139,7 @@ export const ConstructorProjectWorkflow: React.FC = () => {
         </div>
       </div>
 
-      {showAddForm && (
+      {showAddForm && progress.totalEstimatedDays > 0 && (
         <div className="mb-8 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
           <h2 className="mb-6 text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
             <FileText className="h-5 w-5 text-indigo-600" />
@@ -156,13 +156,72 @@ export const ConstructorProjectWorkflow: React.FC = () => {
         </div>
       )}
 
-      <div className="rounded-2xl border border-gray-100 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
-        <div className="border-b border-gray-200 px-6 py-4 dark:border-gray-800">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Logbook History</h2>
+      {progress.totalEstimatedDays > 0 ? (
+        <div className="rounded-2xl border border-gray-100 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
+          <div className="border-b border-gray-200 px-6 py-4 dark:border-gray-800">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Logbook History</h2>
+          </div>
+          <div className="p-6">
+            <WorkflowHistory logs={logs} />
+          </div>
         </div>
-        <div className="p-6">
-          <WorkflowHistory logs={logs} />
-        </div>
+      ) : (
+        <ProjectSetupScreen 
+          projectId={project.id} 
+          onSuccess={loadData} 
+        />
+      )}
+    </div>
+  );
+};
+
+const ProjectSetupScreen: React.FC<{ projectId: string, onSuccess: () => void }> = ({ projectId, onSuccess }) => {
+  const [estimatedDays, setEstimatedDays] = useState(30);
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await constructorWorkflowService.setEstimatedDuration(projectId, estimatedDays);
+      onSuccess();
+    } catch (error) {
+      console.error('Failed to set duration', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+      <div className="mx-auto max-w-lg text-center">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Project Setup Required</h2>
+        <p className="mt-4 text-gray-500 dark:text-gray-400">
+          Before you can start logging daily progress, please provide an estimate of how many days it will take to complete this project.
+        </p>
+        
+        <form onSubmit={handleSubmit} className="mt-8">
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Estimated Total Duration (Days)
+            </label>
+            <input
+              type="number"
+              min="1"
+              required
+              value={estimatedDays}
+              onChange={(e) => setEstimatedDays(parseInt(e.target.value) || 0)}
+              className="block w-full rounded-xl border border-gray-300 bg-white py-3 px-4 text-center text-xl font-bold text-gray-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={loading || estimatedDays < 1}
+            className="w-full flex justify-center rounded-xl bg-indigo-600 px-8 py-3 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50"
+          >
+            {loading ? 'Saving...' : 'Set Estimate & Continue'}
+          </button>
+        </form>
       </div>
     </div>
   );

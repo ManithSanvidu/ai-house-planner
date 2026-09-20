@@ -8,4 +8,6 @@ public interface IDesignOptionsService
 {
     Task<DesignOptionsResponseDto> GetAvailableOptionsAsync(DesignOptionsRequestDto request, CancellationToken cancellationToken = default);
     Task<DesignOptionsValidationResult> ValidateFinalSelectionAsync(AiGenerationRequest request, CancellationToken cancellationToken = default);
+    Task<DesignOptionsValidationResult> ValidateSpecificPlanAsync(PreDesignedHousePlan plan, AiGenerationRequest request,
+        CancellationToken cancellationToken = default);
 }

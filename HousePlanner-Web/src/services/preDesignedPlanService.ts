@@ -12,13 +12,14 @@ export interface PreDesignedPlanDetail extends PreDesignedPlanSummary {
   layout:FloorPlanData; conceptualDisclaimer:string;
 }
 export interface PlanFilters { bedrooms?:number; bathrooms?:number; floors?:number; style?:string; terrain?:string; minimumLandSizePerches?:number; maximumBuiltUpArea?:number; parking?:boolean; office?:boolean; balcony?:boolean; accessible?:boolean; category?:string; search?:string }
-export interface PlanCompatibility { compatible:boolean; issues:string[]; warnings:string[] }
+export interface PlanCompatibility { compatible:boolean; issues:string[]; warnings:string[]; landSizePerches?:number; minimumLandSizePerches?:number }
 export type SavePlan = Omit<PreDesignedPlanDetail,'id'|'conceptualDisclaimer'>;
 
 export const preDesignedPlanService = {
   list: async (filters:PlanFilters={}) => (await apiClient.get<PreDesignedPlanSummary[]>('/pre-designed-plans',{params:filters})).data,
   detail: async (id:string) => (await apiClient.get<PreDesignedPlanDetail>(`/pre-designed-plans/${id}`)).data,
   compatibility: async (id:string, request:object) => (await apiClient.post<PlanCompatibility>(`/pre-designed-plans/${id}/check-compatibility`,request)).data,
+  currentProjectCompatibility: async (id:string) => (await apiClient.get<PlanCompatibility>(`/pre-designed-plans/${id}/check-current-project`)).data,
   adminList: async (status='all') => (await apiClient.get<PreDesignedPlanSummary[]>('/admin/pre-designed-plans',{params:{status}})).data,
   adminDetail: async (id:string) => (await apiClient.get<PreDesignedPlanDetail>(`/admin/pre-designed-plans/${id}`)).data,
   create: async (plan:SavePlan) => (await apiClient.post<PreDesignedPlanDetail>('/admin/pre-designed-plans',plan)).data,
