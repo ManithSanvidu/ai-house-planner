@@ -13,7 +13,10 @@ public record WorkflowStatusResponseDto(
     CostSummaryDto? Cost,
     System.Text.Json.JsonElement? ConstructionPlan,
     string ApprovalStatus,
-    string? FailureReason = null
+    string? FailureReason = null,
+    Guid? PreferredHouseDesignId = null,
+    string? ArchitectReviewStatus = null,
+    string? ArchitectFeedback = null
 );
 
 public record HouseDesignSummaryDto(
@@ -96,5 +99,7 @@ public record WorkflowDesignHistoryDto(
     Guid? PreferredHouseDesignId,
     DateTimeOffset CreatedAt,
     List<DesignHistoryDto> Designs,
-    Guid? ProjectId = null
+    Guid? ProjectId = null,
+    string? ArchitectReviewStatus = null,
+    string? ArchitectFeedback = null
 );

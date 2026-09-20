@@ -60,14 +60,16 @@ const MyDesignsPage: React.FC = () => {
     {!projects.length && !error && <div className="rounded-2xl border border-dashed p-10 text-center"><p className="font-semibold">No designs yet</p><Link to="/dashboard/new-project" className="text-indigo-600">Create your first project</Link></div>}
     <div className="space-y-6">{projects.map(project => {
       const selected = project.designs.find(d => d.isPreferred);
-      const submitted = project.status === 'awaiting_architect_review';
+      const submitted = project.status === 'awaiting_architect_review' || project.architectReviewStatus === 'Pending' || project.architectReviewStatus === 'Under Review';
       const approved = project.status === 'approved';
+      const rejected = project.architectReviewStatus === 'Rejected';
       const compareCount = (compareIds[project.workflowId] || []).length;
       return <section key={project.workflowId} className="rounded-2xl border bg-zinc-50/60 dark:bg-gray-900/50 p-4 sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
           <div><h2 className="font-bold">Project {project.workflowId.slice(0, 8)}</h2><div className="flex flex-wrap gap-x-4 text-sm text-zinc-500 mt-1"><span>{project.designs.length} saved design{project.designs.length === 1 ? '' : 's'}</span><span>{selected ? `Selected: Version ${selected.version}` : 'No design selected'}</span><span>{formatWorkflowStatus(project.status)}</span></div></div>
-          <div className="flex flex-wrap gap-2"><Link to={`/dashboard/workflows/${project.workflowId}`} className="px-4 py-2 rounded-xl border bg-white dark:bg-gray-950 font-semibold text-sm">Generate Another</Link><button onClick={() => submit(project.workflowId)} disabled={!selected || submitted || approved} className="px-4 py-2 rounded-xl bg-emerald-600 text-white font-semibold text-sm disabled:opacity-40">Submit Selected to Architect</button></div>
+          <div className="flex flex-wrap gap-2">{approved?<span className="px-4 py-2 rounded-xl bg-emerald-100 text-emerald-800 font-bold">✓ Architect Approved</span>:submitted?<span className="px-4 py-2 rounded-xl bg-amber-100 text-amber-900 font-bold">Awaiting Architect Review</span>:<><Link to={`/dashboard/workflows/${project.workflowId}`} className="px-4 py-2 rounded-xl border bg-white dark:bg-gray-950 font-semibold text-sm">{rejected?'Generate New Design':'Generate Another'}</Link><button onClick={() => submit(project.workflowId)} disabled={!selected} className="px-4 py-2 rounded-xl bg-emerald-600 text-white font-semibold text-sm disabled:opacity-40">Send Selected to Architect</button></>}</div>
         </div>
+        {rejected&&<div className="mb-4 rounded-xl bg-red-50 text-red-800 p-3"><b>Design Needs Changes</b>{project.architectFeedback&&<p>Architect feedback: “{project.architectFeedback}”</p>}</div>}
         <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-3">{project.designs.map(design => <DesignCard key={design.designId} design={design} workflow={project} compared={compareIds[project.workflowId]?.includes(design.designId) || false} compareFull={compareCount === 2} onCompare={() => toggleCompare(project.workflowId, design.designId)} onSelect={() => select(project.workflowId, design.designId)} onUnselect={() => unselect(project.workflowId)} onRemove={() => setPendingRemoval({ workflow: project, design })}/>)}</div>
         {approved && project.projectId && (
           <div className="mt-6 border-t border-gray-200 pt-6 dark:border-gray-800">

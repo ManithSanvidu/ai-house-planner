@@ -33,9 +33,12 @@ namespace HousePlanner.API.Controllers
             var userId = userCtx.Id;
             if (userCtx.Role != "Customer") return StatusCode(403);
 
-            var workflow = await _context.WorkflowStates.FirstOrDefaultAsync(w =>
+            var workflow = await _context.WorkflowStates.Include(w=>w.HouseDesigns).FirstOrDefaultAsync(w =>
                 w.Id == dto.WorkflowStateId && w.LandSubmission.ClientId == userId.Value);
             if (workflow == null) return NotFound(new { message = "Workflow/Design not found." });
+            var selected = workflow.PreferredHouseDesignId is Guid selectedId
+                ? workflow.HouseDesigns.FirstOrDefault(d=>d.Id==selectedId && !d.IsArchived) : null;
+            if (selected is null) return BadRequest(new { message = "Select a design before submitting it for architect review." });
 
             var existingRequest = await _context.ValidationRequests
                 .FirstOrDefaultAsync(v => v.WorkflowStateId == dto.WorkflowStateId && (v.Status == "Pending" || v.Status == "Under Review"));
@@ -45,6 +48,7 @@ namespace HousePlanner.API.Controllers
             {
                 Id = Guid.NewGuid(),
                 WorkflowStateId = dto.WorkflowStateId,
+                HouseDesignId = selected.Id,
                 ClientId = userId.Value,
                 Status = "Pending"
             };
@@ -67,6 +71,7 @@ namespace HousePlanner.API.Controllers
                 .Include(v => v.Client)
                 .Include(v => v.WorkflowState)
                     .ThenInclude(w => w.LandSubmission)
+                .Include(v=>v.HouseDesign).ThenInclude(d=>d.Rooms)
                 .OrderByDescending(v => v.CreatedAt);
 
             if (role == "Architect")
@@ -101,6 +106,7 @@ namespace HousePlanner.API.Controllers
                     .ThenInclude(w => w.LandSubmission)
                 .Include(v => v.WorkflowState)
                     .ThenInclude(w => w.HouseDesigns)
+                .Include(v=>v.HouseDesign).ThenInclude(d=>d.Rooms)
                 .FirstOrDefaultAsync(v => v.Id == id);
 
             if (request == null) return NotFound();
@@ -110,6 +116,8 @@ namespace HousePlanner.API.Controllers
                 return StatusCode(403, new { message = "Unauthorized access." });
             }
 
+            if (role == "Architect" && request.ArchitectId.HasValue && request.ArchitectId != userId.Value)
+                return StatusCode(403, new { message = "This request is assigned to another architect." });
             if (role == "Architect" && request.Status == "Pending")
             {
                 request.Status = "Under Review";
@@ -132,7 +140,8 @@ namespace HousePlanner.API.Controllers
             var request = await _context.ValidationRequests.Include(v => v.WorkflowState).FirstOrDefaultAsync(v => v.Id == id);
             if (request == null) return NotFound();
 
-            if (request.Status == "Approved") return Conflict(new { message = "Already approved." });
+            if (request.Status is not ("Pending" or "Under Review")) return Conflict(new { message = "This request has already been finalized." });
+            if (request.ArchitectId.HasValue && request.ArchitectId != userId) return StatusCode(403);
 
             request.Status = "Approved";
             request.ArchitectReview = dto.Review;
@@ -160,7 +169,9 @@ namespace HousePlanner.API.Controllers
             var request = await _context.ValidationRequests.Include(v => v.WorkflowState).FirstOrDefaultAsync(v => v.Id == id);
             if (request == null) return NotFound();
 
-            if (request.Status == "Rejected") return Conflict(new { message = "Already rejected." });
+            if (request.Status is not ("Pending" or "Under Review")) return Conflict(new { message = "This request has already been finalized." });
+            if (request.ArchitectId.HasValue && request.ArchitectId != userId) return StatusCode(403);
+            if (string.IsNullOrWhiteSpace(dto.Review)) return BadRequest(new { message = "A rejection reason is required." });
 
             request.Status = "Rejected";
             request.ArchitectReview = dto.Review;
@@ -187,14 +198,15 @@ namespace HousePlanner.API.Controllers
                 bedrooms = req.WorkflowState?.LandSubmission?.PreferredBedrooms,
                 floors = req.WorkflowState?.LandSubmission?.PreferredFloors,
                 style = req.WorkflowState?.LandSubmission?.StylePreference
+                ,designVersion = req.HouseDesign?.Version
+                ,bathrooms = req.HouseDesign?.Rooms.Count(r=>r.RoomType.Contains("bathroom"))
+                ,area = req.HouseDesign?.TotalBuiltUpAreaSqft
             };
         }
 
         private object MapToDetailedDto(ValidationRequest req)
         {
-            var design = req.WorkflowState?.PreferredHouseDesignId is Guid preferredId
-                ? req.WorkflowState.HouseDesigns.FirstOrDefault(d => d.Id == preferredId)
-                : req.WorkflowState?.HouseDesigns?.OrderByDescending(d => d.Version).FirstOrDefault();
+            var design = req.HouseDesign ?? req.WorkflowState?.HouseDesigns?.OrderByDescending(d=>d.Version).FirstOrDefault();
             return new
             {
                 id = req.Id,
@@ -213,6 +225,9 @@ namespace HousePlanner.API.Controllers
                 design = design != null ? new
                 {
                     designId = design.Id,
+                    version = design.Version,
+                    floorCount = design.FloorCount,
+                    totalBuiltUpAreaSqft = design.TotalBuiltUpAreaSqft,
                     layoutJson = design.LayoutJson,
                     
                     

@@ -67,6 +67,13 @@ namespace HousePlanner.API.Data
                 .HasForeignKey(e => e.PreferredHouseDesignId)
                 .OnDelete(DeleteBehavior.SetNull);
 
+            modelBuilder.Entity<ValidationRequest>()
+                .HasOne(x => x.HouseDesign).WithMany().HasForeignKey(x => x.HouseDesignId)
+                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<ValidationRequest>()
+                .HasIndex(x => new { x.WorkflowStateId, x.HouseDesignId, x.Status })
+                .HasDatabaseName("IX_ValidationRequests_Workflow_Design_Status");
+
             modelBuilder.Entity<Room>(entity =>
             {
                 entity.HasIndex(e => e.HouseDesignId).HasDatabaseName("IX_Rooms_HouseDesignId");

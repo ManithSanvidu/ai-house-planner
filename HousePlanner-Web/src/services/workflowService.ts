@@ -89,6 +89,9 @@ export interface WorkflowStatusResponseDto {
   cost: CostSummaryDto | null;
   approvalStatus: string;
   failureReason?: string | null;
+  preferredHouseDesignId?: string | null;
+  architectReviewStatus?: string | null;
+  architectFeedback?: string | null;
   constructionPlan?: ConstructionPlanSummaryDto | null;
 }
 
@@ -120,6 +123,8 @@ export interface WorkflowDesignHistoryDto {
   createdAt: string;
   designs: DesignHistoryDto[];
   projectId?: string;
+  architectReviewStatus?: string | null;
+  architectFeedback?: string | null;
 }
 
 export interface StartDesignRequest {

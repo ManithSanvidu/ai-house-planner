@@ -59,6 +59,7 @@ public class WorkflowController : ControllerBase
                     w.TerrainType,
                     w.SlopeEstimate,
                     w.ApprovalStatus,
+                    w.PreferredHouseDesignId,
                     w.FailureReason,
                     w.ConstructionPlan,
                     // Pick the current (or latest) design version
@@ -200,7 +201,14 @@ public class WorkflowController : ControllerBase
                 Cost: costDto,
                 ConstructionPlan: parsedConstructionPlan,
                 ApprovalStatus: workflow.ApprovalStatus,
-                FailureReason: workflow.FailureReason
+                FailureReason: workflow.FailureReason,
+                PreferredHouseDesignId: workflow.PreferredHouseDesignId,
+                ArchitectReviewStatus: designDto is null ? null : await _context.ValidationRequests.AsNoTracking()
+                    .Where(r=>r.WorkflowStateId==workflow.Id && r.HouseDesignId==designDto.DesignId)
+                    .OrderByDescending(r=>r.CreatedAt).Select(r=>r.Status).FirstOrDefaultAsync(),
+                ArchitectFeedback: designDto is null ? null : await _context.ValidationRequests.AsNoTracking()
+                    .Where(r=>r.WorkflowStateId==workflow.Id && r.HouseDesignId==designDto.DesignId)
+                    .OrderByDescending(r=>r.CreatedAt).Select(r=>r.ArchitectReview).FirstOrDefaultAsync()
             );
 
             return Ok(responseDto);
@@ -299,7 +307,9 @@ public class WorkflowController : ControllerBase
             .Include(w => w.HouseDesigns).ThenInclude(d => d.Rooms)
             .FirstOrDefaultAsync(w => w.Id == id && w.LandSubmission.ClientId == user.Id.Value);
         if (workflow is null) return NotFound(new { message = $"Workflow {id} not found." });
-        return Ok(ToHistory(workflow, includeArchived));
+        var review = await _context.ValidationRequests.AsNoTracking().Where(r=>r.WorkflowStateId==id)
+            .OrderByDescending(r=>r.CreatedAt).Select(r=>new {r.Status,r.ArchitectReview}).FirstOrDefaultAsync();
+        return Ok(ToHistory(workflow, includeArchived, null, review?.Status, review?.ArchitectReview));
     }
 
     [HttpGet("designs")]
@@ -316,7 +326,9 @@ public class WorkflowController : ControllerBase
             .ToListAsync();
         var workflowIds = workflows.Select(w => w.Id).ToList();
         var projects = await _context.Projects.AsNoTracking().Where(p => workflowIds.Contains(p.WorkflowStateId)).ToDictionaryAsync(p => p.WorkflowStateId, p => p.Id);
-        return Ok(workflows.Select(w => ToHistory(w, false, projects.TryGetValue(w.Id, out var pid) ? pid : null)).Where(w => w.Designs.Count > 0));
+        var reviews = await _context.ValidationRequests.AsNoTracking().Where(r=>workflowIds.Contains(r.WorkflowStateId))
+            .OrderByDescending(r=>r.CreatedAt).ToListAsync();
+        return Ok(workflows.Select(w => {var review=reviews.FirstOrDefault(r=>r.WorkflowStateId==w.Id);return ToHistory(w, false, projects.TryGetValue(w.Id, out var pid) ? pid : null,review?.Status,review?.ArchitectReview);}).Where(w => w.Designs.Count > 0));
     }
 
     [HttpPost("{id:guid}/designs/{designId:guid}/select")]
@@ -397,18 +409,23 @@ public class WorkflowController : ControllerBase
         var workflow = await _context.WorkflowStates.Include(w => w.LandSubmission)
             .Include(w => w.HouseDesigns).FirstOrDefaultAsync(w => w.Id == id && w.LandSubmission.ClientId == user.Id.Value);
         if (workflow is null) return NotFound(new { message = $"Workflow {id} not found." });
-        if (workflow.PreferredHouseDesignId is null ||
-            !workflow.HouseDesigns.Any(d => d.Id == workflow.PreferredHouseDesignId))
+        var selected = workflow.PreferredHouseDesignId is Guid selectedId
+            ? workflow.HouseDesigns.FirstOrDefault(d => d.Id == selectedId && !d.IsArchived) : null;
+        if (selected is null)
             return BadRequest(new { message = "Select a design before submitting it for architect review." });
+        if (string.Equals(workflow.Status, "approved", StringComparison.OrdinalIgnoreCase))
+            return Conflict(new { message = "Architect-approved designs cannot be resubmitted." });
         var active = await _context.ValidationRequests.AnyAsync(r => r.WorkflowStateId == id &&
             (r.Status == "Pending" || r.Status == "Under Review"));
-        if (!active)
-            _context.ValidationRequests.Add(new HousePlanner.API.Entities.ValidationRequest
-            {
-                WorkflowStateId = id,
-                ClientId = workflow.LandSubmission.ClientId,
-                Status = "Pending"
-            });
+        if (active) return Conflict(new { message = "This workflow already has an active architect review." });
+        var alreadyReviewed = await _context.ValidationRequests.AnyAsync(r => r.WorkflowStateId == id &&
+            r.HouseDesignId == selected.Id && (r.Status == "Approved" || r.Status == "Rejected"));
+        if (alreadyReviewed) return Conflict(new { message = "Select a new design version before submitting another review." });
+        _context.ValidationRequests.Add(new HousePlanner.API.Entities.ValidationRequest
+        {
+            WorkflowStateId = id, HouseDesignId = selected.Id,
+            ClientId = workflow.LandSubmission.ClientId, Status = "Pending"
+        });
         workflow.Status = "awaiting_architect_review";
         workflow.ApprovalStatus = "awaiting_architect_review";
         workflow.UpdatedAt = DateTimeOffset.UtcNow;
@@ -416,7 +433,7 @@ public class WorkflowController : ControllerBase
         return Ok(new { workflowId = id, status = workflow.Status });
     }
 
-    private static WorkflowDesignHistoryDto ToHistory(HousePlanner.API.Entities.WorkflowState workflow, bool includeArchived = true, Guid? projectId = null) =>
+    private static WorkflowDesignHistoryDto ToHistory(HousePlanner.API.Entities.WorkflowState workflow, bool includeArchived = true, Guid? projectId = null, string? reviewStatus=null, string? architectFeedback=null) =>
         new(workflow.Id, workflow.Status, workflow.PreferredHouseDesignId, workflow.CreatedAt,
             workflow.HouseDesigns.Where(d => includeArchived || !d.IsArchived).OrderByDescending(d => d.Version).Select(d =>
             {
@@ -440,7 +457,7 @@ public class WorkflowController : ControllerBase
                     Number(root, "design_score"),
                     d.Rooms.Select(r => new DesignPreviewRoomDto(r.RoomType, r.FloorNumber, r.X, r.Y, r.Width, r.Length)).ToList(),
                     d.CreatedAt);
-            }).ToList());
+            }).ToList(),projectId,reviewStatus,architectFeedback);
 
     [HttpPost("{id}/approve")]
     [Authorize(Roles = "Customer,Architect,Admin")]

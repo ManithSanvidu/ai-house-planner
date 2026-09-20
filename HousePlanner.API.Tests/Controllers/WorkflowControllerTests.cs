@@ -302,7 +302,9 @@ public class WorkflowControllerTests
         Assert.IsType<OkObjectResult>(await _controller.SubmitArchitectReview(workflowId));
         var persisted = await _dbContext.WorkflowStates.SingleAsync(w => w.Id == workflowId);
         Assert.Equal("awaiting_architect_review", persisted.Status);
-        Assert.Single(await _dbContext.ValidationRequests.Where(r => r.WorkflowStateId == workflowId).ToListAsync());
+        var request=Assert.Single(await _dbContext.ValidationRequests.Where(r => r.WorkflowStateId == workflowId).ToListAsync());
+        Assert.Equal(selected.Id,request.HouseDesignId);
+        Assert.IsType<ConflictObjectResult>(await _controller.SubmitArchitectReview(workflowId));
     }
 
     private static HouseDesign Design(Guid workflowId, int version, bool current) => new()
