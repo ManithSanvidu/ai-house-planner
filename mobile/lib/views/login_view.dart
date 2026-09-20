@@ -1,7 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
+import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
 import '../core/theme/app_tokens.dart';
 
@@ -245,8 +245,8 @@ class _LoginViewState extends ConsumerState<LoginView> {
                       children: [
                         const Text('No account? ', style: TextStyle(color: AppTokens.inkMute, fontSize: 12.5)),
                         GestureDetector(
-                          onTap: () {},
-                          child: const Text('Contact administrator', style: TextStyle(color: AppTokens.accent, fontWeight: FontWeight.w600, fontSize: 12.5)),
+                          onTap: () => context.go('/register'),
+                          child: const Text('Sign up', style: TextStyle(color: AppTokens.accent, fontWeight: FontWeight.w600, fontSize: 12.5)),
                         )
                       ],
                     ),
