@@ -141,11 +141,30 @@ class _PlanLibraryViewState extends ConsumerState<PlanLibraryView> {
                                     Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Text(
-                                          plan.name,
-                                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: AppTokens.ink),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                plan.name,
+                                                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: AppTokens.ink),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFFF4F4F5),
+                                                borderRadius: BorderRadius.circular(16),
+                                              ),
+                                              child: Text(
+                                                plan.category,
+                                                style: const TextStyle(fontSize: 10, color: AppTokens.ink),
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                         const SizedBox(height: 2),
                                         Text(
@@ -155,7 +174,7 @@ class _PlanLibraryViewState extends ConsumerState<PlanLibraryView> {
                                             fontWeight: FontWeight.w500,
                                             color: AppTokens.inkMute,
                                           ),
-                                          maxLines: 2,
+                                          maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                         ),
                                       ],
