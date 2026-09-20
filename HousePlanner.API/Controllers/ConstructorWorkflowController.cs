@@ -181,15 +181,44 @@ namespace HousePlanner.API.Controllers
             var user = await _currentUserContext.GetAsync(HttpContext);
             if (user?.Id == null) return Unauthorized();
 
-            var requests = await _db.ConstructorProjectRequests.AsNoTracking()
+            var raw = await _db.ConstructorProjectRequests.AsNoTracking()
                 .Where(r => r.ConstructorId == user.Id.Value)
                 .Include(r => r.Customer).Include(r => r.HouseDesign)
                 .OrderByDescending(r => r.CreatedAt)
-                .Select(r => new { r.Id, r.ProjectId, r.HouseDesignId, r.Status, requestedAt = r.CreatedAt,
-                    customerName = r.Customer!.FullName, designVersion = r.HouseDesign!.Version,
-                    area = r.HouseDesign.TotalBuiltUpAreaSqft, r.DeclineReason })
+                .Select(r => new {
+                    r.Id, r.ProjectId, r.HouseDesignId, r.Status, requestedAt = r.CreatedAt,
+                    customerName = r.Customer != null ? r.Customer.FullName : "Unknown",
+                    designVersion = r.HouseDesign != null ? (int?)r.HouseDesign.Version : null,
+                    area = r.HouseDesign != null ? r.HouseDesign.TotalBuiltUpAreaSqft : 0m,
+                    floorCount = r.HouseDesign != null ? r.HouseDesign.FloorCount : 0,
+                    layoutJson = r.HouseDesign != null ? r.HouseDesign.LayoutJson : null,
+                    r.DeclineReason
+                })
                 .ToListAsync();
-            return Ok(requests);
+
+            return Ok(raw.Select(r => new {
+                r.Id, r.ProjectId, r.HouseDesignId, r.Status, r.requestedAt,
+                r.customerName, r.designVersion, r.area, r.floorCount, r.DeclineReason,
+                title = DesignTitle(r.layoutJson, r.designVersion ?? 0),
+                bedrooms = CountRooms(r.layoutJson, "bedroom"),
+                bathrooms = CountRooms(r.layoutJson, "bathroom")
+            }));
+        }
+
+        private static int CountRooms(string? json, string type)
+        {
+            if (string.IsNullOrEmpty(json)) return 0;
+            try { using var doc = System.Text.Json.JsonDocument.Parse(json); return doc.RootElement.GetProperty("rooms").EnumerateArray().Count(r => r.TryGetProperty("room_type", out var t) && t.GetString()?.Contains(type, StringComparison.OrdinalIgnoreCase) == true); }
+            catch { return 0; }
+        }
+        private static string DesignTitle(string? json, int version)
+        {
+            if (!string.IsNullOrEmpty(json))
+            {
+                try { using var doc = System.Text.Json.JsonDocument.Parse(json); if (doc.RootElement.TryGetProperty("topology", out var t)) return $"{t.GetString()?.Replace('_', ' ')} Home"; }
+                catch { }
+            }
+            return $"Approved Design v{version}";
         }
 
         [HttpPost("requests/{requestId:guid}/accept")]
@@ -202,7 +231,7 @@ namespace HousePlanner.API.Controllers
                 .FirstOrDefaultAsync(r => r.Id == requestId && r.ConstructorId == user.Id.Value);
             if (request == null) return NotFound();
             if (request.Status != "Pending") return Conflict(new { message = "Only pending requests can be accepted." });
-            var approved = await _db.ValidationRequests.AnyAsync(v => v.HouseDesignId == request.HouseDesignId && v.ClientId == request.CustomerId && v.Status == "Approved");
+            var approved = await _db.ValidationRequests.Include(v => v.WorkflowState).AnyAsync(v => (v.HouseDesignId == request.HouseDesignId || v.WorkflowState.PreferredHouseDesignId == request.HouseDesignId) && v.ClientId == request.CustomerId && v.Status == "Approved");
             if (!approved) return Conflict(new { message = "The design is no longer approved for construction." });
             if (request.Project == null) return Conflict(new { message = "Construction project is unavailable." });
             if (request.Project.ContractorId != null) return Conflict(new { message = "This project already has an assigned constructor." });

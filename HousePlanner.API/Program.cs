@@ -80,6 +80,7 @@ builder.Services.AddScoped<PreDesignedPlanSeeder>();
 builder.Services.AddScoped<IWorkflowService, WorkflowService>();
 builder.Services.AddScoped<IDesignOptionsService, DesignOptionsService>();
 builder.Services.AddScoped<IPricingService, PricingService>();
+builder.Services.AddScoped<IConstructorWorkflowService, ConstructorWorkflowService>();
 builder.Services.AddHttpClient("AgenticService", client =>
 {
     client.BaseAddress = new Uri(builder.Configuration["AgenticService:BaseUrl"] ?? "http://localhost:8001");

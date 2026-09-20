@@ -36,7 +36,7 @@ public sealed class CustomerConstructionLifecycleTests
     [Fact]
     public async Task CustomerCanRequestRealConstructorForOwnApprovedDesign()
     {
-        var result = await CustomerController(_customerA).CreateRequest(new(_approvedDesign.Id, _constructorA));
+        var result = await CustomerController(_customerA).CreateRequest(new(_approvedDesign.Id, _constructorA), default);
         Assert.IsType<CreatedAtActionResult>(result);
         var request = Assert.Single(_db.ConstructorProjectRequests);
         Assert.Equal(_customerA, request.CustomerId);
@@ -47,22 +47,22 @@ public sealed class CustomerConstructionLifecycleTests
     public async Task UnapprovedAndForeignDesignsCannotBeRequested()
     {
         var unapproved = AddApprovedWorkflow(_customerA, false); await _db.SaveChangesAsync();
-        Assert.IsType<BadRequestObjectResult>(await CustomerController(_customerA).CreateRequest(new(unapproved.Id, _constructorA)));
-        Assert.IsType<NotFoundResult>(await CustomerController(_customerA).CreateRequest(new(_foreignDesign.Id, _constructorA)));
+        Assert.IsType<BadRequestObjectResult>(await CustomerController(_customerA).CreateRequest(new(unapproved.Id, _constructorA), default));
+        Assert.IsType<NotFoundResult>(await CustomerController(_customerA).CreateRequest(new(_foreignDesign.Id, _constructorA), default));
     }
 
     [Fact]
     public async Task NonConstructorAndDuplicatePendingRequestAreRejected()
     {
-        Assert.IsType<BadRequestObjectResult>(await CustomerController(_customerA).CreateRequest(new(_approvedDesign.Id, _customerB)));
-        Assert.IsType<CreatedAtActionResult>(await CustomerController(_customerA).CreateRequest(new(_approvedDesign.Id, _constructorA)));
-        Assert.IsType<ConflictObjectResult>(await CustomerController(_customerA).CreateRequest(new(_approvedDesign.Id, _constructorA)));
+        Assert.IsType<BadRequestObjectResult>(await CustomerController(_customerA).CreateRequest(new(_approvedDesign.Id, _customerB), default));
+        Assert.IsType<CreatedAtActionResult>(await CustomerController(_customerA).CreateRequest(new(_approvedDesign.Id, _constructorA), default));
+        Assert.IsType<ConflictObjectResult>(await CustomerController(_customerA).CreateRequest(new(_approvedDesign.Id, _constructorA), default));
     }
 
     [Fact]
     public async Task ConstructorCanAcceptOnlyOwnRequest()
     {
-        await CustomerController(_customerA).CreateRequest(new(_approvedDesign.Id, _constructorA));
+        await CustomerController(_customerA).CreateRequest(new(_approvedDesign.Id, _constructorA), default);
         var request = Assert.Single(_db.ConstructorProjectRequests);
         Assert.IsType<NotFoundResult>(await ConstructorController(_constructorB).AcceptRequest(request.Id));
         Assert.IsType<OkObjectResult>(await ConstructorController(_constructorA).AcceptRequest(request.Id));
@@ -73,7 +73,7 @@ public sealed class CustomerConstructionLifecycleTests
     [Fact]
     public async Task ConstructorCanDeclineOnlyOwnRequest()
     {
-        await CustomerController(_customerA).CreateRequest(new(_approvedDesign.Id, _constructorA));
+        await CustomerController(_customerA).CreateRequest(new(_approvedDesign.Id, _constructorA), default);
         var request = Assert.Single(_db.ConstructorProjectRequests);
         Assert.IsType<NotFoundResult>(await ConstructorController(_constructorB).DeclineRequest(request.Id, new("No capacity")));
         Assert.IsType<OkObjectResult>(await ConstructorController(_constructorA).DeclineRequest(request.Id, new("No capacity")));
@@ -83,7 +83,7 @@ public sealed class CustomerConstructionLifecycleTests
     [Fact]
     public async Task AssignedConstructorCanLogAndOtherConstructorCannot()
     {
-        await CustomerController(_customerA).CreateRequest(new(_approvedDesign.Id, _constructorA));
+        await CustomerController(_customerA).CreateRequest(new(_approvedDesign.Id, _constructorA), default);
         var request = Assert.Single(_db.ConstructorProjectRequests);
         await ConstructorController(_constructorA).AcceptRequest(request.Id);
         var service = new ConstructorWorkflowService(_db);
@@ -94,7 +94,7 @@ public sealed class CustomerConstructionLifecycleTests
     [Fact]
     public async Task CustomerCanReadOnlyOwnConstructionProjectAndRealActivity()
     {
-        await CustomerController(_customerA).CreateRequest(new(_approvedDesign.Id, _constructorA));
+        await CustomerController(_customerA).CreateRequest(new(_approvedDesign.Id, _constructorA), default);
         var request = Assert.Single(_db.ConstructorProjectRequests);
         await ConstructorController(_constructorA).AcceptRequest(request.Id);
         var service = new ConstructorWorkflowService(_db);
@@ -107,7 +107,13 @@ public sealed class CustomerConstructionLifecycleTests
     private CustomerConstructionController CustomerController(Guid id)
     {
         var current = Current(id, "Customer");
-        return new CustomerConstructionController(_db, current.Object, new ConstructorWorkflowService(_db))
+        var staffMock = new Mock<IStaffAccountService>();
+        staffMock.Setup(s => s.ListAsync("Constructor", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<HousePlanner.API.DTOs.StaffAccountDto> {
+                new(_constructorA, "Builder A", "a@example.com", "Constructor", "Active"),
+                new(_constructorB, "Builder B", "b@example.com", "Constructor", "Active")
+            });
+        return new CustomerConstructionController(_db, current.Object, new ConstructorWorkflowService(_db), staffMock.Object)
             { ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() } };
     }
     private ConstructorWorkflowController ConstructorController(Guid id)

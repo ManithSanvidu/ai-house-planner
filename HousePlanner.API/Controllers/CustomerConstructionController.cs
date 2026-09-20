@@ -16,62 +16,77 @@ public class CustomerConstructionController : ControllerBase
     private readonly ApplicationDbContext _db;
     private readonly ICurrentUserContextService _currentUser;
     private readonly IConstructorWorkflowService _workflow;
+    private readonly IStaffAccountService _staff;
 
-    public CustomerConstructionController(ApplicationDbContext db, ICurrentUserContextService currentUser, IConstructorWorkflowService workflow)
+    public CustomerConstructionController(ApplicationDbContext db, ICurrentUserContextService currentUser, IConstructorWorkflowService workflow, IStaffAccountService staff)
     {
-        _db = db; _currentUser = currentUser; _workflow = workflow;
+        _db = db; _currentUser = currentUser; _workflow = workflow; _staff = staff;
     }
 
     private async Task<Guid?> CustomerId()
     {
         var user = await _currentUser.GetAsync(HttpContext);
-        return user?.Role == "Customer" ? user.Id : null;
+        return string.Equals(user?.Role, "Customer", StringComparison.OrdinalIgnoreCase) ? user.Id : null;
     }
 
     [HttpGet("approved-designs")]
     public async Task<IActionResult> ApprovedDesigns()
     {
         var customerId = await CustomerId(); if (customerId is null) return Unauthorized();
+
+        var customerWorkflowIds = await _db.WorkflowStates.AsNoTracking()
+            .Where(w => w.LandSubmission.ClientId == customerId)
+            .Select(w => w.Id)
+            .ToListAsync();
+
         var items = await _db.ValidationRequests.AsNoTracking()
-            .Where(v => v.ClientId == customerId && v.Status == "Approved" && v.HouseDesignId != null)
+            .Where(v => customerWorkflowIds.Contains(v.WorkflowStateId) && v.Status == "Approved")
             .Include(v => v.HouseDesign).ThenInclude(d => d!.WorkflowState)
+            .Include(v => v.WorkflowState).ThenInclude(w => w.HouseDesigns)
             .OrderByDescending(v => v.DecisionAt)
-            .Select(v => new
-            {
-                designId = v.HouseDesignId, workflowId = v.WorkflowStateId,
-                version = v.HouseDesign!.Version, floorCount = v.HouseDesign.FloorCount,
-                area = v.HouseDesign.TotalBuiltUpAreaSqft, layoutJson = v.HouseDesign.LayoutJson,
-                approvedAt = v.DecisionAt
-            }).ToListAsync();
-        return Ok(items.Select(x => new {
-            x.designId, x.workflowId, x.version, x.floorCount, x.area, x.approvedAt,
-            title = DesignTitle(x.layoutJson, x.version), bedrooms = CountRooms(x.layoutJson, "bedroom"),
-            bathrooms = CountRooms(x.layoutJson, "bathroom")
-        }));
+            .ToListAsync();
+            
+        return Ok(items.Select(v => {
+            var design = v.HouseDesign ?? v.WorkflowState?.HouseDesigns?.FirstOrDefault(d => d.Id == v.WorkflowState.PreferredHouseDesignId && !d.IsArchived);
+            if (design == null) return null;
+            return new {
+                designId = design.Id, workflowId = v.WorkflowStateId,
+                version = design.Version, floorCount = design.FloorCount,
+                area = design.TotalBuiltUpAreaSqft, layoutJson = design.LayoutJson,
+                approvedAt = v.DecisionAt,
+                title = DesignTitle(design.LayoutJson, design.Version), bedrooms = CountRooms(design.LayoutJson, "bedroom"),
+                bathrooms = CountRooms(design.LayoutJson, "bathroom")
+            };
+        }).Where(x => x != null));
     }
 
     [HttpGet("constructors")]
-    public async Task<IActionResult> Constructors()
+    public async Task<IActionResult> Constructors(CancellationToken cancellationToken)
     {
         if (await CustomerId() is null) return Unauthorized();
-        return Ok(await _db.Users.AsNoTracking().Where(u => u.Role.Name == "Constructor")
-            .OrderBy(u => u.FullName).Select(u => new { id = u.Id, name = u.FullName }).ToListAsync());
+        var constructors = await _db.Users.AsNoTracking()
+            .Where(u => u.Role!.Name == "Constructor")
+            .OrderBy(u => u.FullName)
+            .Select(u => new { id = u.Id, name = u.FullName })
+            .ToListAsync(cancellationToken);
+        return Ok(constructors);
     }
 
     [HttpPost("requests")]
-    public async Task<IActionResult> CreateRequest([FromBody] CreateConstructionRequest dto)
+    public async Task<IActionResult> CreateRequest([FromBody] CreateConstructionRequest dto, CancellationToken cancellationToken)
     {
         var customerId = await CustomerId(); if (customerId is null) return Unauthorized();
         var approved = await _db.ValidationRequests
             .Include(v => v.WorkflowState).ThenInclude(w => w.LandSubmission)
-            .FirstOrDefaultAsync(v => v.HouseDesignId == dto.HouseDesignId && v.Status == "Approved");
+            .Include(v => v.WorkflowState).ThenInclude(w => w.HouseDesigns)
+            .FirstOrDefaultAsync(v => (v.HouseDesignId == dto.HouseDesignId || v.WorkflowState.PreferredHouseDesignId == dto.HouseDesignId) && v.Status == "Approved", cancellationToken);
         if (approved == null) return BadRequest(new { message = "Construction can only be requested for an architect-approved design." });
         if (approved.ClientId != customerId || approved.WorkflowState.LandSubmission.ClientId != customerId) return NotFound();
 
-        var constructor = await _db.Users.Include(u => u.Role).FirstOrDefaultAsync(u => u.Id == dto.ConstructorId);
-        if (constructor?.Role.Name != "Constructor") return BadRequest(new { message = "The selected account is not an available constructor." });
+        var isConstructor = await _db.Users.AnyAsync(u => u.Id == dto.ConstructorId && u.Role!.Name == "Constructor", cancellationToken);
+        if (!isConstructor) return BadRequest(new { message = "The selected account is not an available constructor." });
 
-        var project = await _db.Projects.FirstOrDefaultAsync(p => p.WorkflowStateId == approved.WorkflowStateId);
+        var project = await _db.Projects.FirstOrDefaultAsync(p => p.WorkflowStateId == approved.WorkflowStateId, cancellationToken);
         if (project == null)
         {
             project = NewProject(approved.WorkflowStateId, dto.HouseDesignId);
@@ -82,7 +97,7 @@ public class CustomerConstructionController : ControllerBase
         if (project.ContractorId != null) return Conflict(new { message = "This design already has an active construction project." });
         project.HouseDesignId = dto.HouseDesignId;
 
-        if (await _db.ConstructorProjectRequests.AnyAsync(r => r.HouseDesignId == dto.HouseDesignId && r.ConstructorId == dto.ConstructorId && r.Status == "Pending"))
+        if (await _db.ConstructorProjectRequests.AnyAsync(r => r.HouseDesignId == dto.HouseDesignId && r.ConstructorId == dto.ConstructorId && r.Status == "Pending", cancellationToken))
             return Conflict(new { message = "A pending request already exists for this constructor." });
 
         var request = new ConstructorProjectRequest
@@ -91,11 +106,11 @@ public class CustomerConstructionController : ControllerBase
             ConstructorId = dto.ConstructorId, HouseDesignId = dto.HouseDesignId, Status = "Pending"
         };
         _db.ConstructorProjectRequests.Add(request);
-        try { await _db.SaveChangesAsync(); }
+        try { await _db.SaveChangesAsync(cancellationToken); }
         catch (DbUpdateException)
         {
             _db.Entry(request).State = EntityState.Detached;
-            if (await _db.ConstructorProjectRequests.AsNoTracking().AnyAsync(r => r.HouseDesignId == dto.HouseDesignId && r.ConstructorId == dto.ConstructorId && r.Status == "Pending"))
+            if (await _db.ConstructorProjectRequests.AsNoTracking().AnyAsync(r => r.HouseDesignId == dto.HouseDesignId && r.ConstructorId == dto.ConstructorId && r.Status == "Pending", cancellationToken))
                 return Conflict(new { message = "A pending request already exists for this constructor." });
             throw;
         }
@@ -106,17 +121,25 @@ public class CustomerConstructionController : ControllerBase
     public async Task<IActionResult> GetConstruction()
     {
         var customerId = await CustomerId(); if (customerId is null) return Unauthorized();
+
+        var customerWorkflowIds = await _db.WorkflowStates.AsNoTracking()
+            .Where(w => w.LandSubmission.ClientId == customerId)
+            .Select(w => w.Id)
+            .ToListAsync();
+
         var requests = await _db.ConstructorProjectRequests.AsNoTracking()
             .Where(r => r.CustomerId == customerId).Include(r => r.Constructor).Include(r => r.HouseDesign)
             .OrderByDescending(r => r.CreatedAt).Select(r => new {
-                r.Id, r.ProjectId, r.HouseDesignId, constructorName = r.Constructor!.FullName,
+                r.Id, r.ProjectId, r.HouseDesignId, constructorName = r.Constructor != null ? r.Constructor.FullName : "Unknown",
                 r.Status, r.DeclineReason, requestedAt = r.CreatedAt, r.RespondedAt,
-                designVersion = r.HouseDesign!.Version
+                designVersion = r.HouseDesign != null ? (int?)r.HouseDesign.Version : null
             }).ToListAsync();
+            
         var projects = await _db.Projects.AsNoTracking()
-            .Where(p => p.WorkflowState!.LandSubmission.ClientId == customerId && p.ContractorId != null)
+            .Where(p => customerWorkflowIds.Contains(p.WorkflowStateId) && p.ContractorId != null)
             .Include(p => p.Contractor).Include(p => p.HouseDesign).Include(p => p.ConstructionPhases)
             .OrderByDescending(p => p.UpdatedAt).ToListAsync();
+            
         return Ok(new {
             pendingRequests = requests.Where(r => r.Status == "Pending"),
             declinedRequests = requests.Where(r => r.Status == "Declined"),

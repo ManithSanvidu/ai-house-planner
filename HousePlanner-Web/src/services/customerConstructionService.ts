@@ -21,11 +21,11 @@ export interface CustomerConstruction {
 }
 
 export const customerConstructionService = {
-  approvedDesigns: () => apiClient.get<ApprovedDesign[]>('/v1/customer/construction/approved-designs').then(r => r.data),
-  constructors: () => apiClient.get<ConstructorProfile[]>('/v1/customer/construction/constructors').then(r => r.data),
+  approvedDesigns: () => apiClient.get<ApprovedDesign[]>('/customer/construction/approved-designs').then(r => r.data),
+  constructors: () => apiClient.get<ConstructorProfile[]>('/customer/construction/constructors').then(r => r.data),
   request: (houseDesignId: string, constructorId: string) =>
-    apiClient.post('/v1/customer/construction/requests', { houseDesignId, constructorId }).then(r => r.data),
-  overview: () => apiClient.get<CustomerConstruction>('/v1/customer/construction').then(r => r.data),
-  project: (projectId: string) => apiClient.get(`/v1/customer/construction/projects/${projectId}`).then(r => r.data)
+    apiClient.post('/customer/construction/requests', { houseDesignId, constructorId }).then(r => r.data),
+  overview: () => apiClient.get<CustomerConstruction>('/customer/construction').then(r => r.data),
+  project: (projectId: string) => apiClient.get(`/customer/construction/projects/${projectId}`).then(r => r.data)
 };
 
