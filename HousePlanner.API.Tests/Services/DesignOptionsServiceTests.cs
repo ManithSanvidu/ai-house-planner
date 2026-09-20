@@ -173,4 +173,18 @@ public class DesignOptionsServiceTests
         Assert.Contains("parking", validation.Conflicts);
         Assert.Contains(validation.Suggestions, s => s.Field == "parkingRequired" && (bool)s.Value == false);
     }
+
+    [Fact]
+    public async Task ValidateSpecificPlan_RejectsMismatchEvenWhenAnotherCataloguePlanMatches()
+    {
+        var context = GetDbContext(); await SeedData(context);
+        var selected = await context.PreDesignedHousePlans.SingleAsync(x => x.DesignCode == "P1");
+        var request = new AiGenerationRequest { LandSizePerches = 20,
+            Preferences = new PreferencesDto { Bedrooms = 4, Bathrooms = 3, Floors = 2, Balcony = true } };
+        var result = await new DesignOptionsService(context).ValidateSpecificPlanAsync(selected, request);
+        Assert.False(result.IsValid);
+        Assert.Equal("SELECTED_PLAN_INCOMPATIBLE", result.ErrorCode);
+        Assert.Contains("bedrooms", result.Conflicts);
+        Assert.Contains("balcony", result.Conflicts);
+    }
 }

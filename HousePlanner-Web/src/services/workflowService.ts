@@ -124,7 +124,7 @@ export interface WorkflowDesignHistoryDto {
 
 export interface StartDesignRequest {
   basePreDesignedPlanId?: string;
-  planSelectionMode?: 'use' | 'reference' | 'override';
+  planSelectionMode?: 'use';
   budgetLkr?: number;
   landSizePerches: number;
   manualTerrainType?: string;
