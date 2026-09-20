@@ -155,11 +155,10 @@ class _WorkflowStatusViewState extends ConsumerState<WorkflowStatusView> {
                 ),
               ),
 
-              // Floor plan vs Construction
               Expanded(
                 child: _selectedTab == 0
                     ? _buildFloorPlanTab(design, rooms)
-                    : const Center(child: Text('Construction Plan Placeholder', style: TextStyle(color: AppTokens.inkMute))),
+                    : _buildConstructionTab(data.constructionPlan),
               ),
 
               // Bottom Sticky Action Bar
@@ -340,6 +339,76 @@ class _WorkflowStatusViewState extends ConsumerState<WorkflowStatusView> {
           Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTokens.ink)),
         ],
       ),
+    );
+  }
+
+  Widget _buildConstructionTab(dynamic plan) {
+    if (plan == null) return const Center(child: Text('No timeline available.', style: TextStyle(color: AppTokens.inkMute)));
+
+    final phases = plan['phases'] as List<dynamic>? ?? [];
+    final summary = plan['project_summary'] as Map<String, dynamic>?;
+
+    return ListView(
+      padding: const EdgeInsets.all(24),
+      physics: const BouncingScrollPhysics(),
+      children: [
+        if (summary != null) ...[
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppTokens.accentSoft,
+              borderRadius: BorderRadius.circular(AppTokens.radiusSection),
+              border: Border.all(color: AppTokens.accent),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.timer, color: AppTokens.accent),
+                const SizedBox(width: 12),
+                Text('Estimated Duration: ${summary['estimated_duration_days']} days', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5, color: AppTokens.ink)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+        ],
+        ...phases.map((phase) {
+          return Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(AppTokens.radiusCardSolid),
+              border: Border.all(color: AppTokens.line),
+              boxShadow: const [BoxShadow(color: Color(0x0A000000), blurRadius: 8, offset: Offset(0, 4))],
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: AppTokens.ink,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text('${phase['id']}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(phase['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5, color: AppTokens.ink)),
+                      const SizedBox(height: 4),
+                      Text('Days ${phase['start_day']} - ${phase['end_day']} (${phase['duration_days']} days)', style: const TextStyle(color: AppTokens.inkMute, fontSize: 12.5)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        }),
+      ],
     );
   }
 }
