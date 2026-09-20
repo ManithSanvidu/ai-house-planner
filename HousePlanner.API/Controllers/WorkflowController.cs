@@ -88,7 +88,17 @@ public class WorkflowController : ControllerBase
                                     r.AreaSqft,
                                     r.WallHeight
                                 })
-                                .ToList()
+                                .ToList(),
+                            LatestCost = d.CostEstimates
+                                .OrderByDescending(c => c.CreatedAt)
+                                .Select(c => new
+                                {
+                                    c.MaterialCostLkr,
+                                    c.LabourCostLkr,
+                                    c.TotalCostLkr,
+                                    c.BudgetDeltaPercent
+                                })
+                                .FirstOrDefault()
                         })
                         .FirstOrDefault()
                 })
@@ -101,6 +111,7 @@ public class WorkflowController : ControllerBase
             }
 
             HouseDesignSummaryDto? designDto = null;
+            CostSummaryDto? costDto = null;
             if (workflow.LatestDesign is not null)
             {
                 // Extract doors/windows from LayoutJson for each room
@@ -149,6 +160,16 @@ public class WorkflowController : ControllerBase
                     PlotConstraints: GetMetadata(root, "plot_constraints"),
                     CandidateSummary: GetMetadata(root, "candidate_summary")
                 );
+
+                if (workflow.LatestDesign.LatestCost is not null)
+                {
+                    costDto = new CostSummaryDto(
+                        MaterialCostLkr: workflow.LatestDesign.LatestCost.MaterialCostLkr,
+                        LabourCostLkr: workflow.LatestDesign.LatestCost.LabourCostLkr,
+                        TotalCostLkr: workflow.LatestDesign.LatestCost.TotalCostLkr,
+                        BudgetDeltaPercent: workflow.LatestDesign.LatestCost.BudgetDeltaPercent
+                    );
+                }
             }
 
             JsonElement? parsedConstructionPlan = null;
@@ -171,7 +192,7 @@ public class WorkflowController : ControllerBase
                 TerrainType: workflow.TerrainType,
                 SlopeEstimate: workflow.SlopeEstimate,
                 Design: designDto,
-                Cost: null,
+                Cost: costDto,
                 ConstructionPlan: parsedConstructionPlan,
                 ApprovalStatus: workflow.ApprovalStatus,
                 FailureReason: workflow.FailureReason

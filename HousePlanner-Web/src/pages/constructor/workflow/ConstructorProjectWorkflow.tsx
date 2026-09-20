@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { constructorWorkflowService } from '../../../services/constructorWorkflowService';
 import type { ConstructorWorkflowProject, ProjectProgress, ConstructorWorkflowLog } from '../../../services/constructorWorkflowService';
@@ -14,7 +14,7 @@ export const ConstructorProjectWorkflow: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!projectId) return;
     try {
       const [projData, progData, logsData] = await Promise.all([
@@ -30,11 +30,11 @@ export const ConstructorProjectWorkflow: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [projectId]);
 
   useEffect(() => {
     loadData();
-  }, [projectId]);
+  }, [loadData]);
 
   if (loading || !project || !progress) {
     return (

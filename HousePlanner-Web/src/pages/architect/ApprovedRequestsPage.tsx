@@ -20,7 +20,7 @@ const ApprovedRequestsPage: React.FC = () => {
           new Date(b.submissionDate).getTime() - new Date(a.submissionDate).getTime()
         );
         setRequests(allHistory);
-      } catch (err) {
+      } catch {
         setError('Failed to load request history.');
       } finally {
         setLoading(false);

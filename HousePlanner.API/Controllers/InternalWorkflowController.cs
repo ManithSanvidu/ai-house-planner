@@ -1,5 +1,6 @@
 ﻿using System.Text.Json;
 using HousePlanner.API.Data;
+using HousePlanner.API.DTOs;
 using HousePlanner.API.Entities;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -23,6 +24,7 @@ public class InternalWorkflowController : ControllerBase
     {
         return await _context.WorkflowStates
             .Include(w => w.HouseDesigns)
+                .ThenInclude(d => d.CostEstimates)
             .FirstOrDefaultAsync(w => w.Id == id);
     }
 
@@ -246,6 +248,99 @@ public class InternalWorkflowController : ControllerBase
         {
             _logger.LogError(ex, "Error updating construction plan for workflow {WorkflowId}", id);
             return StatusCode(StatusCodes.Status500InternalServerError, new { message = "An error occurred updating the construction plan." });
+        }
+    }
+
+    /// <summary>
+    /// Persists the Cost Estimation Agent result for the current design.
+    /// Repeated callbacks update the existing estimate.
+    /// </summary>
+    [HttpPost("{id:guid}/cost-estimate")]
+    public async Task<IActionResult> SaveCostEstimate(Guid id, [FromBody] SaveCostEstimateRequestDto request)
+    {
+        try
+        {
+            if (request is null)
+                return BadRequest(new { message = "Request body cannot be null." });
+
+            if (request.MaterialCostLkr < 0 || request.LabourCostLkr < 0 ||
+                request.TotalCostLkr < 0 || request.BudgetDeltaPercent < 0)
+                return BadRequest(new { message = "Cost values and budget delta cannot be negative." });
+
+            const decimal tolerance = 0.05m;
+            if (Math.Abs(request.TotalCostLkr - (request.MaterialCostLkr + request.LabourCostLkr)) > tolerance)
+                return BadRequest(new { message = "Total cost must equal material cost plus labour cost." });
+
+            var workflow = await FindWorkflowState(id);
+            if (workflow is null)
+                return NotFound(new { message = $"Unknown workflow {id}; cost estimate was not persisted." });
+
+            var currentDesign = workflow.HouseDesigns.FirstOrDefault(d => d.IsCurrent && !d.IsArchived);
+            if (currentDesign is null)
+                return Conflict(new { message = "No current house design exists for this workflow." });
+
+            var existingEstimate = currentDesign.CostEstimates
+                .OrderByDescending(c => c.CreatedAt)
+                .FirstOrDefault();
+
+            CostEstimate estimate;
+            if (existingEstimate is not null)
+            {
+                existingEstimate.MaterialCostLkr = request.MaterialCostLkr;
+                existingEstimate.LabourCostLkr = request.LabourCostLkr;
+                existingEstimate.TotalCostLkr = request.TotalCostLkr;
+                existingEstimate.BudgetDeltaPercent = request.BudgetDeltaPercent;
+                estimate = existingEstimate;
+            }
+            else
+            {
+                estimate = new CostEstimate
+                {
+                    HouseDesignId = currentDesign.Id,
+                    MaterialCostLkr = request.MaterialCostLkr,
+                    LabourCostLkr = request.LabourCostLkr,
+                    TotalCostLkr = request.TotalCostLkr,
+                    BudgetDeltaPercent = request.BudgetDeltaPercent,
+                    CreatedAt = DateTimeOffset.UtcNow
+                };
+                _context.CostEstimates.Add(estimate);
+            }
+
+            workflow.UpdatedAt = DateTimeOffset.UtcNow;
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException) when (existingEstimate is null)
+            {
+                _context.Entry(estimate).State = EntityState.Detached;
+                var concurrentEstimate = await _context.CostEstimates
+                    .SingleOrDefaultAsync(c => c.HouseDesignId == currentDesign.Id);
+                if (concurrentEstimate is null)
+                    throw;
+
+                concurrentEstimate.MaterialCostLkr = request.MaterialCostLkr;
+                concurrentEstimate.LabourCostLkr = request.LabourCostLkr;
+                concurrentEstimate.TotalCostLkr = request.TotalCostLkr;
+                concurrentEstimate.BudgetDeltaPercent = request.BudgetDeltaPercent;
+                await _context.SaveChangesAsync();
+                estimate = concurrentEstimate;
+            }
+
+            return Ok(new CostEstimateResponseDto
+            {
+                CostEstimateId = estimate.Id,
+                HouseDesignId = currentDesign.Id,
+                MaterialCostLkr = estimate.MaterialCostLkr,
+                LabourCostLkr = estimate.LabourCostLkr,
+                TotalCostLkr = estimate.TotalCostLkr,
+                BudgetDeltaPercent = estimate.BudgetDeltaPercent
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error saving cost estimate for workflow {WorkflowId}", id);
+            return StatusCode(StatusCodes.Status500InternalServerError, new { message = "An error occurred saving the cost estimate." });
         }
     }
 }

@@ -34,6 +34,7 @@ class StartWorkflowRequest(BaseModel):
     workflow_id: UUID
     submission_id: UUID
     land_size_perches: float
+    budget_lkr: Optional[float] = None
     manual_terrain_type: Optional[str] = None
     preferences: Dict[str, Any]
     plot_constraints: Optional[Dict[str, Any]] = None
@@ -44,6 +45,7 @@ class ResumeWorkflowRequest(BaseModel):
     resume_from: str
     user_revision_prompt: str
     land_size_perches: float
+    budget_lkr: Optional[float] = None
     manual_terrain_type: Optional[str] = None
     preferences: Dict[str, Any]
     terrain_result: Optional[Dict[str, Any]] = None
@@ -96,6 +98,7 @@ def resume_workflow(
     input_data = CoordinatorInput(
         submission_id=request.workflow_id,
         land_size_perches=request.land_size_perches,
+        budget_lkr=request.budget_lkr,
         manual_terrain_type=request.manual_terrain_type,
         preferences=preferences,
         plot_constraints=request.plot_constraints,

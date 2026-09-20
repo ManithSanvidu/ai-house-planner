@@ -17,7 +17,7 @@ const ValidationRequestsPage: React.FC = () => {
         const pending = await validationRequestService.getAll('Pending');
         const underReview = await validationRequestService.getAll('Under Review');
         setRequests([...pending, ...underReview]);
-      } catch (err) {
+      } catch {
         setError('Failed to load validation requests.');
       } finally {
         setLoading(false);

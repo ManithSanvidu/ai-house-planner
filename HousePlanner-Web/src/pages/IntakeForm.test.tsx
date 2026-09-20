@@ -3,60 +3,80 @@ import { BrowserRouter } from 'react-router-dom';
 import { beforeEach, expect, test, vi } from 'vitest';
 import IntakeForm from './IntakeForm';
 
-const options = {
-  landRanges: [{ id: 'LAND_5_8', label: '5–8 perches', minPerches: 5, maxPerches: 8, approxSqft: '1,361–2,178 sq ft' }],
-  plotShapes: ['BALANCED'], floors: [1, 2], bedrooms: [2, 3], bathrooms: [1, 2],
-  architecturalStyles: ['Modern'], validatedDesignCount: 3,
-  features: { open_plan: { available: true }, master_ensuite: { available: true }, separate_dining: { available: true }, home_office: { available: true }, balcony: { available: true }, veranda: { available: true }, utility_room: { available: true }, parking: { available: true }, accessibility: { available: true } }
-};
+const { startDesign } = vi.hoisted(() => ({
+  startDesign: vi.fn(),
+}));
 
-beforeEach(() => vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string, init?: RequestInit) => {
-  if (url.includes('ai-generation')) return Promise.resolve({ ok: true, json: () => Promise.resolve({ workflowId: 'workflow-1' }) });
-  const body = init?.body ? JSON.parse(String(init.body)) : {};
-  const result = body.floors === 1 ? { ...options, features: { ...options.features, balcony: { available: false, reason: 'Balconies require a validated multi-floor design.' } } } : options;
-  return Promise.resolve({ ok: true, json: () => Promise.resolve(result) });
-})));
+vi.mock('../services/workflowService', () => ({
+  workflowService: { startDesign },
+}));
 
-const renderPage = () => render(<BrowserRouter><IntakeForm /></BrowserRouter>);
+const renderPage = () => render(
+  <BrowserRouter>
+    <IntakeForm />
+  </BrowserRouter>,
+);
 
-test('renders every intake section on one page', async () => {
+const input = (name: string) =>
+  document.querySelector(`[name="${name}"]`) as HTMLInputElement;
+
+beforeEach(() => {
+  startDesign.mockReset();
+  startDesign.mockResolvedValue({ workflowId: 'workflow-1' });
+});
+
+test('renders every intake section on one page', () => {
   renderPage();
-  expect(await screen.findByText('1. Land Details')).toBeTruthy();
-  expect(screen.getByText('2. House Requirements')).toBeTruthy();
-  expect(screen.getByText('3. Priority')).toBeTruthy();
-  expect(screen.getByText('4. Optional Features')).toBeTruthy();
+
+  expect(screen.getByText('Budget & Land Constraints')).toBeTruthy();
+  expect(screen.getByText('Terrain & Topography')).toBeTruthy();
+  expect(screen.getByText('Plot Constraints (Optional)')).toBeTruthy();
+  expect(screen.getByText('Design Preferences')).toBeTruthy();
   expect(screen.queryByText(/Step 1 of/)).toBeNull();
 });
 
-test('compatibility restrictions disable and clear balcony for one floor', async () => {
-  renderPage(); await screen.findByText('1. Land Details');
-  fireEvent.click(screen.getByRole('button', { name: '2 floors' }));
-  await waitFor(() => expect((screen.getByRole('checkbox', { name: 'Balcony' }) as HTMLInputElement).disabled).toBe(false));
-  fireEvent.click(screen.getByText('Balcony'));
-  fireEvent.click(screen.getByRole('button', { name: '1 floor' }));
-  await waitFor(() => {
-    const balcony = screen.getByRole('checkbox', { name: /Balcony/ }) as HTMLInputElement;
-    expect(balcony.disabled).toBe(true); expect(balcony.checked).toBe(false);
-  });
-  expect(screen.getByText('Balconies require a validated multi-floor design.')).toBeTruthy();
-});
-
-test('zero matches disables generation and a valid configuration submits', async () => {
-  const fetchMock = vi.mocked(fetch);
-  renderPage(); await screen.findByText('1. Land Details');
-  fireEvent.click(screen.getByRole('button', { name: '1 floor' }));
-  fireEvent.click(screen.getByRole('button', { name: '2 bed' }));
-  fireEvent.click(screen.getByRole('button', { name: '1 bath' }));
-  fireEvent.change(screen.getByLabelText('Architectural style'), { target: { value: 'Modern' } });
-  await waitFor(() => expect(screen.getByText('Validated designs available: 3')).toBeTruthy());
-  fireEvent.click(screen.getByRole('button', { name: 'Generate Design' }));
-  await screen.findByText('Design generation started');
-  expect(fetchMock.mock.calls.some(([url]) => String(url).includes('ai-generation/generate'))).toBe(true);
-});
-
-test('zero compatible designs disables Generate Design', async () => {
-  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({ ...options, validatedDesignCount: 0 }) }));
+test('one-floor projects can clear an incompatible balcony selection', () => {
   renderPage();
-  expect(await screen.findByText('Validated designs available: 0')).toBeTruthy();
-  expect((screen.getByRole('button', { name: 'Generate Design' }) as HTMLButtonElement).disabled).toBe(true);
+
+  const balcony = screen.getByRole('checkbox', { name: 'Balcony' }) as HTMLInputElement;
+  fireEvent.click(balcony);
+  expect(balcony.checked).toBe(true);
+
+  fireEvent.change(input('floors'), { target: { value: '1' } });
+  fireEvent.click(balcony);
+  expect(balcony.checked).toBe(false);
+});
+
+test('submits the current project requirements and shows success', async () => {
+  renderPage();
+  fireEvent.change(input('landSize'), { target: { value: '10' } });
+  fireEvent.change(input('budget'), { target: { value: '5000000' } });
+  fireEvent.change(input('bedrooms'), { target: { value: '2' } });
+  fireEvent.change(input('bathrooms'), { target: { value: '1' } });
+  fireEvent.change(input('floors'), { target: { value: '1' } });
+
+  fireEvent.click(screen.getByRole('button', { name: 'Generate AI Plan' }));
+
+  await screen.findByText('AI Plan Generated!');
+  expect(startDesign).toHaveBeenCalledOnce();
+  expect(startDesign).toHaveBeenCalledWith(expect.objectContaining({
+    budgetLkr: 5_000_000,
+    landSizePerches: 10,
+    preferences: expect.objectContaining({
+      bedrooms: 2,
+      bathrooms: 1,
+      floors: 1,
+    }),
+  }));
+});
+
+test('allows an optional budget to be omitted', async () => {
+  renderPage();
+  fireEvent.change(input('landSize'), { target: { value: '8' } });
+
+  fireEvent.click(screen.getByRole('button', { name: 'Generate AI Plan' }));
+
+  await waitFor(() => expect(startDesign).toHaveBeenCalledOnce());
+  const payload = startDesign.mock.calls[0][0];
+  expect(payload).not.toHaveProperty('budgetLkr');
 });

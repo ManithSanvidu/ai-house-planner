@@ -72,4 +72,7 @@ public class HouseDesign
 
     // Relational navigation to room rows
     public virtual ICollection<Room> Rooms { get; set; } = new List<Room>();
+
+    // Relational navigation to cost estimate rows
+    public virtual ICollection<CostEstimate> CostEstimates { get; set; } = new List<CostEstimate>();
 }
