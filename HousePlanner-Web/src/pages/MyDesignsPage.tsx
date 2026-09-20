@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Archive, CheckCircle2, RefreshCw, Trash2, X } from 'lucide-react';
 import { workflowService, type DesignHistoryDto, type WorkflowDesignHistoryDto } from '../services/workflowService';
+import { ConstructorRequestsView } from './constructor/workflow/ConstructorRequestsView';
 
 type PendingRemoval = { workflow: WorkflowDesignHistoryDto; design: DesignHistoryDto };
 type Comparison = { workflowId: string; designs: DesignHistoryDto[] } | null;
