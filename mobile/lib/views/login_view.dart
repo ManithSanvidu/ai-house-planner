@@ -93,6 +93,7 @@ class _LoginViewState extends ConsumerState<LoginView> {
                     // Logo Header
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Container(
                           padding: const EdgeInsets.all(8),
@@ -167,11 +168,11 @@ class _LoginViewState extends ConsumerState<LoginView> {
                               const SizedBox(height: 8),
                               _buildTextField('••••••••', _passwordController, isPassword: true),
 
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: TextButton(
-                                  onPressed: () {}, 
-                                  style: TextButton.styleFrom(
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: TextButton(
+                                    onPressed: () => context.go('/register'), 
+                                    style: TextButton.styleFrom(
                                     foregroundColor: AppTokens.accent,
                                     padding: EdgeInsets.zero,
                                     minimumSize: Size.zero,
@@ -221,7 +222,22 @@ class _LoginViewState extends ConsumerState<LoginView> {
 
                               // Google Auth
                               OutlinedButton.icon(
-                                onPressed: () {},
+                                onPressed: authState.isLoading ? null : () async {
+                                  final notifier = ref.read(authProvider.notifier);
+                                  await notifier.loginWithGoogle();
+                                  
+                                  if (!context.mounted) return;
+                                  
+                                  final state = ref.read(authProvider);
+                                  if (state.hasError && context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(state.error.toString(), style: const TextStyle(color: Colors.white)),
+                                        backgroundColor: AppTokens.red,
+                                      ),
+                                    );
+                                  }
+                                },
                                 icon: const Icon(Icons.g_mobiledata, size: 24),
                                 label: const Text('Continue with Google', style: TextStyle(color: AppTokens.ink, fontSize: 14.5, fontWeight: FontWeight.w600)),
                                 style: OutlinedButton.styleFrom(
