@@ -28,7 +28,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isHome = state.matchedLocation == '/';
 
       if (!isAuth && !isLoggingIn && !isHome) {
-        return '/login';
+        return '/';
       }
 
       if (isAuth && isLoggingIn) {
