@@ -82,6 +82,8 @@ jobs:
           cache: true
       - name: Install dependencies
         run: flutter pub get
+      - name: Create dummy .env file
+        run: touch .env
       - name: Analyze
         run: flutter analyze
       - name: Run Tests
