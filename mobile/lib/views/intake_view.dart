@@ -9,7 +9,10 @@ import 'package:go_router/go_router.dart';
 import '../core/theme/app_tokens.dart';
 
 class IntakeView extends ConsumerStatefulWidget{
-  const IntakeView({super.key});
+  final String? basePlanId;
+  final String? mode;
+
+  const IntakeView({super.key, this.basePlanId, this.mode});
 
   @override
   ConsumerState<IntakeView> createState()=>_IntakeViewState();
@@ -29,7 +32,10 @@ class _IntakeViewState extends ConsumerState<IntakeView>{
   void _submit() async {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
-      final workflowId = await ref.read(intakeProvider.notifier).submitIntake();
+      final workflowId = await ref.read(intakeProvider.notifier).submitIntake(
+        basePlanId: widget.basePlanId,
+        mode: widget.mode,
+      );
       if (workflowId != null && mounted) {
         context.go('/design/$workflowId');
       }
@@ -237,45 +243,37 @@ class _IntakeViewState extends ConsumerState<IntakeView>{
                       spacing: 8,
                       runSpacing: 12,
                       children: [
-                        _buildChip('Open plan'),
-                        _buildChip('Master ensuite', isActive: true),
-                        _buildChip('Home office'),
-                        _buildChip('Balcony', isActive: true),
-                        _buildChip('Parking'),
-                        _buildChip('Accessible'),
+                        _buildChip('Open plan', data),
+                        _buildChip('Master ensuite', data),
+                        _buildChip('Home office', data),
+                        _buildChip('Balcony', data),
+                        _buildChip('Parking', data),
+                        _buildChip('Accessible', data),
                       ],
                     ),
                   ],
                 ),
-                const SizedBox(height: 80),
-              ],
-            ),
-          ),
-        ),
-        
-        // Sticky Submit Bar
-        Container(
-          padding: const EdgeInsets.all(24),
-          decoration: const BoxDecoration(
-            color: AppTokens.bg,
-            border: Border(top: BorderSide(color: AppTokens.line)),
-          ),
-          child: ElevatedButton(
-            onPressed: data.isValid ? _submit : null,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTokens.ink,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 18),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTokens.radiusButton)),
-              minimumSize: const Size(double.infinity, 0),
-              elevation: 0,
-            ),
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text('Generate Plan', style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold)),
-                SizedBox(width: 8),
-                Icon(Icons.auto_awesome, size: 16), // ✦
+                const SizedBox(height: 32),
+                ElevatedButton(
+                  onPressed: data.isValid ? _submit : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.black,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 18),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTokens.radiusButton)),
+                    minimumSize: const Size(double.infinity, 0),
+                    elevation: 0,
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text('Generate Plan', style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold, color: Colors.white)),
+                      SizedBox(width: 8),
+                      Icon(Icons.auto_awesome, size: 16, color: Colors.white), // ✦
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 32),
               ],
             ),
           ),
@@ -312,20 +310,24 @@ class _IntakeViewState extends ConsumerState<IntakeView>{
     );
   }
 
-  Widget _buildChip(String label, {bool isActive = false}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: BoxDecoration(
-        color: isActive ? AppTokens.accentSoft : Colors.white,
-        borderRadius: BorderRadius.circular(AppTokens.radiusPill),
-        border: Border.all(color: isActive ? AppTokens.accent : AppTokens.line),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: isActive ? AppTokens.accent : AppTokens.inkSoft,
-          fontSize: 12.5,
-          fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+  Widget _buildChip(String label, LandSubmission data) {
+    final isActive = data.selectedAmenities?.contains(label) ?? false;
+    return GestureDetector(
+      onTap: () => ref.read(intakeProvider.notifier).toggleAmenity(label),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: isActive ? AppTokens.accentSoft : Colors.white,
+          borderRadius: BorderRadius.circular(AppTokens.radiusPill),
+          border: Border.all(color: isActive ? AppTokens.accent : AppTokens.line),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isActive ? AppTokens.accent : AppTokens.inkSoft,
+            fontSize: 12.5,
+            fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+          ),
         ),
       ),
     );
