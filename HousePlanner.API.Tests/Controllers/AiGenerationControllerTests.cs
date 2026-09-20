@@ -4,6 +4,7 @@ using HousePlanner.API.Entities;
 using HousePlanner.API.Services;
 using HousePlanner.API.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 using Moq.Protected;
@@ -19,6 +20,7 @@ namespace HousePlanner.API.Tests.Controllers
         private readonly AiGenerationController _controller;
         private readonly Mock<HttpMessageHandler> _mockHttpMessageHandler;
         private readonly Mock<IDesignOptionsService> _mockDesignOptionsService;
+        private readonly Guid _clientId = Guid.NewGuid();
 
         public AiGenerationControllerTests()
         {
@@ -29,7 +31,7 @@ namespace HousePlanner.API.Tests.Controllers
             _dbContext = new ApplicationDbContext(options);
 
             // Add a mock client to avoid foreign key/user null checks
-            _dbContext.Users.Add(new User { Id = Guid.NewGuid(), Email = "test@example.com", FullName = "Test User", PasswordHash = "dummy" });
+            _dbContext.Users.Add(new User { Id = _clientId, Email = "test@example.com", FullName = "Test User", PasswordHash = "dummy" });
             _dbContext.SaveChanges();
 
             _mockHttpMessageHandler = new Mock<HttpMessageHandler>();
@@ -43,7 +45,32 @@ namespace HousePlanner.API.Tests.Controllers
 
             _mockDesignOptionsService = new Mock<IDesignOptionsService>();
             
-            _controller = new AiGenerationController(_dbContext, httpClientFactory.Object, _mockDesignOptionsService.Object);
+            var currentUser = new Mock<ICurrentUserContextService>();
+            currentUser.Setup(x => x.GetAsync(It.IsAny<HttpContext>()))
+                .ReturnsAsync(new CurrentUserContext(_clientId, "test@example.com", "Customer"));
+            _controller = new AiGenerationController(_dbContext, httpClientFactory.Object,
+                _mockDesignOptionsService.Object, currentUser.Object);
+        }
+
+        [Fact]
+        public async Task Generate_IgnoresSpoofedClientIdAndUsesAuthenticatedCustomer()
+        {
+            var otherCustomer = new User { Id = Guid.NewGuid(), Email = "other@example.com", FullName = "Other" };
+            _dbContext.Users.Add(otherCustomer);
+            await _dbContext.SaveChangesAsync();
+            var request = new AiGenerationRequest
+            {
+                ClientId = otherCustomer.Id, LandSizePerches = 15,
+                Preferences = new PreferencesDto { Bedrooms = 3, Bathrooms = 2, Floors = 1 }
+            };
+            _mockDesignOptionsService.Setup(s => s.ValidateFinalSelectionAsync(request, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new DesignOptionsValidationResult { IsValid = true });
+            _mockHttpMessageHandler.Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK));
+
+            Assert.IsType<OkObjectResult>(await _controller.Generate(request, CancellationToken.None));
+            Assert.Equal(_clientId, (await _dbContext.LandSubmissions.SingleAsync()).ClientId);
         }
 
         [Fact]

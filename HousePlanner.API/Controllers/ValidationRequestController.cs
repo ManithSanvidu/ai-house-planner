@@ -5,11 +5,13 @@ using HousePlanner.API.Entities;
 using HousePlanner.API.DTOs;
 using System.Security.Claims;
 using HousePlanner.API.Services;
+using Microsoft.AspNetCore.Authorization;
 
 namespace HousePlanner.API.Controllers
 {
     [ApiController]
     [Route("api/validation-requests")]
+    [Authorize(Roles = "Customer,Architect")]
     public class ValidationRequestController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
@@ -29,8 +31,10 @@ namespace HousePlanner.API.Controllers
             var userCtx = await _currentUser.GetAsync(HttpContext);
             if (userCtx == null || userCtx.Id == null) return Unauthorized(new { message = "User not identified." });
             var userId = userCtx.Id;
+            if (userCtx.Role != "Customer") return StatusCode(403);
 
-            var workflow = await _context.WorkflowStates.FirstOrDefaultAsync(w => w.Id == dto.WorkflowStateId);
+            var workflow = await _context.WorkflowStates.FirstOrDefaultAsync(w =>
+                w.Id == dto.WorkflowStateId && w.LandSubmission.ClientId == userId.Value);
             if (workflow == null) return NotFound(new { message = "Workflow/Design not found." });
 
             var existingRequest = await _context.ValidationRequests

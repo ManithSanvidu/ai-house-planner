@@ -5,6 +5,7 @@ using HousePlanner.API.DTOs;
 using HousePlanner.API.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 
 namespace HousePlanner.API.Controllers;
 
@@ -37,16 +38,20 @@ public class WorkflowController : ControllerBase
     /// </summary>
     /// <param name="id">The WorkflowState unique ID</param>
     [HttpGet("{id:guid}/status")]
+    [Authorize(Roles = "Customer")]
     [ProducesResponseType(typeof(WorkflowStatusResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<WorkflowStatusResponseDto>> GetWorkflowStatus(Guid id, [FromQuery] Guid? designId = null)
     {
+        var user = await _currentUserService.GetAsync(HttpContext);
+        if (user?.Id is null) return Unauthorized();
+        if (!string.Equals(user.Role, "Customer", StringComparison.OrdinalIgnoreCase)) return Forbid();
         try
         {
             var workflow = await _context.WorkflowStates
                 .AsNoTracking()
-                .Where(w => w.Id == id)
+                .Where(w => w.Id == id && w.LandSubmission.ClientId == user.Id.Value)
                 .Select(w => new
                 {
                     w.Id,
@@ -284,20 +289,26 @@ public class WorkflowController : ControllerBase
     }
 
     [HttpGet("{id:guid}/designs")]
+    [Authorize(Roles = "Customer")]
     public async Task<IActionResult> GetDesigns(Guid id, [FromQuery] bool includeArchived = true)
     {
+        var user = await _currentUserService.GetAsync(HttpContext);
+        if (user?.Id is null) return Unauthorized();
+        if (!string.Equals(user.Role, "Customer", StringComparison.OrdinalIgnoreCase)) return Forbid();
         var workflow = await _context.WorkflowStates.AsNoTracking()
             .Include(w => w.HouseDesigns).ThenInclude(d => d.Rooms)
-            .FirstOrDefaultAsync(w => w.Id == id);
+            .FirstOrDefaultAsync(w => w.Id == id && w.LandSubmission.ClientId == user.Id.Value);
         if (workflow is null) return NotFound(new { message = $"Workflow {id} not found." });
         return Ok(ToHistory(workflow, includeArchived));
     }
 
     [HttpGet("designs")]
+    [Authorize(Roles = "Customer")]
     public async Task<IActionResult> GetMyDesigns()
     {
         var user = await _currentUserService.GetAsync(HttpContext);
         if (user?.Id is null) return Unauthorized(new { message = "User not identified." });
+        if (!string.Equals(user.Role, "Customer", StringComparison.OrdinalIgnoreCase)) return Forbid();
         var workflows = await _context.WorkflowStates.AsNoTracking()
             .Where(w => w.LandSubmission.ClientId == user.Id.Value)
             .Include(w => w.HouseDesigns).ThenInclude(d => d.Rooms)
@@ -307,10 +318,14 @@ public class WorkflowController : ControllerBase
     }
 
     [HttpPost("{id:guid}/designs/{designId:guid}/select")]
+    [Authorize(Roles = "Customer")]
     public async Task<IActionResult> SelectDesign(Guid id, Guid designId)
     {
+        var user = await _currentUserService.GetAsync(HttpContext);
+        if (user?.Id is null) return Unauthorized();
+        if (!string.Equals(user.Role, "Customer", StringComparison.OrdinalIgnoreCase)) return Forbid();
         var workflow = await _context.WorkflowStates.Include(w => w.HouseDesigns)
-            .FirstOrDefaultAsync(w => w.Id == id);
+            .FirstOrDefaultAsync(w => w.Id == id && w.LandSubmission.ClientId == user.Id.Value);
         if (workflow is null) return NotFound(new { message = $"Workflow {id} not found." });
         if (!workflow.HouseDesigns.Any(d => d.Id == designId && !d.IsArchived))
             return BadRequest(new { message = "The selected design does not belong to this workflow." });
@@ -323,9 +338,13 @@ public class WorkflowController : ControllerBase
     }
 
     [HttpDelete("{id:guid}/design-selection")]
+    [Authorize(Roles = "Customer")]
     public async Task<IActionResult> ClearDesignSelection(Guid id)
     {
-        var workflow = await _context.WorkflowStates.FirstOrDefaultAsync(w => w.Id == id);
+        var user = await _currentUserService.GetAsync(HttpContext);
+        if (user?.Id is null) return Unauthorized();
+        if (!string.Equals(user.Role, "Customer", StringComparison.OrdinalIgnoreCase)) return Forbid();
+        var workflow = await _context.WorkflowStates.FirstOrDefaultAsync(w => w.Id == id && w.LandSubmission.ClientId == user.Id.Value);
         if (workflow is null) return NotFound(new { message = $"Workflow {id} not found." });
         workflow.PreferredHouseDesignId = null;
         if (workflow.Status == "selected_by_client") workflow.Status = "design_generated";
@@ -336,10 +355,14 @@ public class WorkflowController : ControllerBase
     }
 
     [HttpDelete("{id:guid}/designs/{designId:guid}")]
+    [Authorize(Roles = "Customer")]
     public async Task<IActionResult> RemoveDesign(Guid id, Guid designId)
     {
+        var user = await _currentUserService.GetAsync(HttpContext);
+        if (user?.Id is null) return Unauthorized();
+        if (!string.Equals(user.Role, "Customer", StringComparison.OrdinalIgnoreCase)) return Forbid();
         var workflow = await _context.WorkflowStates.Include(w => w.HouseDesigns)
-            .FirstOrDefaultAsync(w => w.Id == id);
+            .FirstOrDefaultAsync(w => w.Id == id && w.LandSubmission.ClientId == user.Id.Value);
         if (workflow is null) return NotFound(new { message = $"Workflow {id} not found." });
         var design = workflow.HouseDesigns.FirstOrDefault(d => d.Id == designId && !d.IsArchived);
         if (design is null) return NotFound(new { message = "Design version not found." });
@@ -363,10 +386,14 @@ public class WorkflowController : ControllerBase
     }
 
     [HttpPost("{id:guid}/submit-architect-review")]
+    [Authorize(Roles = "Customer")]
     public async Task<IActionResult> SubmitArchitectReview(Guid id)
     {
+        var user = await _currentUserService.GetAsync(HttpContext);
+        if (user?.Id is null) return Unauthorized();
+        if (!string.Equals(user.Role, "Customer", StringComparison.OrdinalIgnoreCase)) return Forbid();
         var workflow = await _context.WorkflowStates.Include(w => w.LandSubmission)
-            .Include(w => w.HouseDesigns).FirstOrDefaultAsync(w => w.Id == id);
+            .Include(w => w.HouseDesigns).FirstOrDefaultAsync(w => w.Id == id && w.LandSubmission.ClientId == user.Id.Value);
         if (workflow is null) return NotFound(new { message = $"Workflow {id} not found." });
         if (workflow.PreferredHouseDesignId is null ||
             !workflow.HouseDesigns.Any(d => d.Id == workflow.PreferredHouseDesignId))
@@ -414,9 +441,26 @@ public class WorkflowController : ControllerBase
             }).ToList());
 
     [HttpPost("{id}/approve")]
+    [Authorize(Roles = "Customer,Architect,Admin")]
     public async Task<IActionResult> ApproveWorkflow(Guid id, [FromBody] ApprovalRequestDto request)
     {
         var user = await _currentUserService.GetAsync(HttpContext);
+        if (user?.Id is null) return Unauthorized();
+        if (string.Equals(user.Role, "Customer", StringComparison.OrdinalIgnoreCase))
+        {
+            var ownsWorkflow = await _context.WorkflowStates.AnyAsync(w =>
+                w.Id == id && w.LandSubmission.ClientId == user.Id.Value);
+            if (!ownsWorkflow) return NotFound(new { message = $"Workflow {id} not found." });
+        }
+        else if (string.Equals(user.Role, "Architect", StringComparison.OrdinalIgnoreCase))
+        {
+            var submittedForReview = await _context.ValidationRequests.AnyAsync(r => r.WorkflowStateId == id);
+            if (!submittedForReview) return NotFound(new { message = $"Workflow {id} not found." });
+        }
+        else if (!string.Equals(user.Role, "Admin", StringComparison.OrdinalIgnoreCase))
+        {
+            return Forbid();
+        }
         var result = await _workflowService.ProcessApprovalAsync(id, request, user?.Email, user?.Role);
 
         switch (result.Outcome)

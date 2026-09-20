@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using HousePlanner.API.Services;
+using Microsoft.AspNetCore.Authorization;
 
 namespace HousePlanner.API.Controllers
 {
@@ -15,17 +16,24 @@ namespace HousePlanner.API.Controllers
         private readonly ApplicationDbContext _context;
         private readonly HttpClient _agenticServiceClient;
         private readonly IDesignOptionsService _designOptionsService;
+        private readonly ICurrentUserContextService _currentUser;
 
-        public AiGenerationController(ApplicationDbContext context, IHttpClientFactory httpClientFactory, IDesignOptionsService designOptionsService)
+        public AiGenerationController(ApplicationDbContext context, IHttpClientFactory httpClientFactory,
+            IDesignOptionsService designOptionsService, ICurrentUserContextService currentUser)
         {
             _context = context;
             _agenticServiceClient = httpClientFactory.CreateClient("AgenticService");
             _designOptionsService = designOptionsService;
+            _currentUser = currentUser;
         }
 
+        [Authorize(Roles = "Customer")]
         [HttpPost("generate")]
         public async Task<IActionResult> Generate([FromBody] AiGenerationRequest request, CancellationToken cancellationToken)
         {
+            var authenticatedUser = await _currentUser.GetAsync(HttpContext);
+            if (authenticatedUser?.Id is null) return Unauthorized(new { message = "User not identified." });
+            if (!string.Equals(authenticatedUser.Role, "Customer", StringComparison.OrdinalIgnoreCase)) return Forbid();
             if (!string.IsNullOrEmpty(request.ManualTerrainType))
             {
                 if (request.ManualTerrainType.StartsWith("flat", StringComparison.OrdinalIgnoreCase))
@@ -53,9 +61,9 @@ namespace HousePlanner.API.Controllers
             object payload;
             try 
             {
-                var client = request.ClientId.HasValue
-                    ? await _context.Users.FindAsync(request.ClientId.Value)
-                    : await _context.Users.OrderBy(u => u.CreatedAt).FirstOrDefaultAsync();
+                // Ownership always comes from the validated Firebase identity. ClientId is retained
+                // in the DTO for wire compatibility but is never trusted for authorization.
+                var client = await _context.Users.FindAsync(authenticatedUser.Id.Value);
                 if (client is null)
                     return Conflict(new { Message = "No client account exists for this submission." });
                 PreDesignedHousePlan? basePlan = null;
@@ -223,4 +231,3 @@ namespace HousePlanner.API.Controllers
         public decimal? right { get; set; }
     }
 }
-

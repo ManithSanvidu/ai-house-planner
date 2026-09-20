@@ -6,6 +6,7 @@ using HousePlanner.API.DTOs;
 using HousePlanner.API.Entities;
 using HousePlanner.API.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -70,8 +71,11 @@ public class RevisionBathroomTests
             {
                 WorkflowId = workflow.Id, Decision = "request_revision", Status = "revision_requested"
             }));
+        var currentUser = new Mock<ICurrentUserContextService>();
+        currentUser.Setup(x => x.GetAsync(It.IsAny<HttpContext>()))
+            .ReturnsAsync(new CurrentUserContext(submission.ClientId, "customer@example.com", "Customer"));
         var controller = new WorkflowController(db, Mock.Of<ILogger<WorkflowController>>(), factory.Object,
-            workflowService.Object, Mock.Of<ICurrentUserContextService>());
+            workflowService.Object, currentUser.Object);
 
         var result = await controller.ApproveWorkflow(workflow.Id,
             new ApprovalRequestDto("request_revision", "make living room bigger"));
