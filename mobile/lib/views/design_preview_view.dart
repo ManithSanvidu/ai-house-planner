@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/workflow_provider.dart';
 import '../widgets/floor_plan_painter.dart';
+import 'construction_timeline_view.dart';
 
 class DesignPreviewView extends ConsumerStatefulWidget {
   final String workflowId;
@@ -149,6 +150,27 @@ class _DesignPreviewViewState extends ConsumerState<DesignPreviewView> {
                         ),
                         onPressed: () => _handleApproval('approve'),
                         child: const Text('Approve & Proceed to Costing', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.indigo,
+                          side: const BorderSide(color: Colors.indigo),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ConstructionTimelineView(workflowId: widget.workflowId),
+                            ),
+                          );
+                        },
+                        child: const Text('View Construction Timeline'),
                       ),
                     ),
                     const SizedBox(height: 12),
