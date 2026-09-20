@@ -74,6 +74,23 @@ namespace HousePlanner.API.Data
                 .HasIndex(x => new { x.WorkflowStateId, x.HouseDesignId, x.Status })
                 .HasDatabaseName("IX_ValidationRequests_Workflow_Design_Status");
 
+            modelBuilder.Entity<Project>()
+                .HasOne(x => x.HouseDesign).WithMany().HasForeignKey(x => x.HouseDesignId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ConstructorProjectRequest>(entity =>
+            {
+                entity.HasOne(x => x.Project).WithMany().HasForeignKey(x => x.ProjectId).OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(x => x.Customer).WithMany().HasForeignKey(x => x.CustomerId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(x => x.Constructor).WithMany().HasForeignKey(x => x.ConstructorId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(x => x.HouseDesign).WithMany().HasForeignKey(x => x.HouseDesignId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasIndex(x => new { x.HouseDesignId, x.ConstructorId, x.Status })
+                    .IsUnique().HasFilter("\"Status\" = 'Pending'");
+                entity.HasIndex(x => new { x.ConstructorId, x.Status });
+                entity.HasIndex(x => new { x.ProjectId, x.Status })
+                    .IsUnique().HasFilter("\"Status\" = 'Accepted'");
+            });
+
             modelBuilder.Entity<Room>(entity =>
             {
                 entity.HasIndex(e => e.HouseDesignId).HasDatabaseName("IX_Rooms_HouseDesignId");

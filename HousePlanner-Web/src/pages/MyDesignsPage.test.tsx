@@ -79,3 +79,14 @@ test('refresh retains selection from persisted API state', async () => {
   view.unmount(); renderPage(); expect(await screen.findByText('Selected')).toBeTruthy();
   expect(workflowService.getMyDesigns).toHaveBeenCalledTimes(2);
 });
+
+test('approved design exposes constructor handoff without management actions', async () => {
+  const approved: any = selectedProject(); approved.status = 'approved'; approved.designs[0].isArchitectApproved = true;
+  vi.mocked(workflowService.getMyDesigns).mockResolvedValue([approved]);
+  renderPage();
+  expect((await screen.findAllByText('✓ Architect Approved')).length).toBeGreaterThan(0);
+  expect(screen.getByRole('link', { name: 'Find Constructor' })).toBeTruthy();
+  expect(screen.queryByRole('button', { name: 'Unselect' })).toBeNull();
+  expect(screen.queryByRole('button', { name: /Delete Version/ })).toBeNull();
+  expect(screen.queryByRole('button', { name: 'Add to Compare' })).toBeNull();
+});

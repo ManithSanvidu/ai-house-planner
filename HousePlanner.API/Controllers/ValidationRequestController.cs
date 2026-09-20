@@ -152,6 +152,31 @@ namespace HousePlanner.API.Controllers
             request.WorkflowState.ApprovedByUserId = userId;
             request.WorkflowState.ApprovedAt = request.DecisionAt;
             request.WorkflowState.UpdatedAt = DateTimeOffset.UtcNow;
+
+            var project = await _context.Projects.FirstOrDefaultAsync(p => p.WorkflowStateId == request.WorkflowStateId);
+            if (project == null)
+            {
+                project = new Project
+                {
+                    Id = Guid.NewGuid(), WorkflowStateId = request.WorkflowStateId,
+                    HouseDesignId = request.HouseDesignId, Status = "awaiting_constructor",
+                    ConstructionPhases = new List<ConstructionPhase>
+                    {
+                        new() { Id = Guid.NewGuid(), PhaseName = "Site Preparation", Status = "pending", SequenceOrder = 1 },
+                        new() { Id = Guid.NewGuid(), PhaseName = "Foundation", Status = "pending", SequenceOrder = 2 },
+                        new() { Id = Guid.NewGuid(), PhaseName = "Framing", Status = "pending", SequenceOrder = 3 },
+                        new() { Id = Guid.NewGuid(), PhaseName = "Roofing", Status = "pending", SequenceOrder = 4 },
+                        new() { Id = Guid.NewGuid(), PhaseName = "Interior & Finish", Status = "pending", SequenceOrder = 5 }
+                    }
+                };
+                _context.Projects.Add(project);
+            }
+            else
+            {
+                project.HouseDesignId = request.HouseDesignId;
+                project.Status = project.ContractorId.HasValue ? project.Status : "awaiting_constructor";
+                project.UpdatedAt = DateTimeOffset.UtcNow;
+            }
             
             await _context.SaveChangesAsync();
             return Ok(new { message = "Request approved." });

@@ -2,6 +2,8 @@ using HousePlanner.API.Entities;
 using HousePlanner.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using HousePlanner.API.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace HousePlanner.API.Controllers
 {
@@ -12,13 +14,15 @@ namespace HousePlanner.API.Controllers
     {
         private readonly IConstructorWorkflowService _workflowService;
         private readonly ICurrentUserContextService _currentUserContext;
+        private readonly ApplicationDbContext _db;
 
         public ConstructorWorkflowController(
             IConstructorWorkflowService workflowService,
-            ICurrentUserContextService currentUserContext)
+            ICurrentUserContextService currentUserContext, ApplicationDbContext db)
         {
             _workflowService = workflowService;
             _currentUserContext = currentUserContext;
+            _db = db;
         }
 
         [HttpGet("projects")]
@@ -33,7 +37,7 @@ namespace HousePlanner.API.Controllers
         }
 
         [HttpGet("projects/{projectId}")]
-        [Authorize(Roles = "Constructor,Admin,User")]
+        [Authorize(Roles = "Constructor,Admin")]
         public async Task<IActionResult> GetProjectDetails(Guid projectId)
         {
             var user = await _currentUserContext.GetAsync(HttpContext);
@@ -46,7 +50,7 @@ namespace HousePlanner.API.Controllers
         }
 
         [HttpGet("projects/{projectId}/logs")]
-        [Authorize(Roles = "Constructor,Admin,User")]
+        [Authorize(Roles = "Constructor,Admin")]
         public async Task<IActionResult> GetWorkflowLogs(Guid projectId)
         {
             var user = await _currentUserContext.GetAsync(HttpContext);
@@ -57,7 +61,7 @@ namespace HousePlanner.API.Controllers
         }
 
         [HttpGet("projects/{projectId}/progress")]
-        [Authorize(Roles = "Constructor,Admin,User")]
+        [Authorize(Roles = "Constructor,Admin")]
         public async Task<IActionResult> GetProjectProgress(Guid projectId)
         {
             var user = await _currentUserContext.GetAsync(HttpContext);
@@ -116,6 +120,11 @@ namespace HousePlanner.API.Controllers
         [Authorize(Roles = "Constructor,Admin")]
         public async Task<IActionResult> SearchProject(Guid projectId)
         {
+            var user = await _currentUserContext.GetAsync(HttpContext);
+            if (user?.Id == null) return Unauthorized();
+            var allowed = user.Role == "Admin" || await _db.Projects.AnyAsync(p => p.Id == projectId &&
+                (p.ContractorId == user.Id.Value || _db.ConstructorProjectRequests.Any(r => r.ProjectId == p.Id && r.ConstructorId == user.Id.Value)));
+            if (!allowed) return NotFound("Project not found.");
             var project = await _workflowService.SearchProjectByIdAsync(projectId);
             if (project == null) return NotFound("Project not found.");
             
@@ -132,22 +141,12 @@ namespace HousePlanner.API.Controllers
         [Authorize(Roles = "Constructor")]
         public async Task<IActionResult> RequestProject(Guid projectId)
         {
-            var user = await _currentUserContext.GetAsync(HttpContext);
-            if (user?.Id == null) return Unauthorized();
-
-            try
-            {
-                var request = await _workflowService.RequestProjectAssignmentAsync(projectId, user.Id.Value);
-                return Ok(request);
-            }
-            catch (KeyNotFoundException)
-            {
-                return NotFound("Project not found.");
-            }
+            await Task.CompletedTask;
+            return StatusCode(StatusCodes.Status410Gone, new { message = "Customers now initiate construction requests from an architect-approved design." });
         }
 
         [HttpPost("approve/{requestId}")]
-        [Authorize(Roles = "User,Admin")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> ApproveRequest(Guid requestId)
         {
             var user = await _currentUserContext.GetAsync(HttpContext);
@@ -165,7 +164,7 @@ namespace HousePlanner.API.Controllers
         }
 
         [HttpGet("requests/project/{projectId}")]
-        [Authorize(Roles = "User,Admin")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetProjectRequests(Guid projectId)
         {
             var user = await _currentUserContext.GetAsync(HttpContext);
@@ -182,8 +181,53 @@ namespace HousePlanner.API.Controllers
             var user = await _currentUserContext.GetAsync(HttpContext);
             if (user?.Id == null) return Unauthorized();
 
-            var requests = await _workflowService.GetConstructorRequestsAsync(user.Id.Value);
+            var requests = await _db.ConstructorProjectRequests.AsNoTracking()
+                .Where(r => r.ConstructorId == user.Id.Value)
+                .Include(r => r.Customer).Include(r => r.HouseDesign)
+                .OrderByDescending(r => r.CreatedAt)
+                .Select(r => new { r.Id, r.ProjectId, r.HouseDesignId, r.Status, requestedAt = r.CreatedAt,
+                    customerName = r.Customer!.FullName, designVersion = r.HouseDesign!.Version,
+                    area = r.HouseDesign.TotalBuiltUpAreaSqft, r.DeclineReason })
+                .ToListAsync();
             return Ok(requests);
+        }
+
+        [HttpPost("requests/{requestId:guid}/accept")]
+        [Authorize(Roles = "Constructor")]
+        public async Task<IActionResult> AcceptRequest(Guid requestId)
+        {
+            var user = await _currentUserContext.GetAsync(HttpContext);
+            if (user?.Id == null) return Unauthorized();
+            var request = await _db.ConstructorProjectRequests.Include(r => r.Project)
+                .FirstOrDefaultAsync(r => r.Id == requestId && r.ConstructorId == user.Id.Value);
+            if (request == null) return NotFound();
+            if (request.Status != "Pending") return Conflict(new { message = "Only pending requests can be accepted." });
+            var approved = await _db.ValidationRequests.AnyAsync(v => v.HouseDesignId == request.HouseDesignId && v.ClientId == request.CustomerId && v.Status == "Approved");
+            if (!approved) return Conflict(new { message = "The design is no longer approved for construction." });
+            if (request.Project == null) return Conflict(new { message = "Construction project is unavailable." });
+            if (request.Project.ContractorId != null) return Conflict(new { message = "This project already has an assigned constructor." });
+            request.Status = "Accepted"; request.RespondedAt = DateTimeOffset.UtcNow; request.UpdatedAt = request.RespondedAt.Value;
+            request.Project.ContractorId = user.Id.Value; request.Project.HouseDesignId = request.HouseDesignId;
+            request.Project.Status = "active"; request.Project.UpdatedAt = DateTimeOffset.UtcNow;
+            var competing = await _db.ConstructorProjectRequests.Where(r => r.ProjectId == request.ProjectId && r.Id != request.Id && r.Status == "Pending").ToListAsync();
+            foreach (var other in competing) { other.Status = "Cancelled"; other.UpdatedAt = DateTimeOffset.UtcNow; }
+            await _db.SaveChangesAsync();
+            return Ok(new { request.Id, request.Status, request.ProjectId });
+        }
+
+        [HttpPost("requests/{requestId:guid}/decline")]
+        [Authorize(Roles = "Constructor")]
+        public async Task<IActionResult> DeclineRequest(Guid requestId, [FromBody] DeclineConstructionRequest? dto)
+        {
+            var user = await _currentUserContext.GetAsync(HttpContext);
+            if (user?.Id == null) return Unauthorized();
+            var request = await _db.ConstructorProjectRequests.FirstOrDefaultAsync(r => r.Id == requestId && r.ConstructorId == user.Id.Value);
+            if (request == null) return NotFound();
+            if (request.Status != "Pending") return Conflict(new { message = "Only pending requests can be declined." });
+            request.Status = "Declined"; request.DeclineReason = string.IsNullOrWhiteSpace(dto?.Reason) ? null : dto.Reason.Trim();
+            request.RespondedAt = DateTimeOffset.UtcNow; request.UpdatedAt = request.RespondedAt.Value;
+            await _db.SaveChangesAsync();
+            return Ok(new { request.Id, request.Status, request.DeclineReason });
         }
 
         [HttpPost("projects/{projectId}/duration")]
@@ -199,4 +243,6 @@ namespace HousePlanner.API.Controllers
             return Ok(new { success = true });
         }
     }
+
+    public record DeclineConstructionRequest(string? Reason);
 }

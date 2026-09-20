@@ -69,11 +69,24 @@ namespace HousePlanner.API.Migrations
                     b.Property<Guid>("ConstructorId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("DeclineReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<Guid>("HouseDesignId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid>("ProjectId")
                         .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("RespondedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -85,7 +98,19 @@ namespace HousePlanner.API.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CustomerId");
+
+                    b.HasIndex("ConstructorId", "Status");
+
+                    b.HasIndex("HouseDesignId", "ConstructorId", "Status")
+                        .IsUnique()
+                        .HasFilter("\"Status\" = 'Pending'");
+
                     b.HasIndex("ProjectId");
+
+                    b.HasIndex("ProjectId", "Status")
+                        .IsUnique()
+                        .HasFilter("\"Status\" = 'Accepted'");
 
                     b.ToTable("ConstructorProjectRequests");
                 });
@@ -496,6 +521,9 @@ namespace HousePlanner.API.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid?>("HouseDesignId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -510,6 +538,8 @@ namespace HousePlanner.API.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ContractorId");
+
+                    b.HasIndex("HouseDesignId");
 
                     b.HasIndex("WorkflowStateId");
 
@@ -758,12 +788,33 @@ namespace HousePlanner.API.Migrations
 
             modelBuilder.Entity("HousePlanner.API.Entities.ConstructorProjectRequest", b =>
                 {
+                    b.HasOne("HousePlanner.API.Entities.User", "Constructor")
+                        .WithMany()
+                        .HasForeignKey("ConstructorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("HousePlanner.API.Entities.User", "Customer")
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("HousePlanner.API.Entities.HouseDesign", "HouseDesign")
+                        .WithMany()
+                        .HasForeignKey("HouseDesignId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("HousePlanner.API.Entities.Project", "Project")
                         .WithMany()
                         .HasForeignKey("ProjectId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("Constructor");
+                    b.Navigation("Customer");
+                    b.Navigation("HouseDesign");
                     b.Navigation("Project");
                 });
 
@@ -884,7 +935,14 @@ namespace HousePlanner.API.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("HousePlanner.API.Entities.HouseDesign", "HouseDesign")
+                        .WithMany()
+                        .HasForeignKey("HouseDesignId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.Navigation("Contractor");
+
+                    b.Navigation("HouseDesign");
 
                     b.Navigation("WorkflowState");
                 });

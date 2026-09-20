@@ -74,6 +74,7 @@ public record DesignHistoryDto(
     bool IsCurrent,
     bool IsPreferred,
     bool IsArchived,
+    bool IsArchitectApproved,
     string? Topology,
     int Bedrooms,
     int Bathrooms,

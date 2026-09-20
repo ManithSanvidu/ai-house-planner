@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Archive, CheckCircle2, RefreshCw, Trash2, X } from 'lucide-react';
+import { CheckCircle2, RefreshCw, Trash2, X } from 'lucide-react';
 import { workflowService, type DesignHistoryDto, type WorkflowDesignHistoryDto } from '../services/workflowService';
-import { ConstructorRequestsView } from './constructor/workflow/ConstructorRequestsView';
 import { countLabel, formatArea, formatGenerationMode, formatRoomName, formatTopology, formatWorkflowStatus } from '../utils/presentation';
 
 type PendingRemoval = { workflow: WorkflowDesignHistoryDto; design: DesignHistoryDto };
@@ -71,11 +70,6 @@ const MyDesignsPage: React.FC = () => {
         </div>
         {rejected&&<div className="mb-4 rounded-xl bg-red-50 text-red-800 p-3"><b>Design Needs Changes</b>{project.architectFeedback&&<p>Architect feedback: “{project.architectFeedback}”</p>}</div>}
         <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-3">{project.designs.map(design => <DesignCard key={design.designId} design={design} workflow={project} compared={compareIds[project.workflowId]?.includes(design.designId) || false} compareFull={compareCount === 2} onCompare={() => toggleCompare(project.workflowId, design.designId)} onSelect={() => select(project.workflowId, design.designId)} onUnselect={() => unselect(project.workflowId)} onRemove={() => setPendingRemoval({ workflow: project, design })}/>)}</div>
-        {approved && project.projectId && (
-          <div className="mt-6 border-t border-gray-200 pt-6 dark:border-gray-800">
-            <ConstructorRequestsView projectId={project.projectId} />
-          </div>
-        )}
       </section>;
     })}</div>
 
@@ -86,13 +80,17 @@ const MyDesignsPage: React.FC = () => {
 };
 
 const DesignCard = ({ design, workflow, compared, compareFull, onCompare, onSelect, onUnselect, onRemove }: { design: DesignHistoryDto; workflow: WorkflowDesignHistoryDto; compared: boolean; compareFull: boolean; onCompare: () => void; onSelect: () => void; onUnselect: () => void; onRemove: () => void }) => {
-  const submitted = workflow.status === 'awaiting_architect_review'; const approved = workflow.status === 'approved';
+  const submitted = workflow.status === 'awaiting_architect_review' && design.isPreferred; const approved = design.isArchitectApproved;
+  const rejected = workflow.architectReviewStatus === 'Rejected' && design.isPreferred;
+  const managementLocked = workflow.status === 'approved' || workflow.status === 'awaiting_architect_review' || rejected;
   return <article className={`rounded-2xl bg-white dark:bg-gray-950 border p-4 ${design.isPreferred ? 'border-emerald-500 ring-1 ring-emerald-500' : compared ? 'border-indigo-500 ring-1 ring-indigo-500' : 'border-zinc-200 dark:border-gray-700'}`}>
     <div className="flex justify-between gap-2"><div><span className="text-xs uppercase text-zinc-400 font-bold">Version {design.version}</span><h3 className="font-bold mt-1">{formatTopology(design.topology)}</h3></div>{design.isPreferred && <span className="text-emerald-600 flex gap-1 text-xs font-bold"><CheckCircle2 aria-hidden="true" size={16}/>Selected</span>}</div>
     <MiniPlan design={design}/>
     <dl className="grid grid-cols-2 gap-2 text-sm my-3"><div><dt className="text-zinc-400">Rooms</dt><dd>{countLabel(design.bedrooms,'Bedroom')} · {countLabel(design.bathrooms,'Bathroom')}</dd></div><div><dt className="text-zinc-400">Floors</dt><dd>{countLabel(design.floorCount,'Floor')}</dd></div><div><dt className="text-zinc-400">Area</dt><dd>{formatArea(design.totalBuiltUpAreaSqft)}</dd></div><div><dt className="text-zinc-400">Created as</dt><dd>{formatGenerationMode(design.generationMode)}</dd></div></dl>
     <p className="text-xs text-zinc-400 mb-3">{new Date(design.createdAt).toLocaleString()}</p>
-    <div className="flex flex-wrap gap-2"><Link to={`/dashboard/workflows/${workflow.workflowId}?design=${design.designId}`} className="px-3 py-2 rounded-lg border text-xs font-semibold">Preview</Link><button onClick={onCompare} disabled={!compared && compareFull} className={`px-3 py-2 rounded-lg border text-xs font-semibold disabled:opacity-40 ${compared ? 'bg-indigo-50 text-indigo-700' : ''}`}>{compared ? 'Remove Compare' : 'Add to Compare'}</button>{design.isPreferred ? <button onClick={onUnselect} className="px-3 py-2 rounded-lg bg-zinc-700 text-white text-xs font-semibold">Unselect</button> : <button onClick={onSelect} className="px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold">Select</button>}<button onClick={onRemove} disabled={approved} title={approved ? 'Approved designs cannot be deleted' : undefined} className="p-2 rounded-lg border text-red-600 disabled:opacity-35" aria-label={`${submitted ? 'Archive' : 'Delete'} Version ${design.version}`}>{submitted ? <Archive size={15}/> : <Trash2 size={15}/>}</button></div>
+    {approved && <div className="mb-3 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-800">✓ Architect Approved</div>}
+    {submitted && <div className="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-xs font-bold text-amber-800">Awaiting Architect Review</div>}
+    <div className="flex flex-wrap gap-2"><Link to={`/dashboard/workflows/${workflow.workflowId}?design=${design.designId}`} className="px-3 py-2 rounded-lg border text-xs font-semibold">Preview</Link>{workflow.designs.length > 1 && !managementLocked && <button onClick={onCompare} disabled={!compared && compareFull} className={`px-3 py-2 rounded-lg border text-xs font-semibold disabled:opacity-40 ${compared ? 'bg-indigo-50 text-indigo-700' : ''}`}>{compared ? 'Remove Compare' : 'Add to Compare'}</button>}{approved?<Link to={`/dashboard/construction?design=${design.designId}`} className="px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold">Find Constructor</Link>:managementLocked?null:design.isPreferred ? <button onClick={onUnselect} className="px-3 py-2 rounded-lg bg-zinc-700 text-white text-xs font-semibold">Unselect</button> : <button onClick={onSelect} className="px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold">Select</button>}{!managementLocked&&<button onClick={onRemove} className="p-2 rounded-lg border text-red-600" aria-label={`Delete Version ${design.version}`}><Trash2 size={15}/></button>}</div>
   </article>;
 };
 

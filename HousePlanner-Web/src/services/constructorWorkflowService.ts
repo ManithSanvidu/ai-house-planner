@@ -119,6 +119,16 @@ export const constructorWorkflowService = {
         return response.data;
     },
 
+    acceptRequest: async (requestId: string) => {
+        const response = await axios.post(`${API_URL}/requests/${requestId}/accept`, {}, { headers: await getAuthHeaders() });
+        return response.data;
+    },
+
+    declineRequest: async (requestId: string, reason?: string) => {
+        const response = await axios.post(`${API_URL}/requests/${requestId}/decline`, { reason }, { headers: await getAuthHeaders() });
+        return response.data;
+    },
+
     setEstimatedDuration: async (projectId: string, estimatedDays: number) => {
         const response = await axios.post(`${API_URL}/projects/${projectId}/duration`, estimatedDays, { 
             headers: {

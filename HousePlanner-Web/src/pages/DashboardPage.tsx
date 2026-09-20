@@ -1,12 +1,15 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { Plus, Sparkles, Library, FolderKanban, Shield, UserCog } from 'lucide-react';
 import useAuth from '../features/auth/useAuth';
+import { customerConstructionService, type ApprovedDesign, type CustomerConstruction } from '../services/customerConstructionService';
 
 const DashboardPage: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [approvedDesigns,setApprovedDesigns]=useState<ApprovedDesign[]>([]);
+  const [construction,setConstruction]=useState<CustomerConstruction|null>(null);
 
   // Role-aware redirect: non-Customer roles have dedicated dashboards.
   useEffect(() => {
@@ -15,6 +18,7 @@ const DashboardPage: React.FC = () => {
     else if (user.role === 'Constructor') navigate('/constructor/dashboard', { replace: true });
     // Customer and Admin have role-specific content below.
   }, [user, navigate]);
+  useEffect(()=>{if(user?.role==='Customer') void Promise.all([customerConstructionService.approvedDesigns(),customerConstructionService.overview()]).then(([d,c])=>{setApprovedDesigns(d);setConstruction(c);}).catch(()=>{});},[user]);
 
   return (
     <div className="min-h-[calc(100vh-65px)] flex items-center justify-center p-6 relative overflow-hidden transition-colors duration-300">
@@ -27,7 +31,7 @@ const DashboardPage: React.FC = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: "easeOut" }}
-        className="relative z-10 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl p-12 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] border border-white/60 dark:border-gray-700/50 max-w-2xl w-full text-center transition-colors duration-300"
+        className="relative z-10 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl p-8 sm:p-12 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] border border-white/60 dark:border-gray-700/50 max-w-4xl w-full text-center transition-colors duration-300"
       >
         <div className="mx-auto w-16 h-16 bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900/50 dark:to-purple-900/50 rounded-2xl flex items-center justify-center mb-6 shadow-inner border border-white dark:border-gray-800">
           <Sparkles className="text-indigo-600 dark:text-indigo-400" size={28} />
@@ -66,6 +70,7 @@ const DashboardPage: React.FC = () => {
             <FolderKanban size={20}/><span>My Designs</span>
           </Link>
         </div>}
+        {user?.role==='Customer'&&<div className="mt-10 border-t pt-7 text-left"><div className="grid grid-cols-2 gap-3 mb-6"><div className="rounded-xl bg-emerald-50 p-4"><p className="text-sm text-emerald-800">Approved Designs</p><b className="text-2xl">{approvedDesigns.length}</b></div><div className="rounded-xl bg-indigo-50 p-4"><p className="text-sm text-indigo-800">Active Construction</p><b className="text-2xl">{construction?.activeProjects.length||0}</b></div></div><h2 className="font-bold text-lg mb-3">Approved Designs</h2>{!approvedDesigns.length?<p className="text-zinc-500">No designs have been approved yet.</p>:approvedDesigns.slice(0,3).map(d=><div key={d.designId} className="flex flex-wrap justify-between gap-3 rounded-xl border p-4 mb-2"><div><b>✓ {d.title}</b><p className="text-sm text-zinc-500">{d.bedrooms} Bedrooms · {d.bathrooms} Bathrooms · {d.floorCount} Floors</p></div><div className="flex gap-2"><Link to={`/dashboard/workflows/${d.workflowId}?design=${d.designId}`} className="rounded-lg border px-3 py-2 text-sm">View Design</Link><Link to={`/dashboard/construction?design=${d.designId}`} className="rounded-lg bg-indigo-600 px-3 py-2 text-sm text-white">Find Constructor</Link></div></div>)}</div>}
       </motion.div>
     </div>
   );

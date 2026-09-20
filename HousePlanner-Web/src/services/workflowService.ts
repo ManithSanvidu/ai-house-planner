@@ -101,6 +101,7 @@ export interface DesignHistoryDto {
   isCurrent: boolean;
   isPreferred: boolean;
   isArchived: boolean;
+  isArchitectApproved?: boolean;
   topology: string | null;
   bedrooms: number;
   bathrooms: number;

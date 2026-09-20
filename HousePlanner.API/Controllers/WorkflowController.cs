@@ -309,7 +309,8 @@ public class WorkflowController : ControllerBase
         if (workflow is null) return NotFound(new { message = $"Workflow {id} not found." });
         var review = await _context.ValidationRequests.AsNoTracking().Where(r=>r.WorkflowStateId==id)
             .OrderByDescending(r=>r.CreatedAt).Select(r=>new {r.Status,r.ArchitectReview}).FirstOrDefaultAsync();
-        return Ok(ToHistory(workflow, includeArchived, null, review?.Status, review?.ArchitectReview));
+        var approvedDesignId = await _context.ValidationRequests.AsNoTracking().Where(r=>r.WorkflowStateId==id && r.Status=="Approved").Select(r=>r.HouseDesignId).FirstOrDefaultAsync();
+        return Ok(ToHistory(workflow, includeArchived, null, review?.Status, review?.ArchitectReview, approvedDesignId));
     }
 
     [HttpGet("designs")]
@@ -328,7 +329,7 @@ public class WorkflowController : ControllerBase
         var projects = await _context.Projects.AsNoTracking().Where(p => workflowIds.Contains(p.WorkflowStateId)).ToDictionaryAsync(p => p.WorkflowStateId, p => p.Id);
         var reviews = await _context.ValidationRequests.AsNoTracking().Where(r=>workflowIds.Contains(r.WorkflowStateId))
             .OrderByDescending(r=>r.CreatedAt).ToListAsync();
-        return Ok(workflows.Select(w => {var review=reviews.FirstOrDefault(r=>r.WorkflowStateId==w.Id);return ToHistory(w, false, projects.TryGetValue(w.Id, out var pid) ? pid : null,review?.Status,review?.ArchitectReview);}).Where(w => w.Designs.Count > 0));
+        return Ok(workflows.Select(w => {var review=reviews.FirstOrDefault(r=>r.WorkflowStateId==w.Id);var approved=reviews.FirstOrDefault(r=>r.WorkflowStateId==w.Id&&r.Status=="Approved")?.HouseDesignId;return ToHistory(w, false, projects.TryGetValue(w.Id, out var pid) ? pid : null,review?.Status,review?.ArchitectReview,approved);}).Where(w => w.Designs.Count > 0));
     }
 
     [HttpPost("{id:guid}/designs/{designId:guid}/select")]
@@ -433,7 +434,7 @@ public class WorkflowController : ControllerBase
         return Ok(new { workflowId = id, status = workflow.Status });
     }
 
-    private static WorkflowDesignHistoryDto ToHistory(HousePlanner.API.Entities.WorkflowState workflow, bool includeArchived = true, Guid? projectId = null, string? reviewStatus=null, string? architectFeedback=null) =>
+    private static WorkflowDesignHistoryDto ToHistory(HousePlanner.API.Entities.WorkflowState workflow, bool includeArchived = true, Guid? projectId = null, string? reviewStatus=null, string? architectFeedback=null, Guid? approvedDesignId=null) =>
         new(workflow.Id, workflow.Status, workflow.PreferredHouseDesignId, workflow.CreatedAt,
             workflow.HouseDesigns.Where(d => includeArchived || !d.IsArchived).OrderByDescending(d => d.Version).Select(d =>
             {
@@ -448,7 +449,7 @@ public class WorkflowController : ControllerBase
                 var bedrooms = d.Rooms.Count(r => r.RoomType.Contains("bedroom", StringComparison.OrdinalIgnoreCase));
                 var bathrooms = d.Rooms.Count(r => r.RoomType.Contains("bathroom", StringComparison.OrdinalIgnoreCase));
                 return new DesignHistoryDto(
-                    d.Id, d.Version, d.IsCurrent, workflow.PreferredHouseDesignId == d.Id, d.IsArchived,
+                    d.Id, d.Version, d.IsCurrent, workflow.PreferredHouseDesignId == d.Id, d.IsArchived, approvedDesignId == d.Id,
                     root.TryGetProperty("template_family", out var topology) ? topology.GetString() : d.TemplateId,
                     bedrooms, bathrooms, d.FloorCount, d.TotalBuiltUpAreaSqft, d.FoundationType,
                     SummaryString("generation_mode"), SummaryString("selected_plan_code") ?? SummaryString("base_plan_code"),
