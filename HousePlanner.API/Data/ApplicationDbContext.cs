@@ -31,6 +31,11 @@ namespace HousePlanner.API.Data
                 new Role { Id = 2, Name = "Admin" }
             );
 
+            modelBuilder.Entity<User>()
+                .HasIndex(e => e.FirebaseUid)
+                .IsUnique()
+                .HasDatabaseName("UX_Users_FirebaseUid");
+
             modelBuilder.Entity<PricingData>()
                 .OwnsOne(p => p.TerrainMultiplier, owned => owned.ToJson());
 
@@ -103,4 +108,3 @@ namespace HousePlanner.API.Data
         }
     }
 }
-

@@ -1,6 +1,6 @@
 import { GoogleAuthProvider, signInWithEmailAndPassword, signInWithPopup, signOut as firebaseSignOut, type UserCredential, setPersistence, browserSessionPersistence } from 'firebase/auth';
 import { auth } from '../../services/firebase';
-import apiClient, { setInMemoryToken } from '../../services/apiClient';
+import apiClient from '../../services/apiClient';
 import type { UserProfile } from '../../types/auth.types';
 
 /**
@@ -11,12 +11,8 @@ const authService = {
     await setPersistence(auth, browserSessionPersistence);
     const credential = await signInWithPopup(auth, new GoogleAuthProvider());
     const token = await credential.user.getIdToken();
-    setInMemoryToken(token);
     
-    // Ensure user exists in local database before verifying
-    await apiClient.post('/auth/register', { token });
-    
-    const response = await apiClient.post<{ uid:string; email:string; role:UserProfile['role'] }>('/auth/verify',{token});
+    const response = await apiClient.post<{ uid:string; email:string; role:UserProfile['role'] }>('/auth/session');
     return { user:{uid:response.data.uid,email:response.data.email,role:response.data.role}, token };
   },
   /**
@@ -36,16 +32,9 @@ const authService = {
     // 2. Fetch the ID token
     const token = await fbUser.getIdToken();
 
-    // 3. Set token in memory for Axios requests
-    setInMemoryToken(token);
-
-    // Ensure user exists in local database
-    await apiClient.post('/auth/register', { token });
-
-    // 4. Verify token with backend database
+    // 3. Validate the bearer token and synchronize/load the application user.
     const response = await apiClient.post<{ uid: string; email: string; role: import('../../types/auth.types').UserRole }>(
-      '/auth/verify',
-      { token }
+      '/auth/session'
     );
 
     // Return the authenticated details
@@ -73,26 +62,9 @@ const authService = {
 
         try {
           const token = await fbUser.getIdToken();
-          setInMemoryToken(token);
-
-          let response;
-          try {
-            response = await apiClient.post<{ uid: string; email: string; role: import('../../types/auth.types').UserRole }>(
-              '/auth/verify',
-              { token }
-            );
-          } catch (error: any) {
-            // If the local DB returns 401, they might be missing from Postgres. Register and retry.
-            if (error.response && error.response.status === 401) {
-              await apiClient.post('/auth/register', { token });
-              response = await apiClient.post<{ uid: string; email: string; role: import('../../types/auth.types').UserRole }>(
-                '/auth/verify',
-                { token }
-              );
-            } else {
-              throw error;
-            }
-          }
+          const response = await apiClient.post<{ uid: string; email: string; role: import('../../types/auth.types').UserRole }>(
+            '/auth/session'
+          );
 
           resolve({
             user: {
@@ -114,7 +86,6 @@ const authService = {
    */
   logout: async (): Promise<void> => {
     await firebaseSignOut(auth);
-    setInMemoryToken(null);
   },
 };
 

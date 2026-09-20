@@ -5,6 +5,7 @@ using HousePlanner.API.Services;
 using Microsoft.OpenApi.Models;
 using Microsoft.EntityFrameworkCore;
 using HousePlanner.API.Data;
+using Microsoft.AspNetCore.Authentication;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,6 +27,10 @@ builder.Services.AddCors(options =>
 // 2. Add controllers and endpoints API exploration
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddAuthentication(FirebaseAuthenticationHandler.SchemeName)
+    .AddScheme<AuthenticationSchemeOptions, FirebaseAuthenticationHandler>(
+        FirebaseAuthenticationHandler.SchemeName, _ => { });
+builder.Services.AddAuthorization();
 
 // 3. Configure Swagger/OpenAPI
 builder.Services.AddSwaggerGen(c =>
@@ -65,6 +70,7 @@ builder.Services.AddSwaggerGen(c =>
 
 // 4. Register application services
 builder.Services.AddScoped<IFirebaseAuthService, FirebaseAuthService>();
+builder.Services.AddScoped<IApplicationUserSyncService, ApplicationUserSyncService>();
 builder.Services.AddScoped<ICurrentUserContextService, CurrentUserContextService>();
 builder.Services.AddScoped<IPreDesignedPlanLayoutValidator, PreDesignedPlanLayoutValidator>();
 builder.Services.AddScoped<PreDesignedPlanSeeder>();
@@ -164,6 +170,7 @@ if (app.Environment.IsDevelopment())
 // but keep it active and ensure client URLs match.
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 // Python callbacks are internal service-to-service requests.

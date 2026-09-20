@@ -3,8 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { motion } from 'framer-motion';
 import { Box, Lock, Mail, ArrowRight, Sparkles } from 'lucide-react';
-import { googleLoginAsync, loginAsync, setMockAuth } from '../features/auth/authSlice';
-import { setInMemoryToken } from '../services/apiClient';
+import { googleLoginAsync, loginAsync } from '../features/auth/authSlice';
 import type { AppDispatch } from '../store';
 import useAuth from '../features/auth/useAuth';
 
@@ -147,32 +146,6 @@ const LoginPage: React.FC = () => {
               <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
             </svg>
             Continue with Google
-          </button>
-
-          <button 
-            type="button"
-            onClick={() => {
-              dispatch(setMockAuth({ uid: 'mock-arch', email: 'architect@homeplanner.com', role: 'Architect' }));
-              setInMemoryToken('mock_token');
-              navigate('/architect/dashboard');
-            }}
-            className="w-full bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 font-semibold py-3.5 rounded-xl flex items-center justify-center gap-3 transition-colors mb-3"
-          >
-            <Sparkles size={20} />
-            Test Login as Architect
-          </button>
-
-          <button 
-            type="button"
-            onClick={() => {
-              dispatch(setMockAuth({ uid: 'mock-constructor', email: 'constructor@homeplanner.com', role: 'Constructor' }));
-              setInMemoryToken('mock_token');
-              navigate('/constructor/dashboard');
-            }}
-            className="w-full bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 font-semibold py-3.5 rounded-xl flex items-center justify-center gap-3 transition-colors"
-          >
-            <Box size={20} />
-            Test Login as Constructor
           </button>
 
           <div className="mt-8 text-center text-sm text-gray-500">

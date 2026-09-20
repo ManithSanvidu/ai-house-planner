@@ -2,13 +2,10 @@ import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/tool
 import type { AuthState, UserProfile } from '../../types/auth.types';
 import authService from './authService';
 
-const savedUser = localStorage.getItem('mockUser');
-const savedToken = localStorage.getItem('mockToken');
-
 const initialState: AuthState = {
-  user: savedUser ? JSON.parse(savedUser) : null,
-  token: savedToken || null,
-  status: savedUser ? 'succeeded' : 'idle',
+  user: null,
+  token: null,
+  status: 'idle',
   error: null,
 };
 
@@ -88,16 +85,6 @@ const authSlice = createSlice({
       state.token = null;
       state.status = 'idle';
       state.error = null;
-      localStorage.removeItem('mockUser');
-      localStorage.removeItem('mockToken');
-    },
-    setMockAuth: (state, action: PayloadAction<UserProfile>) => {
-      state.user = action.payload;
-      state.token = 'mock_token';
-      state.status = 'succeeded';
-      state.error = null;
-      localStorage.setItem('mockUser', JSON.stringify(action.payload));
-      localStorage.setItem('mockToken', 'mock_token');
     },
   },
   extraReducers: (builder) => {
@@ -126,8 +113,6 @@ const authSlice = createSlice({
         state.token = null;
         state.status = 'idle';
         state.error = null;
-        localStorage.removeItem('mockUser');
-        localStorage.removeItem('mockToken');
       })
       // Session Verification
       .addCase(verifySessionAsync.pending, (state) => {
@@ -148,5 +133,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { clearAuth, setMockAuth } = authSlice.actions;
+export const { clearAuth } = authSlice.actions;
 export default authSlice.reducer;
