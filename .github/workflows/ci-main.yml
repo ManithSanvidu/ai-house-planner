@@ -1,4 +1,3 @@
-<<<<<<<< HEAD:.github/workflows/ci-main.yml
 name: CI - Main Branch
 
 on:
@@ -6,15 +5,6 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
-========
-name: CI - Dev Branch
-
-on:
-  push:
-    branches: [ "Dev" ]
-  pull_request:
-    branches: [ "Dev" ]
->>>>>>>> Dev:.github/workflows/ci-dev.yml
 
 jobs:
   web-frontend:
@@ -75,30 +65,4 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       - name: Run Tests
         run: |
-<<<<<<<< HEAD:.github/workflows/ci-main.yml
           python -m pytest tests/
-========
-          python -m pytest tests/
-
-  mobile-app:
-    name: Build and Test Mobile App (Flutter)
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./mobile
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
-          cache: true
-      - name: Install dependencies
-        run: flutter pub get
-      - name: Create dummy .env file
-        run: touch .env
-      - name: Analyze
-        run: flutter analyze
-      - name: Run Tests
-        run: flutter test
->>>>>>>> Dev:.github/workflows/ci-dev.yml
