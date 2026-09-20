@@ -74,8 +74,8 @@ class IntakeNotifier extends StateNotifier<AsyncValue<LandSubmission>> {
     
     try {
       final payload = {
-        if (basePlanId != null) 'basePreDesignedPlanId': basePlanId,
-        if (mode != null) 'planSelectionMode': mode,
+        'basePreDesignedPlanId': basePlanId,
+        'planSelectionMode': mode,
         'landSizePerches': data.landSizePerches,
         'manualTerrainType': data.manualTerrainType == 'flat' ? 'Flat' : data.manualTerrainType == 'hillside' ? 'Hillside' : data.manualTerrainType == 'coastal' ? 'Coastal' : data.manualTerrainType == 'forested' ? 'Forested' : 'Flat',
         'budgetLkr': data.budgetLkr,
@@ -108,9 +108,9 @@ class IntakeNotifier extends StateNotifier<AsyncValue<LandSubmission>> {
       
       state = AsyncValue.data(data); // Revert to data state on success
       return response.data['workflowId'] as String? ?? response.data['WorkflowId'] as String?;
-    } catch (e, st) {
+    } catch (e) {
       state = AsyncValue.data(data); // Revert to data state so form stays visible
-      throw e;
+      rethrow;
     }
   }
 }
