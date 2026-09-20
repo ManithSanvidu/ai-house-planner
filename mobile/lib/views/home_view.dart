@@ -474,7 +474,7 @@ class HomeView extends StatelessWidget {
             color: Color(0xFF77776F),
           ),
 
-          const SizedBox(width: 10),
+          SizedBox(width: 10),
 
           Expanded(
             child: Text(
