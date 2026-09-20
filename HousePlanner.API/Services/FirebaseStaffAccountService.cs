@@ -11,6 +11,8 @@ public interface IFirebaseStaffAccountService
     Task DeleteAsync(string uid, CancellationToken cancellationToken = default);
     Task<bool?> IsDisabledAsync(string uid, CancellationToken cancellationToken = default);
     Task SetDisabledAsync(string uid, bool disabled, CancellationToken cancellationToken = default);
+    Task UpdateProfileAsync(string uid, string email, string displayName,
+        CancellationToken cancellationToken = default);
 }
 
 public sealed class FirebaseStaffAccountService : IFirebaseStaffAccountService
@@ -55,5 +57,27 @@ public sealed class FirebaseStaffAccountService : IFirebaseStaffAccountService
             new UserRecordArgs { Uid = uid, Disabled = disabled }, cancellationToken);
         if (disabled)
             await FirebaseAuth.DefaultInstance.RevokeRefreshTokensAsync(uid, cancellationToken);
+    }
+
+    public async Task UpdateProfileAsync(string uid, string email, string displayName,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await FirebaseAuth.DefaultInstance.UpdateUserAsync(new UserRecordArgs
+            {
+                Uid = uid,
+                Email = email,
+                DisplayName = displayName
+            }, cancellationToken);
+        }
+        catch (FirebaseAuthException ex) when (ex.AuthErrorCode == AuthErrorCode.EmailAlreadyExists)
+        {
+            throw new StaffAccountException("duplicate_email", "An account with this email already exists.", ex);
+        }
+        catch (FirebaseAuthException ex)
+        {
+            throw new StaffAccountException("firebase_update_failed", "The staff sign-in account could not be updated.", ex);
+        }
     }
 }

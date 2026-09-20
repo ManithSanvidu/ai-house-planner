@@ -37,6 +37,15 @@ public sealed class AdminStaffController(
         catch (StaffAccountException ex) { return Error(ex); }
     }
 
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateStaffRequestDto request,
+        CancellationToken cancellationToken)
+    {
+        if (await RequireAdmin() is { } denied) return denied;
+        try { return Ok(await staff.UpdateAsync(id, request, cancellationToken)); }
+        catch (StaffAccountException ex) { return Error(ex); }
+    }
+
     private async Task<IActionResult?> RequireAdmin()
     {
         var user = await currentUser.GetAsync(HttpContext);

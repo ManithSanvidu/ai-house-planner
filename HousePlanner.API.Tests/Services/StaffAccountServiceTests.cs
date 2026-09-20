@@ -3,6 +3,7 @@ using HousePlanner.API.DTOs;
 using HousePlanner.API.Entities;
 using HousePlanner.API.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 
@@ -10,15 +11,28 @@ namespace HousePlanner.API.Tests.Services;
 
 public sealed class StaffAccountServiceTests
 {
-    private static ApplicationDbContext Database()
+    private static ApplicationDbContext Database(params IInterceptor[] interceptors)
     {
-        var db = new ApplicationDbContext(new DbContextOptionsBuilder<ApplicationDbContext>()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options);
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString());
+        if (interceptors.Length > 0) options.AddInterceptors(interceptors);
+        var db = new ApplicationDbContext(options.Options);
         db.Roles.AddRange(new Role { Id = 10, Name = "Architect" }, new Role { Id = 11, Name = "Constructor" },
             new Role { Id = 12, Name = "Customer" }, new Role { Id = 13, Name = "Admin" });
         db.SaveChanges();
         return db;
     }
+
+    private static User AddStaff(ApplicationDbContext db, string role, string email = "staff@example.com")
+    {
+        var user = new User { Id = Guid.NewGuid(), Email = email, FirebaseUid = "staff-uid", PasswordHash = null,
+            FullName = $"Original {role}", RoleId = role == "Architect" ? 10 : 11,
+            CreatedAt = DateTimeOffset.UtcNow, UpdatedAt = DateTimeOffset.UtcNow };
+        db.Users.Add(user); db.SaveChanges(); return user;
+    }
+
+    private static UpdateStaffRequestDto Update(string role, string email = "updated@example.com") => new()
+        { FullName = "Updated Staff", Email = email, Role = role };
 
     private static CreateStaffRequestDto Request(string role) => new()
     { FullName = "Staff User", Email = $"{role.ToLowerInvariant()}@example.com", Password = "secret123", Role = role };
@@ -102,5 +116,126 @@ public sealed class StaffAccountServiceTests
         var user = await new ApplicationUserSyncService(db).SynchronizeAsync(
             new UserInfoResponseDto { Uid = "staff-uid", Email = "architect@example.com", Role = "Customer" });
         Assert.Equal("Architect", user.Role.Name);
+    }
+
+    [Theory]
+    [InlineData("Architect", "Architect")]
+    [InlineData("Constructor", "Constructor")]
+    [InlineData("Architect", "Constructor")]
+    [InlineData("Constructor", "Architect")]
+    public async Task UpdateStaff_ChangesSafeProfileFieldsAndKeepsIdentity(string originalRole, string newRole)
+    {
+        await using var db = Database();
+        var original = AddStaff(db, originalRole);
+        var firebase = new Mock<IFirebaseStaffAccountService>();
+        firebase.Setup(x => x.IsDisabledAsync("staff-uid", It.IsAny<CancellationToken>())).ReturnsAsync(false);
+
+        var result = await new StaffAccountService(db, firebase.Object, NullLogger<StaffAccountService>.Instance)
+            .UpdateAsync(original.Id, Update(newRole));
+
+        var saved = await db.Users.AsNoTracking().SingleAsync(x => x.Id == original.Id);
+        Assert.Equal("Updated Staff", saved.FullName);
+        Assert.Equal("updated@example.com", saved.Email);
+        Assert.Equal(newRole == "Architect" ? 10 : 11, saved.RoleId);
+        Assert.Equal("staff-uid", saved.FirebaseUid);
+        Assert.Null(saved.PasswordHash);
+        Assert.Equal(newRole, result.Role);
+        firebase.Verify(x => x.UpdateProfileAsync("staff-uid", "updated@example.com", "Updated Staff",
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Theory]
+    [InlineData("Admin")]
+    [InlineData("Customer")]
+    public async Task UpdateStaff_RejectsNonStaffRoleBeforeFirebase(string role)
+    {
+        await using var db = Database(); var staff = AddStaff(db, "Architect");
+        var firebase = new Mock<IFirebaseStaffAccountService>();
+        var error = await Assert.ThrowsAsync<StaffAccountException>(() =>
+            new StaffAccountService(db, firebase.Object, NullLogger<StaffAccountService>.Instance)
+                .UpdateAsync(staff.Id, Update(role)));
+        Assert.Equal("invalid_request", error.Code);
+        firebase.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task UpdateStaff_RejectsDuplicateDatabaseEmailBeforeFirebase()
+    {
+        await using var db = Database(); var staff = AddStaff(db, "Architect");
+        db.Users.Add(new User { Id = Guid.NewGuid(), Email = "taken@example.com", FirebaseUid = "other-uid",
+            FullName = "Other", RoleId = 11, CreatedAt = DateTimeOffset.UtcNow, UpdatedAt = DateTimeOffset.UtcNow });
+        await db.SaveChangesAsync();
+        var firebase = new Mock<IFirebaseStaffAccountService>();
+        var error = await Assert.ThrowsAsync<StaffAccountException>(() =>
+            new StaffAccountService(db, firebase.Object, NullLogger<StaffAccountService>.Instance)
+                .UpdateAsync(staff.Id, Update("Architect", "taken@example.com")));
+        Assert.Equal("duplicate_email", error.Code);
+        firebase.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task UpdateStaff_PropagatesSafeDuplicateFirebaseEmailError()
+    {
+        await using var db = Database(); var staff = AddStaff(db, "Architect");
+        var firebase = new Mock<IFirebaseStaffAccountService>();
+        firebase.Setup(x => x.UpdateProfileAsync("staff-uid", It.IsAny<string>(), It.IsAny<string>(),
+                It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new StaffAccountException("duplicate_email", "An account with this email already exists."));
+        var error = await Assert.ThrowsAsync<StaffAccountException>(() =>
+            new StaffAccountService(db, firebase.Object, NullLogger<StaffAccountService>.Instance)
+                .UpdateAsync(staff.Id, Update("Architect")));
+        Assert.Equal("duplicate_email", error.Code);
+        Assert.Equal("staff@example.com", (await db.Users.AsNoTracking().SingleAsync()).Email);
+    }
+
+    [Theory]
+    [InlineData("not-an-email")]
+    [InlineData("")]
+    public async Task UpdateStaff_RejectsInvalidEmail(string email)
+    {
+        await using var db = Database(); var staff = AddStaff(db, "Architect");
+        var firebase = new Mock<IFirebaseStaffAccountService>();
+        var error = await Assert.ThrowsAsync<StaffAccountException>(() =>
+            new StaffAccountService(db, firebase.Object, NullLogger<StaffAccountService>.Instance)
+                .UpdateAsync(staff.Id, Update("Architect", email)));
+        Assert.Equal("invalid_request", error.Code);
+        firebase.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task UpdateStaff_PreservesDisabledState()
+    {
+        await using var db = Database(); var staff = AddStaff(db, "Constructor");
+        var firebase = new Mock<IFirebaseStaffAccountService>();
+        firebase.Setup(x => x.IsDisabledAsync("staff-uid", It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        var result = await new StaffAccountService(db, firebase.Object, NullLogger<StaffAccountService>.Instance)
+            .UpdateAsync(staff.Id, Update("Constructor"));
+        Assert.Equal("Disabled", result.Status);
+        firebase.Verify(x => x.SetDisabledAsync(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task UpdateStaff_RollsBackFirebaseWhenDatabaseSaveFails()
+    {
+        var failure = new FailNextSaveInterceptor();
+        await using var db = Database(failure); var staff = AddStaff(db, "Architect");
+        failure.Armed = true;
+        var firebase = new Mock<IFirebaseStaffAccountService>();
+        var error = await Assert.ThrowsAsync<StaffAccountException>(() =>
+            new StaffAccountService(db, firebase.Object, NullLogger<StaffAccountService>.Instance)
+                .UpdateAsync(staff.Id, Update("Constructor")));
+        Assert.Equal("profile_update_failed", error.Code);
+        firebase.Verify(x => x.UpdateProfileAsync("staff-uid", "staff@example.com", "Original Architect",
+            CancellationToken.None), Times.Once);
+    }
+
+    private sealed class FailNextSaveInterceptor : SaveChangesInterceptor
+    {
+        public bool Armed { get; set; }
+        public override ValueTask<InterceptionResult<int>> SavingChangesAsync(DbContextEventData eventData,
+            InterceptionResult<int> result, CancellationToken cancellationToken = default)
+            => Armed
+                ? ValueTask.FromException<InterceptionResult<int>>(new DbUpdateException("Simulated failure"))
+                : base.SavingChangesAsync(eventData, result, cancellationToken);
     }
 }

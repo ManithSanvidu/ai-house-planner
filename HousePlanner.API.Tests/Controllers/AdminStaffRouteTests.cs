@@ -53,6 +53,40 @@ public sealed class AdminStaffRouteTests : IClassFixture<AdminStaffApiFactory>
     }
 
     [Fact]
+    public async Task AdminCanReachUpdateRoute()
+    {
+        var id = Guid.NewGuid();
+        using var request = AdminRequest(HttpMethod.Put, $"/api/v1/admin/staff/{id}");
+        request.Content = JsonContent.Create(new UpdateStaffRequestDto
+            { FullName = "Updated Staff", Email = "updated@example.com", Role = "Constructor" });
+        var response = await _client.SendAsync(request);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Theory]
+    [InlineData("Customer")]
+    [InlineData("Architect")]
+    [InlineData("Constructor")]
+    public async Task NonAdminCannotReachUpdateRoute(string role)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Put,
+            $"/api/v1/admin/staff/{Guid.NewGuid()}");
+        request.Headers.Add("X-Test-Role", role);
+        request.Content = JsonContent.Create(new UpdateStaffRequestDto
+            { FullName = "Updated Staff", Email = "updated@example.com", Role = "Architect" });
+        var response = await _client.SendAsync(request);
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task UnauthenticatedCannotReachUpdateRoute()
+    {
+        var response = await _client.PutAsJsonAsync($"/api/v1/admin/staff/{Guid.NewGuid()}",
+            new UpdateStaffRequestDto { FullName = "Updated", Email = "updated@example.com", Role = "Architect" });
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
     public async Task MissingAuthenticationReturns401InsteadOf404()
     {
         var response = await _client.GetAsync("/api/v1/admin/staff");
@@ -145,6 +179,9 @@ internal sealed class TestStaffAccountService : IStaffAccountService
 
     public Task<StaffAccountDto> CreateAsync(CreateStaffRequestDto request, CancellationToken cancellationToken = default) =>
         Task.FromResult(Account(request.Role));
+
+    public Task<StaffAccountDto> UpdateAsync(Guid id, UpdateStaffRequestDto request,
+        CancellationToken cancellationToken = default) => Task.FromResult(Account(request.Role));
 
     public Task<StaffAccountDto> SetDisabledAsync(Guid id, bool disabled, CancellationToken cancellationToken = default) =>
         Task.FromResult(Account());

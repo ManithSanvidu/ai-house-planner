@@ -3,9 +3,9 @@ import { beforeEach, expect, test, vi } from 'vitest';
 import AdminStaffPage from './AdminStaffPage';
 import { staffService } from '../services/staffService';
 
-vi.mock('../services/staffService',()=>({staffService:{list:vi.fn(),create:vi.fn(),setDisabled:vi.fn()}}));
+vi.mock('../services/staffService',()=>({staffService:{list:vi.fn(),create:vi.fn(),update:vi.fn(),setDisabled:vi.fn()}}));
 const people=[{id:'a',fullName:'Nimal Silva',email:'nimal@example.com',role:'Architect' as const,status:'Active' as const},{id:'c',fullName:'Kasun Perera',email:'kasun@example.com',role:'Constructor' as const,status:'Disabled' as const}];
-beforeEach(()=>{vi.clearAllMocks();vi.mocked(staffService.list).mockResolvedValue(people);vi.mocked(staffService.create).mockResolvedValue(people[0]);vi.mocked(staffService.setDisabled).mockResolvedValue(people[0])});
+beforeEach(()=>{vi.clearAllMocks();vi.mocked(staffService.list).mockResolvedValue(people);vi.mocked(staffService.create).mockResolvedValue(people[0]);vi.mocked(staffService.update).mockResolvedValue(people[0]);vi.mocked(staffService.setDisabled).mockResolvedValue(people[0])});
 
 test('lists staff without exposing Firebase UID or passwords',async()=>{
  render(<AdminStaffPage/>);
@@ -79,4 +79,34 @@ test('staff filters remain visible, expose selection, and preserve filtering beh
  fireEvent.click(all);
  await waitFor(()=>expect(staffService.list).toHaveBeenLastCalledWith(undefined));
  expect(all.getAttribute('aria-pressed')).toBe('true');
+});
+
+test('edits a staff member with safe pre-filled fields and preserves the current filter',async()=>{
+ const updated={...people[0],fullName:'Nimal Fernando',email:'nimal.new@example.com',role:'Constructor' as const};
+ vi.mocked(staffService.update).mockResolvedValue(updated);
+ render(<AdminStaffPage/>);
+ await screen.findByText('Nimal Silva');
+ fireEvent.click(screen.getByRole('button',{name:'Architects'}));
+ await waitFor(()=>expect(staffService.list).toHaveBeenLastCalledWith('Architect'));
+
+ fireEvent.click(screen.getAllByRole('button',{name:'Edit'})[0]);
+ const dialog=screen.getByRole('dialog',{name:'Edit Staff Member'});
+ expect((within(dialog).getByLabelText('Full Name') as HTMLInputElement).value).toBe('Nimal Silva');
+ expect((within(dialog).getByLabelText('Email') as HTMLInputElement).value).toBe('nimal@example.com');
+ expect(within(dialog).getAllByRole('option').map(option=>option.textContent)).toEqual(['Architect','Constructor']);
+ expect(within(dialog).queryByText(/firebase uid|roleid|password hash|token/i)).toBeNull();
+ expect(dialog.querySelector('input[type="password"]')).toBeNull();
+
+ fireEvent.change(within(dialog).getByLabelText('Full Name'),{target:{value:'Nimal Fernando'}});
+ fireEvent.change(within(dialog).getByLabelText('Email'),{target:{value:'nimal.new@example.com'}});
+ fireEvent.change(within(dialog).getByLabelText('Role'),{target:{value:'Constructor'}});
+ vi.mocked(staffService.list).mockResolvedValue([{...updated}]);
+ fireEvent.click(within(dialog).getByRole('button',{name:'Save Changes'}));
+
+ await waitFor(()=>expect(staffService.update).toHaveBeenCalledWith('a',{
+   fullName:'Nimal Fernando',email:'nimal.new@example.com',role:'Constructor'
+ }));
+ await screen.findByText('Nimal Fernando');
+ expect(staffService.list).toHaveBeenLastCalledWith('Architect');
+ expect(screen.getByRole('status').textContent).toContain('Staff account updated.');
 });

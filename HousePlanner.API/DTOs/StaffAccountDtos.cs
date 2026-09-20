@@ -28,3 +28,15 @@ public sealed class UpdateStaffStatusDto
 {
     public bool Disabled { get; set; }
 }
+
+public sealed class UpdateStaffRequestDto
+{
+    [Required, StringLength(150)]
+    public string FullName { get; set; } = string.Empty;
+
+    [Required, EmailAddress, StringLength(255)]
+    public string Email { get; set; } = string.Empty;
+
+    [Required]
+    public string Role { get; set; } = string.Empty;
+}

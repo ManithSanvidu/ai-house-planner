@@ -16,6 +16,8 @@ public interface IStaffAccountService
 {
     Task<IReadOnlyList<StaffAccountDto>> ListAsync(string? role, CancellationToken cancellationToken = default);
     Task<StaffAccountDto> CreateAsync(CreateStaffRequestDto request, CancellationToken cancellationToken = default);
+    Task<StaffAccountDto> UpdateAsync(Guid id, UpdateStaffRequestDto request,
+        CancellationToken cancellationToken = default);
     Task<StaffAccountDto> SetDisabledAsync(Guid id, bool disabled, CancellationToken cancellationToken = default);
 }
 
@@ -107,6 +109,55 @@ public sealed class StaffAccountService(
             logger.LogWarning(ex, "Could not update Firebase status for staff user {UserId}", id);
             throw new StaffAccountException("status_update_failed", "The staff account status could not be updated.", ex);
         }
+        return ToDto(user, disabled);
+    }
+
+    public async Task<StaffAccountDto> UpdateAsync(Guid id, UpdateStaffRequestDto request,
+        CancellationToken cancellationToken = default)
+    {
+        var fullName = request.FullName.Trim();
+        var email = request.Email.Trim().ToLowerInvariant();
+        var roleName = ValidateRole(request.Role);
+        if (string.IsNullOrWhiteSpace(fullName)) throw Invalid("Full name is required.");
+        if (!new EmailAddressAttribute().IsValid(email)) throw Invalid("A valid email address is required.");
+
+        var user = await db.Users.Include(x => x.Role)
+            .SingleOrDefaultAsync(x => x.Id == id && StaffRoles.Contains(x.Role.Name), cancellationToken)
+            ?? throw new StaffAccountException("not_found", "Staff account not found.");
+        if (string.IsNullOrWhiteSpace(user.FirebaseUid))
+            throw new StaffAccountException("identity_missing", "This staff profile has no Firebase identity.");
+        if (await db.Users.AnyAsync(x => x.Id != id && x.Email.ToLower() == email, cancellationToken))
+            throw new StaffAccountException("duplicate_email", "An account with this email already exists.");
+        var role = await db.Roles.SingleOrDefaultAsync(x => x.Name == roleName, cancellationToken)
+            ?? throw new StaffAccountException("role_not_configured", "The requested staff role is not configured.");
+
+        var originalEmail = user.Email;
+        var originalName = user.FullName;
+        await firebase.UpdateProfileAsync(user.FirebaseUid, email, fullName, cancellationToken);
+        try
+        {
+            user.FullName = fullName;
+            user.Email = email;
+            user.RoleId = role.Id;
+            user.Role = role;
+            user.UpdatedAt = DateTimeOffset.UtcNow;
+            await db.SaveChangesAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            try
+            {
+                await firebase.UpdateProfileAsync(user.FirebaseUid, originalEmail, originalName, CancellationToken.None);
+            }
+            catch (Exception rollbackError)
+            {
+                logger.LogError(rollbackError, "Could not roll back Firebase profile for staff user {UserId}", id);
+            }
+            logger.LogError(ex, "Database profile update failed for staff user {UserId}", id);
+            throw new StaffAccountException("profile_update_failed", "The staff account could not be updated.", ex);
+        }
+
+        var disabled = await firebase.IsDisabledAsync(user.FirebaseUid, cancellationToken);
         return ToDto(user, disabled);
     }
 
