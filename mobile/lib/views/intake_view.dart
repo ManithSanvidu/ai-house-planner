@@ -32,13 +32,39 @@ class _IntakeViewState extends ConsumerState<IntakeView>{
   void _submit() async {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
-      final workflowId = await ref.read(intakeProvider.notifier).submitIntake(
-        basePlanId: widget.basePlanId,
-        mode: widget.mode,
-      );
-      if (workflowId != null && mounted) {
-        context.go('/design/$workflowId');
+      
+      // Ensure landSizePerches is set if it was missed
+      final data = ref.read(intakeProvider).value;
+      if (data?.landSizePerches == null) {
+        ref.read(intakeProvider.notifier).updateField(landSizePerches: 10.0);
       }
+      
+      try {
+        final workflowId = await ref.read(intakeProvider.notifier).submitIntake(
+          basePlanId: widget.basePlanId,
+          mode: widget.mode,
+        );
+        if (workflowId != null && mounted) {
+          context.go('/design/$workflowId');
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Generation failed: No matching plan found for these exact requirements. Please adjust preferences (e.g. beds, floors, style) and try again.'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 4),
+            ),
+          );
+        }
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please fill out all required fields (e.g. Land size)'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -204,13 +230,13 @@ class _IntakeViewState extends ConsumerState<IntakeView>{
                   children: [
                     Row(
                       children: [
-                        Expanded(child: _buildDropdown('Beds', [1, 2, 3, 4, 5], (val) => ref.read(intakeProvider.notifier).updateField(preferredBedrooms: val))),
+                        Expanded(child: _buildDropdown('Beds', [1, 2, 3, 4, 5], data.preferredBedrooms, (val) => ref.read(intakeProvider.notifier).updateField(preferredBedrooms: val))),
                         const SizedBox(width: 12),
-                        Expanded(child: _buildDropdown('Baths', [1, 2, 3, 4], (val) {
+                        Expanded(child: _buildDropdown('Baths', [1, 2, 3, 4], 1, (val) {
                           // Note: API hardcodes bathrooms to 1 currently, so we don't update provider
                         })),
                         const SizedBox(width: 12),
-                        Expanded(child: _buildDropdown('Floors', [1, 2, 3], (val) => ref.read(intakeProvider.notifier).updateField(preferredFloors: val))),
+                        Expanded(child: _buildDropdown('Floors', [1, 2, 3], data.preferredFloors, (val) => ref.read(intakeProvider.notifier).updateField(preferredFloors: val))),
                       ],
                     ),
                     const SizedBox(height: 16),
@@ -253,9 +279,9 @@ class _IntakeViewState extends ConsumerState<IntakeView>{
                     ),
                   ],
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 16),
                 ElevatedButton(
-                  onPressed: data.isValid ? _submit : null,
+                  onPressed: _submit,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.black,
                     foregroundColor: Colors.white,
@@ -273,7 +299,7 @@ class _IntakeViewState extends ConsumerState<IntakeView>{
                     ],
                   ),
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 120),
               ],
             ),
           ),
@@ -282,7 +308,7 @@ class _IntakeViewState extends ConsumerState<IntakeView>{
     );
   }
 
-  Widget _buildDropdown(String label, List<int> items, void Function(int?) onChanged) {
+  Widget _buildDropdown(String label, List<int> items, int? currentValue, void Function(int?) onChanged) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -297,7 +323,7 @@ class _IntakeViewState extends ConsumerState<IntakeView>{
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<int>(
-              value: items.first, // simple stub for value tracking
+              value: items.contains(currentValue) ? currentValue : items.first,
               isExpanded: true,
               icon: const Icon(Icons.keyboard_arrow_down, color: AppTokens.inkMute, size: 20),
               style: const TextStyle(fontSize: 14.5, color: AppTokens.ink),
