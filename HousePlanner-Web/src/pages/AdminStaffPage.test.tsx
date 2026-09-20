@@ -28,3 +28,28 @@ test('staff form only offers Architect and Constructor and creates through backe
  fireEvent.click(within(dialog).getByRole('button',{name:'Create Staff Account'}));
  await waitFor(()=>expect(staffService.create).toHaveBeenCalledWith({fullName:'New Architect',email:'new@example.com',password:'secret12',role:'Architect'}));
 });
+
+test('shows an access-denied message for a forbidden response',async()=>{
+ vi.mocked(staffService.list).mockRejectedValue({response:{status:403}});
+ render(<AdminStaffPage/>);
+ expect((await screen.findByRole('alert')).textContent).toContain('You do not have permission to manage staff accounts.');
+});
+
+test('shows the session message for an unauthenticated response',async()=>{
+ vi.mocked(staffService.list).mockRejectedValue({response:{status:401}});
+ render(<AdminStaffPage/>);
+ expect((await screen.findByRole('alert')).textContent).toContain('Your session has expired. Please sign in again.');
+});
+
+test('shows the generic load error for a server response',async()=>{
+ vi.mocked(staffService.list).mockRejectedValue({response:{status:500}});
+ render(<AdminStaffPage/>);
+ expect((await screen.findByRole('alert')).textContent).toContain('Could not load staff accounts.');
+});
+
+test('treats an empty successful response as an empty list',async()=>{
+ vi.mocked(staffService.list).mockResolvedValue([]);
+ render(<AdminStaffPage/>);
+ expect(await screen.findByText('No staff accounts found.')).toBeTruthy();
+ expect(screen.queryByRole('alert')).toBeNull();
+});

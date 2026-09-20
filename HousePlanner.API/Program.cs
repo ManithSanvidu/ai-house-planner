@@ -147,9 +147,11 @@ var app = builder.Build();
 // Apply CORS Policy early to ensure all responses (including errors) get the headers
 app.UseCors("AllowReactApp");
 
-// Apply checked-in migrations without deleting persisted designs.
-using (var scope = app.Services.CreateScope())
+// Apply checked-in migrations without deleting persisted designs. Integration tests
+// exercise routing with substituted services and do not need a database connection.
+if (!app.Environment.IsEnvironment("Testing"))
 {
+    using var scope = app.Services.CreateScope();
     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     context.Database.Migrate();
     await scope.ServiceProvider.GetRequiredService<ApplicationRoleSeeder>().SeedAsync();
@@ -196,3 +198,5 @@ app.UseWhen(context => context.Request.Path.StartsWithSegments("/api/v1/internal
 app.MapControllers();
 
 app.Run();
+
+public partial class Program;

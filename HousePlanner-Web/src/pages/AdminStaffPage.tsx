@@ -7,7 +7,7 @@ const empty:CreateStaffRequest={fullName:'',email:'',password:'',role:'Architect
 
 export default function AdminStaffPage(){
  const [staff,setStaff]=useState<StaffAccount[]>([]),[filter,setFilter]=useState<Filter>('All'),[open,setOpen]=useState(false),[form,setForm]=useState(empty),[confirm,setConfirm]=useState(''),[error,setError]=useState(''),[loading,setLoading]=useState(true);
- const load=async()=>{setLoading(true);try{setStaff(await staffService.list(filter==='All'?undefined:filter));setError('')}catch{setError('Could not load staff accounts.')}finally{setLoading(false)}};
+ const load=async()=>{setLoading(true);try{setStaff(await staffService.list(filter==='All'?undefined:filter));setError('')}catch(ex:unknown){const status=(ex as {response?:{status?:number}})?.response?.status;if(status===401)setError('Your session has expired. Please sign in again.');else if(status===403)setError('You do not have permission to manage staff accounts.');else setError('Could not load staff accounts.')}finally{setLoading(false)}};
  useEffect(()=>{void load()},[filter]);
  const create=async(e:React.FormEvent)=>{e.preventDefault();setError('');if(form.password.length<6)return setError('Password must be at least 6 characters.');if(form.password!==confirm)return setError('Passwords do not match.');try{await staffService.create(form);setOpen(false);setForm(empty);setConfirm('');await load()}catch(ex:any){setError(ex.response?.data?.message||'Staff account could not be created.')}};
  const toggle=async(person:StaffAccount)=>{try{await staffService.setDisabled(person.id,person.status!=='Disabled');await load()}catch{setError('Staff account status could not be updated.')}};
