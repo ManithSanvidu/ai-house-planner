@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/plan_provider.dart';
 import '../core/theme/app_tokens.dart';
+import '../models/plan.dart';
 
 class PlanLibraryView extends ConsumerStatefulWidget {
   const PlanLibraryView({super.key});
@@ -120,27 +121,13 @@ class _PlanLibraryViewState extends ConsumerState<PlanLibraryView> {
                             // Gradient Placeholder
                             Expanded(
                               flex: 45,
-                              child: Container(
-                                width: double.infinity,
-                                decoration: const BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                    colors: [Color(0xFFE4E1FB), Color(0xFFFDECC7)],
-                                  ),
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    plan.designCode,
-                                    style: const TextStyle(
-                                      fontFamily: 'monospace',
-                                      color: AppTokens.ink,
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 12.5,
-                                    ),
-                                  ),
-                                ),
-                              ),
+                              child: plan.imageUrls.isNotEmpty
+                                  ? Image.network(
+                                      plan.imageUrls.first,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stackTrace) => _buildPlaceholder(plan),
+                                    )
+                                  : _buildPlaceholder(plan),
                             ),
                             // Details
                             Expanded(
@@ -220,6 +207,30 @@ class _PlanLibraryViewState extends ConsumerState<PlanLibraryView> {
           color: isActive ? Colors.white : AppTokens.ink,
           fontSize: 12.5,
           fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPlaceholder(Plan plan) {
+    return Container(
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFE4E1FB), Color(0xFFFDECC7)],
+        ),
+      ),
+      child: Center(
+        child: Text(
+          plan.designCode,
+          style: const TextStyle(
+            fontFamily: 'monospace',
+            color: AppTokens.ink,
+            fontWeight: FontWeight.w700,
+            fontSize: 12.5,
+          ),
         ),
       ),
     );
