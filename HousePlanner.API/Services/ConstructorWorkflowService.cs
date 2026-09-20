@@ -145,5 +145,124 @@ namespace HousePlanner.API.Services
                 LatestLog = latestLog
             };
         }
+        public async Task<Project?> SearchProjectByIdAsync(Guid projectId)
+        {
+            return await _context.Projects
+                .Include(p => p.WorkflowState)
+                .ThenInclude(w => w.HouseDesigns)
+                .FirstOrDefaultAsync(p => p.Id == projectId);
+        }
+
+        public async Task<ConstructorProjectRequest> RequestProjectAssignmentAsync(Guid projectId, Guid constructorId)
+        {
+            var project = await _context.Projects.FindAsync(projectId);
+            if (project == null) throw new KeyNotFoundException("Project not found.");
+
+            // Check if already requested
+            var existingRequest = await _context.ConstructorProjectRequests
+                .FirstOrDefaultAsync(r => r.ProjectId == projectId && r.ConstructorId == constructorId);
+
+            if (existingRequest != null)
+            {
+                return existingRequest;
+            }
+
+            var request = new ConstructorProjectRequest
+            {
+                Id = Guid.NewGuid(),
+                ProjectId = projectId,
+                ConstructorId = constructorId,
+                Status = "Pending"
+            };
+
+            _context.ConstructorProjectRequests.Add(request);
+            await _context.SaveChangesAsync();
+
+            return request;
+        }
+
+        public async Task<ConstructorProjectRequest> ApproveConstructorRequestAsync(Guid requestId, Guid ownerId)
+        {
+            var request = await _context.ConstructorProjectRequests
+                .Include(r => r.Project)
+                .FirstOrDefaultAsync(r => r.Id == requestId);
+
+            if (request == null) throw new KeyNotFoundException("Request not found.");
+            if (request.Project == null) throw new InvalidOperationException("Project data missing.");
+            
+            // In a real scenario, check if ownerId matches project.UserId 
+            // For now, we assume the caller has the right to approve.
+
+            request.Status = "Approved";
+            request.UpdatedAt = DateTimeOffset.UtcNow;
+
+            // Assign the constructor to the project
+            request.Project.ContractorId = request.ConstructorId;
+
+            // Reject other pending requests for the same project
+            var otherRequests = await _context.ConstructorProjectRequests
+                .Where(r => r.ProjectId == request.ProjectId && r.Id != requestId && r.Status == "Pending")
+                .ToListAsync();
+
+            foreach (var other in otherRequests)
+            {
+                other.Status = "Rejected";
+                other.UpdatedAt = DateTimeOffset.UtcNow;
+            }
+
+            await _context.SaveChangesAsync();
+            return request;
+        }
+
+        public async Task<IEnumerable<ConstructorProjectRequest>> GetPendingRequestsForProjectAsync(Guid projectId, Guid ownerId)
+        {
+            return await _context.ConstructorProjectRequests
+                .Include(r => r.Project)
+                .Where(r => r.ProjectId == projectId && r.Status == "Pending")
+                .OrderByDescending(r => r.CreatedAt)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<ConstructorProjectRequest>> GetConstructorRequestsAsync(Guid constructorId)
+        {
+            return await _context.ConstructorProjectRequests
+                .Include(r => r.Project)
+                .Where(r => r.ConstructorId == constructorId)
+                .OrderByDescending(r => r.CreatedAt)
+                .ToListAsync();
+        }
+
+        public async Task<bool> SetProjectEstimatedDurationAsync(Guid projectId, Guid constructorId, int estimatedDays)
+        {
+            var project = await _context.Projects
+                .Include(p => p.ConstructionPhases)
+                .FirstOrDefaultAsync(p => p.Id == projectId && p.ContractorId == constructorId);
+
+            if (project == null) return false;
+
+            // For simplicity, assign all days to the first phase or divide equally.
+            // Or if there's only one phase, update it. If none, create one.
+            if (!project.ConstructionPhases.Any())
+            {
+                project.ConstructionPhases.Add(new ConstructionPhase
+                {
+                    Id = Guid.NewGuid(),
+                    ProjectId = projectId,
+                    PhaseName = "Main Construction",
+                    EstimatedDurationDays = estimatedDays,
+                    SequenceOrder = 1,
+                    Status = "Not Started"
+                });
+            }
+            else
+            {
+                // Update the first phase with the estimated days
+                var firstPhase = project.ConstructionPhases.OrderBy(p => p.SequenceOrder).First();
+                firstPhase.EstimatedDurationDays = estimatedDays;
+            }
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
     }
 }

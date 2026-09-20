@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Archive, CheckCircle2, RefreshCw, Trash2, X } from 'lucide-react';
 import { workflowService, type DesignHistoryDto, type WorkflowDesignHistoryDto } from '../services/workflowService';
-import { countLabel, formatArea, formatGenerationMode, formatRoomName, formatTopology, formatWorkflowStatus } from '../utils/presentation';
 
 type PendingRemoval = { workflow: WorkflowDesignHistoryDto; design: DesignHistoryDto };
 type Comparison = { workflowId: string; designs: DesignHistoryDto[] } | null;
@@ -68,6 +67,11 @@ const MyDesignsPage: React.FC = () => {
           <div className="flex flex-wrap gap-2"><Link to={`/dashboard/workflows/${project.workflowId}`} className="px-4 py-2 rounded-xl border bg-white dark:bg-gray-950 font-semibold text-sm">Generate Another</Link><button onClick={() => submit(project.workflowId)} disabled={!selected || submitted || approved} className="px-4 py-2 rounded-xl bg-emerald-600 text-white font-semibold text-sm disabled:opacity-40">Submit Selected to Architect</button></div>
         </div>
         <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-3">{project.designs.map(design => <DesignCard key={design.designId} design={design} workflow={project} compared={compareIds[project.workflowId]?.includes(design.designId) || false} compareFull={compareCount === 2} onCompare={() => toggleCompare(project.workflowId, design.designId)} onSelect={() => select(project.workflowId, design.designId)} onUnselect={() => unselect(project.workflowId)} onRemove={() => setPendingRemoval({ workflow: project, design })}/>)}</div>
+        {approved && project.projectId && (
+          <div className="mt-6 border-t border-gray-200 pt-6 dark:border-gray-800">
+            <ConstructorRequestsView projectId={project.projectId} />
+          </div>
+        )}
       </section>;
     })}</div>
 

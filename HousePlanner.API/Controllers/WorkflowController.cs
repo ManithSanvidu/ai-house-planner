@@ -314,7 +314,9 @@ public class WorkflowController : ControllerBase
             .Include(w => w.HouseDesigns).ThenInclude(d => d.Rooms)
             .OrderByDescending(w => w.UpdatedAt)
             .ToListAsync();
-        return Ok(workflows.Select(w => ToHistory(w, false)).Where(w => w.Designs.Count > 0));
+        var workflowIds = workflows.Select(w => w.Id).ToList();
+        var projects = await _context.Projects.AsNoTracking().Where(p => workflowIds.Contains(p.WorkflowStateId)).ToDictionaryAsync(p => p.WorkflowStateId, p => p.Id);
+        return Ok(workflows.Select(w => ToHistory(w, false, projects.TryGetValue(w.Id, out var pid) ? pid : null)).Where(w => w.Designs.Count > 0));
     }
 
     [HttpPost("{id:guid}/designs/{designId:guid}/select")]
@@ -414,7 +416,7 @@ public class WorkflowController : ControllerBase
         return Ok(new { workflowId = id, status = workflow.Status });
     }
 
-    private static WorkflowDesignHistoryDto ToHistory(HousePlanner.API.Entities.WorkflowState workflow, bool includeArchived = true) =>
+    private static WorkflowDesignHistoryDto ToHistory(HousePlanner.API.Entities.WorkflowState workflow, bool includeArchived = true, Guid? projectId = null) =>
         new(workflow.Id, workflow.Status, workflow.PreferredHouseDesignId, workflow.CreatedAt,
             workflow.HouseDesigns.Where(d => includeArchived || !d.IsArchived).OrderByDescending(d => d.Version).Select(d =>
             {
