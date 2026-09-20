@@ -35,7 +35,7 @@ namespace HousePlanner.API.Controllers
         [HttpPut("{id}")]
         // TODO: Integration Dependency - This requires Member 1's shared authentication middleware 
         // to be completed so that [Authorize(Roles = "Contractor")] functions correctly with the tokens.
-        [Authorize(Roles = "Contractor")]
+        [Authorize(Roles = "Constructor")]
         [ProducesResponseType(typeof(PricingDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]

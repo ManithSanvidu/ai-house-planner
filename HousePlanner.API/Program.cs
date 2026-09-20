@@ -71,6 +71,7 @@ builder.Services.AddSwaggerGen(c =>
 // 4. Register application services
 builder.Services.AddScoped<IFirebaseAuthService, FirebaseAuthService>();
 builder.Services.AddScoped<IApplicationUserSyncService, ApplicationUserSyncService>();
+builder.Services.AddScoped<ApplicationRoleSeeder>();
 builder.Services.AddScoped<ICurrentUserContextService, CurrentUserContextService>();
 builder.Services.AddScoped<IPreDesignedPlanLayoutValidator, PreDesignedPlanLayoutValidator>();
 builder.Services.AddScoped<PreDesignedPlanSeeder>();
@@ -149,6 +150,7 @@ using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     context.Database.Migrate();
+    await scope.ServiceProvider.GetRequiredService<ApplicationRoleSeeder>().SeedAsync();
     await scope.ServiceProvider.GetRequiredService<PreDesignedPlanSeeder>().SeedAsync();
 }
 

@@ -27,8 +27,17 @@ const LoginPage: React.FC = () => {
     setError('');
 
     const result = await dispatch(loginAsync({email,password}));
-    if (loginAsync.fulfilled.match(result)) navigate('/dashboard');
-    else setError((result.payload as string) || 'Invalid email or password.');
+    if (loginAsync.fulfilled.match(result)) {
+      navigate('/dashboard');
+    } else {
+      const errorMsg = (result.payload as string) || 'Invalid email or password.';
+      if (errorMsg === 'registration_required' || errorMsg.includes('registration_required')) {
+        // Firebase identity exists, but its application profile was not created yet.
+        navigate('/register');
+      } else {
+        setError(errorMsg);
+      }
+    }
   };
 
   const handleGoogleLogin = async () => {

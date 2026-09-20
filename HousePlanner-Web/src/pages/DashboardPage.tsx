@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { Plus, Sparkles, Library } from 'lucide-react';
+import { Plus, Sparkles, Library, FolderKanban, Shield } from 'lucide-react';
 import useAuth from '../features/auth/useAuth';
 
 const DashboardPage: React.FC = () => {
@@ -13,7 +13,7 @@ const DashboardPage: React.FC = () => {
     if (!user) return;
     if (user.role === 'Architect') navigate('/architect/dashboard', { replace: true });
     else if (user.role === 'Constructor') navigate('/constructor/dashboard', { replace: true });
-    // Admin, Customer, and User roles fall through to this dashboard.
+    // Customer and Admin have role-specific content below.
   }, [user, navigate]);
 
   return (
@@ -37,10 +37,16 @@ const DashboardPage: React.FC = () => {
           Welcome back, {user?.fullName?.split(' ')[0] || 'there'}
         </h1>
         <p className="text-zinc-500 dark:text-gray-400 mb-10 text-lg font-medium transition-colors">
-          Ready to design something extraordinary today?
+          {user?.role === 'Admin' ? 'Manage the validated house-plan library.' : 'Ready to design something extraordinary today?'}
         </p>
 
-        <div className="flex flex-col sm:flex-row gap-3 justify-center w-full">
+        {user?.role === 'Admin' ? (
+          <Link to="/dashboard/admin/plans" className="w-full sm:w-auto">
+            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="w-full sm:w-auto flex items-center justify-center gap-3 px-8 py-4 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-2xl font-semibold">
+              <Shield size={20} /><span>Manage Pre-designed Plans</span>
+            </motion.button>
+          </Link>
+        ) : <div className="flex flex-col sm:flex-row gap-3 justify-center w-full">
           <Link to="/dashboard/new-project" className="w-full sm:w-auto">
             <motion.button
               whileHover={{ scale: 1.02 }}
@@ -56,7 +62,10 @@ const DashboardPage: React.FC = () => {
             <Library size={20}/>
             Browse Plans
           </Link>
-        </div>
+          <Link to="/dashboard/designs" className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 border border-zinc-300 dark:border-gray-700 rounded-2xl font-semibold text-zinc-900 dark:text-white hover:bg-zinc-50 dark:hover:bg-gray-800 transition-colors">
+            <FolderKanban size={20}/><span>My Designs</span>
+          </Link>
+        </div>}
       </motion.div>
     </div>
   );

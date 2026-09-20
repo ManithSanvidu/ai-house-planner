@@ -27,15 +27,15 @@ export const AppRoutes: React.FC = () => (
     <Route path="/login" element={<LoginPage />} />
     <Route path="/register" element={<RegisterPage />} />
     <Route path="/dashboard" element={<ProtectedRoute><PageContainer><DashboardPage /></PageContainer></ProtectedRoute>} />
-    <Route path="/dashboard/new-project" element={<ProtectedRoute><PageContainer><IntakeForm /></PageContainer></ProtectedRoute>} />
-    <Route path="/dashboard/cost-estimator" element={<ProtectedRoute allowedRoles={['Contractor']}><PageContainer><PricingManagementPage /></PageContainer></ProtectedRoute>} />
-    <Route path="/dashboard/plans" element={<ProtectedRoute><PageContainer><PlanLibraryPage /></PageContainer></ProtectedRoute>} />
-    <Route path="/dashboard/designs" element={<ProtectedRoute><PageContainer><MyDesignsPage /></PageContainer></ProtectedRoute>} />
-    <Route path="/dashboard/plans/:id" element={<ProtectedRoute><PageContainer><PlanDetailPage /></PageContainer></ProtectedRoute>} />
+    <Route path="/dashboard/new-project" element={<ProtectedRoute allowedRoles={['Customer']}><PageContainer><IntakeForm /></PageContainer></ProtectedRoute>} />
+    <Route path="/dashboard/cost-estimator" element={<ProtectedRoute allowedRoles={['Constructor']}><PageContainer><PricingManagementPage /></PageContainer></ProtectedRoute>} />
+    <Route path="/dashboard/plans" element={<ProtectedRoute allowedRoles={['Customer']}><PageContainer><PlanLibraryPage /></PageContainer></ProtectedRoute>} />
+    <Route path="/dashboard/designs" element={<ProtectedRoute allowedRoles={['Customer']}><PageContainer><MyDesignsPage /></PageContainer></ProtectedRoute>} />
+    <Route path="/dashboard/plans/:id" element={<ProtectedRoute allowedRoles={['Customer']}><PageContainer><PlanDetailPage /></PageContainer></ProtectedRoute>} />
     <Route path="/dashboard/admin/plans" element={<ProtectedRoute allowedRoles={['Admin']}><PageContainer><AdminPlansPage /></PageContainer></ProtectedRoute>} />
     <Route path="/dashboard/admin/plans/new" element={<ProtectedRoute allowedRoles={['Admin']}><PageContainer><AdminPlanFormPage /></PageContainer></ProtectedRoute>} />
     <Route path="/dashboard/admin/plans/:id/edit" element={<ProtectedRoute allowedRoles={['Admin']}><PageContainer><AdminPlanFormPage /></PageContainer></ProtectedRoute>} />
-    <Route path="/dashboard/workflows/:id" element={<ProtectedRoute><PageContainer><WorkflowReviewPage /></PageContainer></ProtectedRoute>} />
+    <Route path="/dashboard/workflows/:id" element={<ProtectedRoute allowedRoles={['Customer']}><PageContainer><WorkflowReviewPage /></PageContainer></ProtectedRoute>} />
     <Route path="/architect/dashboard" element={<ProtectedRoute allowedRoles={['Architect']}><PageContainer><ArchitectDashboard /></PageContainer></ProtectedRoute>} />
     <Route path="/architect/requests" element={<ProtectedRoute allowedRoles={['Architect']}><PageContainer><ValidationRequestsPage /></PageContainer></ProtectedRoute>} />
     <Route path="/architect/approved" element={<ProtectedRoute allowedRoles={['Architect']}><PageContainer><ApprovedRequestsPage /></PageContainer></ProtectedRoute>} />

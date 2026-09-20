@@ -38,7 +38,7 @@ public class AuthController(IApplicationUserSyncService users) : ControllerBase
     /// Registers a new application-user with an explicit, publicly-allowed account type.
     /// 
     /// The Firebase UID and email are taken exclusively from the validated bearer token.
-    /// The client-supplied requestedRole must be one of: "Customer", "Architect".
+    /// The client-supplied requestedRole must be one of: "Customer", "Architect", "Constructor".
     /// Any other role (including "Admin") is rejected with 400.
     /// 
     /// If the Firebase UID already maps to an existing application user, that existing

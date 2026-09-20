@@ -70,7 +70,7 @@ namespace HousePlanner.API.Controllers
                 if (!string.IsNullOrEmpty(status))
                     query = query.Where(v => v.Status == status);
             }
-            else if (role == "Client" || role == "User")
+            else if (role == "Customer")
             {
                 query = query.Where(v => v.ClientId == userId.Value);
             }

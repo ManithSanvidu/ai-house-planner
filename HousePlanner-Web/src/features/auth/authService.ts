@@ -1,6 +1,7 @@
 import {
   GoogleAuthProvider,
   createUserWithEmailAndPassword,
+  deleteUser,
   signInWithEmailAndPassword,
   signInWithPopup,
   signOut as firebaseSignOut,
@@ -59,9 +60,11 @@ const authService = {
         token,
       };
     } catch (err) {
-      // Firebase user was created but backend profile failed.
-      // Sign out to leave the user in a clean state for retry.
-      await firebaseSignOut(auth).catch(() => undefined);
+      // Keep registration atomic where possible: if the application profile cannot be
+      // created, remove the just-created Firebase identity so the email can be retried.
+      await deleteUser(fbUser).catch(async () => {
+        await firebaseSignOut(auth).catch(() => undefined);
+      });
       throw err;
     }
   },
