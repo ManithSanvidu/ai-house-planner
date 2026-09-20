@@ -55,12 +55,12 @@ describe('RegisterPage — step 1: account type selection', () => {
     mockNavigate.mockClear();
   });
 
-  it('renders both Customer and Architect role options', () => {
+  it('renders Customer, Architect, and Constructor role options', () => {
     const { container } = renderRegisterPage();
     expect(container.querySelector('#role-option-customer')).toBeTruthy();
     expect(container.querySelector('#role-option-architect')).toBeTruthy();
-  })
-;
+    expect(container.querySelector('#role-option-constructor')).toBeTruthy();
+  });
 
   it('does NOT render an Admin option', () => {
     renderRegisterPage();
@@ -87,9 +87,18 @@ describe('RegisterPage — step 1: account type selection', () => {
 
   it('enables Continue button after selecting Architect', () => {
     const { container } = renderRegisterPage();
+    const btn = screen.getByRole('button', { name: /continue as \.\.\./i });
+    expect(btn).toHaveProperty('disabled', true);
     fireEvent.click(container.querySelector('#role-option-architect')!);
-    const btn = screen.getByRole('button', { name: /continue as architect/i });
-    expect((btn as HTMLButtonElement).disabled).toBe(false);
+    expect(screen.getByRole('button', { name: /continue as architect/i })).toHaveProperty('disabled', false);
+  });
+
+  it('enables Continue button after selecting Constructor', () => {
+    const { container } = renderRegisterPage();
+    const btn = screen.getByRole('button', { name: /continue as \.\.\./i });
+    expect(btn).toHaveProperty('disabled', true);
+    fireEvent.click(container.querySelector('#role-option-constructor')!);
+    expect(screen.getByRole('button', { name: /continue as constructor/i })).toHaveProperty('disabled', false);
   });
 
   it('advances to step 2 after selecting a role and clicking Continue', () => {

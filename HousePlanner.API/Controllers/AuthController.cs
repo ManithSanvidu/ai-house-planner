@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using HousePlanner.API.DTOs;
+using HousePlanner.API.Exceptions;
 using HousePlanner.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -22,8 +23,15 @@ public class AuthController(IApplicationUserSyncService users) : ControllerBase
     public async Task<ActionResult<UserInfoResponseDto>> CreateSession(CancellationToken cancellationToken)
     {
         var firebaseUser = ExtractFirebaseIdentity();
-        var applicationUser = await users.SynchronizeAsync(firebaseUser, cancellationToken);
-        return Ok(ToDto(applicationUser));
+        try 
+        {
+            var applicationUser = await users.SynchronizeAsync(firebaseUser, cancellationToken);
+            return Ok(ToDto(applicationUser));
+        }
+        catch (UserNotRegisteredException)
+        {
+            return NotFound(new { error = "registration_required", message = "User is authenticated but not registered." });
+        }
     }
 
     /// <summary>

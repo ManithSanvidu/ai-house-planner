@@ -1,6 +1,7 @@
 using HousePlanner.API.Data;
 using HousePlanner.API.DTOs;
 using HousePlanner.API.Entities;
+using HousePlanner.API.Exceptions;
 using HousePlanner.API.Services;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,16 +16,15 @@ public sealed class ApplicationUserSyncServiceTests
     // ── SynchronizeAsync (login / Google auth) ──────────────────────────────
 
     [Fact]
-    public async Task NewFirebaseUser_CreatesOneApplicationUser_WithCustomerRole()
+    public async Task NewFirebaseUser_ThrowsUserNotRegisteredException_DoesNotAutoCreateUser()
     {
         await using var db = Database();
         var service = new ApplicationUserSyncService(db);
-        var user = await service.SynchronizeAsync(new UserInfoResponseDto { Uid = "firebase-123", Email = "customer@example.com" });
+        
+        await Assert.ThrowsAsync<UserNotRegisteredException>(() =>
+            service.SynchronizeAsync(new UserInfoResponseDto { Uid = "firebase-123", Email = "customer@example.com" }));
 
-        Assert.Equal("firebase-123", user.FirebaseUid);
-        Assert.Equal("Customer", user.Role.Name);
-        Assert.Null(user.PasswordHash);
-        Assert.Single(db.Users);
+        Assert.Empty(db.Users);
     }
 
     [Fact]
@@ -50,6 +50,7 @@ public sealed class ApplicationUserSyncServiceTests
     [Theory]
     [InlineData("Customer")]
     [InlineData("Architect")]
+    [InlineData("Constructor")]
     public async Task Register_AllowedRole_CreatesUser(string role)
     {
         await using var db = Database();

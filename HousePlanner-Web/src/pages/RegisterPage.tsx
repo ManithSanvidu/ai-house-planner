@@ -7,6 +7,9 @@ import { registerAsync } from '../features/auth/authSlice';
 import type { AppDispatch } from '../store';
 import type { PublicRegistrableRole } from '../types/auth.types';
 import useAuth from '../features/auth/useAuth';
+import { auth } from '../services/firebase';
+import apiClient from '../services/apiClient';
+import { verifySessionAsync } from '../features/auth/authSlice';
 
 interface RoleOption {
   id: PublicRegistrableRole;
@@ -34,6 +37,14 @@ const ROLE_OPTIONS: RoleOption[] = [
     gradient: 'from-violet-500/10 to-purple-500/10',
     accentColor: 'border-violet-500 ring-violet-500/30 bg-violet-50 dark:bg-violet-900/20',
   },
+  {
+    id: 'Constructor',
+    label: 'Constructor',
+    description: 'Manage assigned construction projects and project progress.',
+    icon: <HardHat size={28} strokeWidth={1.5} />, // HardHat fits Constructor well
+    gradient: 'from-green-500/10 to-emerald-500/10',
+    accentColor: 'border-green-500 ring-green-500/30 bg-green-50 dark:bg-green-900/20',
+  },
 ];
 
 const RegisterPage: React.FC = () => {
@@ -57,13 +68,35 @@ const RegisterPage: React.FC = () => {
     setSelectedRole(role);
   };
 
-  const handleContinue = () => {
+  const isGoogleOnboarding = !!auth.currentUser;
+
+  const handleContinue = async () => {
     if (!selectedRole) {
       setError('Please select an account type to continue.');
       return;
     }
     setError('');
-    setStep(2);
+
+    if (isGoogleOnboarding) {
+      // Direct registration for Google Auth users (already have Firebase identity)
+      try {
+        await apiClient.post('/auth/register', {
+          requestedRole: selectedRole,
+          fullName: auth.currentUser?.displayName || '',
+        });
+        // Now that the backend profile exists, verify session to update Redux state
+        const result = await dispatch(verifySessionAsync());
+        if (verifySessionAsync.fulfilled.match(result)) {
+          navigate('/dashboard');
+        } else {
+          setError('Failed to load session after registration.');
+        }
+      } catch (err: any) {
+        setError(err.response?.data?.error || err.message || 'Registration failed.');
+      }
+    } else {
+      setStep(2);
+    }
   };
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -151,8 +184,12 @@ const RegisterPage: React.FC = () => {
                 transition={{ duration: 0.25 }}
               >
                 <div className="mb-8">
-                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Create an account</h1>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Choose the account type that describes your role.</p>
+                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                    {isGoogleOnboarding ? 'Complete your account' : 'Create an account'}
+                  </h1>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    {isGoogleOnboarding ? "Choose how you'll use HousePlanner." : 'Choose the account type that describes your role.'}
+                  </p>
                 </div>
 
                 {error && (
@@ -207,7 +244,7 @@ const RegisterPage: React.FC = () => {
                   disabled={!selectedRole}
                   className="w-full bg-gray-900 dark:bg-white hover:bg-black dark:hover:bg-gray-200 disabled:bg-gray-200 dark:disabled:bg-gray-700 disabled:text-gray-400 dark:disabled:text-gray-500 text-white dark:text-gray-900 font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all custom-shadow-md"
                 >
-                  Continue as {selectedRole ?? '...'}
+                  {isGoogleOnboarding ? 'Continue' : `Continue as ${selectedRole ?? '...'}`}
                   <motion.div animate={{ x: isHovered && selectedRole ? 4 : 0 }} transition={{ duration: 0.2 }}>
                     <ArrowRight size={18} />
                   </motion.div>

@@ -1,6 +1,7 @@
 using HousePlanner.API.Data;
 using HousePlanner.API.DTOs;
 using HousePlanner.API.Entities;
+using HousePlanner.API.Exceptions;
 using Microsoft.EntityFrameworkCore;
 
 namespace HousePlanner.API.Services;
@@ -31,7 +32,7 @@ public sealed class ApplicationUserSyncService(ApplicationDbContext db) : IAppli
     /// Admin, User, and any other privileged roles are NOT in this list.
     /// </summary>
     private static readonly HashSet<string> PublicRegistrationRoles =
-        new(StringComparer.OrdinalIgnoreCase) { "Customer", "Architect" };
+        new(StringComparer.OrdinalIgnoreCase) { "Customer", "Architect", "Constructor" };
 
     public async Task<User> SynchronizeAsync(UserInfoResponseDto firebaseUser, CancellationToken cancellationToken = default)
     {
@@ -50,22 +51,10 @@ public sealed class ApplicationUserSyncService(ApplicationDbContext db) : IAppli
             return user;
         }
 
-        // New identity via Google Auth — default to Customer role
-        var customerRole = await EnsureRoleAsync("Customer", cancellationToken);
-        user = new User
-        {
-            Id = Guid.NewGuid(),
-            FirebaseUid = firebaseUser.Uid,
-            Email = firebaseUser.Email,
-            FullName = string.IsNullOrWhiteSpace(firebaseUser.Email) ? "Firebase User" : firebaseUser.Email,
-            RoleId = customerRole.Id,
-            CreatedAt = DateTimeOffset.UtcNow,
-            UpdatedAt = DateTimeOffset.UtcNow
-        };
-        db.Users.Add(user);
-        await db.SaveChangesAsync(cancellationToken);
-        user.Role = customerRole;
-        return user;
+        // New identity via Google Auth — user must complete registration/onboarding on the frontend.
+        // We throw UserNotRegisteredException so AuthController can return 404, prompting the UI 
+        // to show the role selection screen.
+        throw new UserNotRegisteredException();
     }
 
     public async Task<User> RegisterAsync(

@@ -34,8 +34,16 @@ const LoginPage: React.FC = () => {
   const handleGoogleLogin = async () => {
     setError('');
     const result = await dispatch(googleLoginAsync());
-    if (googleLoginAsync.fulfilled.match(result)) navigate('/dashboard');
-    else setError((result.payload as string) || 'Google sign-in failed.');
+    if (googleLoginAsync.fulfilled.match(result)) {
+      navigate('/dashboard');
+    } else {
+      const errorMsg = result.payload as string;
+      if (errorMsg === 'registration_required' || errorMsg.includes('registration_required')) {
+        navigate('/register');
+      } else {
+        setError(errorMsg || 'Google sign-in failed.');
+      }
+    }
   };
 
   return (
@@ -65,7 +73,7 @@ const LoginPage: React.FC = () => {
           
           <div className="text-center mb-10">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Welcome Back</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Sign in to access your projects or admin portal.</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Sign in to access your HousePlanner workspace.</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-6">

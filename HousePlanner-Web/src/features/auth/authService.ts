@@ -71,16 +71,24 @@ const authService = {
     const credential = await signInWithPopup(auth, new GoogleAuthProvider());
     const token = await credential.user.getIdToken();
 
-    const response = await apiClient.post<BackendUserDto>('/auth/session');
-    return {
-      user: {
-        uid: response.data.uid,
-        email: response.data.email,
-        fullName: response.data.fullName,
-        role: response.data.role,
-      },
-      token,
-    };
+    try {
+      const response = await apiClient.post<BackendUserDto>('/auth/session');
+      return {
+        user: {
+          uid: response.data.uid,
+          email: response.data.email,
+          fullName: response.data.fullName,
+          role: response.data.role,
+        },
+        token,
+      };
+    } catch (error: any) {
+      if (error.response?.status === 404 && error.response?.data?.error === 'registration_required') {
+        // Leave Firebase session active, throw specific error for UI to handle onboarding
+        throw new Error('registration_required');
+      }
+      throw error;
+    }
   },
 
   /**
@@ -99,17 +107,23 @@ const authService = {
     const token = await fbUser.getIdToken();
 
     // Role comes from the backend (PostgreSQL), not from client state.
-    const response = await apiClient.post<BackendUserDto>('/auth/session');
-
-    return {
-      user: {
-        uid: response.data.uid,
-        email: response.data.email,
-        fullName: response.data.fullName,
-        role: response.data.role,
-      },
-      token,
-    };
+    try {
+      const response = await apiClient.post<BackendUserDto>('/auth/session');
+      return {
+        user: {
+          uid: response.data.uid,
+          email: response.data.email,
+          fullName: response.data.fullName,
+          role: response.data.role,
+        },
+        token,
+      };
+    } catch (error: any) {
+      if (error.response?.status === 404 && error.response?.data?.error === 'registration_required') {
+        throw new Error('registration_required');
+      }
+      throw error;
+    }
   },
 
   /**
@@ -138,8 +152,12 @@ const authService = {
             },
             token,
           });
-        } catch (error) {
-          reject(error);
+        } catch (error: any) {
+          if (error.response?.status === 404 && error.response?.data?.error === 'registration_required') {
+            reject(new Error('registration_required'));
+          } else {
+            reject(error);
+          }
         }
       });
     });
