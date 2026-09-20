@@ -11,7 +11,7 @@ import {
 } from 'firebase/auth';
 import { auth } from '../../services/firebase';
 import apiClient from '../../services/apiClient';
-import type { PublicRegistrableRole, UserProfile } from '../../types/auth.types';
+import type { UserProfile } from '../../types/auth.types';
 
 /** Shape returned by all /auth/* endpoints. */
 interface BackendUserDto {
@@ -38,7 +38,6 @@ const authService = {
     email: string,
     password: string,
     fullName: string,
-    requestedRole: PublicRegistrableRole,
   ): Promise<{ user: UserProfile; token: string }> => {
     await setPersistence(auth, browserSessionPersistence);
     const credential: UserCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -48,7 +47,6 @@ const authService = {
     try {
       const response = await apiClient.post<BackendUserDto>('/auth/register', {
         fullName,
-        requestedRole,
       });
       return {
         user: {

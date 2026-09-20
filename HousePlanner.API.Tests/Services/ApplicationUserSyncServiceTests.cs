@@ -16,15 +16,17 @@ public sealed class ApplicationUserSyncServiceTests
     // ── SynchronizeAsync (login / Google auth) ──────────────────────────────
 
     [Fact]
-    public async Task NewFirebaseUser_ThrowsUserNotRegisteredException_DoesNotAutoCreateUser()
+    public async Task NewGoogleFirebaseUser_IsAutomaticallyCreatedAsCustomer()
     {
         await using var db = Database();
         var service = new ApplicationUserSyncService(db);
         
-        await Assert.ThrowsAsync<UserNotRegisteredException>(() =>
-            service.SynchronizeAsync(new UserInfoResponseDto { Uid = "firebase-123", Email = "customer@example.com" }));
+        var user = await service.SynchronizeAsync(
+            new UserInfoResponseDto { Uid = "firebase-123", Email = "customer@example.com" });
 
-        Assert.Empty(db.Users);
+        Assert.Equal("Customer", user.Role.Name);
+        Assert.Null(user.PasswordHash);
+        Assert.Single(db.Users);
     }
 
     [Fact]
@@ -47,45 +49,38 @@ public sealed class ApplicationUserSyncServiceTests
 
     // ── RegisterAsync ───────────────────────────────────────────────────────
 
-    [Theory]
-    [InlineData("Customer")]
-    [InlineData("Architect")]
-    [InlineData("Constructor")]
-    public async Task Register_AllowedRole_CreatesUser(string role)
+    [Fact]
+    public async Task PublicRegistration_CreatesCustomer()
     {
         await using var db = Database();
         var service = new ApplicationUserSyncService(db);
-        var user = await service.RegisterAsync(
+        var user = await service.RegisterCustomerAsync(
             new UserInfoResponseDto { Uid = "uid-reg-1", Email = "test@example.com" },
-            fullName: "Test User",
-            requestedRole: role);
+            fullName: "Test User");
 
-        Assert.Equal(role, user.Role.Name);
+        Assert.Equal("Customer", user.Role.Name);
         Assert.Equal("Test User", user.FullName);
         Assert.Null(user.PasswordHash);
         Assert.Single(db.Users);
     }
 
     [Theory]
+    [InlineData("Architect")]
+    [InlineData("Constructor")]
     [InlineData("Admin")]
-    [InlineData("SuperAdmin")]
-    [InlineData("User")]
-    [InlineData("admin")]
-    [InlineData("ADMIN")]
-    [InlineData("")]
-    [InlineData("Nonexistent")]
-    public async Task Register_PrivilegedOrUnknownRole_Throws(string role)
+    public async Task PublicRegistration_IgnoresInjectedRoleAndCreatesCustomer(string injectedRole)
     {
         await using var db = Database();
         var service = new ApplicationUserSyncService(db);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            service.RegisterAsync(
-                new UserInfoResponseDto { Uid = "uid-reg-2", Email = "bad@example.com" },
-                fullName: "Bad Actor",
-                requestedRole: role));
+        var json = $$"""{"fullName":"Bad Actor","requestedRole":"{{injectedRole}}","roleId":2,"firebaseUid":"spoofed"}""";
+        var request = System.Text.Json.JsonSerializer.Deserialize<RegisterRequestDto>(json,
+            new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+        var user = await service.RegisterCustomerAsync(
+            new UserInfoResponseDto { Uid = "verified-uid", Email = "customer@example.com" }, request.FullName);
 
-        Assert.Empty(db.Users);
+        Assert.Equal("Customer", user.Role.Name);
+        Assert.Equal("verified-uid", user.FirebaseUid);
     }
 
     [Fact]
@@ -104,10 +99,9 @@ public sealed class ApplicationUserSyncServiceTests
 
         var service = new ApplicationUserSyncService(db);
         // Attempt to register again with a different role
-        var user = await service.RegisterAsync(
+        var user = await service.RegisterCustomerAsync(
             new UserInfoResponseDto { Uid = "uid-existing", Email = "arch@example.com" },
-            fullName: "New Name",
-            requestedRole: "Customer");
+            fullName: "New Name");
 
         Assert.Single(db.Users);
         // Role must remain Architect — not changed to Customer
@@ -121,10 +115,9 @@ public sealed class ApplicationUserSyncServiceTests
     {
         await using var db = Database();
         var service = new ApplicationUserSyncService(db);
-        var user = await service.RegisterAsync(
+        var user = await service.RegisterCustomerAsync(
             new UserInfoResponseDto { Uid = "uid-pass-test", Email = "pass@example.com" },
-            fullName: "Pass Test",
-            requestedRole: "Customer");
+            fullName: "Pass Test");
 
         Assert.Null(user.PasswordHash);
     }
@@ -146,9 +139,8 @@ public sealed class ApplicationUserSyncServiceTests
         var service = new ApplicationUserSyncService(db);
 
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
-            service.RegisterAsync(
+            service.RegisterCustomerAsync(
                 new UserInfoResponseDto { Uid = "", Email = "test@example.com" },
-                fullName: "Test",
-                requestedRole: "Customer"));
+                fullName: "Test"));
     }
 }

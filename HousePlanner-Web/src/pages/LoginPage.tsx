@@ -6,6 +6,7 @@ import { Box, Lock, Mail, ArrowRight, Sparkles } from 'lucide-react';
 import { googleLoginAsync, loginAsync } from '../features/auth/authSlice';
 import type { AppDispatch } from '../store';
 import useAuth from '../features/auth/useAuth';
+import { roleHomePath } from '../utils/roleNavigation';
 
 const LoginPage: React.FC = () => {
   const [isHovered, setIsHovered] = useState(false);
@@ -14,13 +15,13 @@ const LoginPage: React.FC = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/dashboard');
+    if (isAuthenticated && user) {
+      navigate(roleHomePath(user.role));
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, user, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,7 +29,7 @@ const LoginPage: React.FC = () => {
 
     const result = await dispatch(loginAsync({email,password}));
     if (loginAsync.fulfilled.match(result)) {
-      navigate('/dashboard');
+      navigate(roleHomePath(result.payload.user.role));
     } else {
       const errorMsg = (result.payload as string) || 'Invalid email or password.';
       if (errorMsg === 'registration_required' || errorMsg.includes('registration_required')) {
@@ -44,7 +45,7 @@ const LoginPage: React.FC = () => {
     setError('');
     const result = await dispatch(googleLoginAsync());
     if (googleLoginAsync.fulfilled.match(result)) {
-      navigate('/dashboard');
+      navigate(roleHomePath(result.payload.user.role));
     } else {
       const errorMsg = result.payload as string;
       if (errorMsg === 'registration_required' || errorMsg.includes('registration_required')) {

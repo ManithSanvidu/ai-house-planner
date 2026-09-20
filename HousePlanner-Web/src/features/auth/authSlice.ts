@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
-import type { AuthState, PublicRegistrableRole, UserProfile } from '../../types/auth.types';
+import type { AuthState, UserProfile } from '../../types/auth.types';
 import authService from './authService';
 
 const initialState: AuthState = {
@@ -17,12 +17,11 @@ export const registerAsync = createAsyncThunk(
       email,
       password,
       fullName,
-      requestedRole,
-    }: { email: string; password: string; fullName: string; requestedRole: PublicRegistrableRole },
+    }: { email: string; password: string; fullName: string },
     { rejectWithValue },
   ) => {
     try {
-      return await authService.register(email, password, fullName, requestedRole);
+      return await authService.register(email, password, fullName);
     } catch (error: any) {
       let message = 'Registration failed. Please try again.';
       if (error.code) {

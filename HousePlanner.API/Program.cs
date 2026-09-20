@@ -71,6 +71,8 @@ builder.Services.AddSwaggerGen(c =>
 // 4. Register application services
 builder.Services.AddScoped<IFirebaseAuthService, FirebaseAuthService>();
 builder.Services.AddScoped<IApplicationUserSyncService, ApplicationUserSyncService>();
+builder.Services.AddScoped<IFirebaseStaffAccountService, FirebaseStaffAccountService>();
+builder.Services.AddScoped<IStaffAccountService, StaffAccountService>();
 builder.Services.AddScoped<ApplicationRoleSeeder>();
 builder.Services.AddScoped<ICurrentUserContextService, CurrentUserContextService>();
 builder.Services.AddScoped<IPreDesignedPlanLayoutValidator, PreDesignedPlanLayoutValidator>();

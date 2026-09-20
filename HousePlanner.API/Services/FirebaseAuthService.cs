@@ -17,7 +17,8 @@ namespace HousePlanner.API.Services
             try
             {
                 // Firebase Admin cryptographically verifies the signature, issuer, audience and expiry.
-                var decodedToken = await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(token);
+                // Check revocation so disabling a staff account also invalidates its active session.
+                var decodedToken = await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(token, true);
                 var uid = decodedToken.Uid;
                 var email = decodedToken.Claims.TryGetValue("email", out var emailObj)
                     ? emailObj?.ToString() ?? string.Empty

@@ -1,7 +1,6 @@
 using HousePlanner.API.Data;
 using HousePlanner.API.DTOs;
 using HousePlanner.API.Entities;
-using HousePlanner.API.Exceptions;
 using Microsoft.EntityFrameworkCore;
 
 namespace HousePlanner.API.Services;
@@ -9,31 +8,20 @@ namespace HousePlanner.API.Services;
 public interface IApplicationUserSyncService
 {
     /// <summary>
-    /// Idempotent login sync: finds or creates an application user for a verified Firebase identity,
-    /// always assigning the "Customer" role to new Google-auth users. Never changes the role
-    /// of an existing user.
+    /// Idempotent login sync. New Firebase identities become Customers; existing application
+    /// users keep their server-owned role.
     /// </summary>
     Task<User> SynchronizeAsync(UserInfoResponseDto firebaseUser, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Idempotent registration: creates a new application user with the explicitly requested role,
-    /// validated against the public-registration allowlist.
-    /// If a user with this FirebaseUid already exists, the existing record is returned unchanged
-    /// (role is NOT updated — prevents role-escalation via repeated registration calls).
+    /// Public registration is always Customer. Existing users are returned unchanged.
     /// </summary>
-    Task<User> RegisterAsync(UserInfoResponseDto firebaseUser, string fullName, string requestedRole, CancellationToken cancellationToken = default);
+    Task<User> RegisterCustomerAsync(UserInfoResponseDto firebaseUser, string fullName, CancellationToken cancellationToken = default);
 }
 
 /// <summary>Owns the idempotent Firebase UID to application-user mapping.</summary>
 public sealed class ApplicationUserSyncService(ApplicationDbContext db) : IApplicationUserSyncService
 {
-    /// <summary>
-    /// Roles that can be self-assigned through the public registration endpoint.
-    /// Admin, User, and any other privileged roles are NOT in this list.
-    /// </summary>
-    private static readonly HashSet<string> PublicRegistrationRoles =
-        new(StringComparer.OrdinalIgnoreCase) { "Customer", "Architect", "Constructor" };
-
     public async Task<User> SynchronizeAsync(UserInfoResponseDto firebaseUser, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(firebaseUser.Uid))
@@ -51,25 +39,18 @@ public sealed class ApplicationUserSyncService(ApplicationDbContext db) : IAppli
             return user;
         }
 
-        // New identity via Google Auth — user must complete registration/onboarding on the frontend.
-        // We throw UserNotRegisteredException so AuthController can return 404, prompting the UI 
-        // to show the role selection screen.
-        throw new UserNotRegisteredException();
+        // A new Google/Firebase identity is always a Customer. Staff profiles are created by Admin
+        // before their first login and therefore take the existing-user path above.
+        return await CreateCustomerAsync(firebaseUser, firebaseUser.Email, cancellationToken);
     }
 
-    public async Task<User> RegisterAsync(
+    public async Task<User> RegisterCustomerAsync(
         UserInfoResponseDto firebaseUser,
         string fullName,
-        string requestedRole,
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(firebaseUser.Uid))
             throw new UnauthorizedAccessException("Firebase token did not contain a UID.");
-
-        // Security: reject any role that is not on the public registration allowlist
-        if (!PublicRegistrationRoles.Contains(requestedRole))
-            throw new InvalidOperationException(
-                $"Role '{requestedRole}' is not available for public registration.");
 
         // Idempotency: if a user already exists for this Firebase UID, return them unchanged.
         // We intentionally do NOT update the role here — this prevents role-escalation attacks
@@ -79,7 +60,15 @@ public sealed class ApplicationUserSyncService(ApplicationDbContext db) : IAppli
         if (existing is not null)
             return existing;
 
-        var role = await EnsureRoleAsync(requestedRole, cancellationToken);
+        return await CreateCustomerAsync(firebaseUser, fullName, cancellationToken);
+    }
+
+    private async Task<User> CreateCustomerAsync(
+        UserInfoResponseDto firebaseUser,
+        string fullName,
+        CancellationToken cancellationToken)
+    {
+        var role = await EnsureRoleAsync("Customer", cancellationToken);
 
         var effectiveFullName = string.IsNullOrWhiteSpace(fullName) ? firebaseUser.Email : fullName;
 

@@ -7,11 +7,7 @@ namespace HousePlanner.API.DTOs
         /// </summary>
         public string FullName { get; set; } = string.Empty;
 
-        /// <summary>
-        /// The publicly allowed role the user is requesting. Must be one of:
-        /// "Customer" or "Architect".
-        /// Admin and privileged roles are explicitly rejected.
-        /// </summary>
-        public string RequestedRole { get; set; } = string.Empty;
+        // Public registration is always Customer. Role, RoleId, and FirebaseUid are
+        // deliberately absent because those values are server-owned decisions.
     }
 }

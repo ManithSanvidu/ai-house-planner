@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { Plus, Sparkles, Library, FolderKanban, Shield } from 'lucide-react';
+import { Plus, Sparkles, Library, FolderKanban, Shield, UserCog } from 'lucide-react';
 import useAuth from '../features/auth/useAuth';
 
 const DashboardPage: React.FC = () => {
@@ -41,11 +41,11 @@ const DashboardPage: React.FC = () => {
         </p>
 
         {user?.role === 'Admin' ? (
-          <Link to="/dashboard/admin/plans" className="w-full sm:w-auto">
+          <div className="flex flex-col sm:flex-row gap-3 justify-center"><Link to="/dashboard/admin/plans" className="w-full sm:w-auto">
             <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="w-full sm:w-auto flex items-center justify-center gap-3 px-8 py-4 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-2xl font-semibold">
               <Shield size={20} /><span>Manage Pre-designed Plans</span>
             </motion.button>
-          </Link>
+          </Link><Link to="/dashboard/admin/staff" className="w-full sm:w-auto flex items-center justify-center gap-3 px-8 py-4 border rounded-2xl font-semibold"><UserCog size={20}/>Manage Staff</Link></div>
         ) : <div className="flex flex-col sm:flex-row gap-3 justify-center w-full">
           <Link to="/dashboard/new-project" className="w-full sm:w-auto">
             <motion.button

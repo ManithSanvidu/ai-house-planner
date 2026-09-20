@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { DollarSign, FolderKanban, LayoutDashboard, Library, PlusSquare, Shield, X } from 'lucide-react';
+import { DollarSign, FolderKanban, LayoutDashboard, Library, PlusSquare, Shield, UserCog, X } from 'lucide-react';
 import useAuth from '../../features/auth/useAuth';
 
 interface SidebarProps {
@@ -33,6 +33,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     : [
       { to: '/dashboard', label: 'Admin Overview', icon: LayoutDashboard },
       { to: '/dashboard/admin/plans', label: 'Manage Plans', icon: Shield },
+      { to: '/dashboard/admin/staff', label: 'Manage Staff', icon: UserCog },
     ];
 
   return (
