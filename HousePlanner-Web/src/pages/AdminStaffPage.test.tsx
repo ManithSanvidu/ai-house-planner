@@ -53,3 +53,30 @@ test('treats an empty successful response as an empty list',async()=>{
  expect(await screen.findByText('No staff accounts found.')).toBeTruthy();
  expect(screen.queryByRole('alert')).toBeNull();
 });
+
+test('staff filters remain visible, expose selection, and preserve filtering behavior',async()=>{
+ render(<AdminStaffPage/>);
+ await screen.findByText('Nimal Silva');
+ const all=screen.getByRole('button',{name:'All'});
+ const architects=screen.getByRole('button',{name:'Architects'});
+ const constructors=screen.getByRole('button',{name:'Constructors'});
+
+ expect(all.getAttribute('aria-pressed')).toBe('true');
+ expect(all.className).toContain('bg-indigo-600');
+ expect(architects.getAttribute('aria-pressed')).toBe('false');
+ expect(architects.className).toContain('bg-slate-900');
+ expect(constructors.getAttribute('aria-pressed')).toBe('false');
+
+ fireEvent.click(architects);
+ await waitFor(()=>expect(staffService.list).toHaveBeenLastCalledWith('Architect'));
+ expect(architects.getAttribute('aria-pressed')).toBe('true');
+ expect(architects.className).toContain('bg-indigo-600');
+
+ fireEvent.click(constructors);
+ await waitFor(()=>expect(staffService.list).toHaveBeenLastCalledWith('Constructor'));
+ expect(constructors.getAttribute('aria-pressed')).toBe('true');
+
+ fireEvent.click(all);
+ await waitFor(()=>expect(staffService.list).toHaveBeenLastCalledWith(undefined));
+ expect(all.getAttribute('aria-pressed')).toBe('true');
+});
