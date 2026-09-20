@@ -45,7 +45,22 @@ class IntakeNotifier extends StateNotifier<AsyncValue<LandSubmission>> {
     state = AsyncValue.data(currentData.copyWith(clearPhoto: true));
   }
 
-  Future<String?> submitIntake() async {
+  void toggleAmenity(String amenity) {
+    final currentData = state.value ?? LandSubmission();
+    final currentAmenities = currentData.selectedAmenities != null 
+        ? Set<String>.from(currentData.selectedAmenities!) 
+        : <String>{};
+        
+    if (currentAmenities.contains(amenity)) {
+      currentAmenities.remove(amenity);
+    } else {
+      currentAmenities.add(amenity);
+    }
+    
+    state = AsyncValue.data(currentData.copyWith(selectedAmenities: currentAmenities));
+  }
+
+  Future<String?> submitIntake({String? basePlanId, String? mode}) async {
     final data = state.value;
     if (data == null || !data.isValid) return null;
 
@@ -53,6 +68,8 @@ class IntakeNotifier extends StateNotifier<AsyncValue<LandSubmission>> {
     
     try {
       final payload = {
+        if (basePlanId != null) 'basePreDesignedPlanId': basePlanId,
+        if (mode != null) 'planSelectionMode': mode,
         'landSizePerches': data.landSizePerches,
         'manualTerrainType': data.manualTerrainType,
         'budgetLkr': data.budgetLkr,
@@ -61,15 +78,15 @@ class IntakeNotifier extends StateNotifier<AsyncValue<LandSubmission>> {
           'bathrooms': 1,
           'floors': data.preferredFloors ?? 1,
           'architecturalStyle': data.stylePreference ?? 'Modern Minimalist',
-          'openPlan': false,
-          'masterEnsuite': false,
-          'separateDining': false,
-          'homeOffice': false,
-          'balcony': false,
-          'veranda': false,
-          'utilityRoom': false,
-          'parkingRequired': false,
-          'accessibility': false,
+          'openPlan': data.selectedAmenities?.contains('Open plan') ?? false,
+          'masterEnsuite': data.selectedAmenities?.contains('Master ensuite') ?? false,
+          'separateDining': data.selectedAmenities?.contains('Separate dining') ?? false,
+          'homeOffice': data.selectedAmenities?.contains('Home office') ?? false,
+          'balcony': data.selectedAmenities?.contains('Balcony') ?? false,
+          'veranda': data.selectedAmenities?.contains('Veranda') ?? false,
+          'utilityRoom': data.selectedAmenities?.contains('Utility room') ?? false,
+          'parkingRequired': data.selectedAmenities?.contains('Parking') ?? false,
+          'accessibility': data.selectedAmenities?.contains('Accessible') ?? false,
           'spacePriority': 'balanced',
           'circulationPreference': 'space_efficient'
         },
