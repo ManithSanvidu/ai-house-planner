@@ -273,7 +273,7 @@ class _IntakeViewState extends ConsumerState<IntakeView>{
             child: const Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text('Generate AI Plan', style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold)),
+                Text('Generate Plan', style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold)),
                 SizedBox(width: 8),
                 Icon(Icons.auto_awesome, size: 16), // ✦
               ],

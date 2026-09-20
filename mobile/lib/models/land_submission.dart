@@ -45,11 +45,9 @@ class LandSubmission {
 
   //To check form is valid submission 
   bool get isValid{
-    return(budgetLkr ?? 0)>0 &&
-      (landSizePerches ?? 0)>0 &&
-      (preferredBedrooms ?? 0)>0 &&
-      (preferredFloors ?? 0)>0 &&
-      (landPhoto!=null || (manualTerrainType !=null && manualTerrainType!.isNotEmpty));
+    return (landSizePerches ?? 0) > 0 &&
+           (preferredBedrooms ?? 0) > 0 &&
+           (preferredFloors ?? 0) > 0;
   }
 
 }
