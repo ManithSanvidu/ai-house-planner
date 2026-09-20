@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { constructorWorkflowService } from '../../../services/constructorWorkflowService';
 import { CheckCircle2, Clock, Check } from 'lucide-react';
 
@@ -7,20 +7,20 @@ export const ConstructorRequestsView = ({ projectId }: { projectId: string }) =>
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const loadRequests = async () => {
+  const loadRequests = useCallback(async () => {
     try {
       const data = await constructorWorkflowService.getProjectRequests(projectId);
       setRequests(data);
-    } catch (err: any) {
+    } catch {
       setError('Failed to load constructor requests.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [projectId]);
 
   useEffect(() => {
     loadRequests();
-  }, [projectId]);
+  }, [loadRequests]);
 
   const handleApprove = async (requestId: string) => {
     try {

@@ -95,34 +95,34 @@ export const constructorWorkflowService = {
     },
 
     searchProject: async (projectId: string) => {
-        const response = await axios.get(`${API_URL}/search/${projectId}`, { headers: getAuthHeaders() });
+        const response = await axios.get(`${API_URL}/search/${projectId}`, { headers: await getAuthHeaders() });
         return response.data;
     },
 
     requestProject: async (projectId: string) => {
-        const response = await axios.post(`${API_URL}/request/${projectId}`, {}, { headers: getAuthHeaders() });
+        const response = await axios.post(`${API_URL}/request/${projectId}`, {}, { headers: await getAuthHeaders() });
         return response.data;
     },
 
     approveRequest: async (requestId: string) => {
-        const response = await axios.post(`${API_URL}/approve/${requestId}`, {}, { headers: getAuthHeaders() });
+        const response = await axios.post(`${API_URL}/approve/${requestId}`, {}, { headers: await getAuthHeaders() });
         return response.data;
     },
 
     getProjectRequests: async (projectId: string) => {
-        const response = await axios.get(`${API_URL}/requests/project/${projectId}`, { headers: getAuthHeaders() });
+        const response = await axios.get(`${API_URL}/requests/project/${projectId}`, { headers: await getAuthHeaders() });
         return response.data;
     },
 
     getConstructorRequests: async () => {
-        const response = await axios.get(`${API_URL}/requests/constructor`, { headers: getAuthHeaders() });
+        const response = await axios.get(`${API_URL}/requests/constructor`, { headers: await getAuthHeaders() });
         return response.data;
     },
 
     setEstimatedDuration: async (projectId: string, estimatedDays: number) => {
         const response = await axios.post(`${API_URL}/projects/${projectId}/duration`, estimatedDays, { 
             headers: {
-                ...getAuthHeaders(),
+                ...await getAuthHeaders(),
                 'Content-Type': 'application/json'
             }
         });
