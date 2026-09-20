@@ -97,7 +97,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
       } else {
         state = const AsyncValue.data(null);
       }
-    } catch (e, st) {
+    } catch (e) {
       // Fallback for demo when OAuth client is missing or unconfigured
       final user = User(
         id: 'mock-google-uid-123',
