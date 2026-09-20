@@ -4,6 +4,8 @@ namespace HousePlanner.API.DTOs
     {
         public string Uid { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
-        public string Role { get; set; } = string.Empty; // e.g. "Architect" or "Contractor"
+        public string FullName { get; set; } = string.Empty;
+        public string Role { get; set; } = string.Empty; // e.g. "Customer", "Architect"
     }
 }
+

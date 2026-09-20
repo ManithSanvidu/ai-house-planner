@@ -7,6 +7,7 @@ import DashboardPage from '../pages/DashboardPage';
 import HomePage from '../pages/HomePage';
 import IntakeForm from '../pages/IntakeForm';
 import LoginPage from '../pages/LoginPage';
+import RegisterPage from '../pages/RegisterPage';
 import MyDesignsPage from '../pages/MyDesignsPage';
 import PlanDetailPage from '../pages/PlanDetailPage';
 import PlanLibraryPage from '../pages/PlanLibraryPage';
@@ -24,6 +25,7 @@ export const AppRoutes: React.FC = () => (
   <Routes>
     <Route path="/" element={<HomePage />} />
     <Route path="/login" element={<LoginPage />} />
+    <Route path="/register" element={<RegisterPage />} />
     <Route path="/dashboard" element={<ProtectedRoute><PageContainer><DashboardPage /></PageContainer></ProtectedRoute>} />
     <Route path="/dashboard/new-project" element={<ProtectedRoute><PageContainer><IntakeForm /></PageContainer></ProtectedRoute>} />
     <Route path="/dashboard/cost-estimator" element={<ProtectedRoute allowedRoles={['Contractor']}><PageContainer><PricingManagementPage /></PageContainer></ProtectedRoute>} />

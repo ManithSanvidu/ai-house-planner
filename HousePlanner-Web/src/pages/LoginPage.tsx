@@ -150,7 +150,7 @@ const LoginPage: React.FC = () => {
 
           <div className="mt-8 text-center text-sm text-gray-500">
             Don't have an account?{' '}
-            <a href="#" className="font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400">Contact Administrator</a>
+            <Link to="/register" className="font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400">Create one</Link>
           </div>
         </div>
       </motion.div>

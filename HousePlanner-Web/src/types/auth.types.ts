@@ -1,4 +1,7 @@
-export type UserRole = 'User' | 'Admin' | 'Architect' | 'Contractor' | 'Constructor';
+export type UserRole = 'User' | 'Admin' | 'Architect' | 'Contractor' | 'Constructor' | 'Customer';
+
+/** Roles the public registration form can offer. Must mirror the backend allowlist. */
+export type PublicRegistrableRole = 'Customer' | 'Architect';
 
 export interface UserProfile {
   uid: string;

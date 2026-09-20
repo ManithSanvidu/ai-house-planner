@@ -1,11 +1,20 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Plus, Sparkles, Library } from 'lucide-react';
 import useAuth from '../features/auth/useAuth';
 
 const DashboardPage: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
+
+  // Role-aware redirect: non-Customer roles have dedicated dashboards.
+  useEffect(() => {
+    if (!user) return;
+    if (user.role === 'Architect') navigate('/architect/dashboard', { replace: true });
+    else if (user.role === 'Constructor') navigate('/constructor/dashboard', { replace: true });
+    // Admin, Customer, and User roles fall through to this dashboard.
+  }, [user, navigate]);
 
   return (
     <div className="min-h-[calc(100vh-65px)] flex items-center justify-center p-6 relative overflow-hidden transition-colors duration-300">
@@ -25,7 +34,7 @@ const DashboardPage: React.FC = () => {
         </div>
         
         <h1 className="text-4xl font-bold text-zinc-900 dark:text-white mb-3 tracking-tight transition-colors">
-          Welcome back, {user?.fullName?.split(' ')[0] || 'Architect'}
+          Welcome back, {user?.fullName?.split(' ')[0] || 'there'}
         </h1>
         <p className="text-zinc-500 dark:text-gray-400 mb-10 text-lg font-medium transition-colors">
           Ready to design something extraordinary today?
@@ -54,3 +63,4 @@ const DashboardPage: React.FC = () => {
 };
 
 export default DashboardPage;
+
