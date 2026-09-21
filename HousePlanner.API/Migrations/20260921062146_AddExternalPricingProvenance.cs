@@ -12,18 +12,8 @@ namespace HousePlanner.API.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropIndex(
-                name: "IX_ValidationRequests_WorkflowStateId",
-                table: "ValidationRequests");
-
-            migrationBuilder.DropIndex(
                 name: "IX_ConstructorProjectRequests_ProjectId",
                 table: "ConstructorProjectRequests");
-
-            migrationBuilder.AddColumn<Guid>(
-                name: "HouseDesignId",
-                table: "ValidationRequests",
-                type: "uuid",
-                nullable: true);
 
             migrationBuilder.AddColumn<string>(
                 name: "DisplayGroup",
@@ -133,16 +123,6 @@ namespace HousePlanner.API.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_ValidationRequests_HouseDesignId",
-                table: "ValidationRequests",
-                column: "HouseDesignId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_ValidationRequests_Workflow_Design_Status",
-                table: "ValidationRequests",
-                columns: new[] { "WorkflowStateId", "HouseDesignId", "Status" });
-
-            migrationBuilder.CreateIndex(
                 name: "UX_PricingData_Provider_ExternalItemId",
                 table: "PricingData",
                 columns: new[] { "Provider", "ExternalItemId" },
@@ -158,32 +138,13 @@ namespace HousePlanner.API.Migrations
                 table: "PricingImportAudits",
                 column: "StartedAt");
 
-            migrationBuilder.AddForeignKey(
-                name: "FK_ValidationRequests_HouseDesigns_HouseDesignId",
-                table: "ValidationRequests",
-                column: "HouseDesignId",
-                principalTable: "HouseDesigns",
-                principalColumn: "Id",
-                onDelete: ReferentialAction.Restrict);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropForeignKey(
-                name: "FK_ValidationRequests_HouseDesigns_HouseDesignId",
-                table: "ValidationRequests");
-
             migrationBuilder.DropTable(
                 name: "PricingImportAudits");
-
-            migrationBuilder.DropIndex(
-                name: "IX_ValidationRequests_HouseDesignId",
-                table: "ValidationRequests");
-
-            migrationBuilder.DropIndex(
-                name: "IX_ValidationRequests_Workflow_Design_Status",
-                table: "ValidationRequests");
 
             migrationBuilder.DropIndex(
                 name: "UX_PricingData_Provider_ExternalItemId",
@@ -192,10 +153,6 @@ namespace HousePlanner.API.Migrations
             migrationBuilder.DropCheckConstraint(
                 name: "CK_PricingData_Category",
                 table: "PricingData");
-
-            migrationBuilder.DropColumn(
-                name: "HouseDesignId",
-                table: "ValidationRequests");
 
             migrationBuilder.DropColumn(
                 name: "DisplayGroup",
@@ -248,11 +205,6 @@ namespace HousePlanner.API.Migrations
             migrationBuilder.DropColumn(
                 name: "SourceUrl",
                 table: "PricingData");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_ValidationRequests_WorkflowStateId",
-                table: "ValidationRequests",
-                column: "WorkflowStateId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ConstructorProjectRequests_ProjectId",
