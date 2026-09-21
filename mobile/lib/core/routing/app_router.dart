@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -13,23 +12,14 @@ import 'package:mobile/views/intake_view.dart';
 import 'package:mobile/views/workflow_status_view.dart';
 import 'package:mobile/views/design_preview_view.dart';
 import 'package:mobile/views/construction_timeline_view.dart';
-import 'package:mobile/views/profile_view.dart';
 import 'package:mobile/widgets/main_scaffold.dart';
 
-import 'package:mobile/models/user.dart';
-
 final routerProvider = Provider<GoRouter>((ref) {
-  final notifier = ValueNotifier<AsyncValue<User?>>(const AsyncValue.loading());
-  
-  ref.listen(authProvider, (_, next) {
-    notifier.value = next;
-  });
+  final authState = ref.watch(authProvider);
 
   return GoRouter(
     initialLocation: '/',
-    refreshListenable: notifier,
     redirect: (context, state) {
-      final authState = notifier.value;
       final isLoading = authState.isLoading;
       if (isLoading) return null;
 
@@ -70,10 +60,6 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const DashboardView(),
           ),
           GoRoute(
-            path: '/profile',
-            builder: (context, state) => const ProfileView(),
-          ),
-          GoRoute(
             path: '/plans',
             builder: (context, state) => const PlanLibraryView(),
           ),
@@ -86,11 +72,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/intake',
-            builder: (context, state) {
-              final basePlanId = state.uri.queryParameters['basePlanId'];
-              final mode = state.uri.queryParameters['mode'];
-              return IntakeView(basePlanId: basePlanId, mode: mode);
-            },
+            builder: (context, state) => const IntakeView(),
           ),
           GoRoute(
             path: '/design/:workflowId',
