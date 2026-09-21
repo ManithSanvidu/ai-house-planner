@@ -12,8 +12,8 @@ import 'package:mobile/views/intake_view.dart';
 import 'package:mobile/views/workflow_status_view.dart';
 import 'package:mobile/views/design_preview_view.dart';
 import 'package:mobile/views/construction_timeline_view.dart';
+import 'package:mobile/views/profile_view.dart';
 import 'package:mobile/widgets/main_scaffold.dart';
-
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authProvider);
 
@@ -58,6 +58,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/dashboard',
             builder: (context, state) => const DashboardView(),
+          ),
+          GoRoute(
+            path: '/profile',
+            builder: (context, state) => const ProfileView(),
           ),
           GoRoute(
             path: '/plans',
