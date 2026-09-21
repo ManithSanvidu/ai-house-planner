@@ -34,12 +34,44 @@ class IntakeNotifier extends StateNotifier<AsyncValue<LandSubmission>> {
     ));
   }
 
+  void togglePreference(String key) {
+    final currentData = state.value ?? LandSubmission();
+    switch (key) {
+      case 'openPlan':
+        state = AsyncValue.data(currentData.copyWith(openPlan: !currentData.openPlan));
+        break;
+      case 'masterEnsuite':
+        state = AsyncValue.data(currentData.copyWith(masterEnsuite: !currentData.masterEnsuite));
+        break;
+      case 'homeOffice':
+        state = AsyncValue.data(currentData.copyWith(homeOffice: !currentData.homeOffice));
+        break;
+      case 'balcony':
+        state = AsyncValue.data(currentData.copyWith(balcony: !currentData.balcony));
+        break;
+      case 'parkingRequired':
+        state = AsyncValue.data(currentData.copyWith(parkingRequired: !currentData.parkingRequired));
+        break;
+      case 'accessibility':
+        state = AsyncValue.data(currentData.copyWith(accessibility: !currentData.accessibility));
+        break;
+    }
+  }
+
   void setPhoto(File photo) {
     final currentData = state.value ?? LandSubmission();
     // If a photo is provided, clear the manual terrain fallback
     state = AsyncValue.data(currentData.copyWith(
       landPhoto: photo,
       clearManualTerrain: true,
+    ));
+  }
+
+  void setPreDesignedPlan(String? planId, String? mode) {
+    final currentData = state.value ?? LandSubmission();
+    state = AsyncValue.data(currentData.copyWith(
+      basePreDesignedPlanId: planId,
+      planSelectionMode: mode,
     ));
   }
 
@@ -64,15 +96,15 @@ class IntakeNotifier extends StateNotifier<AsyncValue<LandSubmission>> {
           'bathrooms': 1,
           'floors': data.preferredFloors ?? 1,
           'architecturalStyle': data.stylePreference ?? 'Modern Minimalist',
-          'openPlan': false,
-          'masterEnsuite': false,
+          'openPlan': data.openPlan,
+          'masterEnsuite': data.masterEnsuite,
           'separateDining': false,
-          'homeOffice': false,
-          'balcony': false,
+          'homeOffice': data.homeOffice,
+          'balcony': data.balcony,
           'veranda': false,
           'utilityRoom': false,
-          'parkingRequired': false,
-          'accessibility': false,
+          'parkingRequired': data.parkingRequired,
+          'accessibility': data.accessibility,
           'spacePriority': 'balanced',
           'circulationPreference': 'space_efficient'
         },
@@ -82,6 +114,8 @@ class IntakeNotifier extends StateNotifier<AsyncValue<LandSubmission>> {
           'entrance_side': 'south'
         },
         'designSeed': 12345,
+        'basePreDesignedPlanId': data.basePreDesignedPlanId,
+        'planSelectionMode': data.planSelectionMode,
       };
 
       final response = await ApiClient.instance.post('/ai-generation/generate', data: payload);
