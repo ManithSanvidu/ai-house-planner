@@ -10,11 +10,8 @@ final intakeProvider = StateNotifierProvider<IntakeNotifier, AsyncValue<LandSubm
 
 class IntakeNotifier extends StateNotifier<AsyncValue<LandSubmission>> {
   IntakeNotifier() : super(AsyncValue.data(LandSubmission(
-    landSizePerches: 10.0,
-    preferredBedrooms: 3,
+    preferredBedrooms: 1,
     preferredFloors: 1,
-    stylePreference: 'modern',
-    manualTerrainType: 'flat',
   )));
 
   void updateField({
@@ -37,6 +34,30 @@ class IntakeNotifier extends StateNotifier<AsyncValue<LandSubmission>> {
     ));
   }
 
+  void togglePreference(String key) {
+    final currentData = state.value ?? LandSubmission();
+    switch (key) {
+      case 'openPlan':
+        state = AsyncValue.data(currentData.copyWith(openPlan: !currentData.openPlan));
+        break;
+      case 'masterEnsuite':
+        state = AsyncValue.data(currentData.copyWith(masterEnsuite: !currentData.masterEnsuite));
+        break;
+      case 'homeOffice':
+        state = AsyncValue.data(currentData.copyWith(homeOffice: !currentData.homeOffice));
+        break;
+      case 'balcony':
+        state = AsyncValue.data(currentData.copyWith(balcony: !currentData.balcony));
+        break;
+      case 'parkingRequired':
+        state = AsyncValue.data(currentData.copyWith(parkingRequired: !currentData.parkingRequired));
+        break;
+      case 'accessibility':
+        state = AsyncValue.data(currentData.copyWith(accessibility: !currentData.accessibility));
+        break;
+    }
+  }
+
   void setPhoto(File photo) {
     final currentData = state.value ?? LandSubmission();
     // If a photo is provided, clear the manual terrain fallback
@@ -46,27 +67,20 @@ class IntakeNotifier extends StateNotifier<AsyncValue<LandSubmission>> {
     ));
   }
 
+  void setPreDesignedPlan(String? planId, String? mode) {
+    final currentData = state.value ?? LandSubmission();
+    state = AsyncValue.data(currentData.copyWith(
+      basePreDesignedPlanId: planId,
+      planSelectionMode: mode,
+    ));
+  }
+
   void clearPhoto() {
     final currentData = state.value ?? LandSubmission();
     state = AsyncValue.data(currentData.copyWith(clearPhoto: true));
   }
 
-  void toggleAmenity(String amenity) {
-    final currentData = state.value ?? LandSubmission();
-    final currentAmenities = currentData.selectedAmenities != null 
-        ? Set<String>.from(currentData.selectedAmenities!) 
-        : <String>{};
-        
-    if (currentAmenities.contains(amenity)) {
-      currentAmenities.remove(amenity);
-    } else {
-      currentAmenities.add(amenity);
-    }
-    
-    state = AsyncValue.data(currentData.copyWith(selectedAmenities: currentAmenities));
-  }
-
-  Future<String?> submitIntake({String? basePlanId, String? mode}) async {
+  Future<String?> submitIntake() async {
     final data = state.value;
     if (data == null || !data.isValid) return null;
 
@@ -74,25 +88,23 @@ class IntakeNotifier extends StateNotifier<AsyncValue<LandSubmission>> {
     
     try {
       final payload = {
-        'basePreDesignedPlanId': basePlanId,
-        'planSelectionMode': mode,
         'landSizePerches': data.landSizePerches,
-        'manualTerrainType': data.manualTerrainType == 'flat' ? 'Flat' : data.manualTerrainType == 'hillside' ? 'Hillside' : data.manualTerrainType == 'coastal' ? 'Coastal' : data.manualTerrainType == 'forested' ? 'Forested' : 'Flat',
+        'manualTerrainType': data.manualTerrainType,
         'budgetLkr': data.budgetLkr,
         'preferences': {
           'bedrooms': data.preferredBedrooms ?? 3,
           'bathrooms': 1,
           'floors': data.preferredFloors ?? 1,
-          'architecturalStyle': data.stylePreference == 'modern' ? 'Modern' : data.stylePreference == 'traditional' ? 'Traditional' : data.stylePreference == 'contemporary' ? 'Contemporary' : 'Modern',
-          'openPlan': data.selectedAmenities?.contains('Open plan') ?? false,
-          'masterEnsuite': data.selectedAmenities?.contains('Master ensuite') ?? false,
-          'separateDining': data.selectedAmenities?.contains('Separate dining') ?? false,
-          'homeOffice': data.selectedAmenities?.contains('Home office') ?? false,
-          'balcony': data.selectedAmenities?.contains('Balcony') ?? false,
-          'veranda': data.selectedAmenities?.contains('Veranda') ?? false,
-          'utilityRoom': data.selectedAmenities?.contains('Utility room') ?? false,
-          'parkingRequired': data.selectedAmenities?.contains('Parking') ?? false,
-          'accessibility': data.selectedAmenities?.contains('Accessible') ?? false,
+          'architecturalStyle': data.stylePreference ?? 'Modern Minimalist',
+          'openPlan': data.openPlan,
+          'masterEnsuite': data.masterEnsuite,
+          'separateDining': false,
+          'homeOffice': data.homeOffice,
+          'balcony': data.balcony,
+          'veranda': false,
+          'utilityRoom': false,
+          'parkingRequired': data.parkingRequired,
+          'accessibility': data.accessibility,
           'spacePriority': 'balanced',
           'circulationPreference': 'space_efficient'
         },
@@ -102,15 +114,17 @@ class IntakeNotifier extends StateNotifier<AsyncValue<LandSubmission>> {
           'entrance_side': 'south'
         },
         'designSeed': 12345,
+        'basePreDesignedPlanId': data.basePreDesignedPlanId,
+        'planSelectionMode': data.planSelectionMode,
       };
 
       final response = await ApiClient.instance.post('/ai-generation/generate', data: payload);
       
       state = AsyncValue.data(data); // Revert to data state on success
-      return response.data['workflowId'] as String? ?? response.data['WorkflowId'] as String?;
-    } catch (e) {
-      state = AsyncValue.data(data); // Revert to data state so form stays visible
-      rethrow;
+      return response.data['workflowId'] as String?;
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      return null;
     }
   }
 }

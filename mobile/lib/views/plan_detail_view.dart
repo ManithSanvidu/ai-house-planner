@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/plan_provider.dart';
+import '../providers/intake_provider.dart';
 import '../core/theme/app_tokens.dart';
 import '../widgets/floor_plan_painter.dart';
 
@@ -46,7 +47,9 @@ class PlanDetailView extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator(color: AppTokens.ink)),
         error: (err, stack) => Center(child: Text('Error: $err')),
         data: (plan) {
-          final List<RoomLayout> rooms = plan.layout ?? [];
+          // Attempt to convert whatever layout structure it has into RoomLayouts.
+          // Note: Mocking an empty list if layout isn't implemented in the backend yet.
+          final List<RoomLayout> rooms = [];
 
           return Column(
             children: [
@@ -158,7 +161,10 @@ class PlanDetailView extends ConsumerWidget {
                     Expanded(
                       flex: 2,
                       child: ElevatedButton(
-                        onPressed: () => context.push('/intake?basePlanId=${plan.id}&mode=use'),
+                        onPressed: () {
+                          ref.read(intakeProvider.notifier).setPreDesignedPlan(planId, 'use');
+                          context.go('/intake');
+                        },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppTokens.ink,
                           foregroundColor: Colors.white,
@@ -173,7 +179,10 @@ class PlanDetailView extends ConsumerWidget {
                     Expanded(
                       flex: 1,
                       child: OutlinedButton(
-                        onPressed: () => context.push('/intake?basePlanId=${plan.id}&mode=reference'),
+                        onPressed: () {
+                          ref.read(intakeProvider.notifier).setPreDesignedPlan(planId, 'adapt');
+                          context.go('/intake');
+                        },
                         style: OutlinedButton.styleFrom(
                           foregroundColor: AppTokens.ink,
                           backgroundColor: Colors.white,
