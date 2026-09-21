@@ -237,12 +237,12 @@ class _IntakeViewState extends ConsumerState<IntakeView>{
                       spacing: 8,
                       runSpacing: 12,
                       children: [
-                        _buildChip('Open plan'),
-                        _buildChip('Master ensuite', isActive: true),
-                        _buildChip('Home office'),
-                        _buildChip('Balcony', isActive: true),
-                        _buildChip('Parking'),
-                        _buildChip('Accessible'),
+                        _buildChip('Open plan', isActive: data.openPlan, onTap: () => ref.read(intakeProvider.notifier).togglePreference('openPlan')),
+                        _buildChip('Master ensuite', isActive: data.masterEnsuite, onTap: () => ref.read(intakeProvider.notifier).togglePreference('masterEnsuite')),
+                        _buildChip('Home office', isActive: data.homeOffice, onTap: () => ref.read(intakeProvider.notifier).togglePreference('homeOffice')),
+                        _buildChip('Balcony', isActive: data.balcony, onTap: () => ref.read(intakeProvider.notifier).togglePreference('balcony')),
+                        _buildChip('Parking', isActive: data.parkingRequired, onTap: () => ref.read(intakeProvider.notifier).togglePreference('parkingRequired')),
+                        _buildChip('Accessible', isActive: data.accessibility, onTap: () => ref.read(intakeProvider.notifier).togglePreference('accessibility')),
                       ],
                     ),
                   ],
@@ -312,20 +312,24 @@ class _IntakeViewState extends ConsumerState<IntakeView>{
     );
   }
 
-  Widget _buildChip(String label, {bool isActive = false}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: BoxDecoration(
-        color: isActive ? AppTokens.accentSoft : Colors.white,
-        borderRadius: BorderRadius.circular(AppTokens.radiusPill),
-        border: Border.all(color: isActive ? AppTokens.accent : AppTokens.line),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: isActive ? AppTokens.accent : AppTokens.inkSoft,
-          fontSize: 12.5,
-          fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+  Widget _buildChip(String label, {bool isActive = false, VoidCallback? onTap}) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppTokens.radiusPill),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: isActive ? AppTokens.accentSoft : Colors.white,
+          borderRadius: BorderRadius.circular(AppTokens.radiusPill),
+          border: Border.all(color: isActive ? AppTokens.accent : AppTokens.line),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isActive ? AppTokens.accent : AppTokens.inkSoft,
+            fontSize: 12.5,
+            fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+          ),
         ),
       ),
     );
