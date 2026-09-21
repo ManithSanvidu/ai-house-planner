@@ -26,7 +26,9 @@ public class CustomerConstructionController : ControllerBase
     private async Task<Guid?> CustomerId()
     {
         var user = await _currentUser.GetAsync(HttpContext);
-        return string.Equals(user?.Role, "Customer", StringComparison.OrdinalIgnoreCase) ? user.Id : null;
+        if (user is null || !string.Equals(user.Role, "Customer", StringComparison.OrdinalIgnoreCase))
+            return null;
+        return user.Id;
     }
 
     [HttpGet("approved-designs")]

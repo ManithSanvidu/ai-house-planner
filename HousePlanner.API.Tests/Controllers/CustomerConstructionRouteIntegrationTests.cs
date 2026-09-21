@@ -1,15 +1,16 @@
 using System.Net;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.Hosting;
 using Xunit;
 
 namespace HousePlanner.API.Tests.Controllers;
 
-public class CustomerConstructionRouteIntegrationTests : IClassFixture<WebApplicationFactory<Program>>
+public class CustomerConstructionRouteIntegrationTests : IClassFixture<CustomerConstructionApiFactory>
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly CustomerConstructionApiFactory _factory;
 
-    public CustomerConstructionRouteIntegrationTests(WebApplicationFactory<Program> factory)
+    public CustomerConstructionRouteIntegrationTests(CustomerConstructionApiFactory factory)
     {
         _factory = factory;
     }
@@ -36,4 +37,10 @@ public class CustomerConstructionRouteIntegrationTests : IClassFixture<WebApplic
         
         Assert.NotEqual(HttpStatusCode.NotFound, response.StatusCode);
     }
+}
+
+public sealed class CustomerConstructionApiFactory : WebApplicationFactory<Program>
+{
+    protected override void ConfigureWebHost(IWebHostBuilder builder) =>
+        builder.UseEnvironment("Testing");
 }

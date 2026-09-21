@@ -71,5 +71,26 @@ namespace HousePlanner.API.Controllers
 
             return Ok(updatedItem);
         }
+
+        /// <summary>
+        /// Imports the configured approved pricing feed and upserts normalized pricing records.
+        /// </summary>
+        [HttpPost("sync")]
+        [Authorize(Roles = "Constructor")]
+        [ProducesResponseType(typeof(PricingSyncResultDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(PricingSyncResultDto), StatusCodes.Status502BadGateway)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> SyncPricing(CancellationToken cancellationToken)
+        {
+            try
+            {
+                return Ok(await _pricingService.SyncExternalPricingAsync(cancellationToken));
+            }
+            catch (PricingSyncException ex)
+            {
+                return StatusCode(StatusCodes.Status502BadGateway, ex.Result);
+            }
+        }
     }
 }

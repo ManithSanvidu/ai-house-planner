@@ -71,7 +71,7 @@ namespace HousePlanner.API.Controllers
                 .Include(v => v.Client)
                 .Include(v => v.WorkflowState)
                     .ThenInclude(w => w.LandSubmission)
-                .Include(v=>v.HouseDesign).ThenInclude(d=>d.Rooms)
+                .Include(v=>v.HouseDesign).ThenInclude(d=>d!.Rooms)
                 .OrderByDescending(v => v.CreatedAt);
 
             if (role == "Architect")
@@ -106,7 +106,7 @@ namespace HousePlanner.API.Controllers
                     .ThenInclude(w => w.LandSubmission)
                 .Include(v => v.WorkflowState)
                     .ThenInclude(w => w.HouseDesigns)
-                .Include(v=>v.HouseDesign).ThenInclude(d=>d.Rooms)
+                .Include(v=>v.HouseDesign).ThenInclude(d=>d!.Rooms)
                 .FirstOrDefaultAsync(v => v.Id == id);
 
             if (request == null) return NotFound();

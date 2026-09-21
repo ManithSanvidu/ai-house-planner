@@ -20,6 +20,7 @@ namespace HousePlanner.API.Data
         public DbSet<ConstructorWorkflowLog> ConstructorWorkflowLogs { get; set; }
         public DbSet<ConstructorProjectRequest> ConstructorProjectRequests { get; set; }
         public DbSet<PricingData> PricingItems { get; set; }
+        public DbSet<PricingImportAudit> PricingImportAudits { get; set; }
         public DbSet<CostEstimate> CostEstimates { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -39,6 +40,19 @@ namespace HousePlanner.API.Data
 
             modelBuilder.Entity<PricingData>()
                 .OwnsOne(p => p.TerrainMultiplier, owned => owned.ToJson());
+
+            modelBuilder.Entity<PricingData>()
+                .HasIndex(p => new { p.Provider, p.ExternalItemId })
+                .IsUnique()
+                .HasDatabaseName("UX_PricingData_Provider_ExternalItemId");
+
+            modelBuilder.Entity<PricingData>()
+                .ToTable("PricingData", table => table.HasCheckConstraint(
+                    "CK_PricingData_Category", "\"Category\" IN ('material', 'labour')"));
+
+            modelBuilder.Entity<PricingImportAudit>()
+                .HasIndex(audit => audit.StartedAt)
+                .HasDatabaseName("IX_PricingImportAudits_StartedAt");
 
             modelBuilder.Entity<HouseDesign>(entity =>
             {

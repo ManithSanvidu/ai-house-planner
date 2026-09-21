@@ -5,13 +5,41 @@ using HousePlanner.API.Services;
 using Microsoft.OpenApi.Models;
 using Microsoft.EntityFrameworkCore;
 using HousePlanner.API.Data;
+using HousePlanner.API.Options;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.DataProtection;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var isTesting = builder.Environment.IsEnvironment("Testing");
+if (isTesting)
+{
+    builder.Logging.ClearProviders();
+    builder.Logging.AddConsole();
+    builder.Services.AddDataProtection().UseEphemeralDataProtectionProvider();
+}
+
+var defaultConnection = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrWhiteSpace(defaultConnection))
+{
+    if (!isTesting)
+        throw new InvalidOperationException(
+            "ConnectionStrings:DefaultConnection must be configured through user secrets or environment variables.");
+    defaultConnection = "Host=localhost;Database=houseplanner_tests;Username=test;Password=test";
+}
+
+var internalApiKey = builder.Configuration["AgenticService:InternalApiKey"];
+if (string.IsNullOrWhiteSpace(internalApiKey))
+{
+    if (!isTesting)
+        throw new InvalidOperationException(
+            "AgenticService:InternalApiKey must be configured through user secrets or environment variables.");
+    internalApiKey = "integration-test-only-key";
+}
+
 // Add PostgreSQL DbContext
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(defaultConnection));
 
 // 1. Add CORS services allowing our React frontend client
 builder.Services.AddCors(options =>
@@ -79,14 +107,33 @@ builder.Services.AddScoped<IPreDesignedPlanLayoutValidator, PreDesignedPlanLayou
 builder.Services.AddScoped<PreDesignedPlanSeeder>();
 builder.Services.AddScoped<IWorkflowService, WorkflowService>();
 builder.Services.AddScoped<IDesignOptionsService, DesignOptionsService>();
+builder.Services.AddOptions<ExternalPricingOptions>()
+    .Bind(builder.Configuration.GetSection(ExternalPricingOptions.SectionName))
+    .Validate(options => !string.IsNullOrWhiteSpace(options.Provider), "ExternalPricing:Provider is required.")
+    .Validate(options => !string.IsNullOrWhiteSpace(options.ProviderName) && options.ProviderName.Length <= 100,
+        "ExternalPricing:ProviderName is required and must not exceed 100 characters.")
+    .Validate(options => !string.IsNullOrWhiteSpace(options.FilePath), "ExternalPricing:FilePath is required.")
+    .ValidateOnStart();
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddScoped<IPricingNormalizationService, PricingNormalizationService>();
+builder.Services.AddScoped<FilePricingProvider>();
+builder.Services.AddScoped<IExternalPricingProvider>(services =>
+{
+    var options = services.GetRequiredService<Microsoft.Extensions.Options.IOptions<ExternalPricingOptions>>().Value;
+    if (!string.Equals(options.Provider, "File", StringComparison.OrdinalIgnoreCase))
+    {
+        throw new InvalidOperationException($"Unsupported external pricing provider '{options.Provider}'.");
+    }
+
+    return services.GetRequiredService<FilePricingProvider>();
+});
 builder.Services.AddScoped<IPricingService, PricingService>();
 builder.Services.AddScoped<IConstructorWorkflowService, ConstructorWorkflowService>();
 builder.Services.AddHttpClient("AgenticService", client =>
 {
     client.BaseAddress = new Uri(builder.Configuration["AgenticService:BaseUrl"] ?? "http://localhost:8001");
     client.Timeout = TimeSpan.FromSeconds(35);
-    client.DefaultRequestHeaders.Add("X-Internal-API-Key",
-        builder.Configuration["AgenticService:InternalApiKey"] ?? "shared-internal-secret");
+    client.DefaultRequestHeaders.Add("X-Internal-API-Key", internalApiKey);
 });
 
 // 5. Initialize Firebase Admin SDK
@@ -102,6 +149,10 @@ if (!string.IsNullOrEmpty(serviceAccountPath) && File.Exists(fullPath))
             Credential = GoogleCredential.FromFile(fullPath)
         });
         Console.WriteLine($"[Firebase SDK] Successfully initialized FirebaseApp using service account credentials from: {fullPath}");
+    }
+    catch (Exception ex) when (ex.Message.Contains("already exists", StringComparison.OrdinalIgnoreCase))
+    {
+        // WebApplicationFactory can initialize multiple test hosts in the same process.
     }
     catch (Exception ex)
     {
@@ -175,7 +226,8 @@ if (app.Environment.IsDevelopment())
 
 // Disable default HTTPS redirect for ease of local testing in CORS environments if desired,
 // but keep it active and ensure client URLs match.
-app.UseHttpsRedirection();
+if (!isTesting)
+    app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -185,8 +237,7 @@ app.UseWhen(context => context.Request.Path.StartsWithSegments("/api/v1/internal
 {
     branch.Use(async (context, next) =>
     {
-        var expected = builder.Configuration["AgenticService:InternalApiKey"] ?? "shared-internal-secret";
-        if (!context.Request.Headers.TryGetValue("X-Internal-API-Key", out var actual) || actual != expected)
+        if (!context.Request.Headers.TryGetValue("X-Internal-API-Key", out var actual) || actual != internalApiKey)
         {
             context.Response.StatusCode = StatusCodes.Status403Forbidden;
             return;

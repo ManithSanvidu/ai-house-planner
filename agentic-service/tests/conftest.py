@@ -1,5 +1,10 @@
 """Unit tests never call paid APIs or write workflow state to a local server."""
+import os
+
 import pytest
+
+
+os.environ.setdefault("INTERNAL_API_KEY", "test-only-internal-api-key")
 
 
 @pytest.fixture(autouse=True)

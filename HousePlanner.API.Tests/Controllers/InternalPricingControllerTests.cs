@@ -32,18 +32,18 @@ namespace HousePlanner.API.Tests.Controllers
                 {
                     Id = 1,
                     ItemName = "Concrete Foundation",
-                    Category = "Foundation",
+                    Category = "material",
                     UnitCostLkr = 5000.00m,
-                    Unit = "sqft",
+                    Unit = "per_sqft",
                     TerrainMultiplier = new TerrainMultiplierData { Flat = 1.0m, Hillside = 1.25m, Coastal = 1.15m }
                 },
                 new()
                 {
                     Id = 2,
                     ItemName = "Brick Wall",
-                    Category = "Walls",
+                    Category = "material",
                     UnitCostLkr = 3500.00m,
-                    Unit = "sqft",
+                    Unit = "per_sqft",
                     TerrainMultiplier = new TerrainMultiplierData { Flat = 1.0m, Hillside = 1.1m, Coastal = 1.2m }
                 }
             };

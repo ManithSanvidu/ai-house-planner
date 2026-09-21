@@ -23,6 +23,7 @@
 
   <ItemGroup>
     <Content Update="Data/Seed/pre-designed-plans.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Update="Data/Pricing/approved-pricing-feed.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

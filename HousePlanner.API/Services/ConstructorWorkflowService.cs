@@ -149,7 +149,7 @@ namespace HousePlanner.API.Services
         {
             return await _context.Projects
                 .Include(p => p.WorkflowState)
-                .ThenInclude(w => w.HouseDesigns)
+                .ThenInclude(w => w!.HouseDesigns)
                 .FirstOrDefaultAsync(p => p.Id == projectId);
         }
 

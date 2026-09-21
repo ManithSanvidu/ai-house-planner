@@ -12,7 +12,9 @@ def load_dotenv():
 
 load_dotenv()
 ASPNET_API_URL = os.getenv("ASPNET_API_URL", "http://localhost:5265/api/v1")
-INTERNAL_API_KEY = os.getenv("INTERNAL_API_KEY", "shared-internal-secret")
+INTERNAL_API_KEY = os.getenv("INTERNAL_API_KEY")
+if not INTERNAL_API_KEY:
+    raise RuntimeError("INTERNAL_API_KEY must be configured in the environment or agentic-service/.env")
 
 DESIGN_PROVIDER_ORDER = [
     p.strip()

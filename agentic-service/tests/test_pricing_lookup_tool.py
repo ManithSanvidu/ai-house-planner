@@ -12,9 +12,9 @@ def test_pricing_lookup_success():
         {
             "id": 1,
             "itemName": "Concrete Foundation",
-            "category": "Foundation",
+            "category": "material",
             "unitCostLkr": 5000.0,
-            "unit": "sqft",
+            "unit": "per_sqft",
             "terrainMultiplier": {
                 "flat": 1.0,
                 "hillside": 1.25,
@@ -24,9 +24,9 @@ def test_pricing_lookup_success():
         {
             "id": 2,
             "itemName": "Brick Wall",
-            "category": "Walls",
+            "category": "material",
             "unitCostLkr": 3500.0,
-            "unit": "sqft",
+            "unit": "per_sqft",
             "terrainMultiplier": {
                 "flat": 1.0,
                 "hillside": 1.1,
@@ -48,9 +48,9 @@ def test_pricing_lookup_success():
     assert len(items) == 2
     assert items[0].id == 1
     assert items[0].item_name == "Concrete Foundation"
-    assert items[0].category == "Foundation"
+    assert items[0].category == "material"
     assert items[0].unit_cost_lkr == 5000.0
-    assert items[0].unit == "sqft"
+    assert items[0].unit == "per_sqft"
     assert items[0].terrain_multiplier.flat == 1.0
     assert items[0].terrain_multiplier.hillside == 1.25
     assert items[0].terrain_multiplier.coastal == 1.35

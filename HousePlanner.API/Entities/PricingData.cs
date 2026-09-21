@@ -30,6 +30,42 @@ namespace HousePlanner.API.Entities
         [Required]
         public TerrainMultiplierData TerrainMultiplier { get; set; } = new TerrainMultiplierData();
 
+        [StringLength(100)]
+        public string? DisplayGroup { get; set; }
+
+        [StringLength(100)]
+        public string? Provider { get; set; }
+
+        [StringLength(255)]
+        public string? ExternalItemId { get; set; }
+
+        [StringLength(255)]
+        public string? ExternalItemName { get; set; }
+
+        [StringLength(50)]
+        public string? OriginalUnit { get; set; }
+
+        [Column(TypeName = "decimal(18,4)")]
+        public decimal? OriginalPrice { get; set; }
+
+        [StringLength(10)]
+        public string? OriginalCurrency { get; set; }
+
+        [StringLength(150)]
+        public string? Region { get; set; }
+
+        public DateTimeOffset? ObservedAt { get; set; }
+
+        public DateTimeOffset? EffectiveAt { get; set; }
+
+        [StringLength(2048)]
+        public string? SourceUrl { get; set; }
+
+        [StringLength(500)]
+        public string? SourceReference { get; set; }
+
+        public DateTimeOffset? ImportedAt { get; set; }
+
         public DateTimeOffset UpdatedAt { get; set; }
     }
 

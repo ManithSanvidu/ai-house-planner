@@ -15,12 +15,18 @@ namespace HousePlanner.API.Controllers
         private readonly ApplicationDbContext _context;
         private readonly HttpClient _agenticServiceClient;
         private readonly IDesignOptionsService _designOptionsService;
+        private readonly ICurrentUserContextService _currentUser;
 
-        public AiGenerationController(ApplicationDbContext context, IHttpClientFactory httpClientFactory, IDesignOptionsService designOptionsService)
+        public AiGenerationController(
+            ApplicationDbContext context,
+            IHttpClientFactory httpClientFactory,
+            IDesignOptionsService designOptionsService,
+            ICurrentUserContextService currentUser)
         {
             _context = context;
             _agenticServiceClient = httpClientFactory.CreateClient("AgenticService");
             _designOptionsService = designOptionsService;
+            _currentUser = currentUser;
         }
 
         [HttpPost("generate")]
@@ -53,9 +59,11 @@ namespace HousePlanner.API.Controllers
             object payload;
             try 
             {
-                var client = request.ClientId.HasValue
-                    ? await _context.Users.FindAsync(request.ClientId.Value)
-                    : await _context.Users.OrderBy(u => u.CreatedAt).FirstOrDefaultAsync();
+                var currentUser = await _currentUser.GetAsync(HttpContext);
+                if (currentUser?.Id is not Guid currentUserId || currentUserId == Guid.Empty)
+                    return Unauthorized(new { Message = "An authenticated customer is required." });
+
+                var client = await _context.Users.FindAsync(currentUserId);
                 if (client is null)
                     return Conflict(new { Message = "No client account exists for this submission." });
                 PreDesignedHousePlan? basePlan = null;
@@ -63,6 +71,19 @@ namespace HousePlanner.API.Controllers
                 {
                     basePlan = await _context.PreDesignedHousePlans.FirstOrDefaultAsync(p => p.Id == request.BasePreDesignedPlanId && p.IsActive);
                     if (basePlan is null) return BadRequest(new { Message = "The selected pre-designed plan is unavailable." });
+
+                    var planValidation = await _designOptionsService.ValidateSpecificPlanAsync(
+                        basePlan, request, cancellationToken);
+                    if (!planValidation.IsValid)
+                    {
+                        return BadRequest(new
+                        {
+                            code = planValidation.ErrorCode,
+                            message = planValidation.Message,
+                            conflicts = planValidation.Conflicts,
+                            suggestions = planValidation.Suggestions
+                        });
+                    }
                 }
 
                 var submission = new LandSubmission
@@ -96,31 +117,6 @@ namespace HousePlanner.API.Controllers
                 _context.WorkflowStates.Add(workflowState);
                 await _context.SaveChangesAsync();
 
-                if (basePlan is not null && string.Equals(request.PlanSelectionMode, "use", StringComparison.OrdinalIgnoreCase))
-                {
-                    using var document = JsonDocument.Parse(basePlan.LayoutJson);
-                    var root = document.RootElement;
-                    var design = new HouseDesign
-                    {
-                        WorkflowStateId = workflowState.Id, Version = 1, FloorCount = basePlan.FloorCount,
-                        TotalBuiltUpAreaSqft = basePlan.TotalBuiltUpAreaSqft,
-                        FoundationType = root.TryGetProperty("foundation_type", out var foundation) ? foundation.GetString() ?? "conceptual" : "conceptual",
-                        TemplateId = root.TryGetProperty("template_id", out var template) ? template.GetString() : null,
-                        TerrainType = basePlan.SuitableTerrain, LayoutJson = basePlan.LayoutJson, IsCurrent = true,
-                        DesignSource = "pre_designed", BasePreDesignedPlanId = basePlan.Id, CreatedAt = DateTimeOffset.UtcNow
-                    };
-                    foreach (var room in root.GetProperty("rooms").EnumerateArray())
-                    {
-                        var width = room.GetProperty("width").GetDecimal(); var length = room.GetProperty("length").GetDecimal();
-                        design.Rooms.Add(new Room { RoomType=room.GetProperty("room_type").GetString()??"unknown", Name=room.TryGetProperty("name",out var n)?n.GetString():null, FloorNumber=room.GetProperty("floor").GetInt32(), X=room.GetProperty("x").GetDecimal(), Y=room.GetProperty("y").GetDecimal(), Width=width, Length=length, AreaSqft=Math.Round(width*length,2), WallHeight=room.TryGetProperty("wall_height",out var wh)?wh.GetDecimal():9 });
-                    }
-                    workflowState.Status = "design_generated";
-                    workflowState.ConstructionPlan = "{\"project_summary\":{\"estimated_duration_days\":180},\"phases\":[{\"id\":1,\"name\":\"Site Preparation\",\"start_day\":1,\"end_day\":14,\"duration_days\":14},{\"id\":2,\"name\":\"Foundation\",\"start_day\":15,\"end_day\":35,\"duration_days\":20},{\"id\":3,\"name\":\"Framing\",\"start_day\":36,\"end_day\":65,\"duration_days\":30},{\"id\":4,\"name\":\"Roofing & Siding\",\"start_day\":66,\"end_day\":90,\"duration_days\":25},{\"id\":5,\"name\":\"Interior Finishes\",\"start_day\":91,\"end_day\":180,\"duration_days\":90}]}";
-                    _context.HouseDesigns.Add(design); 
-                    await _context.SaveChangesAsync();
-                    return Ok(new { Message = "Pre-designed plan selected successfully", WorkflowId = workflowState.Id });
-                }
-
                 payload = new {
                     workflow_id = workflowState.Id,
                     submission_id = submission.Id,
@@ -131,6 +127,7 @@ namespace HousePlanner.API.Controllers
                     plot_constraints = request.PlotConstraints,
                     design_seed = request.DesignSeed
                     ,base_pre_designed_plan_id = request.BasePreDesignedPlanId
+                    ,base_pre_designed_plan_code = basePlan?.DesignCode
                     ,plan_selection_mode = request.PlanSelectionMode
                 };
             }
