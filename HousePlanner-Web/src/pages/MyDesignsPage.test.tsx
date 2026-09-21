@@ -28,7 +28,7 @@ test('project grid renders multiple persisted versions and submit is disabled wi
   expect(await screen.findByText('Version 2')).toBeTruthy();
   expect(screen.getByText('Version 1')).toBeTruthy();
   expect(screen.getByText('2 saved designs')).toBeTruthy();
-  expect((screen.getByRole('button', { name: 'Submit Selected to Architect' }) as HTMLButtonElement).disabled).toBe(true);
+  expect((screen.getByRole('button', { name: 'Send Selected to Architect' }) as HTMLButtonElement).disabled).toBe(true);
 });
 
 test('selected card shows Unselect and no disabled Select control', async () => {
@@ -78,4 +78,15 @@ test('refresh retains selection from persisted API state', async () => {
   const view = renderPage(); expect(await screen.findByText('Selected')).toBeTruthy();
   view.unmount(); renderPage(); expect(await screen.findByText('Selected')).toBeTruthy();
   expect(workflowService.getMyDesigns).toHaveBeenCalledTimes(2);
+});
+
+test('approved design exposes constructor handoff without management actions', async () => {
+  const approved: any = selectedProject(); approved.status = 'approved'; approved.designs[0].isArchitectApproved = true;
+  vi.mocked(workflowService.getMyDesigns).mockResolvedValue([approved]);
+  renderPage();
+  expect((await screen.findAllByText('✓ Architect Approved')).length).toBeGreaterThan(0);
+  expect(screen.getByRole('link', { name: 'Find Constructor' })).toBeTruthy();
+  expect(screen.queryByRole('button', { name: 'Unselect' })).toBeNull();
+  expect(screen.queryByRole('button', { name: /Delete Version/ })).toBeNull();
+  expect(screen.queryByRole('button', { name: 'Add to Compare' })).toBeNull();
 });

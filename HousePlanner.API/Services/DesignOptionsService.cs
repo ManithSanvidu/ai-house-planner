@@ -203,4 +203,36 @@ public class DesignOptionsService : IDesignOptionsService
 
         return new DesignOptionsValidationResult { IsValid = true };
     }
+
+    public Task<DesignOptionsValidationResult> ValidateSpecificPlanAsync(PreDesignedHousePlan plan,
+        AiGenerationRequest request, CancellationToken cancellationToken = default)
+    {
+        var conflicts = new List<string>(); var p = request.Preferences;
+        if (request.LandSizePerches < plan.MinimumLandSizePerches) conflicts.Add("landSize");
+        if (plan.MinimumPlotWidthFt.HasValue && request.PlotConstraints?.plot_width_ft is decimal width && width < plan.MinimumPlotWidthFt) conflicts.Add("plotWidth");
+        if (plan.MinimumPlotLengthFt.HasValue && request.PlotConstraints?.plot_length_ft is decimal length && length < plan.MinimumPlotLengthFt) conflicts.Add("plotLength");
+        if (!string.Equals(plan.SuitableTerrain, "all", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(plan.SuitableTerrain, request.ManualTerrainType, StringComparison.OrdinalIgnoreCase)) conflicts.Add("terrain");
+        if (p is not null)
+        {
+            if (p.Bedrooms > 0 && p.Bedrooms != plan.Bedrooms) conflicts.Add("bedrooms");
+            if (p.Bathrooms > 0 && p.Bathrooms != plan.Bathrooms) conflicts.Add("bathrooms");
+            if (p.Floors > 0 && p.Floors != plan.FloorCount) conflicts.Add("floors");
+            if (!string.IsNullOrWhiteSpace(p.ArchitecturalStyle) &&
+                !string.Equals(p.ArchitecturalStyle, plan.Style, StringComparison.OrdinalIgnoreCase)) conflicts.Add("style");
+            if (p.ParkingRequired == true && plan.ParkingSpaces < 1) conflicts.Add("parking");
+            if (p.HomeOffice == true && !plan.HasOffice) conflicts.Add("homeOffice");
+            if (p.Balcony == true && !plan.HasBalcony) conflicts.Add("balcony");
+            if (p.Veranda == true && !plan.HasVeranda) conflicts.Add("veranda");
+            if (p.UtilityRoom == true && !plan.HasUtilityRoom) conflicts.Add("utilityRoom");
+            if (p.Accessibility == true && !plan.IsAccessibleFriendly) conflicts.Add("accessibility");
+            if (p.MasterEnsuite == true && !plan.HasMasterEnsuite) conflicts.Add("masterEnsuite");
+            if (p.SeparateDining == true && !plan.HasSeparateDining) conflicts.Add("separateDining");
+            if (p.OpenPlan == true && !plan.HasOpenPlan) conflicts.Add("openPlan");
+        }
+        return Task.FromResult(conflicts.Count == 0
+            ? new DesignOptionsValidationResult { IsValid = true }
+            : new DesignOptionsValidationResult { IsValid = false, ErrorCode = "SELECTED_PLAN_INCOMPATIBLE",
+                Message = "This plan cannot be used with your current project requirements.", Conflicts = conflicts });
+    }
 }

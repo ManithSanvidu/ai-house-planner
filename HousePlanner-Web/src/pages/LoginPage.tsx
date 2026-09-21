@@ -3,10 +3,10 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { motion } from 'framer-motion';
 import { Box, Lock, Mail, ArrowRight, Sparkles } from 'lucide-react';
-import { googleLoginAsync, loginAsync, setMockAuth } from '../features/auth/authSlice';
-import { setInMemoryToken } from '../services/apiClient';
+import { googleLoginAsync, loginAsync } from '../features/auth/authSlice';
 import type { AppDispatch } from '../store';
 import useAuth from '../features/auth/useAuth';
+import { roleHomePath } from '../utils/roleNavigation';
 
 const LoginPage: React.FC = () => {
   const [isHovered, setIsHovered] = useState(false);
@@ -15,28 +15,45 @@ const LoginPage: React.FC = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/dashboard');
+    if (isAuthenticated && user) {
+      navigate(roleHomePath(user.role));
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, user, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
     const result = await dispatch(loginAsync({email,password}));
-    if (loginAsync.fulfilled.match(result)) navigate('/dashboard');
-    else setError((result.payload as string) || 'Invalid email or password.');
+    if (loginAsync.fulfilled.match(result)) {
+      navigate(roleHomePath(result.payload.user.role));
+    } else {
+      const errorMsg = (result.payload as string) || 'Invalid email or password.';
+      if (errorMsg === 'registration_required' || errorMsg.includes('registration_required')) {
+        // Firebase identity exists, but its application profile was not created yet.
+        navigate('/register');
+      } else {
+        setError(errorMsg);
+      }
+    }
   };
 
   const handleGoogleLogin = async () => {
     setError('');
     const result = await dispatch(googleLoginAsync());
-    if (googleLoginAsync.fulfilled.match(result)) navigate('/dashboard');
-    else setError((result.payload as string) || 'Google sign-in failed.');
+    if (googleLoginAsync.fulfilled.match(result)) {
+      navigate(roleHomePath(result.payload.user.role));
+    } else {
+      const errorMsg = result.payload as string;
+      if (errorMsg === 'registration_required' || errorMsg.includes('registration_required')) {
+        navigate('/register');
+      } else {
+        setError(errorMsg || 'Google sign-in failed.');
+      }
+    }
   };
 
   return (
@@ -66,7 +83,7 @@ const LoginPage: React.FC = () => {
           
           <div className="text-center mb-10">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Welcome Back</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Sign in to access your projects or admin portal.</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Sign in to access your HousePlanner workspace.</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-6">
@@ -149,35 +166,9 @@ const LoginPage: React.FC = () => {
             Continue with Google
           </button>
 
-          <button 
-            type="button"
-            onClick={() => {
-              dispatch(setMockAuth({ uid: 'mock-arch', email: 'architect@homeplanner.com', role: 'Architect' }));
-              setInMemoryToken('mock_token');
-              navigate('/architect/dashboard');
-            }}
-            className="w-full bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 font-semibold py-3.5 rounded-xl flex items-center justify-center gap-3 transition-colors mb-3"
-          >
-            <Sparkles size={20} />
-            Test Login as Architect
-          </button>
-
-          <button 
-            type="button"
-            onClick={() => {
-              dispatch(setMockAuth({ uid: 'mock-constructor', email: 'constructor@homeplanner.com', role: 'Constructor' }));
-              setInMemoryToken('mock_token');
-              navigate('/constructor/dashboard');
-            }}
-            className="w-full bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 font-semibold py-3.5 rounded-xl flex items-center justify-center gap-3 transition-colors"
-          >
-            <Box size={20} />
-            Test Login as Constructor
-          </button>
-
           <div className="mt-8 text-center text-sm text-gray-500">
             Don't have an account?{' '}
-            <a href="#" className="font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400">Contact Administrator</a>
+            <Link to="/register" className="font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400">Create one</Link>
           </div>
         </div>
       </motion.div>

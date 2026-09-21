@@ -64,6 +64,7 @@ def design_node(state: WorkflowState) -> WorkflowState:
             land_size_perches=land_size, terrain_type=terrain_type,
             preferences=preferences, previous_design=previous_design,
             revision_reason=revision_reason, plot_constraints=plot_input, design_seed=seed,
+            preferred_plan_code=state.input_data.preferred_plan_code if state.input_data else None,
         )
         req, plot = prepare_inputs(land_size, terrain_type, preferences, plot_input, seed)
         quality = validate_architectural_quality(design, req=req, plot=plot)

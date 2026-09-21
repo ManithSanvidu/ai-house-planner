@@ -49,3 +49,5 @@ public record CompatibilityRequest(decimal LandSizePerches, decimal? PlotWidthFt
     decimal? PlotLengthFt, string Terrain, int? PreferredBedrooms, int? PreferredFloors);
 public record CompatibilityResponse(bool Compatible, IReadOnlyList<string> Issues,
     IReadOnlyList<string> Warnings);
+public record CurrentProjectCompatibilityResponse(bool Compatible, IReadOnlyList<string> Issues,
+    IReadOnlyList<string> Warnings, decimal LandSizePerches, decimal MinimumLandSizePerches);

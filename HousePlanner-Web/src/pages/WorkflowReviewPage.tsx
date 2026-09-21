@@ -3,6 +3,17 @@ import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { workflowService, type WorkflowStatusResponseDto } from '../services/workflowService';
 import { FloorPlanViewer, type FloorPlanData } from '../components/floorplan/FloorPlanViewer';
 import { Menu } from 'lucide-react';
+import { countLabel, formatArea, formatFloorName, formatFoundation, formatRoomName, formatTerrain, formatTopology, formatWorkflowStatus } from '../utils/presentation';
+
+const roomGroup = (roomType: string) => {
+  const type = roomType.toLowerCase();
+  if (type.includes('bedroom')) return 'Bedrooms';
+  if (type.includes('bathroom') || type.includes('ensuite')) return 'Bathrooms';
+  if (['kitchen', 'utility', 'pantry', 'laundry'].some(value => type.includes(value))) return 'Kitchen & Utility';
+  if (['hall', 'stair', 'foyer', 'landing', 'corridor'].some(value => type.includes(value))) return 'Circulation';
+  if (['living', 'dining', 'lounge', 'family'].some(value => type.includes(value))) return 'Living Spaces';
+  return 'Other Spaces';
+};
 
 export const WorkflowReviewPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -15,6 +26,7 @@ export const WorkflowReviewPage: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<'floorplan' | 'construction'>('floorplan');
   const [pollCycle, setPollCycle] = useState(0);
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -149,7 +161,8 @@ export const WorkflowReviewPage: React.FC = () => {
   const floorNumbers = Array.from({ length: workflow.design.floorCount }, (_, i) => i + 1);
 
   const handleAction = async (decision: 'approve' | 'reject' | 'request_revision', fixedNotes?: string) => {
-    if (!id) return;
+    if (!id || actionLoading) return;
+    setActionLoading(true);
     try {
       const notes = fixedNotes ?? (decision === 'request_revision'
         ? window.prompt('Describe the design change you want:')
@@ -163,91 +176,104 @@ export const WorkflowReviewPage: React.FC = () => {
       alert(`Workflow ${decision} submitted successfully!`);
     } catch (e: any) {
       alert(`Error: ${e.message}`);
+    } finally {
+      setActionLoading(false);
     }
   };
 
+  const selectThisDesign = async () => {if(!id||!workflow?.design||actionLoading)return;setActionLoading(true);try{await workflowService.selectDesign(id,workflow.design.designId);setPollCycle(x=>x+1)}catch(e:any){setError(e.response?.data?.message||'Could not select this design.')}finally{setActionLoading(false)}};
+  const sendToArchitect = async () => {if(!id||actionLoading)return;setActionLoading(true);try{await workflowService.submitArchitectReview(id);setPollCycle(x=>x+1)}catch(e:any){setError(e.response?.data?.message||'Could not send this design to the architect.')}finally{setActionLoading(false)}};
+
   const bedroomCount = workflow.design.rooms.filter(r => r.roomType.includes('bedroom')).length;
   const bathroomCount = workflow.design.rooms.filter(r => r.roomType.includes('bathroom')).length;
+  const groups = workflow.design.rooms.reduce<Record<string, typeof workflow.design.rooms>>((result, room) => {
+    const group = roomGroup(room.roomType);
+    (result[group] ||= []).push(room);
+    return result;
+  }, {});
+  const groupOrder = ['Bedrooms', 'Living Spaces', 'Kitchen & Utility', 'Bathrooms', 'Circulation', 'Other Spaces'];
+  const topology = formatTopology(workflow.design.templateFamily);
+  const site = formatTerrain(workflow.terrainType);
+  const approved = workflow.status === 'approved' || workflow.architectReviewStatus === 'Approved';
+  const pendingReview = workflow.status === 'awaiting_architect_review' || workflow.architectReviewStatus === 'Pending' || workflow.architectReviewStatus === 'Under Review';
+  const rejected = workflow.architectReviewStatus === 'Rejected' || workflow.status === 'revision_requested';
+  const selected = workflow.preferredHouseDesignId === workflow.design.designId;
 
   return (
-    <div className="flex h-screen bg-slate-50">
+    <div className="min-h-[calc(100vh-65px)] bg-slate-50 text-zinc-900">
+      <header className="bg-white border-b border-zinc-200 px-5 py-6 md:px-8">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <p className="text-sm font-semibold text-indigo-600">YOUR HOME DESIGN</p>
+            <h1 className="text-2xl md:text-3xl font-bold mt-1">Your Home Design</h1>
+            <p className="text-base md:text-lg text-zinc-700 mt-2">
+              {countLabel(bedroomCount, 'Bedroom')} <span aria-hidden="true">•</span> {countLabel(bathroomCount, 'Bathroom')} <span aria-hidden="true">•</span> {countLabel(workflow.design.floorCount, 'Floor')} <span aria-hidden="true">•</span> {formatArea(workflow.design.totalBuiltUpAreaSqft)}
+            </p>
+            <p className="text-sm text-zinc-500 mt-2">Designed for {site === 'Not specified' ? 'your site' : `${site.toLowerCase()} land`} with a practical {topology.toLowerCase()} layout.</p>
+          </div>
+          <div className="md:text-right">
+            <span className="text-xs font-semibold text-zinc-500">Status</span>
+            <p className="mt-1 inline-flex md:flex px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-800 font-semibold">{formatWorkflowStatus(workflow.status)}</p>
+          </div>
+        </div>
+      </header>
+      <div className="flex flex-col xl:flex-row min-h-[680px]">
       {/* ─── Sidebar: Details ─── */}
       {isSidebarOpen && (
-        <div className="w-80 bg-white/90 backdrop-blur-xl border-r border-zinc-200/60 flex flex-col shadow-[4px_0_24px_-12px_rgba(0,0,0,0.1)] overflow-y-auto shrink-0 transition-all duration-300 z-10">
+        <aside className="w-full xl:w-80 bg-white border-b xl:border-b-0 xl:border-r border-zinc-200 flex flex-col shrink-0 z-10">
           <div className="p-6 border-b border-zinc-100 flex justify-between items-center bg-gradient-to-b from-zinc-50/50 to-transparent">
             <div>
-              <h1 className="text-xl font-bold text-zinc-900 tracking-tight">Design Review</h1>
-              <p className="text-[11px] font-medium text-zinc-400 mt-1 uppercase tracking-wider">ID: {id?.slice(0, 8)}...</p>
+              <h2 className="text-xl font-bold text-zinc-900 tracking-tight">Home Summary</h2>
+              <p className="text-sm text-zinc-500 mt-1">The key details of this design.</p>
             </div>
           </div>
           
         <div className="p-6 space-y-5 flex-1">
-          {/* Status */}
-          <div className="bg-zinc-50 p-4 rounded-xl border border-zinc-100 shadow-sm">
-            <h3 className="text-[10px] uppercase tracking-widest text-zinc-400 font-bold mb-3">Status</h3>
-            <span className={`px-3 py-1.5 rounded-lg text-xs font-bold tracking-wide shadow-sm ${workflow.status === 'awaiting_approval' ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-indigo-100 text-indigo-800 border border-indigo-200'}`}>
-              {workflow.status.replace(/_/g, ' ').toUpperCase()}
-            </span>
-          </div>
-
           {/* Specifications */}
           <div className="bg-zinc-50 p-4 rounded-xl border border-zinc-100 shadow-sm">
-            <h3 className="text-[10px] uppercase tracking-widest text-zinc-400 font-bold mb-3">Specifications</h3>
-            <ul className="text-sm text-zinc-700 space-y-2">
-              <li className="flex justify-between items-center"><span className="font-medium text-zinc-500">Terrain</span> <span className="font-bold capitalize">{workflow.terrainType || 'N/A'}</span></li>
-              <li className="flex justify-between items-center"><span className="font-medium text-zinc-500">Foundation</span> <span className="font-bold capitalize">{workflow.design.foundationType}</span></li>
-              <li className="flex justify-between items-center"><span className="font-medium text-zinc-500">Floors</span> <span className="font-bold">{workflow.design.floorCount}</span></li>
-              <li className="flex justify-between items-center"><span className="font-medium text-zinc-500">Topology</span> <span className="font-bold">{workflow.design.templateFamily?.replace(/_/g, ' ') || 'N/A'}</span></li>
-              <li className="flex justify-between items-center"><span className="font-medium text-zinc-500">Quality</span> <span className="font-bold">{workflow.design.designScore ?? 'N/A'}</span></li>
-              <li className="flex justify-between items-center"><span className="font-medium text-zinc-500">Area</span> <span className="font-bold">{workflow.design.totalBuiltUpAreaSqft} sqft</span></li>
-            </ul>
+            <dl className="text-sm text-zinc-700 space-y-3">
+              <div className="flex justify-between gap-3"><dt className="font-medium text-zinc-500">Bedrooms</dt><dd className="font-bold">{bedroomCount}</dd></div>
+              <div className="flex justify-between gap-3"><dt className="font-medium text-zinc-500">Bathrooms</dt><dd className="font-bold">{bathroomCount}</dd></div>
+              <div className="flex justify-between gap-3"><dt className="font-medium text-zinc-500">Floors</dt><dd className="font-bold">{workflow.design.floorCount}</dd></div>
+              <div className="flex justify-between gap-3"><dt className="font-medium text-zinc-500">Area</dt><dd className="font-bold">{formatArea(workflow.design.totalBuiltUpAreaSqft)}</dd></div>
+              <div className="border-t border-zinc-200 pt-3 flex justify-between gap-3"><dt className="font-medium text-zinc-500">Site</dt><dd className="font-bold text-right">{site}</dd></div>
+              <div className="flex justify-between gap-3"><dt className="font-medium text-zinc-500">Foundation</dt><dd className="font-bold text-right">{formatFoundation(workflow.design.foundationType)}</dd></div>
+              <div className="flex justify-between gap-3"><dt className="font-medium text-zinc-500">Layout</dt><dd className="font-bold text-right">{topology}</dd></div>
+            </dl>
+            {workflow.design.designScore != null && <details className="mt-4 border-t border-zinc-200 pt-3 text-sm"><summary className="cursor-pointer font-semibold text-zinc-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400">Design details</summary><p className="mt-2 text-zinc-500">Architectural quality score: {workflow.design.designScore}</p></details>}
+          </div>
+
+          <div className="flex flex-col gap-3">
+            {approved ? <div className="p-3 rounded-xl bg-emerald-100 text-emerald-800 font-bold text-center">✓ Architect Approved</div>
+            : pendingReview ? <div className="p-3 rounded-xl bg-amber-100 text-amber-900 font-bold text-center">Awaiting Architect Review</div>
+            : rejected ? <><div className="p-3 rounded-xl bg-red-50 text-red-800"><b>Design Needs Changes</b>{workflow.architectFeedback&&<p className="mt-1 font-normal">Architect feedback: “{workflow.architectFeedback}”</p>}</div><button disabled={actionLoading} onClick={()=>handleAction('request_revision','Generate Another')} className="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold disabled:opacity-50">Generate New Design</button></>
+            : selected ? <><div className="p-3 rounded-xl bg-emerald-50 text-emerald-800 font-bold text-center">✓ Selected Design</div><button disabled={actionLoading} onClick={sendToArchitect} className="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold disabled:opacity-50">{actionLoading?'Sending…':'Send to Architect for Review'}</button><button disabled={actionLoading} onClick={()=>handleAction('request_revision','Generate Another')} className="w-full py-3 border border-indigo-200 text-indigo-700 rounded-xl font-bold">Generate Another</button></>
+            : <><button disabled={actionLoading} onClick={selectThisDesign} className="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold disabled:opacity-50">{actionLoading?'Selecting…':'Select This Design'}</button><button disabled={actionLoading} onClick={()=>handleAction('request_revision','Generate Another')} className="w-full py-3 border border-indigo-200 text-indigo-700 rounded-xl font-bold">Generate Another</button></>}
           </div>
           
           {/* Room Summary */}
           <div className="bg-zinc-50 p-4 rounded-xl border border-zinc-100 shadow-sm">
-            <h3 className="text-[10px] uppercase tracking-widest text-zinc-400 font-bold mb-3 flex items-center justify-between">
-              Rooms <span className="bg-zinc-200 text-zinc-600 px-1.5 py-0.5 rounded">{workflow.design.rooms.length}</span>
+            <h3 className="text-sm text-zinc-700 font-bold mb-3 flex items-center justify-between">
+              Rooms <span className="bg-zinc-200 text-zinc-600 px-2 py-0.5 rounded-full text-xs">{workflow.design.rooms.length}</span>
             </h3>
-            <div className="flex gap-2 mb-4">
-              <span className="text-[11px] bg-indigo-100/80 border border-indigo-200 text-indigo-700 px-2 py-1 rounded-md font-bold shadow-sm">{bedroomCount} Bed</span>
-              <span className="text-[11px] bg-emerald-100/80 border border-emerald-200 text-emerald-700 px-2 py-1 rounded-md font-bold shadow-sm">{bathroomCount} Bath</span>
+            <div className="space-y-4 max-h-80 overflow-y-auto pr-1">
+              {groupOrder.filter(group => groups[group]?.length).map(group => <section key={group}><h4 className="text-xs uppercase tracking-wide text-zinc-400 font-bold mb-1.5">{group}</h4><ul className="space-y-1.5">{groups[group].map(r => <li key={r.roomId} className="flex justify-between gap-3 text-xs p-2 bg-white rounded-lg border border-zinc-100"><span className="font-semibold text-zinc-700">{r.name || formatRoomName(r.roomType)}</span><span className="text-zinc-500 whitespace-nowrap">{r.width} × {r.length} ft{floorPlanData.floor_count > 1 ? ` · ${formatFloorName(r.floorNumber)}` : ''}</span></li>)}</ul></section>)}
             </div>
-            <ul className="text-sm text-zinc-600 max-h-48 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
-              {workflow.design.rooms.map(r => (
-                <li key={r.roomId} className="flex justify-between items-center text-xs p-2 bg-white rounded-lg border border-zinc-100 shadow-sm">
-                  <span className="font-semibold text-zinc-700">{r.name || r.roomType.replace(/_/g, ' ')}</span>
-                  <span className="text-[10px] font-bold text-zinc-400">{r.width}'×{r.length}' (F{r.floorNumber})</span>
-                </li>
-              ))}
-            </ul>
           </div>
         </div>
-
-        {/* Action Buttons */}
-        <div className="p-6 border-t border-zinc-200 flex flex-col gap-3 bg-white">
-          <Link to="/dashboard/designs" className="w-full py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-bold text-center text-sm shadow-sm">
-            Select from My Designs
-          </Link>
-          <button onClick={() => handleAction('request_revision')} className="w-full py-3 bg-white text-indigo-600 border-2 border-indigo-100 rounded-xl font-bold hover:bg-indigo-50 hover:border-indigo-200 transition-all text-sm">
-            ↻ Request Revision
-          </button>
-          <button onClick={() => handleAction('request_revision', 'Generate Another')} className="w-full py-3 bg-indigo-50 text-indigo-700 border-2 border-indigo-200 rounded-xl font-bold hover:bg-indigo-100 transition-all text-sm">
-            Generate Another
-          </button>
-        </div>
-      </div>
+      </aside>
       )}
 
       {/* ─── Main Area ─── */}
-      <div className="flex-1 flex flex-col overflow-hidden relative bg-white">
+      <div className="flex-1 min-w-0 flex flex-col relative bg-white min-h-[560px]">
         {/* Top Action Bar */}
-        <div className="bg-white border-b border-slate-200 px-4 py-3 flex items-center gap-4">
-          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 text-slate-500 hover:bg-slate-100 rounded-md transition-colors" title="Toggle Sidebar">
+        <div className="bg-white border-b border-slate-200 px-3 md:px-4 py-3 flex flex-wrap items-center gap-3">
+          <button aria-label={isSidebarOpen ? 'Hide design summary' : 'Show design summary'} onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 text-slate-500 hover:bg-slate-100 rounded-md transition-colors focus-visible:ring-2 focus-visible:ring-indigo-400" title="Toggle design summary">
             <Menu size={20} />
           </button>
           
           {/* Main View Tabs */}
-          <div className="flex gap-1 bg-slate-100 p-1 rounded-lg mr-4">
+          <div className="flex gap-1 bg-slate-100 p-1 rounded-lg">
             <button
               onClick={() => setActiveTab('floorplan')}
               className={`px-4 py-1.5 rounded-md text-sm font-bold transition-all ${
@@ -268,18 +294,18 @@ export const WorkflowReviewPage: React.FC = () => {
 
           {/* Floor Tabs (Only show in floorplan view) */}
           {activeTab === 'floorplan' && floorNumbers.length > 1 && (
-            <div className="flex gap-2 ml-auto">
+            <div className="flex flex-wrap gap-2 md:ml-auto w-full md:w-auto">
               {floorNumbers.map(floor => (
                 <button
                   key={floor}
                   onClick={() => setSelectedFloor(floor)}
-                  className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors focus-visible:ring-4 focus-visible:ring-indigo-300 ${
                     selectedFloor === floor
                       ? 'bg-indigo-600 text-white shadow-sm'
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
-                  Floor {floor}
+                  {formatFloorName(floor)}
                 </button>
               ))}
             </div>
@@ -287,7 +313,7 @@ export const WorkflowReviewPage: React.FC = () => {
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 overflow-auto relative">
+        <div className="flex-1 overflow-auto relative min-h-[480px]">
           {activeTab === 'floorplan' ? (
             <>
               {workflow.design.plotConstraints?.dimensions_estimated &&
@@ -402,6 +428,7 @@ export const WorkflowReviewPage: React.FC = () => {
             </div>
           )}
         </div>
+      </div>
       </div>
     </div>
   );

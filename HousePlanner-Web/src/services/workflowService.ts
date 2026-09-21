@@ -89,6 +89,9 @@ export interface WorkflowStatusResponseDto {
   cost: CostSummaryDto | null;
   approvalStatus: string;
   failureReason?: string | null;
+  preferredHouseDesignId?: string | null;
+  architectReviewStatus?: string | null;
+  architectFeedback?: string | null;
   constructionPlan?: ConstructionPlanSummaryDto | null;
 }
 
@@ -98,6 +101,7 @@ export interface DesignHistoryDto {
   isCurrent: boolean;
   isPreferred: boolean;
   isArchived: boolean;
+  isArchitectApproved?: boolean;
   topology: string | null;
   bedrooms: number;
   bathrooms: number;
@@ -119,11 +123,14 @@ export interface WorkflowDesignHistoryDto {
   preferredHouseDesignId: string | null;
   createdAt: string;
   designs: DesignHistoryDto[];
+  projectId?: string;
+  architectReviewStatus?: string | null;
+  architectFeedback?: string | null;
 }
 
 export interface StartDesignRequest {
   basePreDesignedPlanId?: string;
-  planSelectionMode?: 'use' | 'reference' | 'override';
+  planSelectionMode?: 'use';
   budgetLkr?: number;
   landSizePerches: number;
   manualTerrainType?: string;

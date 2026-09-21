@@ -1,10 +1,10 @@
-name: CI
+name: CI - Dev Branch
 
 on:
   push:
-    branches: [ "main", "dev", "smart-home-designer" ]
+    branches: [ "Dev" ]
   pull_request:
-    branches: [ "main", "dev" ]
+    branches: [ "Dev" ]
 
 jobs:
   web-frontend:
@@ -25,9 +25,6 @@ jobs:
         run: npm ci
       - name: Build
         run: npm run build
-      # Add this step if you have tests configured
-      # - name: Test
-      #   run: npm test
 
   api-backend:
     name: Build and Test ASP.NET API
@@ -71,24 +68,23 @@ jobs:
           python -m pytest tests/
 
   mobile-app:
-    name: Build Mobile App (Flutter)
+    name: Build and Test Mobile App (Flutter)
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ./mobile
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Flutter
+      - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
           cache: true
       - name: Install dependencies
         run: flutter pub get
+      - name: Create dummy .env file
+        run: touch .env
       - name: Analyze
         run: flutter analyze
-      - name: Test
-        run: flutter test || echo "No tests found or tests failed"
-      # Uncomment to verify android build
-      # - name: Build Android
-      #   run: flutter build apk
+      - name: Run Tests
+        run: flutter test

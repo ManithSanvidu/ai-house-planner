@@ -46,9 +46,7 @@ class PlanDetailView extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator(color: AppTokens.ink)),
         error: (err, stack) => Center(child: Text('Error: $err')),
         data: (plan) {
-          // Attempt to convert whatever layout structure it has into RoomLayouts.
-          // Note: Mocking an empty list if layout isn't implemented in the backend yet.
-          final List<RoomLayout> rooms = [];
+          final List<RoomLayout> rooms = plan.layout ?? [];
 
           return Column(
             children: [
@@ -160,7 +158,7 @@ class PlanDetailView extends ConsumerWidget {
                     Expanded(
                       flex: 2,
                       child: ElevatedButton(
-                        onPressed: () {}, // Go to intake
+                        onPressed: () => context.push('/intake?basePlanId=${plan.id}&mode=use'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppTokens.ink,
                           foregroundColor: Colors.white,
@@ -175,7 +173,7 @@ class PlanDetailView extends ConsumerWidget {
                     Expanded(
                       flex: 1,
                       child: OutlinedButton(
-                        onPressed: () {},
+                        onPressed: () => context.push('/intake?basePlanId=${plan.id}&mode=reference'),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: AppTokens.ink,
                           backgroundColor: Colors.white,

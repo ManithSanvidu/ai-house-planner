@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { validationRequestService } from '../../services/validationRequestService';
 import type { ValidationRequestDetails as ValidationRequestDetailsType } from '../../types/validation.types';
 import { ArrowLeft, CheckCircle, XCircle, Clock, Ruler, Home, Bed, User, Map, FileText } from 'lucide-react';
+import { FloorPlanViewer, type FloorPlanData } from '../../components/floorplan/FloorPlanViewer';
 
 const ValidationRequestDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -33,6 +34,7 @@ const ValidationRequestDetails: React.FC = () => {
 
   const handleApprove = async () => {
     if (!id) return;
+    if (!window.confirm('Approve this submitted design? This decision is final.')) return;
     setIsSubmitting(true);
     setActionError(null);
     try {
@@ -92,6 +94,7 @@ const ValidationRequestDetails: React.FC = () => {
   }
 
   const isPending = request.status === 'Pending' || request.status === 'Under Review';
+  let floorPlan:FloorPlanData|null=null;try{floorPlan=request.design?.layoutJson?JSON.parse(request.design.layoutJson):null}catch{floorPlan=null}
 
   return (
     <div className="p-6 md:p-8 max-w-5xl mx-auto space-y-6">
@@ -190,11 +193,9 @@ const ValidationRequestDetails: React.FC = () => {
               Proposed Design Layout
             </h2>
             
-            {request.design ? (
-              <div className="bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl p-4 overflow-x-auto">
-                <pre className="text-xs text-gray-800 dark:text-gray-300 font-mono whitespace-pre-wrap">
-                  {request.design.layoutJson ? JSON.stringify(JSON.parse(request.design.layoutJson), null, 2) : 'No layout JSON available.'}
-                </pre>
+            {request.design && floorPlan ? (
+              <div className="h-[520px] bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
+                <FloorPlanViewer data={floorPlan}/>
               </div>
             ) : (
               <div className="p-8 text-center text-gray-500 dark:text-gray-400 border border-dashed border-gray-200 dark:border-gray-800 rounded-xl">

@@ -8,6 +8,7 @@ class LandSubmission {
   final int? preferredBedrooms;
   final int? preferredFloors;
   final String? stylePreference;
+  final Set<String>? selectedAmenities;
 
   //The value given to the constructor is put into the property of this object.
   LandSubmission({
@@ -18,6 +19,7 @@ class LandSubmission {
     this.preferredBedrooms,
     this.preferredFloors,
     this.stylePreference,
+    this.selectedAmenities,
   });
 
   //A new LandSubmission object based on current object is created, but only the values that are wanted are changed.
@@ -29,6 +31,7 @@ class LandSubmission {
     int? preferredBedrooms,
     int? preferredFloors,
     String? stylePreference,
+    Set<String>? selectedAmenities,
     bool clearPhoto=false,
     bool clearManualTerrain=false
   }){
@@ -40,16 +43,15 @@ class LandSubmission {
       preferredBedrooms: preferredBedrooms ?? this.preferredBedrooms,
       preferredFloors: preferredFloors ?? this.preferredFloors,
       stylePreference: stylePreference ?? this.stylePreference,
+      selectedAmenities: selectedAmenities ?? this.selectedAmenities,
     );
   }
 
   //To check form is valid submission 
   bool get isValid{
-    return(budgetLkr ?? 0)>0 &&
-      (landSizePerches ?? 0)>0 &&
-      (preferredBedrooms ?? 0)>0 &&
-      (preferredFloors ?? 0)>0 &&
-      (landPhoto!=null || (manualTerrainType !=null && manualTerrainType!.isNotEmpty));
+    return (landSizePerches ?? 0) > 0 &&
+           (preferredBedrooms ?? 0) > 0 &&
+           (preferredFloors ?? 0) > 0;
   }
 
 }

@@ -69,6 +69,32 @@ public class PreDesignedPlansController : ControllerBase
         return Ok(new CompatibilityResponse(issues.Count == 0, issues, warnings));
     }
 
+    [HttpGet("{id:guid}/check-current-project")]
+    public async Task<IActionResult> CheckCurrentProject(Guid id)
+    {
+        var user = await _users.GetAsync(HttpContext);
+        if (user?.Id is null) return Unauthorized();
+        if (!string.Equals(user.Role, "Customer", StringComparison.OrdinalIgnoreCase)) return Forbid();
+        var plan = await _db.PreDesignedHousePlans.AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == id && x.IsActive);
+        if (plan is null) return NotFound();
+        var project = await _db.LandSubmissions.AsNoTracking()
+            .Where(x => x.ClientId == user.Id.Value).OrderByDescending(x => x.UpdatedAt)
+            .FirstOrDefaultAsync();
+        if (project is null)
+            return NotFound(new { code = "project_details_required", message = "Add your project details to check whether this plan fits your land and requirements." });
+        var issues = new List<string>(); var warnings = new List<string>();
+        if (project.LandSizePerches < plan.MinimumLandSizePerches)
+            issues.Add($"Requires at least {plan.MinimumLandSizePerches:g} perches; your project has {project.LandSizePerches:g}.");
+        if (!string.Equals(plan.SuitableTerrain, "all", StringComparison.OrdinalIgnoreCase)
+            && !string.Equals(plan.SuitableTerrain, project.ManualTerrainType, StringComparison.OrdinalIgnoreCase))
+            issues.Add($"Designed for {plan.SuitableTerrain} terrain.");
+        if (project.PreferredBedrooms != plan.Bedrooms) warnings.Add($"Plan contains {plan.Bedrooms} bedrooms; your project requests {project.PreferredBedrooms}.");
+        if (project.PreferredFloors != plan.FloorCount) warnings.Add($"Plan contains {plan.FloorCount} floor(s); your project requests {project.PreferredFloors}.");
+        return Ok(new CurrentProjectCompatibilityResponse(issues.Count == 0 && warnings.Count == 0, issues, warnings,
+            project.LandSizePerches, plan.MinimumLandSizePerches));
+    }
+
     internal static PreDesignedPlanSummaryDto MapSummary(PreDesignedHousePlan x) => new(x.Id, x.Name, x.Slug, x.DesignCode, x.Style, x.Bedrooms, x.Bathrooms, x.FloorCount, x.TotalBuiltUpAreaSqft, x.MinimumLandSizePerches, x.SuitableTerrain, x.ParkingSpaces, x.HasBalcony, x.HasVeranda, x.HasOffice, x.IsAccessibleFriendly, x.Category, ParseTags(x.TagsJson), x.ThumbnailUrl, x.IsActive, x.UpdatedAt);
     internal static PreDesignedPlanDetailDto MapDetail(PreDesignedHousePlan x)
     {

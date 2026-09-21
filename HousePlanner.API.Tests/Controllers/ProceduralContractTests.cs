@@ -5,6 +5,7 @@ using HousePlanner.API.DTOs;
 using HousePlanner.API.Entities;
 using HousePlanner.API.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
@@ -20,8 +21,23 @@ public class ProceduralContractTests
     {
         var clients = new Mock<IHttpClientFactory>();
         clients.Setup(f => f.CreateClient(It.IsAny<string>())).Returns(new HttpClient());
+        var clientId = Guid.NewGuid();
+        var currentUser = new Mock<ICurrentUserContextService>();
+        currentUser.Setup(x => x.GetAsync(It.IsAny<HttpContext>())).Returns(async () =>
+        {
+            var submissionIds = await db.LandSubmissions.Select(x => x.Id).ToListAsync();
+            foreach (var id in await db.WorkflowStates.Select(x => x.LandSubmissionId).ToListAsync())
+                if (!submissionIds.Contains(id))
+                    db.LandSubmissions.Add(new LandSubmission
+                    {
+                        Id = id, ClientId = clientId, LandSizePerches = 10,
+                        PreferredBedrooms = 3, PreferredFloors = 1
+                    });
+            await db.SaveChangesAsync();
+            return new CurrentUserContext(clientId, "customer@example.com", "Customer");
+        });
         return new WorkflowController(db, NullLogger<WorkflowController>.Instance, clients.Object,
-            Mock.Of<IWorkflowService>(), Mock.Of<ICurrentUserContextService>());
+            Mock.Of<IWorkflowService>(), currentUser.Object);
     }
 
     [Fact]
