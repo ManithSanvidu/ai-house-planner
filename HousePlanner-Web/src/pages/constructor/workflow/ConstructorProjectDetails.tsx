@@ -6,15 +6,20 @@ import DailyLogbookForm from './DailyLogbookForm';
 import { ArrowLeft, Plus, Calendar, Edit2, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
+import ConstructorProjectCalendar from './ConstructorProjectCalendar';
+import type { CalendarEventDto } from '../../../services/constructorWorkflowService';
+
 export const ConstructorProjectDetails: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
   
   const [project, setProject] = useState<ConstructorWorkflowProject | null>(null);
   const [logs, setLogs] = useState<DailyConstructionLogDto[]>([]);
+  const [calendarEvents, setCalendarEvents] = useState<CalendarEventDto[]>([]);
   const [loading, setLoading] = useState(true);
   
   const [showForm, setShowForm] = useState(false);
   const [editingLog, setEditingLog] = useState<DailyConstructionLogDto | undefined>(undefined);
+  const [activeTab, setActiveTab] = useState<'list' | 'calendar'>('list');
 
   const isCompleted = project?.status.toLowerCase() === 'completed';
 
@@ -25,6 +30,8 @@ export const ConstructorProjectDetails: React.FC = () => {
       setProject(p);
       const l = await dailyConstructionLogService.getLogs(projectId);
       setLogs(l);
+      const c = await dailyConstructionLogService.getProjectCalendar(projectId);
+      setCalendarEvents(c);
     } catch (error) {
       console.error('Failed to load project details', error);
       toast.error('Failed to load project details');
@@ -52,6 +59,24 @@ export const ConstructorProjectDetails: React.FC = () => {
         }
       }
     }
+  };
+
+  const handleCalendarEventClick = (logId: string) => {
+    const log = logs.find(l => l.id === logId);
+    if (log) {
+      setEditingLog(log);
+      setShowForm(true);
+      setActiveTab('list');
+    }
+  };
+
+  const handleCalendarDateClick = (_dateStr: string) => {
+    if (isCompleted) return;
+    setEditingLog(undefined);
+    setShowForm(true);
+    setActiveTab('list');
+    // Pre-select the date when we mount the form... we can pass initialDate down if we want, but for now we'll rely on the default which is today.
+    // The user can manually pick the date for now.
   };
 
   if (loading) {
@@ -109,21 +134,49 @@ export const ConstructorProjectDetails: React.FC = () => {
         </ul>
       </div>
 
-      {/* Daily Logbook */}
+      {/* Daily Logbook & Calendar Tabs */}
       <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-900/5 dark:bg-gray-800 dark:ring-white/10">
-        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-6 py-5 border-b border-gray-200 dark:border-gray-700 gap-4">
           <div>
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white">Daily Logbook</h2>
-            {isCompleted && <p className="text-sm text-amber-600 mt-1">Project completed. Daily logbook is read-only.</p>}
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white">Daily Workflow</h2>
+            {isCompleted && <p className="text-sm text-amber-600 mt-1">Project completed. Logbook is read-only.</p>}
           </div>
-          {!isCompleted && !showForm && (
-            <button
-              onClick={() => { setEditingLog(undefined); setShowForm(true); }}
-              className="inline-flex items-center rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500"
-            >
-              <Plus className="mr-2 h-4 w-4" /> Add Daily Log
-            </button>
-          )}
+          
+          <div className="flex items-center gap-4 w-full sm:w-auto">
+            {!showForm && (
+              <div className="flex rounded-lg shadow-sm">
+                <button
+                  onClick={() => setActiveTab('list')}
+                  className={`px-4 py-2 text-sm font-medium border border-gray-200 rounded-l-lg dark:border-gray-700 ${
+                    activeTab === 'list' 
+                      ? 'bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-white' 
+                      : 'bg-white text-gray-500 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  List View
+                </button>
+                <button
+                  onClick={() => setActiveTab('calendar')}
+                  className={`px-4 py-2 text-sm font-medium border border-l-0 border-gray-200 rounded-r-lg dark:border-gray-700 ${
+                    activeTab === 'calendar' 
+                      ? 'bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-white' 
+                      : 'bg-white text-gray-500 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  Calendar View
+                </button>
+              </div>
+            )}
+            
+            {!isCompleted && !showForm && (
+              <button
+                onClick={() => { setEditingLog(undefined); setShowForm(true); setActiveTab('list'); }}
+                className="inline-flex items-center rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500"
+              >
+                <Plus className="mr-2 h-4 w-4" /> Add Log
+              </button>
+            )}
+          </div>
         </div>
         
         <div className="p-6">
@@ -142,6 +195,13 @@ export const ConstructorProjectDetails: React.FC = () => {
                 setShowForm(false);
                 setEditingLog(undefined);
               }}
+            />
+          ) : activeTab === 'calendar' ? (
+            <ConstructorProjectCalendar
+              events={calendarEvents}
+              onEventClick={handleCalendarEventClick}
+              onDateClick={handleCalendarDateClick}
+              isReadOnly={isCompleted}
             />
           ) : (
             <div className="space-y-4">

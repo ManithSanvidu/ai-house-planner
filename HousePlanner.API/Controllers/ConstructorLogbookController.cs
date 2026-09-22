@@ -132,4 +132,21 @@ public class ConstructorLogbookController : ControllerBase
             return NotFound();
         }
     }
+
+    [HttpGet("~/api/constructor/workflow/projects/{projectId}/calendar")]
+    public async Task<IActionResult> GetCalendar(Guid projectId, CancellationToken cancellationToken)
+    {
+        var user = await _currentUserContext.GetAsync(HttpContext);
+        if (user?.Id == null) return Unauthorized();
+
+        try
+        {
+            var events = await _logService.GetProjectCalendarAsync(projectId, user.Id.Value, cancellationToken);
+            return Ok(events);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(403, ex.Message);
+        }
+    }
 }

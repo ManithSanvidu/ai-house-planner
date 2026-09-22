@@ -165,4 +165,55 @@ public class DailyConstructionLogService : IDailyConstructionLogService
         _db.DailyConstructionLogs.Remove(log);
         await _db.SaveChangesAsync(cancellationToken);
     }
+
+    public async Task<IEnumerable<CalendarEventDto>> GetProjectCalendarAsync(Guid projectId, Guid constructorId, CancellationToken cancellationToken = default)
+    {
+        var isOwner = await _db.Projects.AnyAsync(p => p.Id == projectId && p.ContractorId == constructorId, cancellationToken);
+        if (!isOwner) throw new UnauthorizedAccessException("Project not found or not owned by the current constructor.");
+
+        var logs = await _db.DailyConstructionLogs
+            .Include(l => l.ConstructionPhase)
+            .Where(l => l.ProjectId == projectId)
+            .ToListAsync(cancellationToken);
+
+        var events = new List<CalendarEventDto>();
+
+        foreach (var log in logs)
+        {
+            var isIssue = !string.IsNullOrWhiteSpace(log.Challenges) || !string.IsNullOrWhiteSpace(log.SafetyIssues);
+            
+            // Log Event
+            events.Add(new CalendarEventDto(
+                Id: Guid.NewGuid(),
+                Date: log.LogDate.ToDateTime(new TimeOnly(0, 0)),
+                Title: isIssue ? "Issue / Delay" : "Work Log",
+                Type: isIssue ? "Issue" : "Log",
+                Status: isIssue ? "Delay" : "Active",
+                Description: log.WorkCompleted,
+                ProjectId: projectId,
+                DailyLogId: log.Id,
+                PhaseId: log.ConstructionPhaseId,
+                Color: isIssue ? "#ef4444" : "#3b82f6" // Red or Blue
+            ));
+
+            // Tomorrow's Plan (Optional extra event)
+            if (!string.IsNullOrWhiteSpace(log.TomorrowPlan))
+            {
+                events.Add(new CalendarEventDto(
+                    Id: Guid.NewGuid(),
+                    Date: log.LogDate.AddDays(1).ToDateTime(new TimeOnly(0, 0)),
+                    Title: "Planned Work",
+                    Type: "Planned",
+                    Status: "Planned",
+                    Description: log.TomorrowPlan,
+                    ProjectId: projectId,
+                    DailyLogId: log.Id,
+                    PhaseId: log.ConstructionPhaseId,
+                    Color: "#8b5cf6" // Purple
+                ));
+            }
+        }
+
+        return events.OrderBy(e => e.Date);
+    }
 }

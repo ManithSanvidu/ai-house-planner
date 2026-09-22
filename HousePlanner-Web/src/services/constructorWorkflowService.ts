@@ -193,5 +193,22 @@ export const dailyConstructionLogService = {
     },
     deleteLog: async (projectId: string, logId: string): Promise<void> => {
         await axios.delete(`${API_URL}/projects/${projectId}/logs/${logId}`, { headers: await getAuthHeaders() });
+    },
+    getProjectCalendar: async (projectId: string): Promise<CalendarEventDto[]> => {
+        const response = await axios.get(`${API_URL}/projects/${projectId}/calendar`, { headers: await getAuthHeaders() });
+        return response.data;
     }
 };
+
+export interface CalendarEventDto {
+    id: string;
+    date: string;
+    title: string;
+    type: string;
+    status: string;
+    description: string;
+    projectId: string;
+    dailyLogId?: string;
+    phaseId?: string;
+    color: string;
+}
