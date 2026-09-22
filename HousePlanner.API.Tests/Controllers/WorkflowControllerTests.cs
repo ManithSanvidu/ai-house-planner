@@ -299,12 +299,12 @@ public class WorkflowControllerTests
         });
         await _dbContext.SaveChangesAsync();
 
-        Assert.IsType<OkObjectResult>(await _controller.SubmitArchitectReview(workflowId));
+        Assert.IsType<OkObjectResult>(await _controller.SubmitArchitectReview(workflowId, selected.Id));
         var persisted = await _dbContext.WorkflowStates.SingleAsync(w => w.Id == workflowId);
         Assert.Equal("awaiting_architect_review", persisted.Status);
         var request=Assert.Single(await _dbContext.ValidationRequests.Where(r => r.WorkflowStateId == workflowId).ToListAsync());
         Assert.Equal(selected.Id,request.HouseDesignId);
-        Assert.IsType<ConflictObjectResult>(await _controller.SubmitArchitectReview(workflowId));
+        Assert.IsType<ConflictObjectResult>(await _controller.SubmitArchitectReview(workflowId, selected.Id));
     }
 
     private static HouseDesign Design(Guid workflowId, int version, bool current) => new()

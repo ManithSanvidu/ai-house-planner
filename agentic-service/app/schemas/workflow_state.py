@@ -19,6 +19,9 @@ class CoordinatorInput(BaseModel):
     plot_constraints:Optional[Dict[str,Any]]=None
     design_seed:Optional[int]=None
     preferred_plan_code:Optional[str]=None
+    regeneration:bool=False
+    previous_base_plan_code:Optional[str]=None
+    previous_design_fingerprint:Optional[str]=None
 
 class WorkflowState(BaseModel):
     workflow_id:UUID

@@ -30,7 +30,9 @@ const MyDesignsPage: React.FC = () => {
     await workflowService.clearDesignSelection(workflowId); await load();
   };
   const submit = async (workflowId: string) => {
-    await workflowService.submitArchitectReview(workflowId); await load();
+    const project = projects.find(p => p.workflowId === workflowId);
+    if (!project || !project.preferredHouseDesignId) return;
+    await workflowService.submitArchitectReview(workflowId, project.preferredHouseDesignId); await load();
   };
   const remove = async () => {
     if (!pendingRemoval) return;

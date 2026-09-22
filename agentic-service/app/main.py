@@ -53,6 +53,9 @@ class ResumeWorkflowRequest(BaseModel):
     previous_design: Optional[Dict[str, Any]] = None
     plot_constraints: Optional[Dict[str, Any]] = None
     design_seed: Optional[int] = None
+    regeneration: bool = False
+    previous_base_plan_code: Optional[str] = None
+    previous_design_fingerprint: Optional[str] = None
 
 def execute_workflow(initial_state:WorkflowState):
     """Background task to run the LangGraph workflow"""
@@ -104,6 +107,9 @@ def resume_workflow(
         preferences=preferences,
         plot_constraints=request.plot_constraints,
         design_seed=request.design_seed,
+        regeneration=request.regeneration,
+        previous_base_plan_code=request.previous_base_plan_code,
+        previous_design_fingerprint=request.previous_design_fingerprint,
     )
     state = WorkflowState(
         workflow_id=request.workflow_id,

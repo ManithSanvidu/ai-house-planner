@@ -168,30 +168,22 @@ export const WorkflowReviewPage: React.FC = () => {
   };
 
   const floorNumbers = Array.from({ length: workflow.design.floorCount }, (_, i) => i + 1);
-
-  const handleAction = async (decision: 'approve' | 'reject' | 'request_revision', fixedNotes?: string) => {
-    if (!id || actionLoading) return;
+  // Customer actions (approve/reject are architect-only; we don't show them here)
+  const sendToArchitect = async () => {if(!id||!workflow?.design||actionLoading)return;setActionLoading(true);try{await workflowService.submitArchitectReview(id, workflow.design.designId);setPollCycle(x=>x+1)}catch(e:any){setError(e.response?.data?.message||'Could not send this design to the architect.')}finally{setActionLoading(false)}};
+  
+  const generateAnother = async () => {
+    if(!id || !workflow?.design || actionLoading) return;
     setActionLoading(true);
     try {
-      const notes = fixedNotes ?? (decision === 'request_revision'
-        ? window.prompt('Describe the design change you want:')
-        : decision === 'reject' ? 'Architect rejected' : undefined);
-      if (decision === 'request_revision' && !notes) return;
-      await workflowService.approveWorkflow(id, decision, notes || undefined);
-      if (decision === 'request_revision') {
-        setWorkflow(current => current ? { ...current, status: 'running' } : current);
-        setPollCycle(cycle => cycle + 1);
-      }
-      alert(`Workflow ${decision} submitted successfully!`);
+      await workflowService.regenerateDesign(id, workflow.design.designId);
+      setWorkflow(current => current ? { ...current, status: 'running' } : current);
+      setPollCycle(x => x + 1);
     } catch (e: any) {
-      alert(`Error: ${e.message}`);
+      alert(`Error: ${e.response?.data?.message || e.message}`);
     } finally {
       setActionLoading(false);
     }
   };
-
-  const selectThisDesign = async () => {if(!id||!workflow?.design||actionLoading)return;setActionLoading(true);try{await workflowService.selectDesign(id,workflow.design.designId);setPollCycle(x=>x+1)}catch(e:any){setError(e.response?.data?.message||'Could not select this design.')}finally{setActionLoading(false)}};
-  const sendToArchitect = async () => {if(!id||actionLoading)return;setActionLoading(true);try{await workflowService.submitArchitectReview(id);setPollCycle(x=>x+1)}catch(e:any){setError(e.response?.data?.message||'Could not send this design to the architect.')}finally{setActionLoading(false)}};
 
   const bedroomCount = workflow.design.rooms.filter(r => r.roomType.includes('bedroom')).length;
   const bathroomCount = workflow.design.rooms.filter(r => r.roomType.includes('bathroom')).length;
@@ -206,7 +198,6 @@ export const WorkflowReviewPage: React.FC = () => {
   const approved = workflow.status === 'approved' || workflow.architectReviewStatus === 'Approved';
   const pendingReview = workflow.status === 'awaiting_architect_review' || workflow.architectReviewStatus === 'Pending' || workflow.architectReviewStatus === 'Under Review';
   const rejected = workflow.architectReviewStatus === 'Rejected' || workflow.status === 'revision_requested';
-  const selected = workflow.preferredHouseDesignId === workflow.design.designId;
 
   return (
     <div className="min-h-[calc(100vh-65px)] bg-slate-50 text-zinc-900">
@@ -255,9 +246,8 @@ export const WorkflowReviewPage: React.FC = () => {
           <div className="flex flex-col gap-3">
             {approved ? <div className="p-3 rounded-xl bg-emerald-100 text-emerald-800 font-bold text-center">✓ Architect Approved</div>
             : pendingReview ? <div className="p-3 rounded-xl bg-amber-100 text-amber-900 font-bold text-center">Awaiting Architect Review</div>
-            : rejected ? <><div className="p-3 rounded-xl bg-red-50 text-red-800"><b>Design Needs Changes</b>{workflow.architectFeedback&&<p className="mt-1 font-normal">Architect feedback: “{workflow.architectFeedback}”</p>}</div><button disabled={actionLoading} onClick={()=>handleAction('request_revision','Generate Another')} className="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold disabled:opacity-50">Generate New Design</button></>
-            : selected ? <><div className="p-3 rounded-xl bg-emerald-50 text-emerald-800 font-bold text-center">✓ Selected Design</div><button disabled={actionLoading} onClick={sendToArchitect} className="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold disabled:opacity-50">{actionLoading?'Sending…':'Send to Architect for Review'}</button><button disabled={actionLoading} onClick={()=>handleAction('request_revision','Generate Another')} className="w-full py-3 border border-indigo-200 text-indigo-700 rounded-xl font-bold">Generate Another</button></>
-            : <><button disabled={actionLoading} onClick={selectThisDesign} className="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold disabled:opacity-50">{actionLoading?'Selecting…':'Select This Design'}</button><button disabled={actionLoading} onClick={()=>handleAction('request_revision','Generate Another')} className="w-full py-3 border border-indigo-200 text-indigo-700 rounded-xl font-bold">Generate Another</button></>}
+            : rejected ? <><div className="p-3 rounded-xl bg-red-50 text-red-800"><b>Design Needs Changes</b>{workflow.architectFeedback&&<p className="mt-1 font-normal">Architect feedback: “{workflow.architectFeedback}”</p>}</div><button disabled={actionLoading} onClick={generateAnother} className="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold disabled:opacity-50">{actionLoading ? 'Generating...' : 'Generate New Design'}</button></>
+            : <><button disabled={actionLoading} onClick={sendToArchitect} className="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold disabled:opacity-50">{actionLoading?'Sending…':'Send Architecture Request'}</button><button disabled={actionLoading} onClick={generateAnother} className="w-full py-3 border border-indigo-200 text-indigo-700 rounded-xl font-bold disabled:opacity-50">{actionLoading ? 'Generating...' : 'Generate Another Design'}</button></>}
           </div>
           
           {/* Room Summary */}
