@@ -44,7 +44,7 @@ public class DailyConstructionLogbookTests
         _db.WorkflowStates.Add(workflow);
 
         var project = new Project { Id = Guid.NewGuid(), WorkflowStateId = workflow.Id, ContractorId = constructorId, Status = status, CreatedAt = DateTimeOffset.UtcNow, UpdatedAt = DateTimeOffset.UtcNow };
-        var phase = new ConstructionPhase { Id = Guid.NewGuid(), ProjectId = project.Id, PhaseName = "Phase 1", SequenceOrder = 1, Status = "pending", EstimatedDurationDays = 7 };
+        var phase = new ConstructionPhase { Id = Guid.NewGuid(), ProjectId = project.Id, PhaseName = "Phase 1", SequenceOrder = 1, Status = "pending", PlannedDurationDays = 7 };
         project.ConstructionPhases.Add(phase);
         
         _db.Projects.Add(project);

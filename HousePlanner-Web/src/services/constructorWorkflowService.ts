@@ -17,10 +17,13 @@ export interface ConstructionPhase {
     projectId: string;
     phaseName: string;
     sequenceOrder: number;
-    estimatedDurationDays: number;
+    aiEstimatedDurationDays: number;
+    plannedDurationDays: number;
+    plannedStartDate?: string;
+    plannedEndDate?: string;
     status: string;
-    startDate?: string;
-    endDate?: string;
+    startedAt?: string;
+    completedAt?: string;
 }
 
 export interface ConstructorWorkflowProject {
@@ -30,6 +33,8 @@ export interface ConstructorWorkflowProject {
     status: string;
     createdAt: string;
     updatedAt: string;
+    aiEstimatedTotalDurationDays: number;
+    plannedTotalDurationDays: number;
     constructionPhases: ConstructionPhase[];
 }
 
@@ -135,6 +140,11 @@ export const constructorWorkflowService = {
                 'Content-Type': 'application/json'
             }
         });
+        return response.data;
+    },
+
+    updatePhaseSchedule: async (projectId: string, phaseId: string, plannedDurationDays: number): Promise<ConstructionPhase> => {
+        const response = await axios.put(`${API_URL}/projects/${projectId}/phases/${phaseId}/schedule`, { plannedDurationDays }, { headers: await getAuthHeaders() });
         return response.data;
     }
 };

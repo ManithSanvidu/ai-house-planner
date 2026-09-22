@@ -116,7 +116,10 @@ public record ConstructionPhaseDto(
     string Status,
     DateTimeOffset? StartedAt,
     DateTimeOffset? CompletedAt,
-    int EstimatedDurationDays
+    int AiEstimatedDurationDays,
+    int PlannedDurationDays,
+    DateOnly? PlannedStartDate,
+    DateOnly? PlannedEndDate
 );
 
 public record ConstructorProjectDto(
@@ -127,5 +130,11 @@ public record ConstructorProjectDto(
     string Status,
     DateTimeOffset CreatedAt,
     DateTimeOffset UpdatedAt,
+    int AiEstimatedTotalDurationDays,
+    int PlannedTotalDurationDays,
     List<ConstructionPhaseDto> ConstructionPhases
+);
+
+public record UpdatePhaseScheduleRequest(
+    int PlannedDurationDays
 );

@@ -30,6 +30,12 @@ namespace HousePlanner.API.Entities
         [Required]
         public int SequenceOrder { get; set; }
 
-        public int EstimatedDurationDays { get; set; } = 7;
+        public int AiEstimatedDurationDays { get; set; } = 7;
+
+        public int PlannedDurationDays { get; set; } = 7;
+
+        public DateOnly? PlannedStartDate { get; set; }
+
+        public DateOnly? PlannedEndDate { get; set; }
     }
 }

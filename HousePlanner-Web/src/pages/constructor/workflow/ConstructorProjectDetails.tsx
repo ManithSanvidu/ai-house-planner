@@ -23,6 +23,10 @@ export const ConstructorProjectDetails: React.FC = () => {
 
   const isCompleted = project?.status.toLowerCase() === 'completed';
 
+  const [editingPhaseId, setEditingPhaseId] = useState<string | null>(null);
+  const [editPhaseDuration, setEditPhaseDuration] = useState<number>(0);
+  const [savingPhase, setSavingPhase] = useState(false);
+
   const loadData = async () => {
     if (!projectId) return;
     try {
@@ -118,14 +122,91 @@ export const ConstructorProjectDetails: React.FC = () => {
 
       {/* Construction Phases */}
       <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-900/5 dark:bg-gray-800 dark:ring-white/10">
-        <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white">Construction Phases</h2>
+        <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white">Construction Phases Schedule</h2>
+          {project && (
+            <div className="text-sm text-gray-500">
+              Total Duration: {project.plannedTotalDurationDays} days 
+              {project.aiEstimatedTotalDurationDays !== project.plannedTotalDurationDays && 
+                ` (AI est: ${project.aiEstimatedTotalDurationDays} days)`}
+            </div>
+          )}
         </div>
         <ul className="divide-y divide-gray-200 dark:divide-gray-700">
           {project.constructionPhases.map((phase: ConstructionPhase) => (
-            <li key={phase.id} className="flex justify-between px-6 py-4">
-              <span className="font-medium text-gray-900 dark:text-white">{phase.sequenceOrder}. {phase.phaseName}</span>
-              <span className="text-sm text-gray-500 capitalize">{phase.status}</span>
+            <li key={phase.id} className="flex flex-col sm:flex-row sm:justify-between px-6 py-4 gap-4">
+              <div className="flex-1">
+                <span className="font-medium text-gray-900 dark:text-white">{phase.sequenceOrder}. {phase.phaseName}</span>
+                <div className="text-sm text-gray-500 mt-1 flex gap-4">
+                   <span>Start: {phase.plannedStartDate ? new Date(phase.plannedStartDate).toLocaleDateString() : 'N/A'}</span>
+                   <span>End: {phase.plannedEndDate ? new Date(phase.plannedEndDate).toLocaleDateString() : 'N/A'}</span>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-4">
+                {editingPhaseId === phase.id ? (
+                  <div className="flex items-center gap-2">
+                    <input 
+                      type="number" 
+                      min="1"
+                      className="w-20 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      value={editPhaseDuration}
+                      onChange={(e) => setEditPhaseDuration(parseInt(e.target.value) || 0)}
+                      disabled={savingPhase}
+                    />
+                    <button 
+                      onClick={async () => {
+                        if (editPhaseDuration < 1) return toast.error('Duration must be at least 1 day');
+                        setSavingPhase(true);
+                        try {
+                          await constructorWorkflowService.updatePhaseSchedule(projectId!, phase.id, editPhaseDuration);
+                          toast.success('Phase schedule updated');
+                          setEditingPhaseId(null);
+                          loadData();
+                        } catch (e) {
+                          toast.error('Failed to update phase schedule');
+                        } finally {
+                          setSavingPhase(false);
+                        }
+                      }}
+                      className="text-sm bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-500 disabled:opacity-50"
+                      disabled={savingPhase}
+                    >
+                      Save
+                    </button>
+                    <button 
+                      onClick={() => setEditingPhaseId(null)}
+                      className="text-sm bg-gray-200 text-gray-700 px-3 py-1 rounded hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+                      disabled={savingPhase}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-end">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">{phase.plannedDurationDays} days</span>
+                      {!isCompleted && (
+                        <button 
+                          onClick={() => {
+                            setEditingPhaseId(phase.id);
+                            setEditPhaseDuration(phase.plannedDurationDays);
+                          }}
+                          className="text-gray-400 hover:text-indigo-600"
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+                    {phase.aiEstimatedDurationDays !== phase.plannedDurationDays && (
+                      <span className="text-xs text-amber-600 dark:text-amber-500">
+                        (AI est: {phase.aiEstimatedDurationDays} days)
+                      </span>
+                    )}
+                  </div>
+                )}
+                <span className="text-sm text-gray-500 capitalize min-w-[80px] text-right">{phase.status}</span>
+              </div>
             </li>
           ))}
           {project.constructionPhases.length === 0 && (

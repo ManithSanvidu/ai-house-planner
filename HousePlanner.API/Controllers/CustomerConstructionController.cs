@@ -171,7 +171,7 @@ public class CustomerConstructionController : ControllerBase
         var progress = await _workflow.GetProjectProgressAsync(projectId, Guid.Empty, "Admin");
         return Ok(new {
             project = ProjectSummary(project), progress,
-            phases = project.ConstructionPhases.OrderBy(p => p.SequenceOrder).Select(p => new { p.Id, p.PhaseName, p.Status, p.SequenceOrder, p.EstimatedDurationDays }),
+            phases = project.ConstructionPhases.OrderBy(p => p.SequenceOrder).Select(p => new { p.Id, p.PhaseName, p.Status, p.SequenceOrder, p.AiEstimatedDurationDays, p.PlannedDurationDays, p.PlannedStartDate, p.PlannedEndDate }),
             logs = logs.Select(l => new { l.Id, l.Date, l.CompletedWork, l.ProgressPercentage, l.Status, l.Challenges, l.Issues, l.Resolution, l.TomorrowPlan, l.AdditionalNotes, phase = l.ConstructionPhase == null ? null : l.ConstructionPhase.PhaseName }),
             activity = logs.GroupBy(l => DateOnly.FromDateTime(l.Date.UtcDateTime)).Select(g => new { date = g.Key, count = g.Count(), intensity = Math.Min(3, g.Count()) })
         });
