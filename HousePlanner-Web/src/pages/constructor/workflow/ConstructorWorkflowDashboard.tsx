@@ -217,7 +217,7 @@ export const ConstructorWorkflowDashboard: React.FC = () => {
           {projects.map((project) => (
             <li key={project.id}>
               <Link
-                to={`/constructor/workflows/${project.id}`}
+                to={`/constructor/projects/${project.id}`}
                 className="block p-6 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
               >
                 <div className="flex items-center justify-between">
