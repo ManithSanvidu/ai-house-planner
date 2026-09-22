@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using HousePlanner.API.Data;
 using Microsoft.EntityFrameworkCore;
+using HousePlanner.API.DTOs;
 
 namespace HousePlanner.API.Controllers
 {
@@ -47,29 +48,43 @@ namespace HousePlanner.API.Controllers
             var user = await _currentUserContext.GetAsync(HttpContext);
             if (user?.Id == null) return Unauthorized();
 
-            var p = await _workflowService.GetProjectDetailsAsync(projectId, user.Id.Value, user.Role);
-            if (p == null) return NotFound("Project not found or unauthorized.");
+            var project = await _workflowService.GetProjectDetailsAsync(projectId, user.Id.Value, user.Role);
+            if (project == null) return NotFound("Project not found or unauthorized.");
 
-            var dto = new HousePlanner.API.DTOs.ConstructorProjectDto(
-                p.Id,
-                p.WorkflowStateId,
-                p.HouseDesignId,
-                p.ContractorId,
-                p.Status,
-                p.CreatedAt,
-                p.UpdatedAt,
-                p.ConstructionPhases.Select(cp => new HousePlanner.API.DTOs.ConstructionPhaseDto(
-                    cp.Id,
-                    cp.PhaseName,
-                    cp.SequenceOrder,
-                    cp.Status,
-                    cp.StartedAt,
-                    cp.CompletedAt,
-                    cp.EstimatedDurationDays
-                )).ToList()
-            );
-
-            return Ok(dto);
+            var design = project.HouseDesign;
+            var cost = design?.CostEstimates.OrderByDescending(c => c.CreatedAt).FirstOrDefault();
+            return Ok(new
+            {
+                project.Id,
+                project.WorkflowStateId,
+                project.ContractorId,
+                project.Status,
+                project.CreatedAt,
+                project.UpdatedAt,
+                constructionPhases = project.ConstructionPhases.Select(phase => new
+                {
+                    phase.Id,
+                    phase.ProjectId,
+                    phase.PhaseName,
+                    phase.SequenceOrder,
+                    phase.EstimatedDurationDays,
+                    phase.Status
+                }),
+                design = design is null ? null : new
+                {
+                    designId = design.Id,
+                    design.Version,
+                    design.FloorCount,
+                    design.TotalBuiltUpAreaSqft,
+                    design.FoundationType,
+                    design.LayoutJson
+                },
+                cost = cost is null ? null : new CostSummaryDto(
+                    cost.MaterialCostLkr,
+                    cost.LabourCostLkr,
+                    cost.TotalCostLkr,
+                    cost.BudgetDeltaPercent)
+            });
         }
 
 
@@ -205,13 +220,17 @@ namespace HousePlanner.API.Controllers
                     area = r.HouseDesign != null ? r.HouseDesign.TotalBuiltUpAreaSqft : 0m,
                     floorCount = r.HouseDesign != null ? r.HouseDesign.FloorCount : 0,
                     layoutJson = r.HouseDesign != null ? r.HouseDesign.LayoutJson : null,
+                    cost = r.HouseDesign == null ? null : r.HouseDesign.CostEstimates
+                        .OrderByDescending(c => c.CreatedAt)
+                        .Select(c => new { c.MaterialCostLkr, c.LabourCostLkr, c.TotalCostLkr, c.BudgetDeltaPercent })
+                        .FirstOrDefault(),
                     r.DeclineReason
                 })
                 .ToListAsync();
 
             return Ok(raw.Select(r => new {
                 r.Id, r.ProjectId, r.HouseDesignId, r.Status, r.requestedAt,
-                r.customerName, r.designVersion, r.area, r.floorCount, r.DeclineReason,
+                r.customerName, r.designVersion, r.area, r.floorCount, r.cost, r.DeclineReason,
                 title = DesignTitle(r.layoutJson, r.designVersion ?? 0),
                 bedrooms = CountRooms(r.layoutJson, "bedroom"),
                 bathrooms = CountRooms(r.layoutJson, "bathroom")

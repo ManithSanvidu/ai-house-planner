@@ -2,14 +2,13 @@ using Microsoft.AspNetCore.Hosting;
 using System.Net;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.AspNetCore.Hosting;
 using Xunit;
 
 namespace HousePlanner.API.Tests.Controllers;
 
 public class CustomerConstructionRouteIntegrationTests : IClassFixture<CustomerConstructionApiFactory>
 {
-    private readonly CustomerConstructionApiFactory _factory;
+    private readonly WebApplicationFactory<Program> _factory;
 
     public CustomerConstructionRouteIntegrationTests(CustomerConstructionApiFactory factory)
     {

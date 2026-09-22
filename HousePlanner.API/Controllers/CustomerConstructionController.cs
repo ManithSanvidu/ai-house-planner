@@ -1,6 +1,7 @@
 using System.Text.Json;
 using HousePlanner.API.Data;
 using HousePlanner.API.Entities;
+using HousePlanner.API.DTOs;
 using HousePlanner.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -53,19 +54,21 @@ public class CustomerConstructionController : ControllerBase
 
         var items = await _db.ValidationRequests.AsNoTracking()
             .Where(v => customerWorkflowIds.Contains(v.WorkflowStateId) && v.Status == "Approved")
-            .Include(v => v.HouseDesign).ThenInclude(d => d!.WorkflowState)
-            .Include(v => v.WorkflowState).ThenInclude(w => w.HouseDesigns)
+            .Include(v => v.HouseDesign).ThenInclude(d => d!.CostEstimates)
+            .Include(v => v.WorkflowState).ThenInclude(w => w.HouseDesigns).ThenInclude(d => d.CostEstimates)
             .OrderByDescending(v => v.DecisionAt)
             .ToListAsync();
             
         return Ok(items.Select(v => {
             var design = v.HouseDesign ?? v.WorkflowState?.HouseDesigns?.FirstOrDefault(d => d.Id == v.WorkflowState.PreferredHouseDesignId && !d.IsArchived);
             if (design == null) return null;
+            var cost = design.CostEstimates.OrderByDescending(c => c.CreatedAt).FirstOrDefault();
             return new {
                 designId = design.Id, workflowId = v.WorkflowStateId,
                 version = design.Version, floorCount = design.FloorCount,
                 area = design.TotalBuiltUpAreaSqft, layoutJson = design.LayoutJson,
                 approvedAt = v.DecisionAt,
+                cost = ToCostSummary(cost),
                 title = DesignTitle(design.LayoutJson, design.Version), bedrooms = CountRooms(design.LayoutJson, "bedroom"),
                 bathrooms = CountRooms(design.LayoutJson, "bathroom")
             };
@@ -149,7 +152,7 @@ public class CustomerConstructionController : ControllerBase
             
         var projects = await _db.Projects.AsNoTracking()
             .Where(p => customerWorkflowIds.Contains(p.WorkflowStateId) && p.ContractorId != null)
-            .Include(p => p.Contractor).Include(p => p.HouseDesign).Include(p => p.ConstructionPhases)
+            .Include(p => p.Contractor).Include(p => p.HouseDesign).ThenInclude(d => d!.CostEstimates).Include(p => p.ConstructionPhases)
             .OrderByDescending(p => p.UpdatedAt).ToListAsync();
             
         return Ok(new {
@@ -165,7 +168,7 @@ public class CustomerConstructionController : ControllerBase
     {
         var customerId = await CustomerId(); if (customerId is null) return Unauthorized();
         var project = await _db.Projects.AsNoTracking()
-            .Include(p => p.Contractor).Include(p => p.HouseDesign).Include(p => p.ConstructionPhases)
+            .Include(p => p.Contractor).Include(p => p.HouseDesign).ThenInclude(d => d!.CostEstimates).Include(p => p.ConstructionPhases)
             .FirstOrDefaultAsync(p => p.Id == projectId && p.WorkflowState!.LandSubmission.ClientId == customerId);
         if (project == null || project.ContractorId == null) return NotFound();
         var logs = await _db.ConstructorWorkflowLogs.AsNoTracking().Include(l => l.ConstructionPhase)
@@ -182,9 +185,16 @@ public class CustomerConstructionController : ControllerBase
     private static object ProjectSummary(Project p) => new {
         p.Id, p.Status, p.CreatedAt, p.UpdatedAt, p.HouseDesignId,
         constructorName = p.Contractor?.FullName, designVersion = p.HouseDesign?.Version,
+        cost = ToCostSummary(p.HouseDesign?.CostEstimates.OrderByDescending(c => c.CreatedAt).FirstOrDefault()),
         currentPhase = p.ConstructionPhases.OrderBy(x => x.SequenceOrder).FirstOrDefault(x => x.Status == "in_progress")?.PhaseName
             ?? p.ConstructionPhases.OrderBy(x => x.SequenceOrder).FirstOrDefault(x => x.Status != "completed")?.PhaseName
     };
+
+    private static CostSummaryDto? ToCostSummary(CostEstimate? cost) => cost is null ? null : new(
+        cost.MaterialCostLkr,
+        cost.LabourCostLkr,
+        cost.TotalCostLkr,
+        cost.BudgetDeltaPercent);
 
     private static Project NewProject(Guid workflowId, Guid designId) => new()
     {

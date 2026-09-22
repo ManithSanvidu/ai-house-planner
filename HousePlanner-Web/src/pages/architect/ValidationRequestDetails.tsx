@@ -4,6 +4,7 @@ import { validationRequestService } from '../../services/validationRequestServic
 import type { ValidationRequestDetails as ValidationRequestDetailsType } from '../../types/validation.types';
 import { ArrowLeft, CheckCircle, XCircle, Clock, Ruler, Home, Bed, User, Map, FileText } from 'lucide-react';
 import { FloorPlanViewer, type FloorPlanData } from '../../components/floorplan/FloorPlanViewer';
+import CostBreakdownCard from '../../components/cost/CostBreakdownCard';
 
 const ValidationRequestDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -94,6 +95,7 @@ const ValidationRequestDetails: React.FC = () => {
   }
 
   const isPending = request.status === 'Pending' || request.status === 'Under Review';
+  const canApprove = request.approvalEligibility.canApprove;
   let floorPlan:FloorPlanData|null=null;try{floorPlan=request.design?.layoutJson?JSON.parse(request.design.layoutJson):null}catch{floorPlan=null}
 
   return (
@@ -186,6 +188,8 @@ const ValidationRequestDetails: React.FC = () => {
             </div>
           </div>
 
+          <CostBreakdownCard cost={request.cost} />
+
           {/* Design Layout JSON Preview */}
           <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm p-6">
             <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-4">
@@ -209,6 +213,18 @@ const ValidationRequestDetails: React.FC = () => {
         <div className="space-y-6">
           <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm p-6 sticky top-6">
             <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Architect Validation</h2>
+
+            {isPending && (
+              <div className={`mb-4 rounded-xl border p-4 ${canApprove ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-amber-200 bg-amber-50 text-amber-800'}`}>
+                <p className="text-sm font-semibold">{canApprove ? 'Ready for architect decision' : 'Not ready for approval'}</p>
+                <p className="mt-1 text-xs">
+                  {request.approvalEligibility.reason
+                    || (request.approvalEligibility.budgetStatus === 'over_budget'
+                      ? 'The estimate is over budget. Review the design and cost before deciding.'
+                      : 'The selected design has a cost estimate and can be approved.')}
+                </p>
+              </div>
+            )}
             
             {actionError && (
               <div className="mb-4 p-3 text-sm text-red-800 rounded-lg bg-red-50 border border-red-200">
@@ -254,7 +270,7 @@ const ValidationRequestDetails: React.FC = () => {
                 <div className="pt-2 flex flex-col gap-3">
                   <button
                     onClick={handleApprove}
-                    disabled={isSubmitting || !request.design}
+                    disabled={isSubmitting || !canApprove}
                     className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-transparent rounded-xl shadow-sm text-sm font-bold text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     {isSubmitting ? 'Processing...' : <><CheckCircle size={18} /> Approve Design</>}

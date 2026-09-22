@@ -56,7 +56,18 @@ namespace HousePlanner.API.Services
 
         public async Task<Project?> GetProjectDetailsAsync(Guid projectId, Guid constructorId, string userRole)
         {
-            var project = await GetProjectEntityAsync(projectId, constructorId, userRole);
+            var query = _context.Projects
+                .Include(p => p.ConstructionPhases)
+                .Include(p => p.HouseDesign)
+                    .ThenInclude(d => d!.CostEstimates)
+                .Where(p => p.Id == projectId);
+
+            if (!string.Equals(userRole, "Admin", StringComparison.OrdinalIgnoreCase))
+            {
+                query = query.Where(p => p.ContractorId == constructorId);
+            }
+
+            var project = await query.FirstOrDefaultAsync();
             
             if (project != null)
             {
