@@ -16,11 +16,13 @@ namespace HousePlanner.API.Controllers
         private readonly HttpClient _agenticServiceClient;
         private readonly IDesignOptionsService _designOptionsService;
 
-        public AiGenerationController(ApplicationDbContext context, IHttpClientFactory httpClientFactory, IDesignOptionsService designOptionsService)
+        private readonly ICurrentUserContextService _currentUser;
+        public AiGenerationController(ApplicationDbContext context, IHttpClientFactory httpClientFactory, IDesignOptionsService designOptionsService, ICurrentUserContextService currentUser)
         {
             _context = context;
             _agenticServiceClient = httpClientFactory.CreateClient("AgenticService");
             _designOptionsService = designOptionsService;
+            _currentUser = currentUser;
         }
 
         [HttpPost("generate")]

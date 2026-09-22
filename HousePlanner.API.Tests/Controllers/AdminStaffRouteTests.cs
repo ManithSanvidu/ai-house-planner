@@ -120,6 +120,13 @@ public sealed class AdminStaffRouteTests : IClassFixture<AdminStaffApiFactory>
 
 public sealed class AdminStaffApiFactory : WebApplicationFactory<Program>
 {
+    public AdminStaffApiFactory()
+    {
+        Environment.SetEnvironmentVariable("DATABASE_CONNECTION_STRING", "Host=localhost;Database=test;Username=postgres;Password=postgres");
+        Environment.SetEnvironmentVariable("SUPABASE_JWT_SECRET", "super-secret-jwt-key-that-is-at-least-32-bytes-long-for-testing");
+        Environment.SetEnvironmentVariable("SUPABASE_URL", "http://localhost:8000");
+    }
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");

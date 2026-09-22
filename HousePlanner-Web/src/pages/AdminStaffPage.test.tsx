@@ -7,11 +7,11 @@ vi.mock('../services/staffService',()=>({staffService:{list:vi.fn(),create:vi.fn
 const people=[{id:'a',fullName:'Nimal Silva',email:'nimal@example.com',role:'Architect' as const,status:'Active' as const},{id:'c',fullName:'Kasun Perera',email:'kasun@example.com',role:'Constructor' as const,status:'Disabled' as const}];
 beforeEach(()=>{vi.clearAllMocks();vi.mocked(staffService.list).mockResolvedValue(people);vi.mocked(staffService.create).mockResolvedValue(people[0]);vi.mocked(staffService.update).mockResolvedValue(people[0]);vi.mocked(staffService.setDisabled).mockResolvedValue(people[0])});
 
-test('lists staff without exposing Firebase UID or passwords',async()=>{
+test('lists staff without exposing Supabase UID or passwords',async()=>{
  render(<AdminStaffPage/>);
  expect(await screen.findByText('Nimal Silva')).toBeTruthy();
  expect(screen.getByText('Kasun Perera')).toBeTruthy();
- expect(screen.queryByText(/firebase uid/i)).toBeNull();
+ expect(screen.queryByText(/supabase uid/i)).toBeNull();
  expect(screen.queryByText(/password hash/i)).toBeNull();
 });
 
@@ -94,7 +94,7 @@ test('edits a staff member with safe pre-filled fields and preserves the current
  expect((within(dialog).getByLabelText('Full Name') as HTMLInputElement).value).toBe('Nimal Silva');
  expect((within(dialog).getByLabelText('Email') as HTMLInputElement).value).toBe('nimal@example.com');
  expect(within(dialog).getAllByRole('option').map(option=>option.textContent)).toEqual(['Architect','Constructor']);
- expect(within(dialog).queryByText(/firebase uid|roleid|password hash|token/i)).toBeNull();
+ expect(within(dialog).queryByText(/supabase uid|roleid|password hash|token/i)).toBeNull();
  expect(dialog.querySelector('input[type="password"]')).toBeNull();
 
  fireEvent.change(within(dialog).getByLabelText('Full Name'),{target:{value:'Nimal Fernando'}});

@@ -56,6 +56,7 @@ public sealed class AdminStaffController(
     private IActionResult Error(StaffAccountException exception) => exception.Code switch
     {
         "duplicate_email" or "duplicate_identity" => Conflict(new { error = exception.Code, message = exception.Message }),
+        "orphan_auth_identity" or "orphan_public_profile" => Conflict(new { error = exception.Code, message = exception.Message }),
         "not_found" => NotFound(new { error = exception.Code, message = exception.Message }),
         "invalid_request" => BadRequest(new { error = exception.Code, message = exception.Message }),
         _ => StatusCode(StatusCodes.Status500InternalServerError,

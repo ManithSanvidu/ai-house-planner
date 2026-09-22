@@ -7,7 +7,7 @@ namespace HousePlanner.API.DTOs
         /// </summary>
         public string FullName { get; set; } = string.Empty;
 
-        // Public registration is always Customer. Role, RoleId, and FirebaseUid are
+        // Public registration is always Customer. Role, RoleId, and SupabaseUid are
         // deliberately absent because those values are server-owned decisions.
     }
 }

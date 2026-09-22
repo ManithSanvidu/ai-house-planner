@@ -9,7 +9,7 @@ export interface UserProfile {
 
 export interface AuthState {
   user: UserProfile | null;
-  token: string | null; // In-memory Firebase ID Token
+  token: string | null; // In-memory Supabase ID Token
   status: 'idle' | 'loading' | 'succeeded' | 'failed';
   error: string | null;
 }

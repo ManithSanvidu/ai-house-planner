@@ -60,13 +60,23 @@ public sealed class CustomerConstructionLifecycleTests
     }
 
     [Fact]
-    public async Task ConstructorCanAcceptOnlyOwnRequest()
+    public async Task ConstructorB_CannotAcceptConstructorARequest()
     {
         await CustomerController(_customerA).CreateRequest(new(_approvedDesign.Id, _constructorA), default);
         var request = Assert.Single(_db.ConstructorProjectRequests);
         Assert.IsType<NotFoundResult>(await ConstructorController(_constructorB).AcceptRequest(request.Id));
+    }
+
+    [Fact]
+    public async Task SelectedConstructor_CanAcceptRequest()
+    {
+        await CustomerController(_customerA).CreateRequest(new(_approvedDesign.Id, _constructorA), default);
+        var request = Assert.Single(_db.ConstructorProjectRequests);
+        
         Assert.IsType<OkObjectResult>(await ConstructorController(_constructorA).AcceptRequest(request.Id));
+        
         Assert.Equal("Accepted", request.Status);
+        Assert.Equal(_constructorA, request.ConstructorId);
         Assert.Equal(_constructorA, request.Project!.ContractorId);
     }
 
@@ -102,6 +112,35 @@ public sealed class CustomerConstructionLifecycleTests
         await service.CreateWorkflowLogAsync(_constructorA, new ConstructorWorkflowLog { Id=Guid.NewGuid(), ProjectId=request.ProjectId, CompletedWork="B", Date=DateTimeOffset.UtcNow });
         Assert.IsType<OkObjectResult>(await CustomerController(_customerA).Project(request.ProjectId));
         Assert.IsType<NotFoundResult>(await CustomerController(_customerB).Project(request.ProjectId));
+    }
+
+    [Fact]
+    public async Task ConstructorA_SeesOnlyOwnPendingRequests()
+    {
+        await CustomerController(_customerA).CreateRequest(new(_approvedDesign.Id, _constructorA), default);
+        var request1 = _db.ConstructorProjectRequests.First(r => r.ConstructorId == _constructorA);
+
+        var resultA = await ConstructorController(_constructorA).GetConstructorRequests();
+        var okA = Assert.IsType<OkObjectResult>(resultA);
+        var dataA = okA.Value as IEnumerable<dynamic>;
+        Assert.Single(dataA!);
+
+        await ConstructorController(_constructorA).AcceptRequest(request1.Id);
+
+        var resultA2 = await ConstructorController(_constructorA).GetConstructorRequests();
+        var okA2 = Assert.IsType<OkObjectResult>(resultA2);
+        var dataA2 = okA2.Value as IEnumerable<dynamic>;
+        Assert.Empty(dataA2!);
+    }
+    
+    [Fact]
+    public async Task ConstructorB_CannotSeeConstructorARequest()
+    {
+        await CustomerController(_customerA).CreateRequest(new(_approvedDesign.Id, _constructorA), default);
+        var resultB = await ConstructorController(_constructorB).GetConstructorRequests();
+        var okB = Assert.IsType<OkObjectResult>(resultB);
+        var dataB = okB.Value as IEnumerable<dynamic>;
+        Assert.Empty(dataB!);
     }
 
     private CustomerConstructionController CustomerController(Guid id)

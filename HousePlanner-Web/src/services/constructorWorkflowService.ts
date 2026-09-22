@@ -1,15 +1,14 @@
 import axios from 'axios';
-import { auth } from './firebase';
+import { supabase } from '../lib/supabase';
 
 const API_URL = 'http://localhost:5265/api/constructor/workflow';
 
 // Add the auth token to requests
 const getAuthHeaders = async () => {
-    const user = auth.currentUser;
-    if (!user) return {};
-    const token = await user.getIdToken();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return {};
     return {
-        Authorization: `Bearer ${token}`
+        Authorization: `Bearer ${session.access_token}`
     };
 };
 

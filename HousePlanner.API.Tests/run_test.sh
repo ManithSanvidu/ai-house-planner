@@ -1,0 +1,3 @@
+export PATH=$PATH:/usr/local/share/dotnet:/usr/local/bin:/opt/homebrew/bin
+sed -i '' 's/var result = Assert.IsType<OkObjectResult>(await _controller.Generate(request,CancellationToken.None));/var resultRaw = await _controller.Generate(request,CancellationToken.None);\nConsole.WriteLine(System.Text.Json.JsonSerializer.Serialize(((Microsoft.AspNetCore.Mvc.ObjectResult)resultRaw).Value));\nvar result = Assert.IsType<OkObjectResult>(resultRaw);/g' Controllers/AiGenerationControllerTests.cs
+dotnet test --logger "console;verbosity=detailed" --filter "FullyQualifiedName~Generate_CompatibleSelectedPlanReachesAiAsServerResolvedPlanCode"
