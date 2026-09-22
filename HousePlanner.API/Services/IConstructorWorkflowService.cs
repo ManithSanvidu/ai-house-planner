@@ -4,7 +4,8 @@ namespace HousePlanner.API.Services
 {
     public interface IConstructorWorkflowService
     {
-        Task<IEnumerable<Project>> GetConstructorProjectsAsync(Guid constructorId, string userRole);
+        Task<IEnumerable<HousePlanner.API.DTOs.ConstructorProjectDto>> GetConstructorProjectsAsync(Guid constructorId, string userRole);
+        Task<Project?> GetProjectEntityAsync(Guid projectId, Guid constructorId, string userRole);
         Task<Project?> GetProjectDetailsAsync(Guid projectId, Guid constructorId, string userRole);
         Task<IEnumerable<ConstructorWorkflowLog>> GetWorkflowLogsAsync(Guid projectId, Guid constructorId, string userRole);
         Task<ConstructorWorkflowLog> CreateWorkflowLogAsync(Guid constructorId, ConstructorWorkflowLog log);

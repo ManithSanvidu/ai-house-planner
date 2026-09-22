@@ -43,10 +43,29 @@ namespace HousePlanner.API.Controllers
             var user = await _currentUserContext.GetAsync(HttpContext);
             if (user?.Id == null) return Unauthorized();
 
-            var project = await _workflowService.GetProjectDetailsAsync(projectId, user.Id.Value, user.Role);
-            if (project == null) return NotFound("Project not found or unauthorized.");
+            var p = await _workflowService.GetProjectDetailsAsync(projectId, user.Id.Value, user.Role);
+            if (p == null) return NotFound("Project not found or unauthorized.");
 
-            return Ok(project);
+            var dto = new HousePlanner.API.DTOs.ConstructorProjectDto(
+                p.Id,
+                p.WorkflowStateId,
+                p.HouseDesignId,
+                p.ContractorId,
+                p.Status,
+                p.CreatedAt,
+                p.UpdatedAt,
+                p.ConstructionPhases.Select(cp => new HousePlanner.API.DTOs.ConstructionPhaseDto(
+                    cp.Id,
+                    cp.PhaseName,
+                    cp.SequenceOrder,
+                    cp.Status,
+                    cp.StartedAt,
+                    cp.CompletedAt,
+                    cp.EstimatedDurationDays
+                )).ToList()
+            );
+
+            return Ok(dto);
         }
 
         [HttpGet("projects/{projectId}/logs")]

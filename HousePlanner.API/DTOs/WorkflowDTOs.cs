@@ -104,3 +104,28 @@ public record WorkflowDesignHistoryDto(
     string? ArchitectReviewStatus = null,
     string? ArchitectFeedback = null
 );
+
+// ──────────────────────────────────────────────────
+// Constructor Workflow DTOs
+// ──────────────────────────────────────────────────
+
+public record ConstructionPhaseDto(
+    Guid Id,
+    string PhaseName,
+    int SequenceOrder,
+    string Status,
+    DateTimeOffset? StartedAt,
+    DateTimeOffset? CompletedAt,
+    int EstimatedDurationDays
+);
+
+public record ConstructorProjectDto(
+    Guid Id,
+    Guid WorkflowStateId,
+    Guid? HouseDesignId,
+    Guid? ContractorId,
+    string Status,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset UpdatedAt,
+    List<ConstructionPhaseDto> ConstructionPhases
+);
