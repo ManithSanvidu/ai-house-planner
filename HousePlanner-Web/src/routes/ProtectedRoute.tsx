@@ -13,7 +13,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowe
   const { isAuthenticated, user, isLoading } = useAuth();
   const location = useLocation();
 
-  // If auth is loading (e.g. initial Firebase state resolution)
+  // If auth is loading (e.g. initial Supabase state resolution)
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-zinc-50/50">

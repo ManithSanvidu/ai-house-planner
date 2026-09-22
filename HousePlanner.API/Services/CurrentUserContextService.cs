@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using HousePlanner.API.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,28 +13,23 @@ public interface ICurrentUserContextService
 
 public class CurrentUserContextService : ICurrentUserContextService
 {
-    private readonly IFirebaseAuthService _firebase;
     private readonly ApplicationDbContext _db;
-    public CurrentUserContextService(IFirebaseAuthService firebase, ApplicationDbContext db)
-    { _firebase = firebase; _db = db; }
+    public CurrentUserContextService(ApplicationDbContext db)
+    { _db = db; }
 
     public async Task<CurrentUserContext?> GetAsync(HttpContext context)
     {
-        var header = context.Request.Headers.Authorization.ToString();
-        if (!header.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)) return null;
-        HousePlanner.API.DTOs.UserInfoResponseDto verified;
-        try
-        {
-            verified = await _firebase.VerifyTokenAsync(header[7..].Trim());
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return null;
-        }
-        if (verified is null || string.IsNullOrWhiteSpace(verified.Uid)) return null;
+        var userClaims = context.User;
+        if (userClaims?.Identity?.IsAuthenticated != true) return null;
+
+        var uid = userClaims.FindFirst("sub")?.Value;
+        if (string.IsNullOrWhiteSpace(uid)) return null;
+
         var user = await _db.Users.AsNoTracking().Include(x => x.Role)
-            .FirstOrDefaultAsync(x => x.FirebaseUid == verified.Uid);
+            .FirstOrDefaultAsync(x => x.SupabaseUid == uid);
+        
         if (user is null) return null;
+        
         return new CurrentUserContext(user.Id, user.Email, user.Role?.Name ?? "Customer");
     }
 }

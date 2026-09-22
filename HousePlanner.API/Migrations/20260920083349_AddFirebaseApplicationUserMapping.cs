@@ -21,16 +21,16 @@ namespace HousePlanner.API.Migrations
                 oldMaxLength: 255);
 
             migrationBuilder.AddColumn<string>(
-                name: "FirebaseUid",
+                name: "SupabaseUid",
                 table: "Users",
                 type: "character varying(128)",
                 maxLength: 128,
                 nullable: true);
 
             migrationBuilder.CreateIndex(
-                name: "UX_Users_FirebaseUid",
+                name: "UX_Users_SupabaseUid",
                 table: "Users",
-                column: "FirebaseUid",
+                column: "SupabaseUid",
                 unique: true);
         }
 
@@ -38,11 +38,11 @@ namespace HousePlanner.API.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropIndex(
-                name: "UX_Users_FirebaseUid",
+                name: "UX_Users_SupabaseUid",
                 table: "Users");
 
             migrationBuilder.DropColumn(
-                name: "FirebaseUid",
+                name: "SupabaseUid",
                 table: "Users");
 
             migrationBuilder.AlterColumn<string>(

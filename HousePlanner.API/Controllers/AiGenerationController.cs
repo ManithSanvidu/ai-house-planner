@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using HousePlanner.API.Data;
 using HousePlanner.API.Entities;
 using System.Text;
@@ -47,17 +47,17 @@ namespace HousePlanner.API.Controllers
             var validation = await _designOptionsService.ValidateFinalSelectionAsync(request, cancellationToken);
             if (!validation.IsValid)
             {
-                return BadRequest(new { 
-                    code = validation.ErrorCode, 
+                return BadRequest(new {
+                    code = validation.ErrorCode,
                     message = validation.Message,
                     conflicts = validation.Conflicts,
-                    suggestions = validation.Suggestions 
+                    suggestions = validation.Suggestions
                 });
             }
 
             WorkflowState workflowState;
             object payload;
-            try 
+            try
             {
                 var currentUser = await _currentUser.GetAsync(HttpContext);
                 if (currentUser?.Id is not Guid currentUserId || currentUserId == Guid.Empty)
@@ -66,6 +66,7 @@ namespace HousePlanner.API.Controllers
                 var client = await _context.Users.FindAsync(currentUserId);
                 if (client is null)
                     return Conflict(new { Message = "No client account exists for this submission." });
+
                 PreDesignedHousePlan? basePlan = null;
                 if (request.BasePreDesignedPlanId.HasValue)
                 {
@@ -103,7 +104,7 @@ namespace HousePlanner.API.Controllers
                 };
 
                 _context.LandSubmissions.Add(submission);
-                
+
                 workflowState = new WorkflowState
                 {
                     Id = Guid.NewGuid(),
@@ -113,7 +114,7 @@ namespace HousePlanner.API.Controllers
                     CreatedAt = DateTimeOffset.UtcNow,
                     UpdatedAt = DateTimeOffset.UtcNow
                 };
-                
+
                 _context.WorkflowStates.Add(workflowState);
                 await _context.SaveChangesAsync();
 
@@ -125,10 +126,10 @@ namespace HousePlanner.API.Controllers
                     manual_terrain_type = request.ManualTerrainType,
                     preferences = request.Preferences,
                     plot_constraints = request.PlotConstraints,
-                    design_seed = request.DesignSeed
-                    ,base_pre_designed_plan_id = request.BasePreDesignedPlanId
-                    ,base_pre_designed_plan_code = basePlan?.DesignCode
-                    ,plan_selection_mode = request.PlanSelectionMode
+                    design_seed = request.DesignSeed,
+                    base_pre_designed_plan_id = request.BasePreDesignedPlanId,
+                    base_pre_designed_plan_code = basePlan?.DesignCode,
+                    plan_selection_mode = request.PlanSelectionMode
                 };
             }
             catch (Exception ex)
@@ -136,7 +137,7 @@ namespace HousePlanner.API.Controllers
                 return StatusCode(500, new { Message = "Database error while saving the submission.", Details = ex.InnerException?.Message ?? ex.Message });
             }
 
-            var options = new JsonSerializerOptions { 
+            var options = new JsonSerializerOptions {
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
                 DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
             };
@@ -223,4 +224,3 @@ namespace HousePlanner.API.Controllers
         public decimal? right { get; set; }
     }
 }
-

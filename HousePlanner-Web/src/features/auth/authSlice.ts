@@ -93,7 +93,7 @@ export const loginAsync = createAsyncThunk(
 
 export const googleLoginAsync = createAsyncThunk('auth/googleLogin', async (_, { rejectWithValue }) => {
   try {
-    return await authService.googleLogin();
+    return await authService.loginWithGoogle();
   } catch (error: any) {
     return rejectWithValue(error.message || 'Google sign-in failed.');
   }
@@ -113,7 +113,7 @@ export const verifySessionAsync = createAsyncThunk(
   'auth/verifySession',
   async (_, { rejectWithValue }) => {
     try {
-      return await authService.verifySession();
+      return await authService.initializeSession();
     } catch (error: any) {
       return rejectWithValue(error.message || 'Session verification failed');
     }

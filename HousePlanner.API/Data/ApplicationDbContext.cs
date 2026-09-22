@@ -34,9 +34,9 @@ namespace HousePlanner.API.Data
             );
 
             modelBuilder.Entity<User>()
-                .HasIndex(e => e.FirebaseUid)
+                .HasIndex(e => e.SupabaseUid)
                 .IsUnique()
-                .HasDatabaseName("UX_Users_FirebaseUid");
+                .HasDatabaseName("UX_Users_SupabaseUid");
 
             modelBuilder.Entity<PricingData>()
                 .OwnsOne(p => p.TerrainMultiplier, owned => owned.ToJson());

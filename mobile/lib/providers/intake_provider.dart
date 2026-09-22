@@ -51,19 +51,37 @@ class IntakeNotifier extends StateNotifier<AsyncValue<LandSubmission>> {
     state = AsyncValue.data(currentData.copyWith(clearPhoto: true));
   }
 
-  void toggleAmenity(String amenity) {
+  void togglePreference(String preference) {
     final currentData = state.value ?? LandSubmission();
-    final currentAmenities = currentData.selectedAmenities != null 
-        ? Set<String>.from(currentData.selectedAmenities!) 
-        : <String>{};
-        
-    if (currentAmenities.contains(amenity)) {
-      currentAmenities.remove(amenity);
-    } else {
-      currentAmenities.add(amenity);
-    }
     
-    state = AsyncValue.data(currentData.copyWith(selectedAmenities: currentAmenities));
+    switch (preference) {
+      case 'openPlan':
+        state = AsyncValue.data(currentData.copyWith(openPlan: !currentData.openPlan));
+        break;
+      case 'masterEnsuite':
+        state = AsyncValue.data(currentData.copyWith(masterEnsuite: !currentData.masterEnsuite));
+        break;
+      case 'homeOffice':
+        state = AsyncValue.data(currentData.copyWith(homeOffice: !currentData.homeOffice));
+        break;
+      case 'balcony':
+        state = AsyncValue.data(currentData.copyWith(balcony: !currentData.balcony));
+        break;
+      case 'parkingRequired':
+        state = AsyncValue.data(currentData.copyWith(parkingRequired: !currentData.parkingRequired));
+        break;
+      case 'accessibility':
+        state = AsyncValue.data(currentData.copyWith(accessibility: !currentData.accessibility));
+        break;
+    }
+  }
+
+  void setPreDesignedPlan(String planId, String mode) {
+    final currentData = state.value ?? LandSubmission();
+    state = AsyncValue.data(currentData.copyWith(
+      basePreDesignedPlanId: planId,
+      planSelectionMode: mode,
+    ));
   }
 
   Future<String?> submitIntake({String? basePlanId, String? mode}) async {
@@ -84,15 +102,15 @@ class IntakeNotifier extends StateNotifier<AsyncValue<LandSubmission>> {
           'bathrooms': 1,
           'floors': data.preferredFloors ?? 1,
           'architecturalStyle': data.stylePreference == 'modern' ? 'Modern' : data.stylePreference == 'traditional' ? 'Traditional' : data.stylePreference == 'contemporary' ? 'Contemporary' : 'Modern',
-          'openPlan': data.selectedAmenities?.contains('Open plan') ?? false,
-          'masterEnsuite': data.selectedAmenities?.contains('Master ensuite') ?? false,
-          'separateDining': data.selectedAmenities?.contains('Separate dining') ?? false,
-          'homeOffice': data.selectedAmenities?.contains('Home office') ?? false,
-          'balcony': data.selectedAmenities?.contains('Balcony') ?? false,
-          'veranda': data.selectedAmenities?.contains('Veranda') ?? false,
-          'utilityRoom': data.selectedAmenities?.contains('Utility room') ?? false,
-          'parkingRequired': data.selectedAmenities?.contains('Parking') ?? false,
-          'accessibility': data.selectedAmenities?.contains('Accessible') ?? false,
+          'openPlan': data.openPlan,
+          'masterEnsuite': data.masterEnsuite,
+          'separateDining': false,
+          'homeOffice': data.homeOffice,
+          'balcony': data.balcony,
+          'veranda': false,
+          'utilityRoom': false,
+          'parkingRequired': data.parkingRequired,
+          'accessibility': data.accessibility,
           'spacePriority': 'balanced',
           'circulationPreference': 'space_efficient'
         },

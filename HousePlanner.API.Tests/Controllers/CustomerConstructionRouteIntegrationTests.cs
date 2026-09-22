@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Hosting;
 using System.Net;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -12,7 +13,8 @@ public class CustomerConstructionRouteIntegrationTests : IClassFixture<CustomerC
 
     public CustomerConstructionRouteIntegrationTests(CustomerConstructionApiFactory factory)
     {
-        _factory = factory;
+        System.Environment.SetEnvironmentVariable("DATABASE_CONNECTION_STRING", "mock-connection-string-to-pass-startup-check");
+        _factory = factory.WithWebHostBuilder(builder => builder.UseEnvironment("Testing"));
     }
 
     [Fact]

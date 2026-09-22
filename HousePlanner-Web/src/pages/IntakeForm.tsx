@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Upload, Home, Map, DollarSign, Layers, CheckCircle2 } from 'lucide-react';
+import { Upload, Home, Map, Layers, CheckCircle2 } from 'lucide-react';
 import { workflowService } from '../services/workflowService';
 
 interface IntakeFormData {
-  budget: string;
   landSize: string;
   landUnit: 'perches' | 'sqft';
   terrainType: string;
@@ -39,7 +38,6 @@ const IntakeForm: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [formData, setFormData] = useState<IntakeFormData>({
-    budget: '',
     landSize: '',
     landUnit: 'perches',
     terrainType: 'flat/urban',
@@ -87,7 +85,6 @@ const IntakeForm: React.FC = () => {
 
     try {
       // Submit through the public gateway; Python remains an internal service.
-      const parsedBudget = parseFloat(formData.budget);
       const payload: any = {
         ...(searchParams.get('basePlanId') ? { basePreDesignedPlanId: searchParams.get('basePlanId'), planSelectionMode: searchParams.get('mode') || 'use' } : {}),
         landSizePerches: formData.landUnit === 'perches' ? parseFloat(formData.landSize) : (parseFloat(formData.landSize) / 272.25),
@@ -126,10 +123,6 @@ const IntakeForm: React.FC = () => {
       };
       
       payload.designSeed = crypto.getRandomValues(new Uint32Array(1))[0];
-
-      if (!isNaN(parsedBudget)) {
-        payload.budgetLkr = parsedBudget;
-      }
 
       const result = await workflowService.startDesign(payload);
       
@@ -196,22 +189,11 @@ const IntakeForm: React.FC = () => {
         {/* Section 1: Financials & Land */}
         <div className="p-6 bg-zinc-50/80 dark:bg-gray-800/50 rounded-2xl border border-zinc-100/80 dark:border-gray-700/50 space-y-5 relative z-10 hover:shadow-sm transition-all duration-300">
           <h3 className="font-bold text-zinc-900 dark:text-gray-100 flex items-center gap-2.5 text-lg">
-            <div className="bg-indigo-100 dark:bg-indigo-900/30 p-2 rounded-lg text-indigo-600 dark:text-indigo-400"><DollarSign size={18} /></div> 
-            Budget & Land Constraints
+            <div className="bg-indigo-100 dark:bg-indigo-900/30 p-2 rounded-lg text-indigo-600 dark:text-indigo-400"><Map size={18} /></div> 
+            Land Details
           </h3>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Total Budget (LKR) <span className="text-gray-400 font-normal">(Optional)</span></label>
-              <input 
-                type="number" 
-                name="budget"
-                placeholder="e.g. 15000000"
-                value={formData.budget}
-                onChange={handleInputChange}
-                className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 transition-colors"
-              />
-            </div>
             
             <div className="flex flex-col sm:flex-row gap-4 sm:gap-2">
               <div className="flex-1">

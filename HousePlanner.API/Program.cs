@@ -1,5 +1,4 @@
-using FirebaseAdmin;
-using Google.Apis.Auth.OAuth2;
+﻿using DotNetEnv;
 using HousePlanner.API.Middleware;
 using HousePlanner.API.Services;
 using Microsoft.OpenApi.Models;
@@ -8,6 +7,7 @@ using HousePlanner.API.Data;
 using HousePlanner.API.Options;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.DataProtection;
+using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,16 +19,27 @@ if (isTesting)
     builder.Services.AddDataProtection().UseEphemeralDataProtectionProvider();
 }
 
-var defaultConnection = builder.Configuration.GetConnectionString("DefaultConnection");
+// Load .env variables (Important to do this early)
+if (!isTesting)
+    Env.Load();
+
+// Safely retrieve the connection string (Prioritize .env over appsettings.json)
+var defaultConnection = Environment.GetEnvironmentVariable("DATABASE_CONNECTION_STRING")
+    ?? builder.Configuration.GetConnectionString("DefaultConnection");
+
 if (string.IsNullOrWhiteSpace(defaultConnection))
 {
     if (!isTesting)
         throw new InvalidOperationException(
-            "ConnectionStrings:DefaultConnection must be configured through user secrets or environment variables.");
+            "DATABASE_CONNECTION_STRING environment variable or ConnectionStrings:DefaultConnection must be configured.");
     defaultConnection = "Host=localhost;Database=houseplanner_tests;Username=test;Password=test";
 }
 
-var internalApiKey = builder.Configuration["AgenticService:InternalApiKey"];
+if (!isTesting)
+    Console.WriteLine("[Database Configuration] Connection string loaded successfully.");
+
+var internalApiKey = builder.Configuration["AgenticService:InternalApiKey"]
+    ?? Environment.GetEnvironmentVariable("AGENTIC_INTERNAL_API_KEY");
 if (string.IsNullOrWhiteSpace(internalApiKey))
 {
     if (!isTesting)
@@ -39,7 +50,17 @@ if (string.IsNullOrWhiteSpace(internalApiKey))
 
 // Add PostgreSQL DbContext
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(defaultConnection));
+    options.UseNpgsql(
+        defaultConnection,
+        npgsql =>
+        {
+            npgsql.EnableRetryOnFailure(
+                maxRetryCount: 5,
+                maxRetryDelay: TimeSpan.FromSeconds(5),
+                errorCodesToAdd: null);
+
+            npgsql.CommandTimeout(60);
+        }));
 
 // 1. Add CORS services allowing our React frontend client
 builder.Services.AddCors(options =>
@@ -55,9 +76,74 @@ builder.Services.AddCors(options =>
 // 2. Add controllers and endpoints API exploration
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddAuthentication(FirebaseAuthenticationHandler.SchemeName)
-    .AddScheme<AuthenticationSchemeOptions, FirebaseAuthenticationHandler>(
-        FirebaseAuthenticationHandler.SchemeName, _ => { });
+builder.Services.AddAuthentication(Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        var supabaseUrl = Environment.GetEnvironmentVariable("SUPABASE_URL") ?? "https://cqfelbazvvbeiwwydwmn.supabase.co";
+        var supabaseJwtSecret = Environment.GetEnvironmentVariable("SUPABASE_JWT_SECRET");
+
+        // CRITICAL: Disable claim remapping so "sub" stays as "sub" and is not
+        // renamed to ClaimTypes.NameIdentifier by the JWT middleware.
+        options.MapInboundClaims = false;
+
+        options.Authority = $"{supabaseUrl}/auth/v1";
+
+        options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = $"{supabaseUrl}/auth/v1",
+            ValidateAudience = true,
+            ValidAudience = "authenticated",
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
+                System.Text.Encoding.UTF8.GetBytes(supabaseJwtSecret ?? string.Empty)),
+            // Tell ASP.NET which claim carries the application role.
+            RoleClaimType = ClaimTypes.Role,
+            // Prevent "sub" from being remapped at the token validation level.
+            NameClaimType = "sub"
+        };
+
+        options.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
+        {
+            OnTokenValidated = async context =>
+            {
+                Console.WriteLine("========== TOKEN VALIDATED ==========");
+
+                // With MapInboundClaims = false, "sub" is preserved as-is.
+                var uid = context.Principal?.FindFirst("sub")?.Value;
+
+                if (string.IsNullOrEmpty(uid))
+                {
+                    Console.WriteLine("[Auth] Missing Supabase sub claim — rejecting.");
+                    context.Fail("Missing Supabase sub claim.");
+                    return;
+                }
+
+                Console.WriteLine($"[Auth] Supabase UID: {uid}");
+
+                var db = context.HttpContext.RequestServices
+                    .GetRequiredService<ApplicationDbContext>();
+
+                var user = await db.Users
+                    .Include(u => u.Role)
+                    .SingleOrDefaultAsync(u => u.SupabaseUid == uid);
+
+                if (user?.Role != null)
+                {
+                    Console.WriteLine($"[Auth] Application role: {user.Role.Name}");
+                    if (context.Principal?.Identity is ClaimsIdentity identity)
+                    {
+                        identity.AddClaim(new Claim(ClaimTypes.Role, user.Role.Name));
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"[Auth] Application user not found for UID: {uid}");
+                }
+            }
+        };
+    });
 builder.Services.AddAuthorization();
 
 // 3. Configure Swagger/OpenAPI
@@ -69,11 +155,11 @@ builder.Services.AddSwaggerGen(c =>
         Version = "v1",
         Description = "Core backend Web API for AI home design and cost planning."
     });
-    
+
     // Add Bearer token authorize options to Swagger UI for verification testing
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Description = "Firebase JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
+        Description = "Supabase JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
         Name = "Authorization",
         In = ParameterLocation.Header,
         Type = SecuritySchemeType.ApiKey,
@@ -97,9 +183,8 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 // 4. Register application services
-builder.Services.AddScoped<IFirebaseAuthService, FirebaseAuthService>();
-builder.Services.AddScoped<IApplicationUserSyncService, ApplicationUserSyncService>();
-builder.Services.AddScoped<IFirebaseStaffAccountService, FirebaseStaffAccountService>();
+builder.Services.AddScoped<ISupabaseUserSyncService, SupabaseUserSyncService>();
+builder.Services.AddScoped<ISupabaseStaffAccountService, SupabaseStaffAccountService>();
 builder.Services.AddScoped<IStaffAccountService, StaffAccountService>();
 builder.Services.AddScoped<ApplicationRoleSeeder>();
 builder.Services.AddScoped<ICurrentUserContextService, CurrentUserContextService>();
@@ -129,6 +214,8 @@ builder.Services.AddScoped<IExternalPricingProvider>(services =>
 });
 builder.Services.AddScoped<IPricingService, PricingService>();
 builder.Services.AddScoped<IConstructorWorkflowService, ConstructorWorkflowService>();
+
+// AgenticService HTTP client — internalApiKey validated and injected at startup (never falls back to a plain default)
 builder.Services.AddHttpClient("AgenticService", client =>
 {
     client.BaseAddress = new Uri(builder.Configuration["AgenticService:BaseUrl"] ?? "http://localhost:8001");
@@ -136,63 +223,19 @@ builder.Services.AddHttpClient("AgenticService", client =>
     client.DefaultRequestHeaders.Add("X-Internal-API-Key", internalApiKey);
 });
 
-// 5. Initialize Firebase Admin SDK
-var serviceAccountPath = builder.Configuration["Firebase:ServiceAccountPath"];
-var fullPath = Path.Combine(builder.Environment.ContentRootPath, serviceAccountPath ?? "firebase-service-account.json");
-
-if (!string.IsNullOrEmpty(serviceAccountPath) && File.Exists(fullPath))
+// Supabase Admin API HTTP client - uses service role key (server-only, never exposed to browser)
+var supabaseAdminUrl = Environment.GetEnvironmentVariable("SUPABASE_URL") ?? "https://cqfelbazvvbeiwwydwmn.supabase.co";
+var serviceRoleKey = Environment.GetEnvironmentVariable("SUPABASE_SERVICE_ROLE_KEY") ?? string.Empty;
+if (string.IsNullOrWhiteSpace(serviceRoleKey))
+    Console.WriteLine("[Config WARNING] SUPABASE_SERVICE_ROLE_KEY is not set. Admin staff creation will fail.");
+builder.Services.AddHttpClient("SupabaseAdmin", client =>
 {
-    try
-    {
-        FirebaseApp.Create(new AppOptions
-        {
-            Credential = GoogleCredential.FromFile(fullPath)
-        });
-        Console.WriteLine($"[Firebase SDK] Successfully initialized FirebaseApp using service account credentials from: {fullPath}");
-    }
-    catch (Exception ex) when (ex.Message.Contains("already exists", StringComparison.OrdinalIgnoreCase))
-    {
-        // WebApplicationFactory can initialize multiple test hosts in the same process.
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"[Firebase SDK Error] Failed to initialize FirebaseApp from file: {ex.Message}");
-    }
-}
-else
-{
-    var envCreds = Environment.GetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS");
-    if (!string.IsNullOrEmpty(envCreds) && File.Exists(envCreds))
-    {
-        try
-        {
-            FirebaseApp.Create();
-            Console.WriteLine("[Firebase SDK] Successfully initialized FirebaseApp using GOOGLE_APPLICATION_CREDENTIALS environment variable.");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[Firebase SDK Error] Failed to initialize FirebaseApp from env variable: {ex.Message}");
-        }
-    }
-    else
-    {
-        Console.WriteLine("[Firebase SDK Warning] No Firebase service account file or environment variable found.");
-        Console.WriteLine("ID Token verification will fail. Place your credentials in 'firebase-service-account.json' to test real validation.");
-        
-        // Attempt fallback default initialization to prevent crash if running dry or mock
-        try
-        {
-            FirebaseApp.Create(new AppOptions
-            {
-                Credential = GoogleCredential.GetApplicationDefault()
-            });
-        }
-        catch
-        {
-            // Suppress fallback error in console as we have already warned the developer
-        }
-    }
-}
+    client.BaseAddress = new Uri($"{supabaseAdminUrl}/auth/v1/");
+    client.Timeout = TimeSpan.FromSeconds(30);
+    client.DefaultRequestHeaders.Authorization =
+        new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", serviceRoleKey);
+    client.DefaultRequestHeaders.Add("apikey", serviceRoleKey);
+});
 
 var app = builder.Build();
 
@@ -205,13 +248,34 @@ if (!app.Environment.IsEnvironment("Testing"))
 {
     using var scope = app.Services.CreateScope();
     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    context.Database.Migrate();
+    var maxRetries = 3;
+    for (var attempt = 1; attempt <= maxRetries; attempt++)
+    {
+        try
+        {
+            context.Database.Migrate();
+            break;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[Startup Migration] Attempt {attempt} failed: {ex.Message}");
+            if (attempt == maxRetries) throw;
+            Thread.Sleep(3000);
+        }
+    }
     await scope.ServiceProvider.GetRequiredService<ApplicationRoleSeeder>().SeedAsync();
     await scope.ServiceProvider.GetRequiredService<PreDesignedPlanSeeder>().SeedAsync();
 }
 
 // 6. Register exception-handling middleware early in request pipeline
 app.UseMiddleware<ExceptionHandlingMiddleware>();
+
+app.Use(async (context, next) =>
+{
+    Console.WriteLine($"Path: {context.Request.Path}");
+    Console.WriteLine($"Authorization header present: {context.Request.Headers.ContainsKey("Authorization")}");
+    await next();
+});
 
 // Enable Swagger in Development environment
 if (app.Environment.IsDevelopment())

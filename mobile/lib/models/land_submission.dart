@@ -8,7 +8,14 @@ class LandSubmission {
   final int? preferredBedrooms;
   final int? preferredFloors;
   final String? stylePreference;
-  final Set<String>? selectedAmenities;
+  final bool openPlan;
+  final bool masterEnsuite;
+  final bool homeOffice;
+  final bool balcony;
+  final bool parkingRequired;
+  final bool accessibility;
+  final String? basePreDesignedPlanId;
+  final String? planSelectionMode;
 
   //The value given to the constructor is put into the property of this object.
   LandSubmission({
@@ -19,7 +26,14 @@ class LandSubmission {
     this.preferredBedrooms,
     this.preferredFloors,
     this.stylePreference,
-    this.selectedAmenities,
+    this.openPlan = false,
+    this.masterEnsuite = false,
+    this.homeOffice = false,
+    this.balcony = false,
+    this.parkingRequired = false,
+    this.accessibility = false,
+    this.basePreDesignedPlanId,
+    this.planSelectionMode,
   });
 
   //A new LandSubmission object based on current object is created, but only the values that are wanted are changed.
@@ -31,7 +45,14 @@ class LandSubmission {
     int? preferredBedrooms,
     int? preferredFloors,
     String? stylePreference,
-    Set<String>? selectedAmenities,
+    bool? openPlan,
+    bool? masterEnsuite,
+    bool? homeOffice,
+    bool? balcony,
+    bool? parkingRequired,
+    bool? accessibility,
+    String? basePreDesignedPlanId,
+    String? planSelectionMode,
     bool clearPhoto=false,
     bool clearManualTerrain=false
   }){
@@ -43,7 +64,14 @@ class LandSubmission {
       preferredBedrooms: preferredBedrooms ?? this.preferredBedrooms,
       preferredFloors: preferredFloors ?? this.preferredFloors,
       stylePreference: stylePreference ?? this.stylePreference,
-      selectedAmenities: selectedAmenities ?? this.selectedAmenities,
+      openPlan: openPlan ?? this.openPlan,
+      masterEnsuite: masterEnsuite ?? this.masterEnsuite,
+      homeOffice: homeOffice ?? this.homeOffice,
+      balcony: balcony ?? this.balcony,
+      parkingRequired: parkingRequired ?? this.parkingRequired,
+      accessibility: accessibility ?? this.accessibility,
+      basePreDesignedPlanId: basePreDesignedPlanId ?? this.basePreDesignedPlanId,
+      planSelectionMode: planSelectionMode ?? this.planSelectionMode,
     );
   }
 
@@ -53,5 +81,4 @@ class LandSubmission {
            (preferredBedrooms ?? 0) > 0 &&
            (preferredFloors ?? 0) > 0;
   }
-
 }

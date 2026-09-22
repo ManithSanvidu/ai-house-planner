@@ -33,7 +33,7 @@ const LoginPage: React.FC = () => {
     } else {
       const errorMsg = (result.payload as string) || 'Invalid email or password.';
       if (errorMsg === 'registration_required' || errorMsg.includes('registration_required')) {
-        // Firebase identity exists, but its application profile was not created yet.
+        // Supabase identity exists, but its application profile was not created yet.
         navigate('/register');
       } else {
         setError(errorMsg);

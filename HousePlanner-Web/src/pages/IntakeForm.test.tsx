@@ -28,7 +28,7 @@ beforeEach(() => {
 test('renders every intake section on one page', () => {
   renderPage();
 
-  expect(screen.getByText('Budget & Land Constraints')).toBeTruthy();
+  expect(screen.getByText('Land Details')).toBeTruthy();
   expect(screen.getByText('Terrain & Topography')).toBeTruthy();
   expect(screen.getByText('Plot Constraints (Optional)')).toBeTruthy();
   expect(screen.getByText('Design Preferences')).toBeTruthy();
@@ -50,7 +50,6 @@ test('one-floor projects can clear an incompatible balcony selection', () => {
 test('submits the current project requirements and shows success', async () => {
   renderPage();
   fireEvent.change(input('landSize'), { target: { value: '10' } });
-  fireEvent.change(input('budget'), { target: { value: '5000000' } });
   fireEvent.change(input('bedrooms'), { target: { value: '2' } });
   fireEvent.change(input('bathrooms'), { target: { value: '1' } });
   fireEvent.change(input('floors'), { target: { value: '1' } });
@@ -60,7 +59,6 @@ test('submits the current project requirements and shows success', async () => {
   await screen.findByText('AI Plan Generated!');
   expect(startDesign).toHaveBeenCalledOnce();
   expect(startDesign).toHaveBeenCalledWith(expect.objectContaining({
-    budgetLkr: 5_000_000,
     landSizePerches: 10,
     preferences: expect.objectContaining({
       bedrooms: 2,
@@ -70,7 +68,7 @@ test('submits the current project requirements and shows success', async () => {
   }));
 });
 
-test('allows an optional budget to be omitted', async () => {
+test('submits without any budget field in payload', async () => {
   renderPage();
   fireEvent.change(input('landSize'), { target: { value: '8' } });
 
