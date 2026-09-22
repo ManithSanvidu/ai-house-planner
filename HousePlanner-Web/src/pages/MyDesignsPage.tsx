@@ -36,10 +36,15 @@ const MyDesignsPage: React.FC = () => {
   };
   const remove = async () => {
     if (!pendingRemoval) return;
-    await workflowService.removeDesign(pendingRemoval.workflow.workflowId, pendingRemoval.design.designId);
-    setPendingRemoval(null);
-    setCompareIds(previous => ({ ...previous, [pendingRemoval.workflow.workflowId]: (previous[pendingRemoval.workflow.workflowId] || []).filter(id => id !== pendingRemoval.design.designId) }));
-    await load();
+    try {
+      await workflowService.removeDesign(pendingRemoval.workflow.workflowId, pendingRemoval.design.designId);
+      setPendingRemoval(null);
+      setCompareIds(previous => ({ ...previous, [pendingRemoval.workflow.workflowId]: (previous[pendingRemoval.workflow.workflowId] || []).filter(id => id !== pendingRemoval.design.designId) }));
+      await load();
+    } catch (err: any) {
+      setError(err?.response?.data?.message || err.message || 'Failed to remove design');
+      setPendingRemoval(null);
+    }
   };
   const toggleCompare = (workflowId: string, designId: string) => setCompareIds(previous => {
     const selected = previous[workflowId] || [];
