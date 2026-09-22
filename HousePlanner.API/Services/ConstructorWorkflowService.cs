@@ -25,7 +25,7 @@ namespace HousePlanner.API.Services
 
         public async Task<IEnumerable<HousePlanner.API.DTOs.ConstructorProjectDto>> GetConstructorProjectsAsync(Guid constructorId, string userRole)
         {
-            var query = _context.Projects.AsQueryable();
+            var query = _context.Projects.Where(p => p.Status != "Cancelled").AsQueryable();
 
             if (!string.Equals(userRole, "Admin", StringComparison.OrdinalIgnoreCase))
             {

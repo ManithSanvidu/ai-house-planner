@@ -15,7 +15,7 @@ using Xunit;
 
 namespace HousePlanner.API.Tests.Controllers;
 
-public class WorkflowControllerTests
+public partial class WorkflowControllerTests
 {
     private readonly ApplicationDbContext _dbContext;
     private readonly Mock<ILogger<WorkflowController>> _loggerMock;

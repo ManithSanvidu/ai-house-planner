@@ -11,7 +11,7 @@ using Xunit;
 
 namespace HousePlanner.API.Tests.Controllers;
 
-public class ConstructorWorkflowControllerTests
+public partial class ConstructorWorkflowControllerTests
 {
     private readonly ApplicationDbContext _db;
     private readonly Mock<ICurrentUserContextService> _mockUser;

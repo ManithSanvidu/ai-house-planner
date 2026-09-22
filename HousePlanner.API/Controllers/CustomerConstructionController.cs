@@ -146,7 +146,7 @@ public class CustomerConstructionController : ControllerBase
             }).ToListAsync();
             
         var projects = await _db.Projects.AsNoTracking()
-            .Where(p => customerWorkflowIds.Contains(p.WorkflowStateId) && p.ContractorId != null)
+            .Where(p => customerWorkflowIds.Contains(p.WorkflowStateId) && p.ContractorId != null && p.Status != "Cancelled")
             .Include(p => p.Contractor).Include(p => p.HouseDesign).Include(p => p.ConstructionPhases)
             .OrderByDescending(p => p.UpdatedAt).ToListAsync();
             

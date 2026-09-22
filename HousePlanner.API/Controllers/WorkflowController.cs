@@ -394,7 +394,7 @@ public class WorkflowController : ControllerBase
         // BUT wait, is a Project automatically created? Let's check if the project has a ContractorId.
         // The prompt says: "Accepted request with ACTIVE construction Project: BLOCK archive with 409."
         var hasActiveProject = await _context.Projects
-            .AnyAsync(p => p.HouseDesignId == designId && p.ContractorId != null);
+            .AnyAsync(p => p.HouseDesignId == designId && p.ContractorId != null && p.Status != "Cancelled" && p.Status != "completed");
             
         if (hasActiveProject)
         {
