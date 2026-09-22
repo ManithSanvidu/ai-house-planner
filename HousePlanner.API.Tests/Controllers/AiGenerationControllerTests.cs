@@ -157,7 +157,7 @@ namespace HousePlanner.API.Tests.Controllers
                 Style="Modern",Bedrooms=2,Bathrooms=1,FloorCount=1,MinimumLandSizePerches=8,
                 SuitableTerrain="flat",TagsJson="[]",LayoutJson="{\"rooms\":[]}",IsActive=true };
             _dbContext.PreDesignedHousePlans.Add(plan); await _dbContext.SaveChangesAsync();
-            var request = new AiGenerationRequest { BasePreDesignedPlanId=plan.Id,PlanSelectionMode="use",
+            var request = new AiGenerationRequest { BasePreDesignedPlanId=plan.Id,PlanSelectionMode="reference",
                 LandSizePerches=10,ManualTerrainType="flat",Preferences=new PreferencesDto{Bedrooms=3,Bathrooms=2,Floors=1} };
             _mockDesignOptionsService.Setup(x=>x.ValidateFinalSelectionAsync(request,It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new DesignOptionsValidationResult{IsValid=true});
@@ -183,7 +183,7 @@ namespace HousePlanner.API.Tests.Controllers
                 Style="Modern",Bedrooms=2,Bathrooms=1,FloorCount=1,MinimumLandSizePerches=8,
                 SuitableTerrain="flat",TagsJson="[]",LayoutJson="{\"rooms\":[]}",IsActive=true };
             _dbContext.PreDesignedHousePlans.Add(plan); await _dbContext.SaveChangesAsync();
-            var request = new AiGenerationRequest { BasePreDesignedPlanId=plan.Id,PlanSelectionMode="use",
+            var request = new AiGenerationRequest { BasePreDesignedPlanId=plan.Id,PlanSelectionMode="reference",
                 LandSizePerches=10,ManualTerrainType="flat",Preferences=new PreferencesDto{Bedrooms=2,Bathrooms=1,Floors=1,ArchitecturalStyle="Modern"} };
             _mockDesignOptionsService.Setup(x=>x.ValidateFinalSelectionAsync(request,It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new DesignOptionsValidationResult{IsValid=true});
@@ -206,6 +206,69 @@ var result = Assert.IsType<OkObjectResult>(resultRaw);
             Assert.Equal(workflow.Id, JsonSerializer.SerializeToElement(result.Value).GetProperty("WorkflowId").GetGuid());
             Assert.Equal(plan.Id,(await _dbContext.LandSubmissions.SingleAsync()).BasePreDesignedPlanId);
             Assert.Empty(_dbContext.HouseDesigns);
+        }
+
+        [Fact]
+        public async Task Generate_AssignsLandSubmissionToAuthenticatedUser()
+        {
+            var request = new AiGenerationRequest { LandSizePerches = 15 };
+            _mockDesignOptionsService.Setup(x => x.ValidateFinalSelectionAsync(request, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new DesignOptionsValidationResult { IsValid = true });
+            _mockHttpMessageHandler.Protected().Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK));
+
+            var result = await _controller.Generate(request, CancellationToken.None);
+            
+            Assert.IsType<OkObjectResult>(result);
+            var submission = await _dbContext.LandSubmissions.SingleAsync();
+            Assert.Equal(_clientId, submission.ClientId);
+        }
+
+        [Fact]
+        public async Task Generate_DoesNotUseFirstDatabaseUser()
+        {
+            var oldUser = new User { Id = Guid.NewGuid(), Email = "oldest@example.com", FullName = "Old User", CreatedAt = DateTimeOffset.MinValue };
+            _dbContext.Users.Add(oldUser);
+            await _dbContext.SaveChangesAsync();
+
+            var request = new AiGenerationRequest { LandSizePerches = 15 };
+            _mockDesignOptionsService.Setup(x => x.ValidateFinalSelectionAsync(request, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new DesignOptionsValidationResult { IsValid = true });
+            _mockHttpMessageHandler.Protected().Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK));
+
+            var result = await _controller.Generate(request, CancellationToken.None);
+            
+            Assert.IsType<OkObjectResult>(result);
+            var submission = await _dbContext.LandSubmissions.SingleAsync();
+            Assert.Equal(_clientId, submission.ClientId);
+            Assert.NotEqual(oldUser.Id, submission.ClientId);
+        }
+
+        [Fact]
+        public async Task Generate_MissingApplicationUser_DoesNotFallbackToAnotherUser()
+        {
+            var oldUser = new User { Id = Guid.NewGuid(), Email = "oldest@example.com", FullName = "Old User", CreatedAt = DateTimeOffset.MinValue };
+            _dbContext.Users.Add(oldUser);
+            await _dbContext.SaveChangesAsync();
+
+            // Simulate missing authenticated user
+            var currentUser = new Mock<ICurrentUserContextService>();
+            currentUser.Setup(x => x.GetAsync(It.IsAny<HttpContext>())).ReturnsAsync((CurrentUserContext)null);
+            
+            var localController = new AiGenerationController(_dbContext, new Mock<IHttpClientFactory>().Object, _mockDesignOptionsService.Object, currentUser.Object)
+            {
+                ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
+            };
+
+            var request = new AiGenerationRequest { LandSizePerches = 15 };
+            _mockDesignOptionsService.Setup(x => x.ValidateFinalSelectionAsync(request, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new DesignOptionsValidationResult { IsValid = true });
+
+            var result = await localController.Generate(request, CancellationToken.None);
+            
+            var unauthorizedResult = Assert.IsType<UnauthorizedObjectResult>(result);
+            Assert.Empty(_dbContext.LandSubmissions);
         }
     }
 }

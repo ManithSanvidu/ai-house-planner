@@ -182,7 +182,7 @@ namespace HousePlanner.API.Controllers
             if (user?.Id == null) return Unauthorized();
 
             var raw = await _db.ConstructorProjectRequests.AsNoTracking()
-                .Where(r => r.ConstructorId == user.Id.Value)
+                .Where(r => r.ConstructorId == user.Id.Value && r.Status == "Pending")
                 .Include(r => r.Customer).Include(r => r.HouseDesign)
                 .OrderByDescending(r => r.CreatedAt)
                 .Select(r => new {

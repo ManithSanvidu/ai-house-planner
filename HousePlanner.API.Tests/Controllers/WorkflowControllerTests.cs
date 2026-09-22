@@ -314,4 +314,33 @@ public class WorkflowControllerTests
         LayoutJson = """{"template_family":"COMPACT_RECTANGLE","geometry_fingerprint":"fp","candidate_summary":{"generation_mode":"deterministic_fallback","selected_plan_code":"BASE-1"},"rooms":[]}""",
         CreatedAt = DateTimeOffset.UtcNow.AddMinutes(version)
     };
+
+    [Fact]
+    public async Task GetWorkflowStatus_CannotBeReadByDifferentCustomer()
+    {
+        // Arrange
+        var workflowId = Guid.NewGuid();
+        var submissionId = Guid.NewGuid();
+        
+        // This creates a workflow owned by some other user (not _clientId)
+        _dbContext.LandSubmissions.Add(new LandSubmission
+        {
+            Id = submissionId, ClientId = Guid.NewGuid(), LandSizePerches = 10,
+            PreferredBedrooms = 3, PreferredFloors = 1
+        });
+        _dbContext.WorkflowStates.Add(new WorkflowState
+        {
+            Id = workflowId,
+            LandSubmissionId = submissionId,
+            Status = "pending",
+            TerrainType = "flat"
+        });
+        await _dbContext.SaveChangesAsync();
+
+        // Act - _controller is configured with _clientId as the current user
+        var result = await _controller.GetWorkflowStatus(workflowId);
+
+        // Assert - The controller returns 404 because the ownership check fails
+        Assert.IsType<NotFoundObjectResult>(result.Result);
+    }
 }

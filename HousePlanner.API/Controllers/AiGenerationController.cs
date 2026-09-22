@@ -55,16 +55,28 @@ namespace HousePlanner.API.Controllers
             object payload;
             try 
             {
-                var client = request.ClientId.HasValue
-                    ? await _context.Users.FindAsync(request.ClientId.Value)
-                    : await _context.Users.OrderBy(u => u.CreatedAt).FirstOrDefaultAsync();
+                var currentUserCtx = await _currentUser.GetAsync(HttpContext);
+                if (currentUserCtx == null)
+                    return Unauthorized(new { Message = "Authentication required. Application profile not found." });
+                var client = await _context.Users.FindAsync(currentUserCtx.Id);
                 if (client is null)
-                    return Conflict(new { Message = "No client account exists for this submission." });
+                    return Unauthorized(new { Message = "Authentication required. Application profile not found." });
                 PreDesignedHousePlan? basePlan = null;
                 if (request.BasePreDesignedPlanId.HasValue)
                 {
                     basePlan = await _context.PreDesignedHousePlans.FirstOrDefaultAsync(p => p.Id == request.BasePreDesignedPlanId && p.IsActive);
                     if (basePlan is null) return BadRequest(new { Message = "The selected pre-designed plan is unavailable." });
+                    
+                    var specificValidation = await _designOptionsService.ValidateSpecificPlanAsync(basePlan, request, cancellationToken);
+                    if (!specificValidation.IsValid)
+                    {
+                        return BadRequest(new { 
+                            code = specificValidation.ErrorCode, 
+                            message = specificValidation.Message,
+                            conflicts = specificValidation.Conflicts,
+                            suggestions = specificValidation.Suggestions 
+                        });
+                    }
                 }
 
                 var submission = new LandSubmission
@@ -134,6 +146,7 @@ namespace HousePlanner.API.Controllers
                     design_seed = request.DesignSeed
                     ,base_pre_designed_plan_id = request.BasePreDesignedPlanId
                     ,plan_selection_mode = request.PlanSelectionMode
+                    ,preferred_plan_code = basePlan?.DesignCode
                 };
             }
             catch (Exception ex)
