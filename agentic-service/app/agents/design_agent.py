@@ -1,4 +1,4 @@
-﻿"""
+"""
 Design Agent — LangGraph node.
 
 Generates validated procedural house layouts and
@@ -60,11 +60,17 @@ def design_node(state: WorkflowState) -> WorkflowState:
                 state.input_data.preferences = preferences
         plot_input = state.input_data.plot_constraints if state.input_data else None
         seed = state.input_data.design_seed if state.input_data else None
+        regeneration = state.input_data.regeneration if state.input_data else False
+        excluded_plan_code = state.input_data.previous_base_plan_code if regeneration else None
+        excluded_fingerprint = state.input_data.previous_design_fingerprint if regeneration else None
+
         design = generate_layout(
             land_size_perches=land_size, terrain_type=terrain_type,
             preferences=preferences, previous_design=previous_design,
             revision_reason=revision_reason, plot_constraints=plot_input, design_seed=seed,
             preferred_plan_code=state.input_data.preferred_plan_code if state.input_data else None,
+            excluded_plan_code=excluded_plan_code,
+            excluded_fingerprint_explicit=excluded_fingerprint,
         )
         req, plot = prepare_inputs(land_size, terrain_type, preferences, plot_input, seed)
         quality = validate_architectural_quality(design, req=req, plot=plot)

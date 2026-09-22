@@ -23,6 +23,16 @@ public class CustomerConstructionController : ControllerBase
         _db = db; _currentUser = currentUser; _workflow = workflow; _staff = staff;
     }
 
+    [HttpGet("debug-claims")]
+    [AllowAnonymous]
+    public IActionResult DebugClaims()
+    {
+        Console.WriteLine("=== CUSTOMER CONTROLLER CLAIMS ===");
+        foreach (var c in User.Claims)
+            Console.WriteLine($"{c.Type}: {c.Value}");
+        return Ok(User.Claims.Select(c => new { c.Type, c.Value }));
+    }
+
     private async Task<Guid?> CustomerId()
     {
         var user = await _currentUser.GetAsync(HttpContext);
@@ -46,9 +56,9 @@ public class CustomerConstructionController : ControllerBase
             .OrderByDescending(v => v.DecisionAt)
             .ToListAsync();
             
-        return Ok(items.Select(v => {
+        var distinctDesigns = items.Select(v => {
             var design = v.HouseDesign ?? v.WorkflowState?.HouseDesigns?.FirstOrDefault(d => d.Id == v.WorkflowState.PreferredHouseDesignId && !d.IsArchived);
-            if (design == null) return null;
+            if (design == null || design.IsArchived) return null;
             return new {
                 designId = design.Id, workflowId = v.WorkflowStateId,
                 version = design.Version, floorCount = design.FloorCount,
@@ -57,7 +67,9 @@ public class CustomerConstructionController : ControllerBase
                 title = DesignTitle(design.LayoutJson, design.Version), bedrooms = CountRooms(design.LayoutJson, "bedroom"),
                 bathrooms = CountRooms(design.LayoutJson, "bathroom")
             };
-        }).Where(x => x != null));
+        }).Where(x => x != null).DistinctBy(x => x.designId).ToList();
+
+        return Ok(distinctDesigns);
     }
 
     [HttpGet("constructors")]
@@ -136,14 +148,14 @@ public class CustomerConstructionController : ControllerBase
             }).ToListAsync();
             
         var projects = await _db.Projects.AsNoTracking()
-            .Where(p => customerWorkflowIds.Contains(p.WorkflowStateId) && p.ContractorId != null)
+            .Where(p => customerWorkflowIds.Contains(p.WorkflowStateId) && p.ContractorId != null && p.Status != "Cancelled")
             .Include(p => p.Contractor).Include(p => p.HouseDesign).Include(p => p.ConstructionPhases)
             .OrderByDescending(p => p.UpdatedAt).ToListAsync();
             
         return Ok(new {
             pendingRequests = requests.Where(r => r.Status == "Pending"),
             declinedRequests = requests.Where(r => r.Status == "Declined"),
-            activeProjects = projects.Where(p => !p.Status.Equals("completed", StringComparison.OrdinalIgnoreCase)).Select(ProjectSummary),
+            activeProjects = projects.Where(p => !p.Status.Equals("completed", StringComparison.OrdinalIgnoreCase) && !p.Status.Equals("cancelled", StringComparison.OrdinalIgnoreCase)).Select(ProjectSummary),
             completedProjects = projects.Where(p => p.Status.Equals("completed", StringComparison.OrdinalIgnoreCase)).Select(ProjectSummary)
         });
     }
@@ -161,10 +173,49 @@ public class CustomerConstructionController : ControllerBase
         var progress = await _workflow.GetProjectProgressAsync(projectId, Guid.Empty, "Admin");
         return Ok(new {
             project = ProjectSummary(project), progress,
-            phases = project.ConstructionPhases.OrderBy(p => p.SequenceOrder).Select(p => new { p.Id, p.PhaseName, p.Status, p.SequenceOrder, p.EstimatedDurationDays }),
+            phases = project.ConstructionPhases.OrderBy(p => p.SequenceOrder).Select(p => new { p.Id, p.PhaseName, p.Status, p.SequenceOrder, p.AiEstimatedDurationDays, p.PlannedDurationDays, p.PlannedStartDate, p.PlannedEndDate }),
             logs = logs.Select(l => new { l.Id, l.Date, l.CompletedWork, l.ProgressPercentage, l.Status, l.Challenges, l.Issues, l.Resolution, l.TomorrowPlan, l.AdditionalNotes, phase = l.ConstructionPhase == null ? null : l.ConstructionPhase.PhaseName }),
             activity = logs.GroupBy(l => DateOnly.FromDateTime(l.Date.UtcDateTime)).Select(g => new { date = g.Key, count = g.Count(), intensity = Math.Min(3, g.Count()) })
         });
+    }
+
+    [HttpPatch("projects/{projectId:guid}/cancel")]
+    public async Task<IActionResult> CancelProject(Guid projectId, CancellationToken cancellationToken)
+    {
+        var customerId = await CustomerId(); if (customerId is null) return Unauthorized();
+
+        var project = await _db.Projects
+            .Include(p => p.WorkflowState).ThenInclude(w => w!.LandSubmission)
+            .FirstOrDefaultAsync(p => p.Id == projectId, cancellationToken);
+            
+        if (project == null) return NotFound(new { message = "Project not found." });
+        if (project.WorkflowState?.LandSubmission.ClientId != customerId) return Forbid();
+        
+        if (project.Status.Equals("completed", StringComparison.OrdinalIgnoreCase) || 
+            project.Status.Equals("cancelled", StringComparison.OrdinalIgnoreCase))
+        {
+            return BadRequest(new { message = $"Cannot cancel a project that is already {project.Status.ToLower()}." });
+        }
+
+        project.Status = "Cancelled";
+        project.UpdatedAt = DateTimeOffset.UtcNow;
+
+        if (project.HouseDesignId != null)
+        {
+            var pendingRequests = await _db.ConstructorProjectRequests
+                .Where(r => r.HouseDesignId == project.HouseDesignId && r.Status == "Pending")
+                .ToListAsync(cancellationToken);
+                
+            foreach (var req in pendingRequests)
+            {
+                req.Status = "Cancelled";
+                req.UpdatedAt = DateTimeOffset.UtcNow;
+            }
+        }
+
+        await _db.SaveChangesAsync(cancellationToken);
+        
+        return Ok(new { projectId = project.Id, status = "Cancelled" });
     }
 
     private static object ProjectSummary(Project p) => new {

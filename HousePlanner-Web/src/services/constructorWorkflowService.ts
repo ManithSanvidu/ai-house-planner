@@ -1,15 +1,14 @@
 import axios from 'axios';
-import { auth } from './firebase';
+import { supabase } from '../lib/supabase';
 
 const API_URL = 'http://localhost:5265/api/constructor/workflow';
 
 // Add the auth token to requests
 const getAuthHeaders = async () => {
-    const user = auth.currentUser;
-    if (!user) return {};
-    const token = await user.getIdToken();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return {};
     return {
-        Authorization: `Bearer ${token}`
+        Authorization: `Bearer ${session.access_token}`
     };
 };
 
@@ -18,10 +17,13 @@ export interface ConstructionPhase {
     projectId: string;
     phaseName: string;
     sequenceOrder: number;
-    estimatedDurationDays: number;
+    aiEstimatedDurationDays: number;
+    plannedDurationDays: number;
+    plannedStartDate?: string;
+    plannedEndDate?: string;
     status: string;
-    startDate?: string;
-    endDate?: string;
+    startedAt?: string;
+    completedAt?: string;
 }
 
 export interface ConstructorWorkflowProject {
@@ -31,6 +33,8 @@ export interface ConstructorWorkflowProject {
     status: string;
     createdAt: string;
     updatedAt: string;
+    aiEstimatedTotalDurationDays: number;
+    plannedTotalDurationDays: number;
     constructionPhases: ConstructionPhase[];
 }
 
@@ -137,5 +141,83 @@ export const constructorWorkflowService = {
             }
         });
         return response.data;
+    },
+
+    updatePhaseSchedule: async (projectId: string, phaseId: string, plannedDurationDays: number): Promise<ConstructionPhase> => {
+        const response = await axios.put(`${API_URL}/projects/${projectId}/phases/${phaseId}/schedule`, { plannedDurationDays }, { headers: await getAuthHeaders() });
+        return response.data;
     }
 };
+
+export interface DailyConstructionLogDto {
+    id: string;
+    projectId: string;
+    logDate: string;
+    constructionPhaseId?: string;
+    phaseName?: string;
+    workCompleted: string;
+    challenges?: string;
+    materialsUsed?: string;
+    workforceCount?: number;
+    weatherCondition?: string;
+    safetyIssues?: string;
+    progressPercentage?: number;
+    tomorrowPlan?: string;
+    notes?: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface CreateDailyConstructionLogRequest {
+    logDate: string;
+    constructionPhaseId?: string;
+    workCompleted: string;
+    challenges?: string;
+    materialsUsed?: string;
+    workforceCount?: number;
+    weatherCondition?: string;
+    safetyIssues?: string;
+    progressPercentage?: number;
+    tomorrowPlan?: string;
+    notes?: string;
+}
+
+export interface UpdateDailyConstructionLogRequest extends CreateDailyConstructionLogRequest {}
+
+export const dailyConstructionLogService = {
+    getLogs: async (projectId: string): Promise<DailyConstructionLogDto[]> => {
+        const response = await axios.get(`${API_URL}/projects/${projectId}/logs`, { headers: await getAuthHeaders() });
+        return response.data;
+    },
+    getLog: async (projectId: string, logId: string): Promise<DailyConstructionLogDto> => {
+        const response = await axios.get(`${API_URL}/projects/${projectId}/logs/${logId}`, { headers: await getAuthHeaders() });
+        return response.data;
+    },
+    createLog: async (projectId: string, request: CreateDailyConstructionLogRequest): Promise<DailyConstructionLogDto> => {
+        const response = await axios.post(`${API_URL}/projects/${projectId}/logs`, request, { headers: await getAuthHeaders() });
+        return response.data;
+    },
+    updateLog: async (projectId: string, logId: string, request: UpdateDailyConstructionLogRequest): Promise<DailyConstructionLogDto> => {
+        const response = await axios.put(`${API_URL}/projects/${projectId}/logs/${logId}`, request, { headers: await getAuthHeaders() });
+        return response.data;
+    },
+    deleteLog: async (projectId: string, logId: string): Promise<void> => {
+        await axios.delete(`${API_URL}/projects/${projectId}/logs/${logId}`, { headers: await getAuthHeaders() });
+    },
+    getProjectCalendar: async (projectId: string): Promise<CalendarEventDto[]> => {
+        const response = await axios.get(`${API_URL}/projects/${projectId}/calendar`, { headers: await getAuthHeaders() });
+        return response.data;
+    }
+};
+
+export interface CalendarEventDto {
+    id: string;
+    date: string;
+    title: string;
+    type: string;
+    status: string;
+    description: string;
+    projectId: string;
+    dailyLogId?: string;
+    phaseId?: string;
+}

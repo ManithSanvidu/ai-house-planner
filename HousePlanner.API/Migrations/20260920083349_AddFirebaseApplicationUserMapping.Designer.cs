@@ -580,7 +580,7 @@ namespace HousePlanner.API.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
 
-                    b.Property<string>("FirebaseUid")
+                    b.Property<string>("SupabaseUid")
                         .HasMaxLength(128)
                         .HasColumnType("character varying(128)");
 
@@ -601,9 +601,9 @@ namespace HousePlanner.API.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("FirebaseUid")
+                    b.HasIndex("SupabaseUid")
                         .IsUnique()
-                        .HasDatabaseName("UX_Users_FirebaseUid");
+                        .HasDatabaseName("UX_Users_SupabaseUid");
 
                     b.HasIndex("RoleId");
 

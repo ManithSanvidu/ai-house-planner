@@ -89,7 +89,7 @@ export const ConstructorWorkflowDashboard: React.FC = () => {
   }
 
   const pendingRequests = requests.filter(r => r.status === 'Pending');
-  const activeProjects = projects.filter(p => p.status !== 'Completed');
+  const activeProjects = projects.filter(p => p.status !== 'Completed' && p.status !== 'Cancelled');
   const completedCount = projects.length - activeProjects.length;
 
   return (
@@ -217,7 +217,7 @@ export const ConstructorWorkflowDashboard: React.FC = () => {
           {projects.map((project) => (
             <li key={project.id}>
               <Link
-                to={`/constructor/workflows/${project.id}`}
+                to={`/constructor/projects/${project.id}`}
                 className="block p-6 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
               >
                 <div className="flex items-center justify-between">

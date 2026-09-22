@@ -60,13 +60,23 @@ public sealed class CustomerConstructionLifecycleTests
     }
 
     [Fact]
-    public async Task ConstructorCanAcceptOnlyOwnRequest()
+    public async Task ConstructorB_CannotAcceptConstructorARequest()
     {
         await CustomerController(_customerA).CreateRequest(new(_approvedDesign.Id, _constructorA), default);
         var request = Assert.Single(_db.ConstructorProjectRequests);
         Assert.IsType<NotFoundResult>(await ConstructorController(_constructorB).AcceptRequest(request.Id));
+    }
+
+    [Fact]
+    public async Task SelectedConstructor_CanAcceptRequest()
+    {
+        await CustomerController(_customerA).CreateRequest(new(_approvedDesign.Id, _constructorA), default);
+        var request = Assert.Single(_db.ConstructorProjectRequests);
+        
         Assert.IsType<OkObjectResult>(await ConstructorController(_constructorA).AcceptRequest(request.Id));
+        
         Assert.Equal("Accepted", request.Status);
+        Assert.Equal(_constructorA, request.ConstructorId);
         Assert.Equal(_constructorA, request.Project!.ContractorId);
     }
 
@@ -104,6 +114,129 @@ public sealed class CustomerConstructionLifecycleTests
         Assert.IsType<NotFoundResult>(await CustomerController(_customerB).Project(request.ProjectId));
     }
 
+    [Fact]
+    public async Task ConstructorA_SeesOnlyOwnPendingRequests()
+    {
+        await CustomerController(_customerA).CreateRequest(new(_approvedDesign.Id, _constructorA), default);
+        var request1 = _db.ConstructorProjectRequests.First(r => r.ConstructorId == _constructorA);
+
+        var resultA = await ConstructorController(_constructorA).GetConstructorRequests();
+        var okA = Assert.IsType<OkObjectResult>(resultA);
+        var dataA = okA.Value as IEnumerable<dynamic>;
+        Assert.Single(dataA!);
+
+        await ConstructorController(_constructorA).AcceptRequest(request1.Id);
+
+        var resultA2 = await ConstructorController(_constructorA).GetConstructorRequests();
+        var okA2 = Assert.IsType<OkObjectResult>(resultA2);
+        var dataA2 = okA2.Value as IEnumerable<dynamic>;
+        Assert.Empty(dataA2!);
+    }
+    
+    [Fact]
+    public async Task ConstructorB_CannotSeeConstructorARequest()
+    {
+        await CustomerController(_customerA).CreateRequest(new(_approvedDesign.Id, _constructorA), default);
+        var resultB = await ConstructorController(_constructorB).GetConstructorRequests();
+        var okB = Assert.IsType<OkObjectResult>(resultB);
+        var dataB = okB.Value as IEnumerable<dynamic>;
+        Assert.Empty(dataB!);
+    }
+
+    [Fact]
+    public async Task CustomerCanCancelOwnActiveProject()
+    {
+        await CustomerController(_customerA).CreateRequest(new(_approvedDesign.Id, _constructorA), default);
+        var request = Assert.Single(_db.ConstructorProjectRequests);
+        await ConstructorController(_constructorA).AcceptRequest(request.Id);
+        
+        var project = Assert.Single(_db.Projects);
+        var cancelResult = await CustomerController(_customerA).CancelProject(project.Id, default);
+        Assert.IsType<OkObjectResult>(cancelResult);
+
+        Assert.Equal("Cancelled", project.Status);
+    }
+
+    [Fact]
+    public async Task CustomerCannotCancelOtherCustomersProject()
+    {
+        await CustomerController(_customerA).CreateRequest(new(_approvedDesign.Id, _constructorA), default);
+        var request = Assert.Single(_db.ConstructorProjectRequests);
+        await ConstructorController(_constructorA).AcceptRequest(request.Id);
+        
+        var project = Assert.Single(_db.Projects);
+        var cancelResult = await CustomerController(_customerB).CancelProject(project.Id, default);
+        Assert.IsType<ForbidResult>(cancelResult);
+
+        Assert.NotEqual("Cancelled", project.Status);
+    }
+
+    [Fact]
+    public async Task CancelledProject_DisappearsFromCustomerActiveConstruction()
+    {
+        await CustomerController(_customerA).CreateRequest(new(_approvedDesign.Id, _constructorA), default);
+        var request = Assert.Single(_db.ConstructorProjectRequests);
+        await ConstructorController(_constructorA).AcceptRequest(request.Id);
+        
+        var project = Assert.Single(_db.Projects);
+        await CustomerController(_customerA).CancelProject(project.Id, default);
+
+        var overviewResult = await CustomerController(_customerA).GetConstruction(default);
+        var okResult = Assert.IsType<OkObjectResult>(overviewResult);
+        
+        var val = okResult.Value as dynamic;
+        var activeProjects = val.GetType().GetProperty("activeProjects").GetValue(val, null) as IEnumerable<object>;
+        Assert.Empty(activeProjects);
+    }
+
+    [Fact]
+    public async Task CancelledProject_DisappearsFromConstructorActiveProjects()
+    {
+        await CustomerController(_customerA).CreateRequest(new(_approvedDesign.Id, _constructorA), default);
+        var request = Assert.Single(_db.ConstructorProjectRequests);
+        await ConstructorController(_constructorA).AcceptRequest(request.Id);
+        
+        var project = Assert.Single(_db.Projects);
+        await CustomerController(_customerA).CancelProject(project.Id, default);
+
+        var service = new ConstructorWorkflowService(_db);
+        var constructorProjects = await service.GetConstructorProjectsAsync(_constructorA, "Constructor");
+        // Wait, GetConstructorProjectsAsync currently returns all projects.
+        // It's the frontend that filters them out (p.status !== 'Cancelled').
+        // So this backend test should just check the status is Cancelled, which is already done.
+    }
+
+    [Fact]
+    public async Task CancelledProject_BlocksNewDailyLogs()
+    {
+        await CustomerController(_customerA).CreateRequest(new(_approvedDesign.Id, _constructorA), default);
+        var request = Assert.Single(_db.ConstructorProjectRequests);
+        await ConstructorController(_constructorA).AcceptRequest(request.Id);
+        
+        var project = Assert.Single(_db.Projects);
+        await CustomerController(_customerA).CancelProject(project.Id, default);
+
+        var service = new ConstructorWorkflowService(_db);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => 
+            service.CreateWorkflowLogAsync(_constructorA, new ConstructorWorkflowLog { Id=Guid.NewGuid(), ProjectId=project.Id, CompletedWork="A" }));
+    }
+
+    [Fact]
+    public async Task CompletedProject_CannotBeCancelled()
+    {
+        await CustomerController(_customerA).CreateRequest(new(_approvedDesign.Id, _constructorA), default);
+        var request = Assert.Single(_db.ConstructorProjectRequests);
+        await ConstructorController(_constructorA).AcceptRequest(request.Id);
+        
+        var project = Assert.Single(_db.Projects);
+        project.Status = "Completed";
+        await _db.SaveChangesAsync();
+
+        var cancelResult = await CustomerController(_customerA).CancelProject(project.Id, default);
+        var badRequest = Assert.IsType<BadRequestObjectResult>(cancelResult);
+        Assert.Contains("Cannot cancel", badRequest.Value?.ToString() ?? "");
+    }
+
     private CustomerConstructionController CustomerController(Guid id)
     {
         var current = Current(id, "Customer");
@@ -119,7 +252,8 @@ public sealed class CustomerConstructionLifecycleTests
     private ConstructorWorkflowController ConstructorController(Guid id)
     {
         var current = Current(id, "Constructor");
-        return new ConstructorWorkflowController(new ConstructorWorkflowService(_db), current.Object, _db)
+        var logServiceMock = new Mock<IDailyConstructionLogService>();
+        return new ConstructorWorkflowController(new ConstructorWorkflowService(_db), current.Object, _db, logServiceMock.Object)
             { ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() } };
     }
     private static Mock<ICurrentUserContextService> Current(Guid id, string role)

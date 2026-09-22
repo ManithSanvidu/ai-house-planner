@@ -8,10 +8,10 @@ namespace HousePlanner.API.Controllers;
 
 [ApiController]
 [Route("api/v1/auth")]
-public class AuthController(IApplicationUserSyncService users) : ControllerBase
+public class AuthController(ISupabaseUserSyncService users) : ControllerBase
 {
     /// <summary>
-    /// Creates or synchronizes an application-user profile for a verified Firebase identity.
+    /// Creates or synchronizes an application-user profile for a verified Supabase identity.
     /// Used by Google sign-in and existing session restoration. A new identity is provisioned as
     /// Customer; an existing identity keeps its PostgreSQL role.
     /// The UID and email are derived from the validated Authorization bearer token only.
@@ -22,14 +22,14 @@ public class AuthController(IApplicationUserSyncService users) : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<UserInfoResponseDto>> CreateSession(CancellationToken cancellationToken)
     {
-        var firebaseUser = ExtractFirebaseIdentity();
-        var applicationUser = await users.SynchronizeAsync(firebaseUser, cancellationToken);
-        return Ok(ToDto(applicationUser));
+            var supabaseUser = ExtractSupabaseIdentity();
+            var applicationUser = await users.SynchronizeAsync(supabaseUser, cancellationToken);
+            return Ok(ToDto(applicationUser));
     }
 
     /// <summary>
-    /// Public registration always provisions Customer. Firebase UID, email, and role are trusted
-    /// server-side values; extra client fields such as role, RoleId, or FirebaseUid are ignored.
+    /// Public registration always provisions Customer. Supabase UID, email, and role are trusted
+    /// server-side values; extra client fields such as role, RoleId, or SupabaseUid are ignored.
     /// </summary>
     [Authorize]
     [HttpPost("register")]
@@ -40,29 +40,40 @@ public class AuthController(IApplicationUserSyncService users) : ControllerBase
         [FromBody] RegisterRequestDto request,
         CancellationToken cancellationToken)
     {
-        var firebaseUser = ExtractFirebaseIdentity();
+        var supabaseUser = ExtractSupabaseIdentity();
         var applicationUser = await users.RegisterCustomerAsync(
-            firebaseUser, request.FullName, cancellationToken);
+            supabaseUser, request.FullName, cancellationToken);
         return Ok(ToDto(applicationUser));
     }
 
-    /// <summary>Loads the current application user and server-owned role after Firebase token validation.</summary>
+    /// <summary>Loads the current application user and server-owned role after Supabase token validation.</summary>
     [Authorize]
     [HttpGet("me")]
     public async Task<ActionResult<UserInfoResponseDto>> Me(CancellationToken cancellationToken)
         => await CreateSession(cancellationToken);
 
+    [HttpGet("debug")]
+    public IActionResult Debug()
+    {
+        return Ok(new
+        {
+            authenticated = User.Identity?.IsAuthenticated ?? false,
+            userId = User.FindFirst("sub")?.Value,
+            claims = User.Claims.Select(c => new { c.Type, c.Value })
+        });
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────────────
 
-    private UserInfoResponseDto ExtractFirebaseIdentity() => new()
+    private UserInfoResponseDto ExtractSupabaseIdentity() => new()
     {
-        Uid = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty,
-        Email = User.FindFirstValue(ClaimTypes.Email) ?? string.Empty,
+        Uid = User.FindFirst("sub")?.Value ?? string.Empty,
+        Email = User.FindFirst("email")?.Value ?? string.Empty,
     };
 
     private static UserInfoResponseDto ToDto(Entities.User user) => new()
     {
-        Uid = user.FirebaseUid ?? string.Empty,
+        Uid = user.SupabaseUid ?? string.Empty,
         Email = user.Email,
         FullName = user.FullName,
         Role = user.Role.Name,

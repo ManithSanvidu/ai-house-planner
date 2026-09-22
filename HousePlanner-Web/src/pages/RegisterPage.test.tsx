@@ -29,7 +29,7 @@ describe('public Customer registration',()=>{
   expect(screen.queryByText(/^Admin$/)).toBeNull();
   expect(screen.getByText(/Architect and Constructor accounts are created/)).toBeTruthy();
  });
- it('validates password confirmation before Firebase registration',async()=>{
+ it('validates password confirmation before Supabase registration',async()=>{
   const {container}=renderRegister();
   fireEvent.change(container.querySelector('#reg-fullname')!,{target:{value:'Customer'}});
   fireEvent.change(container.querySelector('#reg-email')!,{target:{value:'customer@example.com'}});

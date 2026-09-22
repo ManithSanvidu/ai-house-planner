@@ -13,11 +13,11 @@ namespace HousePlanner.API.Entities
         [StringLength(255)]
         public string Email { get; set; } = null!;
 
-        /// <summary>Stable Firebase Authentication subject. This, rather than email, links an identity to application data.</summary>
+        /// <summary>Stable Supabase Authentication subject. This, rather than email, links an identity to application data.</summary>
         [StringLength(128)]
-        public string? FirebaseUid { get; set; }
+        public string? SupabaseUid { get; set; }
 
-        // Retained only for legacy rows. Firebase users never have passwords or password hashes stored here.
+        // Retained only for legacy rows. Supabase users never have passwords or password hashes stored here.
         [StringLength(255)]
         public string? PasswordHash { get; set; }
 

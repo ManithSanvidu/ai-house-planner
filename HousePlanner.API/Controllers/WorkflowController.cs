@@ -366,6 +366,12 @@ public class WorkflowController : ControllerBase
         if (workflow.ApprovalStatus == "selected_by_client") workflow.ApprovalStatus = "client_review";
         workflow.UpdatedAt = DateTimeOffset.UtcNow;
         await _context.SaveChangesAsync();
+        if (workflow is null) return NotFound(new { message = $"Workflow {id} not found." });
+        workflow.PreferredHouseDesignId = null;
+        if (workflow.Status == "selected_by_client") workflow.Status = "design_generated";
+        if (workflow.ApprovalStatus == "selected_by_client") workflow.ApprovalStatus = "client_review";
+        workflow.UpdatedAt = DateTimeOffset.UtcNow;
+        await _context.SaveChangesAsync();
         return Ok(new { workflowId = id, preferredHouseDesignId = (Guid?)null, status = workflow.Status });
     }
 
@@ -381,28 +387,65 @@ public class WorkflowController : ControllerBase
         if (workflow is null) return NotFound(new { message = $"Workflow {id} not found." });
         var design = workflow.HouseDesigns.FirstOrDefault(d => d.Id == designId && !d.IsArchived);
         if (design is null) return NotFound(new { message = "Design version not found." });
-        if (workflow.Status == "approved" || workflow.ApprovalStatus == "approved")
-            return Conflict(new { message = "Approved designs cannot be deleted or archived." });
+        // 1. Find actual blocking active Project
+        // A Project is active if it's not completed. We'll block if there is any Project associated with this design.
+        // Wait, the convention is: if an actual active construction Project exists.
+        // Even if the project is "completed", the prompt says: "Prefer preserving completed construction history and do not hard-delete anything." So we'll block if ANY Project is linked to it.
+        // BUT wait, is a Project automatically created? Let's check if the project has a ContractorId.
+        // The prompt says: "Accepted request with ACTIVE construction Project: BLOCK archive with 409."
+        var hasActiveProject = await _context.Projects
+            .AnyAsync(p => p.HouseDesignId == designId && p.ContractorId != null && p.Status != "Cancelled" && p.Status != "completed");
+            
+        if (hasActiveProject)
+        {
+            return Conflict(new
+            {
+                code = "design_in_active_construction",
+                message = "This design is already being used by an active construction project and cannot be removed."
+            });
+        }
 
+        // 2. Find pending ConstructorProjectRequests for this design.
+        var pendingRequests = await _context.ConstructorProjectRequests
+            .Where(r => r.HouseDesignId == designId && r.Status == "Pending")
+            .ToListAsync();
         var submitted = workflow.Status == "awaiting_architect_review" ||
             workflow.ApprovalStatus == "awaiting_architect_review" ||
             await _context.ValidationRequests.AnyAsync(r => r.WorkflowStateId == id &&
                 (r.Status == "Pending" || r.Status == "Under Review"));
+        
+        
+
+        
+        if (workflow.PreferredHouseDesignId == designId) 
+        {
+            workflow.PreferredHouseDesignId = null;
+            workflow.UpdatedAt = DateTimeOffset.UtcNow;
+        }
+        
+        foreach (var req in pendingRequests)
+        {
+            req.Status = "Cancelled";
+            req.UpdatedAt = DateTimeOffset.UtcNow;
+        }
+        
         design.IsArchived = true;
         design.IsCurrent = false;
-        if (workflow.PreferredHouseDesignId == designId) workflow.PreferredHouseDesignId = null;
+        
         var newestRemaining = workflow.HouseDesigns.Where(d => !d.IsArchived && d.Id != designId)
             .OrderByDescending(d => d.Version).FirstOrDefault();
         if (newestRemaining is not null && !workflow.HouseDesigns.Any(d => !d.IsArchived && d.Id != designId && d.IsCurrent))
             newestRemaining.IsCurrent = true;
+            
         workflow.UpdatedAt = DateTimeOffset.UtcNow;
         await _context.SaveChangesAsync();
+        
         return Ok(new { workflowId = id, designId, action = submitted ? "archived" : "deleted", selectionCleared = workflow.PreferredHouseDesignId is null });
     }
 
-    [HttpPost("{id:guid}/submit-architect-review")]
+    [HttpPost("{id:guid}/submit-architect-review/{designId:guid}")]
     [Authorize(Roles = "Customer")]
-    public async Task<IActionResult> SubmitArchitectReview(Guid id)
+    public async Task<IActionResult> SubmitArchitectReview(Guid id, Guid designId)
     {
         var user = await _currentUserService.GetAsync(HttpContext);
         if (user?.Id is null) return Unauthorized();
@@ -410,10 +453,9 @@ public class WorkflowController : ControllerBase
         var workflow = await _context.WorkflowStates.Include(w => w.LandSubmission)
             .Include(w => w.HouseDesigns).FirstOrDefaultAsync(w => w.Id == id && w.LandSubmission.ClientId == user.Id.Value);
         if (workflow is null) return NotFound(new { message = $"Workflow {id} not found." });
-        var selected = workflow.PreferredHouseDesignId is Guid selectedId
-            ? workflow.HouseDesigns.FirstOrDefault(d => d.Id == selectedId && !d.IsArchived) : null;
+        var selected = workflow.HouseDesigns.FirstOrDefault(d => d.Id == designId && !d.IsArchived);
         if (selected is null)
-            return BadRequest(new { message = "Select a design before submitting it for architect review." });
+            return BadRequest(new { message = "Selected design version not found." });
         if (string.Equals(workflow.Status, "approved", StringComparison.OrdinalIgnoreCase))
             return Conflict(new { message = "Architect-approved designs cannot be resubmitted." });
         var active = await _context.ValidationRequests.AnyAsync(r => r.WorkflowStateId == id &&
@@ -582,5 +624,61 @@ public class WorkflowController : ControllerBase
                 preferences["bathrooms"] = bathroomCount;
         }
         return preferences;
+    }
+
+    [HttpPost("{id:guid}/regenerate/{designId:guid}")]
+    [Authorize(Roles = "Customer")]
+    public async Task<IActionResult> RegenerateDesign(Guid id, Guid designId)
+    {
+        var user = await _currentUserService.GetAsync(HttpContext);
+        if (user?.Id is null) return Unauthorized();
+        
+        var workflow = await _context.WorkflowStates
+            .Include(w => w.LandSubmission)
+            .Include(w => w.HouseDesigns)
+            .FirstOrDefaultAsync(w => w.Id == id && w.LandSubmission.ClientId == user.Id.Value);
+            
+        if (workflow is null) return NotFound(new { message = $"Workflow {id} not found." });
+        
+        var currentDesign = workflow.HouseDesigns.FirstOrDefault(d => d.Id == designId && !d.IsArchived);
+        if (currentDesign is null) return NotFound(new { message = "Current design version not found." });
+
+        using var currentLayout = ParseLayout(currentDesign.LayoutJson);
+        var root = currentLayout.RootElement;
+        var currentSeed = GetMetadata(root, "design_seed")?.GetInt64() ?? 0;
+        var nextSeed = currentSeed + 1;
+        var previousPlanCode = root.TryGetProperty("candidate_summary", out var summary) && summary.TryGetProperty("selected_plan_code", out var planCode) ? planCode.GetString() : null;
+        var previousFingerprint = root.TryGetProperty("geometry_fingerprint", out var fp) ? fp.GetString() : null;
+
+        var payload = new
+        {
+            workflow_id = id,
+            resume_from = "design",
+            user_revision_prompt = "Generate Another",
+            budget_lkr = workflow.LandSubmission.BudgetLkr,
+            land_size_perches = workflow.LandSubmission.LandSizePerches,
+            manual_terrain_type = workflow.LandSubmission.ManualTerrainType,
+            preferences = BuildRevisionPreferences(root, workflow.LandSubmission),
+            terrain_result = new
+            {
+                terrain_type = workflow.TerrainType,
+                slope_estimate = workflow.SlopeEstimate
+            },
+            previous_design = root.Clone(),
+            plot_constraints = GetMetadata(root, "plot_constraints"),
+            design_seed = nextSeed,
+            regeneration = true,
+            previous_base_plan_code = previousPlanCode,
+            previous_design_fingerprint = previousFingerprint
+        };
+
+        var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+        await _agenticServiceClient.PostAsync("/workflows/resume", content);
+        
+        workflow.Status = "running";
+        workflow.UpdatedAt = DateTimeOffset.UtcNow;
+        await _context.SaveChangesAsync();
+        
+        return Ok(new { message = "Regeneration started." });
     }
 }

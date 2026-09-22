@@ -1,7 +1,7 @@
 import axios from 'axios';
-import { auth } from './firebase';
+import { supabase } from '../lib/supabase';
 
-// Remove tokens created by the retired mock-login implementation. Firebase owns session persistence.
+// Remove tokens created by the retired mock-login implementation. Supabase owns session persistence.
 localStorage.removeItem('mockToken');
 localStorage.removeItem('mockUser');
 
@@ -15,11 +15,9 @@ const apiClient = axios.create({
 // Axios request interceptor to inject the Bearer token dynamically
 apiClient.interceptors.request.use(
   async (config) => {
-    const user = auth.currentUser;
-    if (user && config.headers) {
-      // Firebase refreshes an expiring ID token as needed. Never persist it ourselves.
-      const idToken = await user.getIdToken();
-      config.headers.Authorization = `Bearer ${idToken}`;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.access_token && config.headers) {
+      config.headers.Authorization = `Bearer ${session.access_token}`;
     }
     return config;
   },

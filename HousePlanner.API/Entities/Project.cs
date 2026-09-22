@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace HousePlanner.API.Entities
@@ -32,6 +32,10 @@ namespace HousePlanner.API.Entities
         public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 
         public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
+
+        public int AiEstimatedTotalDurationDays { get; set; }
+
+        public int PlannedTotalDurationDays { get; set; }
 
         public virtual ICollection<ConstructionPhase> ConstructionPhases { get; set; } = new List<ConstructionPhase>();
     }

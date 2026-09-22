@@ -3,7 +3,7 @@ using System;
 namespace HousePlanner.API.Exceptions;
 
 /// <summary>
-/// Thrown when a valid Firebase authentication token is provided, 
+/// Thrown when a valid Supabase authentication token is provided, 
 /// but the corresponding application user profile does not exist in the database.
 /// Used to trigger the Google onboarding flow.
 /// </summary>

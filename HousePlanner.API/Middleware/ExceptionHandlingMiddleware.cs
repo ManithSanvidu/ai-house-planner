@@ -40,15 +40,19 @@ namespace HousePlanner.API.Middleware
                     statusCode = HttpStatusCode.Unauthorized;
                     message = exception.Message;
                     break;
+                case Exceptions.UserNotRegisteredException:
+                    statusCode = HttpStatusCode.NotFound;
+                    return context.Response.WriteAsync(JsonSerializer.Serialize(new { code = "application_user_not_registered", message = exception.Message }));
+                case HousePlanner.API.Exceptions.ProjectCancelledException:
+                    statusCode = HttpStatusCode.Conflict;
+                    return context.Response.WriteAsync(JsonSerializer.Serialize(new { code = "project_cancelled", message = exception.Message }));
                 case ArgumentException:
                 case InvalidOperationException:
                     statusCode = HttpStatusCode.BadRequest;
                     message = exception.Message;
                     break;
                 default:
-                    // Under production, keep default generic error to not leak stack details.
-                    // For debugging locally, you can display the actual exception message.
-                    message = exception.Message; 
+                    message = "An internal server error occurred."; 
                     break;
             }
 

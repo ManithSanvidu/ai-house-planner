@@ -19,6 +19,7 @@ namespace HousePlanner.API.Data
         public DbSet<ConstructionPhase> ConstructionPhases { get; set; }
         public DbSet<ConstructorWorkflowLog> ConstructorWorkflowLogs { get; set; }
         public DbSet<ConstructorProjectRequest> ConstructorProjectRequests { get; set; }
+        public DbSet<DailyConstructionLog> DailyConstructionLogs { get; set; }
         public DbSet<PricingData> PricingItems { get; set; }
         public DbSet<CostEstimate> CostEstimates { get; set; }
 
@@ -33,9 +34,16 @@ namespace HousePlanner.API.Data
             );
 
             modelBuilder.Entity<User>()
-                .HasIndex(e => e.FirebaseUid)
+                .HasIndex(e => e.SupabaseUid)
                 .IsUnique()
-                .HasDatabaseName("UX_Users_FirebaseUid");
+                .HasDatabaseName("UX_Users_SupabaseUid");
+
+            modelBuilder.Entity<DailyConstructionLog>(entity =>
+            {
+                entity.HasIndex(e => e.ProjectId);
+                entity.HasIndex(e => e.ConstructorId);
+                entity.HasIndex(e => e.LogDate);
+            });
 
             modelBuilder.Entity<PricingData>()
                 .OwnsOne(p => p.TerrainMultiplier, owned => owned.ToJson());

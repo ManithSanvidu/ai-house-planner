@@ -13,22 +13,55 @@ namespace HousePlanner.API.Services
             _context = context;
         }
 
-        public async Task<IEnumerable<Project>> GetConstructorProjectsAsync(Guid constructorId, string userRole)
+        public async Task<Project?> GetProjectEntityAsync(Guid projectId, Guid constructorId, string userRole)
         {
             var query = _context.Projects.Include(p => p.ConstructionPhases).AsQueryable();
+            if (!string.Equals(userRole, "Admin", StringComparison.OrdinalIgnoreCase))
+            {
+                query = query.Where(p => p.ContractorId == constructorId);
+            }
+            return await query.FirstOrDefaultAsync(p => p.Id == projectId);
+        }
+
+        public async Task<IEnumerable<HousePlanner.API.DTOs.ConstructorProjectDto>> GetConstructorProjectsAsync(Guid constructorId, string userRole)
+        {
+            var query = _context.Projects.Where(p => p.Status != "Cancelled").AsQueryable();
 
             if (!string.Equals(userRole, "Admin", StringComparison.OrdinalIgnoreCase))
             {
                 query = query.Where(p => p.ContractorId == constructorId);
             }
 
-            return await query.OrderByDescending(p => p.CreatedAt).ToListAsync();
+            return await query.OrderByDescending(p => p.CreatedAt)
+                .Select(p => new HousePlanner.API.DTOs.ConstructorProjectDto(
+                    p.Id,
+                    p.WorkflowStateId,
+                    p.HouseDesignId,
+                    p.ContractorId,
+                    p.Status,
+                    p.CreatedAt,
+                    p.UpdatedAt,
+                    p.AiEstimatedTotalDurationDays,
+                    p.PlannedTotalDurationDays,
+                    p.ConstructionPhases.OrderBy(cp => cp.SequenceOrder).Select(cp => new HousePlanner.API.DTOs.ConstructionPhaseDto(
+                        cp.Id,
+                        cp.PhaseName,
+                        cp.SequenceOrder,
+                        cp.Status,
+                        cp.StartedAt,
+                        cp.CompletedAt,
+                        cp.AiEstimatedDurationDays,
+                        cp.PlannedDurationDays,
+                        cp.PlannedStartDate,
+                        cp.PlannedEndDate
+                    )).ToList()
+                ))
+                .ToListAsync();
         }
 
         public async Task<Project?> GetProjectDetailsAsync(Guid projectId, Guid constructorId, string userRole)
         {
-            var projects = await GetConstructorProjectsAsync(constructorId, userRole);
-            var project = projects.FirstOrDefault(p => p.Id == projectId);
+            var project = await GetProjectEntityAsync(projectId, constructorId, userRole);
             
             if (project != null)
             {
@@ -60,6 +93,7 @@ namespace HousePlanner.API.Services
             // Verify project access
             var project = await GetProjectDetailsAsync(log.ProjectId, constructorId, "Constructor");
             if (project == null) throw new UnauthorizedAccessException("Not authorized to log workflow for this project.");
+            if (project.Status.Equals("cancelled", StringComparison.OrdinalIgnoreCase)) throw new HousePlanner.API.Exceptions.ProjectCancelledException();
 
             log.ConstructorId = constructorId;
             log.CreatedAt = DateTimeOffset.UtcNow;
@@ -84,9 +118,12 @@ namespace HousePlanner.API.Services
         public async Task<ConstructorWorkflowLog> UpdateWorkflowLogAsync(Guid constructorId, Guid logId, ConstructorWorkflowLog updatedLog)
         {
             var existingLog = await _context.ConstructorWorkflowLogs
+                .Include(l => l.Project)
                 .FirstOrDefaultAsync(l => l.Id == logId && l.ConstructorId == constructorId);
 
             if (existingLog == null) throw new KeyNotFoundException("Log not found or unauthorized.");
+            if (existingLog.Project?.Status.Equals("cancelled", StringComparison.OrdinalIgnoreCase) == true)
+                throw new HousePlanner.API.Exceptions.ProjectCancelledException();
 
             existingLog.CompletedWork = updatedLog.CompletedWork;
             existingLog.ProgressPercentage = updatedLog.ProgressPercentage;
@@ -113,7 +150,8 @@ namespace HousePlanner.API.Services
             var project = await GetProjectDetailsAsync(projectId, constructorId, userRole);
             if (project == null) throw new UnauthorizedAccessException("Not authorized.");
 
-            int totalEstimatedDays = project.ConstructionPhases.Sum(p => p.EstimatedDurationDays);
+            int totalEstimatedDays = project.ConstructionPhases.Sum(p => p.AiEstimatedDurationDays);
+            int totalPlannedDays = project.ConstructionPhases.Sum(p => p.PlannedDurationDays);
             
             var logs = await GetWorkflowLogsAsync(projectId, constructorId, userRole);
             int daysCompleted = logs.Count(); // Each log is one day
@@ -249,7 +287,8 @@ namespace HousePlanner.API.Services
                     Id = Guid.NewGuid(),
                     ProjectId = projectId,
                     PhaseName = "Main Construction",
-                    EstimatedDurationDays = estimatedDays,
+                    AiEstimatedDurationDays = estimatedDays,
+                    PlannedDurationDays = estimatedDays,
                     SequenceOrder = 1,
                     Status = "Not Started"
                 });
@@ -258,11 +297,64 @@ namespace HousePlanner.API.Services
             {
                 // Update the first phase with the estimated days
                 var firstPhase = project.ConstructionPhases.OrderBy(p => p.SequenceOrder).First();
-                firstPhase.EstimatedDurationDays = estimatedDays;
+                firstPhase.AiEstimatedDurationDays = estimatedDays;
+                firstPhase.PlannedDurationDays = estimatedDays;
             }
 
             await _context.SaveChangesAsync();
             return true;
+        }
+
+        public async Task<HousePlanner.API.DTOs.ConstructionPhaseDto?> UpdatePhaseScheduleAsync(Guid projectId, Guid phaseId, Guid constructorId, int plannedDurationDays)
+        {
+            var project = await _context.Projects
+                .Include(p => p.ConstructionPhases)
+                .FirstOrDefaultAsync(p => p.Id == projectId && p.ContractorId == constructorId);
+
+            if (project == null) return null;
+            if (project.Status.Equals("cancelled", StringComparison.OrdinalIgnoreCase))
+                throw new HousePlanner.API.Exceptions.ProjectCancelledException();
+
+
+            var targetPhase = project.ConstructionPhases.FirstOrDefault(p => p.Id == phaseId);
+            if (targetPhase == null) return null;
+
+            targetPhase.PlannedDurationDays = plannedDurationDays;
+            
+            // Recalculate dates for all phases from this one onward based on sequence order
+            var orderedPhases = project.ConstructionPhases.OrderBy(p => p.SequenceOrder).ToList();
+            var targetIndex = orderedPhases.IndexOf(targetPhase);
+            
+            if (targetIndex >= 0)
+            {
+                var currentDate = targetPhase.PlannedStartDate ?? DateOnly.FromDateTime(DateTime.UtcNow);
+                
+                for (int i = targetIndex; i < orderedPhases.Count; i++)
+                {
+                    var phase = orderedPhases[i];
+                    phase.PlannedStartDate = currentDate;
+                    phase.PlannedEndDate = currentDate.AddDays(Math.Max(0, phase.PlannedDurationDays - 1));
+                    
+                    currentDate = currentDate.AddDays(Math.Max(1, phase.PlannedDurationDays));
+                }
+            }
+            
+            project.PlannedTotalDurationDays = project.ConstructionPhases.Sum(p => p.PlannedDurationDays);
+            
+            await _context.SaveChangesAsync();
+            
+            return new HousePlanner.API.DTOs.ConstructionPhaseDto(
+                targetPhase.Id,
+                targetPhase.PhaseName,
+                targetPhase.SequenceOrder,
+                targetPhase.Status,
+                targetPhase.StartedAt,
+                targetPhase.CompletedAt,
+                targetPhase.AiEstimatedDurationDays,
+                targetPhase.PlannedDurationDays,
+                targetPhase.PlannedStartDate,
+                targetPhase.PlannedEndDate
+            );
         }
     }
 }
