@@ -32,6 +32,7 @@ export const WorkflowReviewPage: React.FC = () => {
     if (!id) return;
 
     let interval: ReturnType<typeof setInterval>;
+    let error404Count = 0;
 
     const fetchWorkflow = async () => {
       try {
@@ -39,6 +40,7 @@ export const WorkflowReviewPage: React.FC = () => {
         setWorkflow(data);
         setError(null);
         setLoading(false);
+        error404Count = 0;
 
         // If the status is no longer running, we can stop polling
         if (data.status !== 'running' && data.status !== 'pending') {
@@ -46,7 +48,14 @@ export const WorkflowReviewPage: React.FC = () => {
         }
       } catch (err: any) {
         if (err.response?.status === 404 || err.message?.includes('404')) {
-          setError(null);
+          error404Count++;
+          if (error404Count >= 5) {
+            setError('Workflow not found. It may have failed to save or you do not have permission.');
+            setLoading(false);
+            clearInterval(interval);
+          } else {
+            setError(null);
+          }
         } else {
           setError(err.message || 'Failed to fetch workflow status');
           setLoading(false);

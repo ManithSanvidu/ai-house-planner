@@ -15,14 +15,18 @@ namespace HousePlanner.API.Controllers
         private readonly IConstructorWorkflowService _workflowService;
         private readonly ICurrentUserContextService _currentUserContext;
         private readonly ApplicationDbContext _db;
+        private readonly IDailyConstructionLogService _logService;
 
         public ConstructorWorkflowController(
             IConstructorWorkflowService workflowService,
-            ICurrentUserContextService currentUserContext, ApplicationDbContext db)
+            ICurrentUserContextService currentUserContext, 
+            ApplicationDbContext db,
+            IDailyConstructionLogService logService)
         {
             _workflowService = workflowService;
             _currentUserContext = currentUserContext;
             _db = db;
+            _logService = logService;
         }
 
         [HttpGet("projects")]
@@ -43,22 +47,31 @@ namespace HousePlanner.API.Controllers
             var user = await _currentUserContext.GetAsync(HttpContext);
             if (user?.Id == null) return Unauthorized();
 
-            var project = await _workflowService.GetProjectDetailsAsync(projectId, user.Id.Value, user.Role);
-            if (project == null) return NotFound("Project not found or unauthorized.");
+            var p = await _workflowService.GetProjectDetailsAsync(projectId, user.Id.Value, user.Role);
+            if (p == null) return NotFound("Project not found or unauthorized.");
 
-            return Ok(project);
+            var dto = new HousePlanner.API.DTOs.ConstructorProjectDto(
+                p.Id,
+                p.WorkflowStateId,
+                p.HouseDesignId,
+                p.ContractorId,
+                p.Status,
+                p.CreatedAt,
+                p.UpdatedAt,
+                p.ConstructionPhases.Select(cp => new HousePlanner.API.DTOs.ConstructionPhaseDto(
+                    cp.Id,
+                    cp.PhaseName,
+                    cp.SequenceOrder,
+                    cp.Status,
+                    cp.StartedAt,
+                    cp.CompletedAt,
+                    cp.EstimatedDurationDays
+                )).ToList()
+            );
+
+            return Ok(dto);
         }
 
-        [HttpGet("projects/{projectId}/logs")]
-        [Authorize(Roles = "Constructor,Admin")]
-        public async Task<IActionResult> GetWorkflowLogs(Guid projectId)
-        {
-            var user = await _currentUserContext.GetAsync(HttpContext);
-            if (user?.Id == null) return Unauthorized();
-
-            var logs = await _workflowService.GetWorkflowLogsAsync(projectId, user.Id.Value, user.Role);
-            return Ok(logs);
-        }
 
         [HttpGet("projects/{projectId}/progress")]
         [Authorize(Roles = "Constructor,Admin")]
@@ -182,7 +195,7 @@ namespace HousePlanner.API.Controllers
             if (user?.Id == null) return Unauthorized();
 
             var raw = await _db.ConstructorProjectRequests.AsNoTracking()
-                .Where(r => r.ConstructorId == user.Id.Value)
+                .Where(r => r.ConstructorId == user.Id.Value && r.Status == "Pending")
                 .Include(r => r.Customer).Include(r => r.HouseDesign)
                 .OrderByDescending(r => r.CreatedAt)
                 .Select(r => new {
@@ -270,6 +283,25 @@ namespace HousePlanner.API.Controllers
             if (!success) return BadRequest("Failed to set estimated duration.");
 
             return Ok(new { success = true });
+        }
+        [HttpGet("projects/{projectId:guid}/calendar")]
+        [Authorize(Roles = "Constructor")]
+        public async Task<IActionResult> GetProjectCalendar(Guid projectId, CancellationToken cancellationToken)
+        {
+            var user = await _currentUserContext.GetAsync(HttpContext);
+            if (user?.Id == null) return Unauthorized();
+
+            try
+            {
+                var events = await _logService.GetProjectCalendarAsync(projectId, user.Id.Value, cancellationToken);
+                return Ok(events);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                // Follow the convention where a project not owned returns 404
+                // as not to leak the existence of a project ID to an unauthorized constructor.
+                return NotFound();
+            }
         }
     }
 

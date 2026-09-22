@@ -1,4 +1,4 @@
-﻿using DotNetEnv;
+using DotNetEnv;
 using HousePlanner.API.Middleware;
 using HousePlanner.API.Services;
 using Microsoft.OpenApi.Models;
@@ -214,6 +214,7 @@ builder.Services.AddScoped<IExternalPricingProvider>(services =>
 });
 builder.Services.AddScoped<IPricingService, PricingService>();
 builder.Services.AddScoped<IConstructorWorkflowService, ConstructorWorkflowService>();
+builder.Services.AddScoped<IDailyConstructionLogService, DailyConstructionLogService>();
 
 // AgenticService HTTP client — internalApiKey validated and injected at startup (never falls back to a plain default)
 builder.Services.AddHttpClient("AgenticService", client =>

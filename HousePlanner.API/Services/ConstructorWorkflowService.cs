@@ -13,22 +13,50 @@ namespace HousePlanner.API.Services
             _context = context;
         }
 
-        public async Task<IEnumerable<Project>> GetConstructorProjectsAsync(Guid constructorId, string userRole)
+        public async Task<Project?> GetProjectEntityAsync(Guid projectId, Guid constructorId, string userRole)
         {
             var query = _context.Projects.Include(p => p.ConstructionPhases).AsQueryable();
+            if (!string.Equals(userRole, "Admin", StringComparison.OrdinalIgnoreCase))
+            {
+                query = query.Where(p => p.ContractorId == constructorId);
+            }
+            return await query.FirstOrDefaultAsync(p => p.Id == projectId);
+        }
+
+        public async Task<IEnumerable<HousePlanner.API.DTOs.ConstructorProjectDto>> GetConstructorProjectsAsync(Guid constructorId, string userRole)
+        {
+            var query = _context.Projects.AsQueryable();
 
             if (!string.Equals(userRole, "Admin", StringComparison.OrdinalIgnoreCase))
             {
                 query = query.Where(p => p.ContractorId == constructorId);
             }
 
-            return await query.OrderByDescending(p => p.CreatedAt).ToListAsync();
+            return await query.OrderByDescending(p => p.CreatedAt)
+                .Select(p => new HousePlanner.API.DTOs.ConstructorProjectDto(
+                    p.Id,
+                    p.WorkflowStateId,
+                    p.HouseDesignId,
+                    p.ContractorId,
+                    p.Status,
+                    p.CreatedAt,
+                    p.UpdatedAt,
+                    p.ConstructionPhases.OrderBy(cp => cp.SequenceOrder).Select(cp => new HousePlanner.API.DTOs.ConstructionPhaseDto(
+                        cp.Id,
+                        cp.PhaseName,
+                        cp.SequenceOrder,
+                        cp.Status,
+                        cp.StartedAt,
+                        cp.CompletedAt,
+                        cp.EstimatedDurationDays
+                    )).ToList()
+                ))
+                .ToListAsync();
         }
 
         public async Task<Project?> GetProjectDetailsAsync(Guid projectId, Guid constructorId, string userRole)
         {
-            var projects = await GetConstructorProjectsAsync(constructorId, userRole);
-            var project = projects.FirstOrDefault(p => p.Id == projectId);
+            var project = await GetProjectEntityAsync(projectId, constructorId, userRole);
             
             if (project != null)
             {

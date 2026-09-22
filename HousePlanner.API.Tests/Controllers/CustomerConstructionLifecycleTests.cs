@@ -158,7 +158,8 @@ public sealed class CustomerConstructionLifecycleTests
     private ConstructorWorkflowController ConstructorController(Guid id)
     {
         var current = Current(id, "Constructor");
-        return new ConstructorWorkflowController(new ConstructorWorkflowService(_db), current.Object, _db)
+        var logServiceMock = new Mock<IDailyConstructionLogService>();
+        return new ConstructorWorkflowController(new ConstructorWorkflowService(_db), current.Object, _db, logServiceMock.Object)
             { ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() } };
     }
     private static Mock<ICurrentUserContextService> Current(Guid id, string role)
