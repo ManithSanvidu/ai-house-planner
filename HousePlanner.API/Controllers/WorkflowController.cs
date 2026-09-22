@@ -387,9 +387,18 @@ public class WorkflowController : ControllerBase
         if (workflow is null) return NotFound(new { message = $"Workflow {id} not found." });
         var design = workflow.HouseDesigns.FirstOrDefault(d => d.Id == designId && !d.IsArchived);
         if (design is null) return NotFound(new { message = "Design version not found." });
-        if (workflow.Status == "approved" || workflow.ApprovalStatus == "approved")
-            return Conflict(new { message = "Approved designs cannot be deleted or archived." });
-
+        var hasActiveProject = await _context.Projects
+            .AnyAsync(p => p.HouseDesignId == designId && p.ContractorId != null);
+        var hasActiveRequest = await _context.ConstructorProjectRequests
+            .AnyAsync(r => r.HouseDesignId == designId && r.Status != "Declined" && r.Status != "Cancelled");
+        if (hasActiveProject || hasActiveRequest)
+        {
+            return Conflict(new
+            {
+                code = "design_in_active_construction",
+                message = "This design is currently being used by an active construction project and cannot be removed."
+            });
+        }
         var submitted = workflow.Status == "awaiting_architect_review" ||
             workflow.ApprovalStatus == "awaiting_architect_review" ||
             await _context.ValidationRequests.AnyAsync(r => r.WorkflowStateId == id &&

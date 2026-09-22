@@ -270,13 +270,26 @@ public class WorkflowControllerTests
     }
 
     [Fact]
-    public async Task RemoveDesign_ApprovedVersionIsRejected()
+    public async Task RemoveDesign_ApprovedVersionCanBeArchived_IfNotInActiveConstruction()
     {
         var workflowId = Guid.NewGuid(); var design = Design(workflowId, 1, true);
         _dbContext.WorkflowStates.Add(new WorkflowState { Id = workflowId, LandSubmissionId = Guid.NewGuid(), Status = "approved", ApprovalStatus = "approved", PreferredHouseDesignId = design.Id, HouseDesigns = [design] });
         await _dbContext.SaveChangesAsync();
 
-        Assert.IsType<ConflictObjectResult>(await _controller.RemoveDesign(workflowId, design.Id));
+        var result = Assert.IsType<OkObjectResult>(await _controller.RemoveDesign(workflowId, design.Id));
+        Assert.True((await _dbContext.HouseDesigns.FindAsync(design.Id))!.IsArchived);
+    }
+
+    [Fact]
+    public async Task ActiveConstructionDesign_CannotBeArchived()
+    {
+        var workflowId = Guid.NewGuid(); var design = Design(workflowId, 1, true);
+        _dbContext.WorkflowStates.Add(new WorkflowState { Id = workflowId, LandSubmissionId = Guid.NewGuid(), Status = "approved", ApprovalStatus = "approved", PreferredHouseDesignId = design.Id, HouseDesigns = [design] });
+        _dbContext.Projects.Add(new Project { Id = Guid.NewGuid(), WorkflowStateId = workflowId, HouseDesignId = design.Id, ContractorId = Guid.NewGuid() });
+        await _dbContext.SaveChangesAsync();
+
+        var result = Assert.IsType<ConflictObjectResult>(await _controller.RemoveDesign(workflowId, design.Id));
+        Assert.Contains("design_in_active_construction", System.Text.Json.JsonSerializer.Serialize(result.Value));
         Assert.False((await _dbContext.HouseDesigns.FindAsync(design.Id))!.IsArchived);
     }
 
