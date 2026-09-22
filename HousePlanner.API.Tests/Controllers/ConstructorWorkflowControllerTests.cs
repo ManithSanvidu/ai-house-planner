@@ -25,8 +25,9 @@ public class ConstructorWorkflowControllerTests
         _db = new ApplicationDbContext(options);
 
         _mockUser = new Mock<ICurrentUserContextService>();
+        var mockLogService = new Mock<IDailyConstructionLogService>();
         var service = new ConstructorWorkflowService(_db);
-        _controller = new ConstructorWorkflowController(service, _mockUser.Object, _db);
+        _controller = new ConstructorWorkflowController(service, _mockUser.Object, _db, mockLogService.Object);
     }
 
     private void SetUser(Guid id, string role)
@@ -112,5 +113,63 @@ public class ConstructorWorkflowControllerTests
         using var doc = JsonDocument.Parse(json);
         Assert.Equal(JsonValueKind.Array, doc.RootElement.ValueKind);
         Assert.Equal(0, doc.RootElement.GetArrayLength());
+    }
+    [Fact]
+    public async Task GetProjectCalendar_OwnProject_Returns200()
+    {
+        var projectId = Guid.NewGuid();
+        var constructorId = Guid.NewGuid();
+        SetUser(constructorId, "Constructor");
+
+        var mockLogService = new Mock<IDailyConstructionLogService>();
+        var events = new List<HousePlanner.API.DTOs.CalendarEventDto> 
+        {
+            new HousePlanner.API.DTOs.CalendarEventDto(Guid.NewGuid(), DateOnly.FromDateTime(DateTime.UtcNow), "Test", "daily_log", "normal", null, projectId, null, null)
+        };
+        mockLogService.Setup(x => x.GetProjectCalendarAsync(projectId, constructorId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(events);
+
+        var controller = new ConstructorWorkflowController(new ConstructorWorkflowService(_db), _mockUser.Object, _db, mockLogService.Object);
+        var result = await controller.GetProjectCalendar(projectId, CancellationToken.None);
+        
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var returnedEvents = Assert.IsAssignableFrom<IEnumerable<HousePlanner.API.DTOs.CalendarEventDto>>(ok.Value);
+        Assert.Single(returnedEvents);
+    }
+
+    [Fact]
+    public async Task GetProjectCalendar_NoEvents_ReturnsEmptyArray()
+    {
+        var projectId = Guid.NewGuid();
+        var constructorId = Guid.NewGuid();
+        SetUser(constructorId, "Constructor");
+
+        var mockLogService = new Mock<IDailyConstructionLogService>();
+        mockLogService.Setup(x => x.GetProjectCalendarAsync(projectId, constructorId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<HousePlanner.API.DTOs.CalendarEventDto>());
+
+        var controller = new ConstructorWorkflowController(new ConstructorWorkflowService(_db), _mockUser.Object, _db, mockLogService.Object);
+        var result = await controller.GetProjectCalendar(projectId, CancellationToken.None);
+        
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var returnedEvents = Assert.IsAssignableFrom<IEnumerable<HousePlanner.API.DTOs.CalendarEventDto>>(ok.Value);
+        Assert.Empty(returnedEvents);
+    }
+
+    [Fact]
+    public async Task GetProjectCalendar_OtherConstructorProject_IsRejected()
+    {
+        var projectId = Guid.NewGuid();
+        var constructorId = Guid.NewGuid();
+        SetUser(constructorId, "Constructor");
+
+        var mockLogService = new Mock<IDailyConstructionLogService>();
+        mockLogService.Setup(x => x.GetProjectCalendarAsync(projectId, constructorId, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new UnauthorizedAccessException("Project not found or not owned by the current constructor."));
+
+        var controller = new ConstructorWorkflowController(new ConstructorWorkflowService(_db), _mockUser.Object, _db, mockLogService.Object);
+        var result = await controller.GetProjectCalendar(projectId, CancellationToken.None);
+        
+        Assert.IsType<NotFoundResult>(result);
     }
 }

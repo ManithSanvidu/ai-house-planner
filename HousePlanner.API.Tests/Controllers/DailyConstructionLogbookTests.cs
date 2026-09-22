@@ -77,12 +77,11 @@ public class DailyConstructionLogbookTests
         var req = new CreateDailyConstructionLogRequest { LogDate = DateOnly.FromDateTime(DateTime.UtcNow), WorkCompleted = "Test", ConstructionPhaseId = phaseId };
         var result = await _controller.CreateLog(projectId, req, CancellationToken.None);
 
-        var status = Assert.IsType<ObjectResult>(result);
-        Assert.Equal(403, status.StatusCode);
+        var status = Assert.IsType<NotFoundResult>(result);
     }
 
     [Fact]
-    public async Task Constructor_CanReadOwnProjectLogs()
+    public async Task GetLogs_OwnProject_WithLogs_Returns200()
     {
         var (constructorId, projectId, phaseId) = await SeedProjectAsync();
         SetUser(constructorId, "Constructor");
@@ -97,15 +96,35 @@ public class DailyConstructionLogbookTests
     }
 
     [Fact]
-    public async Task Constructor_CannotReadOtherConstructorLogs()
+    public async Task GetLogs_OwnProject_NoLogs_Returns200EmptyArray()
+    {
+        var (constructorId, projectId, _) = await SeedProjectAsync();
+        SetUser(constructorId, "Constructor");
+
+        var result = await _controller.GetLogs(projectId, CancellationToken.None);
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var logs = Assert.IsAssignableFrom<IEnumerable<DailyConstructionLogDto>>(ok.Value);
+        Assert.Empty(logs);
+    }
+
+    [Fact]
+    public async Task GetLogs_OtherConstructorProject_IsRejected()
     {
         var (constructorId, projectId, phaseId) = await SeedProjectAsync();
         await _service.CreateLogAsync(projectId, constructorId, new CreateDailyConstructionLogRequest { LogDate = DateOnly.FromDateTime(DateTime.UtcNow), WorkCompleted = "Test" });
 
         SetUser(Guid.NewGuid(), "Constructor"); // Different
         var result = await _controller.GetLogs(projectId, CancellationToken.None);
-        var status = Assert.IsType<ObjectResult>(result);
-        Assert.Equal(403, status.StatusCode);
+        var status = Assert.IsType<NotFoundResult>(result);
+    }
+
+    [Fact]
+    public async Task GetLogs_MissingProject_Returns404()
+    {
+        SetUser(Guid.NewGuid(), "Constructor");
+        
+        var result = await _controller.GetLogs(Guid.NewGuid(), CancellationToken.None);
+        var status = Assert.IsType<NotFoundResult>(result);
     }
 
     [Fact]
@@ -135,8 +154,7 @@ public class DailyConstructionLogbookTests
         var updateReq = new UpdateDailyConstructionLogRequest { LogDate = DateOnly.FromDateTime(DateTime.UtcNow), WorkCompleted = "Updated" };
         var result = await _controller.UpdateLog(projectId, log.Id, updateReq, CancellationToken.None);
         
-        var status = Assert.IsType<ObjectResult>(result);
-        Assert.Equal(403, status.StatusCode);
+        var status = Assert.IsType<NotFoundResult>(result);
     }
 
     [Fact]
@@ -182,7 +200,7 @@ public class DailyConstructionLogbookTests
     }
 
     [Fact]
-    public async Task NoRawEntityCycleInLogResponse()
+    public async Task GetLogs_DoesNotReturnRawEntityCycle()
     {
         var (constructorId, projectId, phaseId) = await SeedProjectAsync();
         SetUser(constructorId, "Constructor");
@@ -195,44 +213,47 @@ public class DailyConstructionLogbookTests
         var json = JsonSerializer.Serialize(ok.Value);
         Assert.DoesNotContain("\"Project\":", json, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"Constructor\":", json, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("\"PhaseName\":", json, StringComparison.OrdinalIgnoreCase); // Ensured by mapping
     }
 
     [Fact]
-    public async Task Constructor_CanRetrieveCalendarEvents()
+    public async Task GetProjectCalendar_DailyLogsAppearOnCorrectDates()
     {
         var (constructorId, projectId, phaseId) = await SeedProjectAsync();
         SetUser(constructorId, "Constructor");
 
-        // Create a log with challenges (should be mapped to an Issue/Delay event)
-        var log1 = await _service.CreateLogAsync(projectId, constructorId, new CreateDailyConstructionLogRequest { 
+        var logDate = DateOnly.FromDateTime(DateTime.UtcNow);
+        await _service.CreateLogAsync(projectId, constructorId, new CreateDailyConstructionLogRequest { 
+            LogDate = logDate, 
+            WorkCompleted = "Test log", 
+            Challenges = "Some issue",
+            ConstructionPhaseId = phaseId 
+        });
+
+        var events = await _service.GetProjectCalendarAsync(projectId, constructorId, CancellationToken.None);
+        
+        var logEvent = events.FirstOrDefault(e => e.Type == "daily_log");
+        Assert.NotNull(logEvent);
+        Assert.Equal(logDate, logEvent.Date);
+        Assert.Equal("issue", logEvent.Status);
+    }
+
+    [Fact]
+    public async Task GetProjectCalendar_DoesNotReturnRawEntities()
+    {
+        var (constructorId, projectId, phaseId) = await SeedProjectAsync();
+        SetUser(constructorId, "Constructor");
+
+        await _service.CreateLogAsync(projectId, constructorId, new CreateDailyConstructionLogRequest { 
             LogDate = DateOnly.FromDateTime(DateTime.UtcNow), 
-            WorkCompleted = "Found an issue", 
-            Challenges = "Rain delay",
+            WorkCompleted = "Test log", 
             ConstructionPhaseId = phaseId 
         });
 
-        // Create a normal log with tomorrow plan (should generate 2 events: log + planned)
-        var log2 = await _service.CreateLogAsync(projectId, constructorId, new CreateDailyConstructionLogRequest { 
-            LogDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1)), 
-            WorkCompleted = "Normal work", 
-            TomorrowPlan = "More work",
-            ConstructionPhaseId = phaseId 
-        });
-
-        var result = await _controller.GetCalendar(projectId, CancellationToken.None);
-        var ok = Assert.IsType<OkObjectResult>(result);
-        var events = Assert.IsAssignableFrom<IEnumerable<HousePlanner.API.DTOs.CalendarEventDto>>(ok.Value);
-
-        Assert.Equal(3, events.Count()); // 1 issue log, 1 normal log, 1 planned event
-
-        var issueEvent = events.Single(e => e.Type == "Issue");
-        Assert.Equal("Issue / Delay", issueEvent.Title);
-        Assert.Equal("#ef4444", issueEvent.Color);
-
-        var plannedEvent = events.Single(e => e.Type == "Planned");
-        Assert.Equal("Planned Work", plannedEvent.Title);
-        Assert.Equal("More work", plannedEvent.Description);
-        Assert.Equal("#8b5cf6", plannedEvent.Color);
+        var events = await _service.GetProjectCalendarAsync(projectId, constructorId, CancellationToken.None);
+        
+        var json = JsonSerializer.Serialize(events);
+        Assert.DoesNotContain("\"Project\":", json, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"Constructor\":", json, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("\"ConstructionPhase\":", json, StringComparison.OrdinalIgnoreCase);
     }
 }

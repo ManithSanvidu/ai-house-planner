@@ -30,9 +30,9 @@ public class ConstructorLogbookController : ControllerBase
             var logs = await _logService.GetLogsAsync(projectId, user.Id.Value, cancellationToken);
             return Ok(logs);
         }
-        catch (UnauthorizedAccessException ex)
+        catch (UnauthorizedAccessException)
         {
-            return StatusCode(403, ex.Message);
+            return NotFound();
         }
     }
 
@@ -48,9 +48,9 @@ public class ConstructorLogbookController : ControllerBase
             if (log == null) return NotFound();
             return Ok(log);
         }
-        catch (UnauthorizedAccessException ex)
+        catch (UnauthorizedAccessException)
         {
-            return StatusCode(403, ex.Message);
+            return NotFound();
         }
     }
 
@@ -65,9 +65,9 @@ public class ConstructorLogbookController : ControllerBase
             var log = await _logService.CreateLogAsync(projectId, user.Id.Value, request, cancellationToken);
             return Ok(log);
         }
-        catch (UnauthorizedAccessException ex)
+        catch (UnauthorizedAccessException)
         {
-            return StatusCode(403, ex.Message);
+            return NotFound();
         }
         catch (InvalidOperationException ex) when (ex.Message == "project_completed_logbook_read_only")
         {
@@ -90,9 +90,9 @@ public class ConstructorLogbookController : ControllerBase
             var log = await _logService.UpdateLogAsync(projectId, logId, user.Id.Value, request, cancellationToken);
             return Ok(log);
         }
-        catch (UnauthorizedAccessException ex)
+        catch (UnauthorizedAccessException)
         {
-            return StatusCode(403, ex.Message);
+            return NotFound();
         }
         catch (InvalidOperationException ex) when (ex.Message == "project_completed_logbook_read_only")
         {
@@ -119,9 +119,9 @@ public class ConstructorLogbookController : ControllerBase
             await _logService.DeleteLogAsync(projectId, logId, user.Id.Value, cancellationToken);
             return NoContent();
         }
-        catch (UnauthorizedAccessException ex)
+        catch (UnauthorizedAccessException)
         {
-            return StatusCode(403, ex.Message);
+            return NotFound();
         }
         catch (InvalidOperationException ex) when (ex.Message == "project_completed_logbook_read_only")
         {
@@ -130,23 +130,6 @@ public class ConstructorLogbookController : ControllerBase
         catch (KeyNotFoundException)
         {
             return NotFound();
-        }
-    }
-
-    [HttpGet("~/api/constructor/workflow/projects/{projectId}/calendar")]
-    public async Task<IActionResult> GetCalendar(Guid projectId, CancellationToken cancellationToken)
-    {
-        var user = await _currentUserContext.GetAsync(HttpContext);
-        if (user?.Id == null) return Unauthorized();
-
-        try
-        {
-            var events = await _logService.GetProjectCalendarAsync(projectId, user.Id.Value, cancellationToken);
-            return Ok(events);
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return StatusCode(403, ex.Message);
         }
     }
 }

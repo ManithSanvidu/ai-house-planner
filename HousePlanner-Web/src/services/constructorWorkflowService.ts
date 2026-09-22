@@ -210,5 +210,4 @@ export interface CalendarEventDto {
     projectId: string;
     dailyLogId?: string;
     phaseId?: string;
-    color: string;
 }

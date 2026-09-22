@@ -105,7 +105,7 @@ export const ConstructorProjectCalendar: React.FC<ConstructorProjectCalendarProp
                   e.stopPropagation();
                   if (ev.dailyLogId) onEventClick(ev.dailyLogId);
                 }}
-                className={`text-[10px] leading-tight p-1 rounded cursor-pointer truncate ${ev.color === '#ef4444' ? 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200' : ev.color === '#8b5cf6' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-200' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200'}`}
+                className={`text-[10px] leading-tight p-1 rounded cursor-pointer truncate ${ev.status === 'issue' ? 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200' : (ev.type.startsWith('phase') ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-200' : 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200')}`}
                 title={ev.description}
               >
                 <span className="font-semibold block truncate">{ev.title}</span>
