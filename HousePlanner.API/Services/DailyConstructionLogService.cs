@@ -70,6 +70,8 @@ public class DailyConstructionLogService : IDailyConstructionLogService
 
         if (project.Status.Equals("completed", StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException("project_completed_logbook_read_only");
+        if (project.Status.Equals("cancelled", StringComparison.OrdinalIgnoreCase))
+            throw new HousePlanner.API.Exceptions.ProjectCancelledException();
 
         if (request.ConstructionPhaseId.HasValue)
         {
@@ -120,6 +122,8 @@ public class DailyConstructionLogService : IDailyConstructionLogService
 
         if (log.Project.Status.Equals("completed", StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException("project_completed_logbook_read_only");
+        if (log.Project.Status.Equals("cancelled", StringComparison.OrdinalIgnoreCase))
+            throw new HousePlanner.API.Exceptions.ProjectCancelledException();
 
         if (request.ConstructionPhaseId.HasValue && request.ConstructionPhaseId != log.ConstructionPhaseId)
         {
@@ -161,6 +165,8 @@ public class DailyConstructionLogService : IDailyConstructionLogService
 
         if (log.Project.Status.Equals("completed", StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException("project_completed_logbook_read_only");
+        if (log.Project.Status.Equals("cancelled", StringComparison.OrdinalIgnoreCase))
+            throw new HousePlanner.API.Exceptions.ProjectCancelledException();
 
         _db.DailyConstructionLogs.Remove(log);
         await _db.SaveChangesAsync(cancellationToken);

@@ -93,6 +93,7 @@ namespace HousePlanner.API.Services
             // Verify project access
             var project = await GetProjectDetailsAsync(log.ProjectId, constructorId, "Constructor");
             if (project == null) throw new UnauthorizedAccessException("Not authorized to log workflow for this project.");
+            if (project.Status.Equals("cancelled", StringComparison.OrdinalIgnoreCase)) throw new HousePlanner.API.Exceptions.ProjectCancelledException();
 
             log.ConstructorId = constructorId;
             log.CreatedAt = DateTimeOffset.UtcNow;
@@ -117,9 +118,12 @@ namespace HousePlanner.API.Services
         public async Task<ConstructorWorkflowLog> UpdateWorkflowLogAsync(Guid constructorId, Guid logId, ConstructorWorkflowLog updatedLog)
         {
             var existingLog = await _context.ConstructorWorkflowLogs
+                .Include(l => l.Project)
                 .FirstOrDefaultAsync(l => l.Id == logId && l.ConstructorId == constructorId);
 
             if (existingLog == null) throw new KeyNotFoundException("Log not found or unauthorized.");
+            if (existingLog.Project?.Status.Equals("cancelled", StringComparison.OrdinalIgnoreCase) == true)
+                throw new HousePlanner.API.Exceptions.ProjectCancelledException();
 
             existingLog.CompletedWork = updatedLog.CompletedWork;
             existingLog.ProgressPercentage = updatedLog.ProgressPercentage;
@@ -308,6 +312,9 @@ namespace HousePlanner.API.Services
                 .FirstOrDefaultAsync(p => p.Id == projectId && p.ContractorId == constructorId);
 
             if (project == null) return null;
+            if (project.Status.Equals("cancelled", StringComparison.OrdinalIgnoreCase))
+                throw new HousePlanner.API.Exceptions.ProjectCancelledException();
+
 
             var targetPhase = project.ConstructionPhases.FirstOrDefault(p => p.Id == phaseId);
             if (targetPhase == null) return null;
