@@ -38,7 +38,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
       } else {
         state = const AsyncValue.data(null);
       }
-    } catch (e, st) {
+    } catch (e) {
       // If backend fails, we can fallback to supabase session or log out
       state = const AsyncValue.data(null);
     }
