@@ -56,9 +56,9 @@ public class CustomerConstructionController : ControllerBase
             .OrderByDescending(v => v.DecisionAt)
             .ToListAsync();
             
-        return Ok(items.Select(v => {
+        var distinctDesigns = items.Select(v => {
             var design = v.HouseDesign ?? v.WorkflowState?.HouseDesigns?.FirstOrDefault(d => d.Id == v.WorkflowState.PreferredHouseDesignId && !d.IsArchived);
-            if (design == null) return null;
+            if (design == null || design.IsArchived) return null;
             return new {
                 designId = design.Id, workflowId = v.WorkflowStateId,
                 version = design.Version, floorCount = design.FloorCount,
@@ -67,7 +67,9 @@ public class CustomerConstructionController : ControllerBase
                 title = DesignTitle(design.LayoutJson, design.Version), bedrooms = CountRooms(design.LayoutJson, "bedroom"),
                 bathrooms = CountRooms(design.LayoutJson, "bathroom")
             };
-        }).Where(x => x != null));
+        }).Where(x => x != null).DistinctBy(x => x.designId).ToList();
+
+        return Ok(distinctDesigns);
     }
 
     [HttpGet("constructors")]
