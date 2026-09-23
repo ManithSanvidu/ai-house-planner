@@ -32,6 +32,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
           id: userData['uid'] ?? session.user.id,
           email: userData['email'] ?? session.user.email ?? '',
           role: userData['role'] ?? 'Customer',
+          fullName: userData['fullName'] ?? userData['full_name'] ?? session.user.userMetadata?['full_name'],
           token: token,
         );
         state = AsyncValue.data(user);
@@ -65,6 +66,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
         id: userData['uid'] ?? session.user.id,
         email: userData['email'] ?? session.user.email ?? '',
         role: userData['role'] ?? 'Customer',
+        fullName: userData['fullName'] ?? userData['full_name'] ?? session.user.userMetadata?['full_name'],
         token: session.accessToken,
       );
       
@@ -100,6 +102,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
         id: userData['uid'] ?? session.user.id,
         email: userData['email'] ?? session.user.email ?? '',
         role: userData['role'] ?? 'Customer',
+        fullName: userData['fullName'] ?? userData['full_name'] ?? session.user.userMetadata?['full_name'],
         token: session.accessToken,
       );
       
