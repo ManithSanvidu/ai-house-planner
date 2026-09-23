@@ -63,7 +63,7 @@ class _IntakeViewState extends ConsumerState<IntakeView>{
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('New Project Setup', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18, color: AppTokens.ink)),
-            Text('Land details & preferences', style: TextStyle(fontSize: 12, color: AppTokens.inkMute)),
+            Text('Provide your land details and requirements', style: TextStyle(fontSize: 12, color: AppTokens.inkMute)),
           ],
         ),
       ),
@@ -99,18 +99,9 @@ class _IntakeViewState extends ConsumerState<IntakeView>{
               physics: const BouncingScrollPhysics(),
               children: [
                 _buildCard(
-                  title: 'Budget & Land',
-                  icon: Icons.attach_money,
+                  title: 'Land Details',
+                  icon: Icons.map,
                   children: [
-                    const Text('Total budget (LKR) · optional', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppTokens.inkSoft)),
-                    const SizedBox(height: 8),
-                    _buildTextField(
-                      hint: 'e.g. 15,000,000',
-                      keyboardType: TextInputType.number,
-                      validator: (val) => null,
-                      onSaved: (val) => ref.read(intakeProvider.notifier).updateField(budgetLkr: double.tryParse(val ?? '')),
-                    ),
-                    const SizedBox(height: 16),
                     Row(
                       children: [
                         Expanded(
@@ -121,7 +112,8 @@ class _IntakeViewState extends ConsumerState<IntakeView>{
                               const Text('Land size', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppTokens.inkSoft)),
                               const SizedBox(height: 8),
                               _buildTextField(
-                                hint: '10',
+                                hint: 'e.g. 10',
+                                initialValue: data.landSizePerches?.toString() ?? '10',
                                 keyboardType: TextInputType.number,
                                 validator: (val) => val == null || val.isEmpty ? 'Required' : null,
                                 onSaved: (val) => ref.read(intakeProvider.notifier).updateField(landSizePerches: double.tryParse(val!)),
@@ -156,15 +148,19 @@ class _IntakeViewState extends ConsumerState<IntakeView>{
                 const SizedBox(height: 24),
                 
                 _buildCard(
-                  title: 'Terrain',
+                  title: 'Terrain & Topography',
                   icon: Icons.terrain,
                   children: [
+                    const Text('Upload Land Photo (Optional)', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppTokens.inkSoft)),
+                    const SizedBox(height: 8),
                     data.landPhoto != null
                         ? _buildPhotoPreview(data.landPhoto!)
                         : _buildPhotoUploadButton(),
                     const SizedBox(height: 24),
-                    const Text('Terrain fallback type', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppTokens.inkSoft)),
-                    const SizedBox(height: 8),
+                    const Text('Terrain Fallback Type', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppTokens.inkSoft)),
+                    const SizedBox(height: 4),
+                    const Text('Upload a clear land photo to help AI identify terrain characteristics. If no photo is available, choose the terrain manually.', style: TextStyle(fontSize: 11, color: AppTokens.inkMute)),
+                    const SizedBox(height: 12),
                     Container(
                       decoration: BoxDecoration(
                         color: const Color(0xFFF6F2F4),
@@ -191,6 +187,72 @@ class _IntakeViewState extends ConsumerState<IntakeView>{
                   ],
                 ),
                 const SizedBox(height: 24),
+
+                _buildCard(
+                  title: 'Plot Constraints (Optional)',
+                  icon: Icons.straighten,
+                  children: [
+                    const Text('Missing dimensions will be estimated for conceptual planning.', style: TextStyle(fontSize: 11, color: AppTokens.inkMute)),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Plot Width (ft)', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppTokens.inkSoft)),
+                              const SizedBox(height: 8),
+                              _buildTextField(
+                                hint: 'e.g. 50',
+                                initialValue: data.plotWidth?.toString(),
+                                keyboardType: TextInputType.number,
+                                validator: (val) => null,
+                                onSaved: (val) => ref.read(intakeProvider.notifier).updateField(plotWidth: double.tryParse(val ?? '')),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Plot Length (ft)', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppTokens.inkSoft)),
+                              const SizedBox(height: 8),
+                              _buildTextField(
+                                hint: 'e.g. 100',
+                                initialValue: data.plotLength?.toString(),
+                                keyboardType: TextInputType.number,
+                                validator: (val) => null,
+                                onSaved: (val) => ref.read(intakeProvider.notifier).updateField(plotLength: double.tryParse(val ?? '')),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(child: _buildStringDropdown('Road Side', ['North', 'South', 'East', 'West'], data.roadSide ?? 'south', (val) => ref.read(intakeProvider.notifier).updateField(roadSide: val))),
+                        const SizedBox(width: 16),
+                        Expanded(child: _buildStringDropdown('North Direction', ['North', 'South', 'East', 'West'], data.northOrientation ?? 'north', (val) => ref.read(intakeProvider.notifier).updateField(northOrientation: val))),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    _buildStringDropdown('Main Access / Entrance', ['North', 'South', 'East', 'West', 'Road Side'], data.entranceSide ?? 'south', (val) => ref.read(intakeProvider.notifier).updateField(entranceSide: val)),
+                    const SizedBox(height: 16),
+                    const Text('Plot Setbacks (Optional)', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppTokens.inkSoft)),
+                    const SizedBox(height: 8),
+                    _buildTextField(
+                      hint: 'e.g. Front 10ft, Rear 5ft',
+                      initialValue: data.plotSetbacks,
+                      validator: (val) => null,
+                      onSaved: (val) => ref.read(intakeProvider.notifier).updateField(plotSetbacks: val),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
                 
                 _buildCard(
                   title: 'Design Preferences',
@@ -198,17 +260,15 @@ class _IntakeViewState extends ConsumerState<IntakeView>{
                   children: [
                     Row(
                       children: [
-                        Expanded(child: _buildDropdown('Beds', [1, 2, 3, 4, 5], (val) => ref.read(intakeProvider.notifier).updateField(preferredBedrooms: val))),
+                        Expanded(child: _buildDropdown('Beds', [1, 2, 3, 4, 5], data.preferredBedrooms ?? 3, (val) => ref.read(intakeProvider.notifier).updateField(preferredBedrooms: val))),
                         const SizedBox(width: 12),
-                        Expanded(child: _buildDropdown('Baths', [1, 2, 3, 4], (val) {
-                          // Note: API hardcodes bathrooms to 1 currently, so we don't update provider
-                        })),
+                        Expanded(child: _buildDropdown('Baths', [1, 2, 3, 4], data.preferredBathrooms ?? 1, (val) => ref.read(intakeProvider.notifier).updateField(preferredBathrooms: val))),
                         const SizedBox(width: 12),
-                        Expanded(child: _buildDropdown('Floors', [1, 2, 3], (val) => ref.read(intakeProvider.notifier).updateField(preferredFloors: val))),
+                        Expanded(child: _buildDropdown('Floors', [1, 2, 3], data.preferredFloors ?? 1, (val) => ref.read(intakeProvider.notifier).updateField(preferredFloors: val))),
                       ],
                     ),
                     const SizedBox(height: 16),
-                    const Text('Architectural style', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppTokens.inkSoft)),
+                    const Text('Architectural Style', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppTokens.inkSoft)),
                     const SizedBox(height: 8),
                     Container(
                       decoration: BoxDecoration(
@@ -232,17 +292,45 @@ class _IntakeViewState extends ConsumerState<IntakeView>{
                         ),
                       ),
                     ),
+                    const SizedBox(height: 16),
+                    const Text('Space Priority', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppTokens.inkSoft)),
+                    const SizedBox(height: 8),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF6F2F4),
+                        borderRadius: BorderRadius.circular(AppTokens.radiusField),
+                        border: Border.all(color: AppTokens.line),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: data.spacePriority ?? 'balanced',
+                          isExpanded: true,
+                          icon: const Icon(Icons.keyboard_arrow_down, color: AppTokens.inkMute),
+                          style: const TextStyle(fontSize: 14.5, color: AppTokens.ink),
+                          items: const [
+                            DropdownMenuItem(value: 'balanced', child: Text('Balanced')),
+                            DropdownMenuItem(value: 'maximum_rooms', child: Text('Maximum Rooms')),
+                            DropdownMenuItem(value: 'spacious_living', child: Text('Spacious Living')),
+                          ],
+                          onChanged: (val) => ref.read(intakeProvider.notifier).updateField(spacePriority: val),
+                        ),
+                      ),
+                    ),
                     const SizedBox(height: 24),
                     Wrap(
                       spacing: 8,
                       runSpacing: 12,
                       children: [
-                        _buildChip('Open plan', isActive: data.openPlan, onTap: () => ref.read(intakeProvider.notifier).togglePreference('openPlan')),
-                        _buildChip('Master ensuite', isActive: data.masterEnsuite, onTap: () => ref.read(intakeProvider.notifier).togglePreference('masterEnsuite')),
-                        _buildChip('Home office', isActive: data.homeOffice, onTap: () => ref.read(intakeProvider.notifier).togglePreference('homeOffice')),
+                        _buildChip('Open-plan Living / Dining', isActive: data.openPlan, onTap: () => ref.read(intakeProvider.notifier).togglePreference('openPlan')),
+                        _buildChip('Master Bedroom with Attached Bathroom', isActive: data.masterEnsuite, onTap: () => ref.read(intakeProvider.notifier).togglePreference('masterEnsuite')),
+                        _buildChip('Separate Dining Area', isActive: data.separateDining, onTap: () => ref.read(intakeProvider.notifier).togglePreference('separateDining')),
+                        _buildChip('Home Office', isActive: data.homeOffice, onTap: () => ref.read(intakeProvider.notifier).togglePreference('homeOffice')),
                         _buildChip('Balcony', isActive: data.balcony, onTap: () => ref.read(intakeProvider.notifier).togglePreference('balcony')),
-                        _buildChip('Parking', isActive: data.parkingRequired, onTap: () => ref.read(intakeProvider.notifier).togglePreference('parkingRequired')),
-                        _buildChip('Accessible', isActive: data.accessibility, onTap: () => ref.read(intakeProvider.notifier).togglePreference('accessibility')),
+                        _buildChip('Veranda', isActive: data.veranda, onTap: () => ref.read(intakeProvider.notifier).togglePreference('veranda')),
+                        _buildChip('Utility / Laundry', isActive: data.utilityLaundry, onTap: () => ref.read(intakeProvider.notifier).togglePreference('utilityLaundry')),
+                        _buildChip('Parking Required', isActive: data.parkingRequired, onTap: () => ref.read(intakeProvider.notifier).togglePreference('parkingRequired')),
+                        _buildChip('Accessible / Reduced-Step Layout', isActive: data.accessibility, onTap: () => ref.read(intakeProvider.notifier).togglePreference('accessibility')),
                       ],
                     ),
                   ],
@@ -273,7 +361,7 @@ class _IntakeViewState extends ConsumerState<IntakeView>{
             child: const Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text('Generate Plan', style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold)),
+                Text('Generate AI Plan', style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold)),
                 SizedBox(width: 8),
                 Icon(Icons.auto_awesome, size: 16), // ✦
               ],
@@ -284,7 +372,7 @@ class _IntakeViewState extends ConsumerState<IntakeView>{
     );
   }
 
-  Widget _buildDropdown(String label, List<int> items, void Function(int?) onChanged) {
+  Widget _buildDropdown(String label, List<int> items, int value, void Function(int?) onChanged) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -299,11 +387,43 @@ class _IntakeViewState extends ConsumerState<IntakeView>{
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<int>(
-              value: items.first, // simple stub for value tracking
+              value: value,
               isExpanded: true,
               icon: const Icon(Icons.keyboard_arrow_down, color: AppTokens.inkMute, size: 20),
               style: const TextStyle(fontSize: 14.5, color: AppTokens.ink),
               items: items.map((e) => DropdownMenuItem(value: e, child: Text('$e'))).toList(),
+              onChanged: onChanged,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStringDropdown(String label, List<String> items, String value, void Function(String?) onChanged) {
+    // If the selected value isn't in the list (e.g., 'road side'), default to the first valid item to prevent crash
+    final lowercaseItems = items.map((e) => e.toLowerCase()).toList();
+    final safeValue = lowercaseItems.contains(value.toLowerCase()) ? value.toLowerCase() : lowercaseItems.first;
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppTokens.inkSoft)),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFFF6F2F4),
+            borderRadius: BorderRadius.circular(AppTokens.radiusField),
+            border: Border.all(color: AppTokens.line),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: safeValue,
+              isExpanded: true,
+              icon: const Icon(Icons.keyboard_arrow_down, color: AppTokens.inkMute, size: 20),
+              style: const TextStyle(fontSize: 14.5, color: AppTokens.ink),
+              items: items.map((e) => DropdownMenuItem(value: e.toLowerCase(), child: Text(e))).toList(),
               onChanged: onChanged,
             ),
           ),
@@ -379,6 +499,7 @@ class _IntakeViewState extends ConsumerState<IntakeView>{
     required String hint,
     required FormFieldSetter<String> onSaved,
     required FormFieldValidator<String> validator,
+    String? initialValue,
     TextInputType? keyboardType,
   }) {
     return Container(
@@ -388,6 +509,7 @@ class _IntakeViewState extends ConsumerState<IntakeView>{
         border: Border.all(color: AppTokens.line),
       ),
       child: TextFormField(
+        initialValue: initialValue,
         keyboardType: keyboardType,
         style: const TextStyle(fontSize: 14.5, color: AppTokens.ink),
         decoration: InputDecoration(
@@ -413,7 +535,6 @@ class _IntakeViewState extends ConsumerState<IntakeView>{
           color: Colors.white,
           borderRadius: BorderRadius.circular(AppTokens.radiusSection),
         ),
-        // Faking a dashed border with a solid light border for now
         child: Container(
           decoration: BoxDecoration(
             border: Border.all(color: AppTokens.line, width: 2),
@@ -424,7 +545,7 @@ class _IntakeViewState extends ConsumerState<IntakeView>{
             children: [
               Icon(Icons.upload_rounded, color: AppTokens.inkMute, size: 32),
               SizedBox(height: 12),
-              Text('Upload a land photo, or choose terrain manually', 
+              Text('Click to upload or drag and drop', 
                 style: TextStyle(color: AppTokens.inkMute, fontSize: 11.5, fontWeight: FontWeight.w500),
                 textAlign: TextAlign.center,
               ),

@@ -419,40 +419,61 @@ class HomeView extends StatelessWidget {
   }
 
   Widget _buildGetStartedButton(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: 58,
-      child: ElevatedButton(
-        // Opens the login screen when the user starts designing.
-        onPressed: () => context.go('/login'),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: _primary,
-          foregroundColor: Colors.white,
-          elevation: 0,
-          shadowColor: Colors.transparent,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
-          ),
-        ),
-        child: const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'Start designing',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.1,
+    return Column(
+      children: [
+        // Start designing button (login)
+        SizedBox(
+          width: double.infinity,
+          height: 58,
+          child: ElevatedButton(
+            // Opens the login screen when the user starts designing.
+            onPressed: () => context.go('/login'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _primary,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shadowColor: Colors.transparent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
               ),
             ),
-            SizedBox(width: 10),
-            Icon(
-              Icons.arrow_forward_rounded,
-              size: 19,
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Start designing',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.1,
+                  ),
+                ),
+                SizedBox(width: 10),
+                Icon(
+                  Icons.arrow_forward_rounded,
+                  size: 19,
+                ),
+              ],
             ),
-          ],
+          ),
         ),
-      ),
+
+        const SizedBox(height: 12),
+
+        // Create account button (register)
+        TextButton(
+          onPressed: () => context.go('/register'),
+          style: TextButton.styleFrom(
+            foregroundColor: AppTokens.red,
+          ),
+          child: const Text(
+            'Create an account',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          ),
+        ),
+
+        const SizedBox(height: 24),
+      ],
     );
   }
 

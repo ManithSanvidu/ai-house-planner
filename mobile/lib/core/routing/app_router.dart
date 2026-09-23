@@ -27,10 +27,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isLoggingIn = state.matchedLocation == '/login' || state.matchedLocation == '/register';
       final isHome = state.matchedLocation == '/';
 
+      // If unauthenticated and not on login, register, or home, send to home
       if (!isAuth && !isLoggingIn && !isHome) {
         return '/';
       }
 
+      // Authenticated users should go straight to the dashboard from login, register, or home
       if (isAuth && (isLoggingIn || isHome)) {
         return '/dashboard';
       }
