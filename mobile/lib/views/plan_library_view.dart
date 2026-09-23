@@ -150,7 +150,7 @@ class _PlanLibraryViewState extends ConsumerState<PlanLibraryView> {
         border: const OutlineInputBorder(),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       ),
-      value: value ?? 'Any',
+      initialValue: value ?? 'Any',
       items: items.map((i) => DropdownMenuItem(value: i, child: Text(i))).toList(),
       onChanged: onChanged,
     );
