@@ -75,7 +75,32 @@ class _WorkflowStatusViewState extends ConsumerState<WorkflowStatusView> {
         loading: () => const Center(child: CircularProgressIndicator(color: AppTokens.ink)),
         error: (err, stack) => Center(child: Text('Error: $err', style: const TextStyle(color: AppTokens.red))),
         data: (data) {
-          final isCompleted = data.status == 'completed' || data.status == 'awaiting_approval';
+          if (data.status == 'failed' || data.status == 'rejected') {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline, color: AppTokens.red, size: 64),
+                    const SizedBox(height: 16),
+                    Text('Status: ${data.status.toUpperCase()}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTokens.ink)),
+                    const SizedBox(height: 8),
+                    Text(data.failureReason ?? 'The AI was unable to generate a plan that met all constraints.', 
+                      style: const TextStyle(fontSize: 15, color: AppTokens.inkSoft), textAlign: TextAlign.center),
+                    const SizedBox(height: 32),
+                    ElevatedButton(
+                      onPressed: () => context.pop(),
+                      style: ElevatedButton.styleFrom(backgroundColor: AppTokens.ink, foregroundColor: Colors.white, minimumSize: const Size(double.infinity, 50), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                      child: const Text('Try Again', style: TextStyle(fontWeight: FontWeight.w700)),
+                    )
+                  ],
+                ),
+              ),
+            );
+          }
+
+          final isCompleted = data.status == 'completed' || data.status == 'awaiting_approval' || data.status == 'design_generated';
           if (!isCompleted) {
             return Center(
               child: Column(
