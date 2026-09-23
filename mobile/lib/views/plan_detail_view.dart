@@ -47,12 +47,10 @@ class PlanDetailView extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator(color: AppTokens.ink)),
         error: (err, stack) => Center(child: Text('Error: $err')),
         data: (plan) {
-          // Attempt to convert whatever layout structure it has into RoomLayouts.
-          // Note: Mocking an empty list if layout isn't implemented in the backend yet.
-          final List<RoomLayout> rooms = [];
+          final List<RoomLayout> rooms = plan.layout ?? [];
 
           return Column(
-            children: [
+             children: [
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -65,7 +63,7 @@ class PlanDetailView extends ConsumerWidget {
                       Text(plan.name, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 28, color: AppTokens.ink)),
                       const SizedBox(height: 12),
                       Text(
-                        plan.description, // Ensure the description exists
+                        plan.description,
                         style: const TextStyle(color: AppTokens.inkSoft, fontSize: 14.5, height: 1.5),
                       ),
                       const SizedBox(height: 24),
@@ -93,6 +91,32 @@ class PlanDetailView extends ConsumerWidget {
                         ),
                       ),
                       const SizedBox(height: 24),
+
+                      if (rooms.isNotEmpty) ...[
+                        const Text('Ground Floor', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTokens.ink)),
+                        const SizedBox(height: 16),
+                        ...rooms.map((r) {
+                          final String roomName = r.name ?? r.roomType.split('_').map((w) => w.isNotEmpty ? w[0].toUpperCase() + w.substring(1) : '').join(' ');
+                          final int area = (r.width * r.length).round();
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(roomName, style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w600, color: AppTokens.ink)),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text("${r.width.toStringAsFixed(0)}' × ${r.length.toStringAsFixed(0)}'", style: const TextStyle(fontSize: 12.5, color: AppTokens.inkSoft)),
+                                    Text("$area sqft", style: const TextStyle(fontSize: 12.5, color: AppTokens.inkMute)),
+                                  ],
+                                )
+                              ],
+                            ),
+                          );
+                        }),
+                        const SizedBox(height: 24),
+                      ],
 
                       // Compatibility Banner
                       Container(
@@ -125,15 +149,25 @@ class PlanDetailView extends ConsumerWidget {
                         ),
                         child: Column(
                           children: [
-                            _buildSpecRow('Bedrooms', '${plan.bedrooms}'),
+                            _buildSpecRow('Bedrooms', '${plan.bedrooms} Bedrooms'),
                             const Divider(color: AppTokens.line, height: 24),
-                            _buildSpecRow('Bathrooms', '${plan.bathrooms}'),
+                            _buildSpecRow('Bathrooms', '${plan.bathrooms} Bathrooms'),
                             const Divider(color: AppTokens.line, height: 24),
-                            _buildSpecRow('Built-up area', '${plan.totalBuiltUpAreaSqft.toStringAsFixed(0)} ft²'),
+                            _buildSpecRow('Floors', '${plan.floorCount} Floor${plan.floorCount > 1 ? 's' : ''}'),
                             const Divider(color: AppTokens.line, height: 24),
-                            _buildSpecRow('Minimum land', '8 perches'), // Mocking 8 perches for now
+                            _buildSpecRow('Built-up area', '${plan.totalBuiltUpAreaSqft.toStringAsFixed(0)} sq ft'),
                             const Divider(color: AppTokens.line, height: 24),
-                            _buildSpecRow('Terrain', plan.suitableTerrain),
+                            _buildSpecRow('Layout', plan.category),
+                            const Divider(color: AppTokens.line, height: 24),
+                            _buildSpecRow('Minimum land', '${plan.minimumLandSizePerches} perches'),
+                            if (plan.minimumPlotWidthFt != null && plan.minimumPlotLengthFt != null) ...[
+                              const Divider(color: AppTokens.line, height: 24),
+                              _buildSpecRow('Minimum plot', '${plan.minimumPlotWidthFt!.toStringAsFixed(0)} × ${plan.minimumPlotLengthFt!.toStringAsFixed(0)} ft'),
+                            ],
+                            const Divider(color: AppTokens.line, height: 24),
+                            _buildSpecRow('Site', plan.suitableTerrain),
+                            const Divider(color: AppTokens.line, height: 24),
+                            _buildSpecRow('Parking', '${plan.parkingSpaces} spaces'),
                           ],
                         ),
                       ),
