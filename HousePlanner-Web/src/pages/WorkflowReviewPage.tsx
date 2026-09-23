@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { workflowService, type WorkflowStatusResponseDto } from '../services/workflowService';
 import { FloorPlanViewer, type FloorPlanData } from '../components/floorplan/FloorPlanViewer';
-import { Menu } from 'lucide-react';
+import { Menu, Edit2, Trash2, Plus, Save, X } from 'lucide-react';
+import useAuth from '../features/auth/useAuth';
 import { countLabel, formatArea, formatFloorName, formatFoundation, formatRoomName, formatTerrain, formatTopology, formatWorkflowStatus } from '../utils/presentation';
 
 const roomGroup = (roomType: string) => {
@@ -27,6 +28,105 @@ export const WorkflowReviewPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'floorplan' | 'construction'>('floorplan');
   const [pollCycle, setPollCycle] = useState(0);
   const [actionLoading, setActionLoading] = useState(false);
+
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'Admin' || user?.role === 'Constructor';
+  const [isEditingPlan, setIsEditingPlan] = useState(false);
+  const [editTargetDuration, setEditTargetDuration] = useState<number | ''>('');
+  const [editScheduleStatus, setEditScheduleStatus] = useState<string>('ON_SCHEDULE');
+  const [isSavingPlan, setIsSavingPlan] = useState(false);
+  const [editingPhaseId, setEditingPhaseId] = useState<number | null>(null);
+  const [phaseFormData, setPhaseFormData] = useState<any>({});
+  const [isAddingPhase, setIsAddingPhase] = useState(false);
+
+  const startEditingPlan = () => {
+    if (!workflow?.constructionPlan) return;
+    setEditTargetDuration(workflow.constructionPlan.project_summary.target_duration_days || '');
+    setEditScheduleStatus(workflow.constructionPlan.project_summary.schedule_status || 'ON_SCHEDULE');
+    setIsEditingPlan(true);
+  };
+
+  const handleSavePlan = async () => {
+    if (!id || !workflow?.constructionPlan) return;
+    setIsSavingPlan(true);
+    try {
+      const updatedPlan = {
+        ...workflow.constructionPlan,
+        project_summary: {
+          ...workflow.constructionPlan.project_summary,
+          target_duration_days: editTargetDuration === '' ? null : Number(editTargetDuration),
+          schedule_status: editScheduleStatus
+        }
+      };
+      await workflowService.updateConstructionPlan(id, updatedPlan);
+      setWorkflow(prev => prev ? { ...prev, constructionPlan: updatedPlan } : prev);
+      setIsEditingPlan(false);
+    } catch (e: any) {
+      alert(e.response?.data?.message || 'Error updating plan');
+    } finally {
+      setIsSavingPlan(false);
+    }
+  };
+
+  const startEditingPhase = (phase: any) => {
+    setEditingPhaseId(phase.id);
+    setPhaseFormData({ ...phase });
+  };
+
+  const startAddingPhase = () => {
+    const nextId = workflow?.constructionPlan?.phases?.length 
+      ? Math.max(...workflow.constructionPlan.phases.map((p: any) => p.id)) + 1 
+      : 1;
+    setPhaseFormData({ id: nextId, name: '', start_day: 1, end_day: 1, duration_days: 1, depends_on: [] });
+    setIsAddingPhase(true);
+  };
+
+  const cancelPhaseEdit = () => {
+    setEditingPhaseId(null);
+    setIsAddingPhase(false);
+    setPhaseFormData({});
+  };
+
+  const savePhase = async () => {
+    if (!id || !workflow?.constructionPlan) return;
+    setIsSavingPlan(true);
+    try {
+      let updatedPhases = [...workflow.constructionPlan.phases];
+      if (isAddingPhase) {
+        updatedPhases.push(phaseFormData);
+      } else {
+        const index = updatedPhases.findIndex((p: any) => p.id === phaseFormData.id);
+        if (index > -1) updatedPhases[index] = phaseFormData;
+      }
+      
+      updatedPhases.sort((a: any, b: any) => a.start_day - b.start_day); // Keep chronological
+      
+      const updatedPlan = { ...workflow.constructionPlan, phases: updatedPhases };
+      await workflowService.updateConstructionPlan(id, updatedPlan);
+      setWorkflow(prev => prev ? { ...prev, constructionPlan: updatedPlan } : prev);
+      cancelPhaseEdit();
+    } catch (e: any) {
+      alert(e.response?.data?.message || 'Error saving phase');
+    } finally {
+      setIsSavingPlan(false);
+    }
+  };
+
+  const deletePhase = async (phaseId: number) => {
+    if (!id || !workflow?.constructionPlan) return;
+    if (!confirm('Are you sure you want to delete this phase?')) return;
+    setIsSavingPlan(true);
+    try {
+      const updatedPhases = workflow.constructionPlan.phases.filter((p: any) => p.id !== phaseId);
+      const updatedPlan = { ...workflow.constructionPlan, phases: updatedPhases };
+      await workflowService.updateConstructionPlan(id, updatedPlan);
+      setWorkflow(prev => prev ? { ...prev, constructionPlan: updatedPlan } : prev);
+    } catch (e: any) {
+      alert(e.response?.data?.message || 'Error deleting phase');
+    } finally {
+      setIsSavingPlan(false);
+    }
+  };
 
   useEffect(() => {
     if (!id) return;
@@ -334,9 +434,16 @@ export const WorkflowReviewPage: React.FC = () => {
                 <div className="space-y-8 animate-fade-in">
                   
                   {/* Summary Header */}
-                  <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                  <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                      <h2 className="text-2xl font-bold text-slate-800 mb-1">Project Timeline Estimate</h2>
+                      <div className="flex items-center gap-3 mb-1">
+                        <h2 className="text-2xl font-bold text-slate-800">Project Timeline Estimate</h2>
+                        {isAdmin && !isEditingPlan && (
+                          <button onClick={startEditingPlan} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="Edit Plan">
+                            <Edit2 size={16} />
+                          </button>
+                        )}
+                      </div>
                       <p className="text-slate-500">AI-generated construction roadmap based on architectural design</p>
                     </div>
                     <div className="text-right">
@@ -353,45 +460,134 @@ export const WorkflowReviewPage: React.FC = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
                       <h4 className="text-xs uppercase tracking-widest text-slate-400 font-bold mb-1">Target Duration</h4>
-                      <p className="text-lg font-semibold text-slate-700">
-                        {workflow.constructionPlan.project_summary.target_duration_days ? `${workflow.constructionPlan.project_summary.target_duration_days} days` : 'Not Provided'}
-                      </p>
+                      {isEditingPlan ? (
+                        <input
+                          type="number"
+                          value={editTargetDuration}
+                          onChange={e => setEditTargetDuration(e.target.value ? Number(e.target.value) : '')}
+                          className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          placeholder="e.g. 150"
+                        />
+                      ) : (
+                        <p className="text-lg font-semibold text-slate-700">
+                          {workflow.constructionPlan.project_summary.target_duration_days ? `${workflow.constructionPlan.project_summary.target_duration_days} days` : 'Not Provided'}
+                        </p>
+                      )}
                     </div>
                     <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
                       <h4 className="text-xs uppercase tracking-widest text-slate-400 font-bold mb-1">Schedule Status</h4>
-                      <p className={`text-lg font-bold ${
-                        workflow.constructionPlan.project_summary.schedule_status === 'ON_SCHEDULE' ? 'text-emerald-600' : 'text-amber-600'
-                      }`}>
-                        {workflow.constructionPlan.project_summary.schedule_status.replace('_', ' ')}
-                      </p>
+                      {isEditingPlan ? (
+                        <select
+                          value={editScheduleStatus}
+                          onChange={e => setEditScheduleStatus(e.target.value)}
+                          className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        >
+                          <option value="ON_SCHEDULE">ON SCHEDULE</option>
+                          <option value="DELAYED">DELAYED</option>
+                          <option value="AHEAD_OF_SCHEDULE">AHEAD OF SCHEDULE</option>
+                        </select>
+                      ) : (
+                        <p className={`text-lg font-bold ${
+                          workflow.constructionPlan.project_summary.schedule_status === 'ON_SCHEDULE' ? 'text-emerald-600' : 
+                          workflow.constructionPlan.project_summary.schedule_status === 'DELAYED' ? 'text-red-600' : 'text-amber-600'
+                        }`}>
+                          {workflow.constructionPlan.project_summary.schedule_status.replace(/_/g, ' ')}
+                        </p>
+                      )}
                     </div>
                   </div>
+                  
+                  {isEditingPlan && (
+                    <div className="flex justify-end gap-3 mt-4">
+                      <button onClick={() => setIsEditingPlan(false)} className="px-4 py-2 rounded-lg text-slate-600 font-semibold hover:bg-slate-100">Cancel</button>
+                      <button onClick={handleSavePlan} disabled={isSavingPlan} className="px-4 py-2 rounded-lg bg-indigo-600 text-white font-semibold disabled:opacity-50 flex items-center gap-2">
+                        <Save size={16} /> {isSavingPlan ? 'Saving...' : 'Save Plan'}
+                      </button>
+                    </div>
+                  )}
 
                   {/* Phases List */}
                   <div>
-                    <h3 className="text-lg font-bold text-slate-800 mb-4">Construction Phases</h3>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-bold text-slate-800">Construction Phases</h3>
+                    </div>
                     <div className="space-y-3">
                       {workflow.constructionPlan.phases.map((phase: any) => (
-                        <div key={phase.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between hover:border-indigo-200 transition-colors">
-                          <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 font-bold flex items-center justify-center shrink-0">
-                              {phase.id}
+                        <div key={phase.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between hover:border-indigo-200 transition-colors gap-4">
+                          {editingPhaseId === phase.id ? (
+                            // Edit Phase Form
+                            <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-3">
+                                <div><label className="text-xs font-bold text-slate-500 uppercase">Phase Name</label><input type="text" value={phaseFormData.name} onChange={e => setPhaseFormData({...phaseFormData, name: e.target.value})} className="w-full border rounded px-3 py-2 text-sm mt-1" /></div>
+                                <div className="grid grid-cols-3 gap-2">
+                                  <div><label className="text-xs font-bold text-slate-500 uppercase">Duration</label><input type="number" value={phaseFormData.duration_days} onChange={e => setPhaseFormData({...phaseFormData, duration_days: Number(e.target.value)})} className="w-full border rounded px-3 py-2 text-sm mt-1" /></div>
+                                  <div><label className="text-xs font-bold text-slate-500 uppercase">Start Day</label><input type="number" value={phaseFormData.start_day} onChange={e => setPhaseFormData({...phaseFormData, start_day: Number(e.target.value)})} className="w-full border rounded px-3 py-2 text-sm mt-1" /></div>
+                                  <div><label className="text-xs font-bold text-slate-500 uppercase">End Day</label><input type="number" value={phaseFormData.end_day} onChange={e => setPhaseFormData({...phaseFormData, end_day: Number(e.target.value)})} className="w-full border rounded px-3 py-2 text-sm mt-1" /></div>
+                                </div>
+                              </div>
+                              <div className="flex items-end justify-end gap-2 pb-1">
+                                <button onClick={cancelPhaseEdit} className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg"><X size={18}/></button>
+                                <button onClick={savePhase} disabled={isSavingPlan} className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-bold disabled:opacity-50 flex items-center gap-2"><Save size={16}/> Save</button>
+                              </div>
                             </div>
-                            <div>
-                              <h4 className="font-bold text-slate-700">{phase.name}</h4>
-                              <p className="text-xs text-slate-500 mt-1">
-                                {phase.depends_on.length > 0 ? `Depends on: ${phase.depends_on.join(', ')}` : 'No dependencies'}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className="font-bold text-slate-800">{phase.duration_days} days</div>
-                            <div className="text-xs font-bold text-indigo-500 bg-indigo-50 px-2 py-1 rounded mt-1 inline-block">
-                              Day {phase.start_day} – {phase.end_day}
-                            </div>
-                          </div>
+                          ) : (
+                            // View Phase
+                            <>
+                              <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 font-bold flex items-center justify-center shrink-0">
+                                  {phase.id}
+                                </div>
+                                <div>
+                                  <h4 className="font-bold text-slate-700">{phase.name}</h4>
+                                  <p className="text-xs text-slate-500 mt-1">
+                                    {phase.depends_on.length > 0 ? `Depends on: ${phase.depends_on.join(', ')}` : 'No dependencies'}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-6">
+                                <div className="text-right">
+                                  <div className="font-bold text-slate-800">{phase.duration_days} days</div>
+                                  <div className="text-xs font-bold text-indigo-500 bg-indigo-50 px-2 py-1 rounded mt-1 inline-block">
+                                    Day {phase.start_day} – {phase.end_day}
+                                  </div>
+                                </div>
+                                {isAdmin && (
+                                  <div className="flex gap-2">
+                                    <button onClick={() => startEditingPhase(phase)} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"><Edit2 size={16}/></button>
+                                    <button onClick={() => deletePhase(phase.id)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={16}/></button>
+                                  </div>
+                                )}
+                              </div>
+                            </>
+                          )}
                         </div>
                       ))}
+                      
+                      {/* Add Phase Form */}
+                      {isAddingPhase && (
+                        <div className="bg-white p-4 rounded-xl border border-indigo-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-3">
+                                <div><label className="text-xs font-bold text-slate-500 uppercase">Phase Name</label><input type="text" value={phaseFormData.name} onChange={e => setPhaseFormData({...phaseFormData, name: e.target.value})} className="w-full border rounded px-3 py-2 text-sm mt-1" placeholder="e.g. Foundation" /></div>
+                                <div className="grid grid-cols-3 gap-2">
+                                  <div><label className="text-xs font-bold text-slate-500 uppercase">Duration</label><input type="number" value={phaseFormData.duration_days} onChange={e => setPhaseFormData({...phaseFormData, duration_days: Number(e.target.value)})} className="w-full border rounded px-3 py-2 text-sm mt-1" /></div>
+                                  <div><label className="text-xs font-bold text-slate-500 uppercase">Start Day</label><input type="number" value={phaseFormData.start_day} onChange={e => setPhaseFormData({...phaseFormData, start_day: Number(e.target.value)})} className="w-full border rounded px-3 py-2 text-sm mt-1" /></div>
+                                  <div><label className="text-xs font-bold text-slate-500 uppercase">End Day</label><input type="number" value={phaseFormData.end_day} onChange={e => setPhaseFormData({...phaseFormData, end_day: Number(e.target.value)})} className="w-full border rounded px-3 py-2 text-sm mt-1" /></div>
+                                </div>
+                              </div>
+                              <div className="flex items-end justify-end gap-2 pb-1">
+                                <button onClick={cancelPhaseEdit} className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg"><X size={18}/></button>
+                                <button onClick={savePhase} disabled={isSavingPlan} className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-bold disabled:opacity-50 flex items-center gap-2"><Save size={16}/> Save</button>
+                              </div>
+                            </div>
+                        </div>
+                      )}
+
+                      {isAdmin && !isAddingPhase && (
+                        <button onClick={startAddingPhase} className="w-full py-4 border-2 border-dashed border-slate-300 rounded-xl text-slate-500 font-bold hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50/50 transition-colors flex items-center justify-center gap-2 mt-4">
+                          <Plus size={20} /> Add New Phase
+                        </button>
+                      )}
                     </div>
                   </div>
 

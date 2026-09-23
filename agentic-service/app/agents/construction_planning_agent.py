@@ -104,7 +104,7 @@ def construction_planning_node(state:WorkflowState)->WorkflowState:
 
     # 5.Optimize/Replan if needed
     if target_duration and estimate_duration_days>target_duration:
-        status="OVER_TARGET"
+        status="DELAYED"
         opt_notes.append(f"Target is {target_duration}  days but estimate is {estimate_duration_days} days.")
 
     #Simple optimization: overlap some parallel work by reducing dependencies if possible 
