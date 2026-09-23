@@ -346,11 +346,11 @@ class _IntakeViewState extends ConsumerState<IntakeView>{
                     ),
                   ],
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 16),
 
                 // Generate AI Plan button — at the end of the form (same as web)
                 _buildGenerateButton(),
-                const SizedBox(height: 40),
+                const SizedBox(height: 80),
               ],
             ),
           ),
