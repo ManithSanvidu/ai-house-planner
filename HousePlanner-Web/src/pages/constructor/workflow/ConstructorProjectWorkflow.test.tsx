@@ -25,6 +25,8 @@ describe('ConstructorProjectWorkflow', () => {
       status: 'active',
       createdAt: '2026-09-22T00:00:00Z',
       updatedAt: '2026-09-22T00:00:00Z',
+      aiEstimatedTotalDurationDays: 30,
+      plannedTotalDurationDays: 45,
       constructionPhases: [{
         id: 'phase-1', projectId: 'project-1234', phaseName: 'Foundation',
         sequenceOrder: 1, aiEstimatedDurationDays: 20, plannedDurationDays: 20, status: 'in_progress',

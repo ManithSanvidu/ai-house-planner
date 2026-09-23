@@ -6,6 +6,7 @@ namespace HousePlanner.API.Services
     {
         Task<IEnumerable<PricingDto>> GetAllPricingAsync();
         Task<PricingDto?> GetPricingByIdAsync(int id);
+        Task<PricingDto> CreatePricingAsync(CreatePricingDto createDto);
         Task<PricingDto?> UpdatePricingAsync(int id, UpdatePricingDto updateDto);
         Task<PricingSyncResultDto> SyncExternalPricingAsync(CancellationToken cancellationToken = default);
     }

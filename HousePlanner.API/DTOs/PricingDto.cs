@@ -33,6 +33,16 @@ namespace HousePlanner.API.DTOs
         public TerrainMultiplierData TerrainMultiplier { get; set; } = null!;
     }
 
+    public class CreatePricingDto
+    {
+        public string ItemName { get; set; } = null!;
+        public string Category { get; set; } = null!;
+        public string? DisplayGroup { get; set; }
+        public decimal UnitCostLkr { get; set; }
+        public TerrainMultiplierData TerrainMultiplier { get; set; } = new();
+        public string? SourceReference { get; set; }
+    }
+
     public sealed class PricingSyncResultDto
     {
         public Guid AuditId { get; set; }

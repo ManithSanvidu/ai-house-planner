@@ -35,6 +35,82 @@ public class PricingService : IPricingService
         return item is null ? null : MapToDto(item);
     }
 
+    public async Task<PricingDto> CreatePricingAsync(CreatePricingDto createDto)
+    {
+        if (createDto is null)
+            throw new ArgumentNullException(nameof(createDto));
+
+        var itemName = createDto.ItemName?.Trim();
+        if (string.IsNullOrWhiteSpace(itemName))
+            throw new ArgumentException("ItemName is required.", nameof(createDto));
+
+        var category = createDto.Category?.Trim().ToLowerInvariant();
+        if (category is not ("material" or "labour"))
+            throw new ArgumentException("Category must be 'material' or 'labour'.", nameof(createDto));
+
+        if (createDto.UnitCostLkr <= 0)
+            throw new ArgumentException("UnitCostLkr must be greater than zero.", nameof(createDto));
+
+        if (createDto.TerrainMultiplier is null ||
+            createDto.TerrainMultiplier.Flat <= 0 ||
+            createDto.TerrainMultiplier.Hillside <= 0 ||
+            createDto.TerrainMultiplier.Coastal <= 0)
+            throw new ArgumentException("TerrainMultiplier values must be provided and greater than zero.", nameof(createDto));
+
+        // Labour uniqueness rule: Exactly one labour-factor pricing record is supported by the Cost Estimation Agent
+        if (category == "labour")
+        {
+            var hasLabourFactor = await _context.PricingItems
+                .AnyAsync(p => p.Category == "labour" && (p.Unit == "factor" || p.Unit == "ratio"));
+
+            if (hasLabourFactor)
+            {
+                throw new InvalidOperationException("Only one labour factor pricing record is supported by the current cost estimation model.");
+            }
+        }
+
+        // Optional duplicate protection
+        var duplicateExists = await _context.PricingItems
+            .AnyAsync(p => p.ItemName.ToLower() == itemName.ToLower());
+
+        if (duplicateExists)
+        {
+            throw new InvalidOperationException($"A pricing item named '{itemName}' already exists.");
+        }
+
+        // Canonical unit derivation
+        var unit = category == "material" ? "per_sqft" : "factor";
+
+        var displayGroup = string.IsNullOrWhiteSpace(createDto.DisplayGroup)
+            ? (category == "labour" ? "Labour" : null)
+            : createDto.DisplayGroup.Trim();
+
+        var now = _timeProvider.GetUtcNow();
+        var item = new PricingData
+        {
+            ItemName = itemName,
+            Category = category,
+            Unit = unit,
+            UnitCostLkr = createDto.UnitCostLkr,
+            DisplayGroup = displayGroup,
+            TerrainMultiplier = new TerrainMultiplierData
+            {
+                Flat = createDto.TerrainMultiplier.Flat,
+                Hillside = createDto.TerrainMultiplier.Hillside,
+                Coastal = createDto.TerrainMultiplier.Coastal
+            },
+            Provider = "Manual",
+            SourceReference = string.IsNullOrWhiteSpace(createDto.SourceReference) ? null : createDto.SourceReference.Trim(),
+            ImportedAt = null,
+            UpdatedAt = now
+        };
+
+        _context.PricingItems.Add(item);
+        await _context.SaveChangesAsync();
+
+        return MapToDto(item);
+    }
+
     public async Task<PricingDto?> UpdatePricingAsync(int id, UpdatePricingDto updateDto)
     {
         var item = await _context.PricingItems.FindAsync(id);
