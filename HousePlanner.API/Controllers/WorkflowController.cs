@@ -681,4 +681,30 @@ public class WorkflowController : ControllerBase
         
         return Ok(new { message = "Regeneration started." });
     }
+
+    [HttpPut("{id:guid}/construction-plan")]
+    [Authorize(Roles = "Admin,Constructor")]
+    public async Task<IActionResult> UpdateConstructionPlan(Guid id, [FromBody] JsonElement planData)
+    {
+        var user = await _currentUserService.GetAsync(HttpContext);
+        if (user?.Id is null) return Unauthorized();
+
+        var workflow = await _context.WorkflowStates.FirstOrDefaultAsync(w => w.Id == id);
+        if (workflow is null) return NotFound(new { message = $"Workflow {id} not found." });
+
+        try
+        {
+            workflow.ConstructionPlan = planData.GetRawText();
+            workflow.UpdatedAt = DateTimeOffset.UtcNow;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Construction plan updated successfully.", constructionPlan = planData });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating construction plan for workflow {WorkflowId}", id);
+            return StatusCode(StatusCodes.Status500InternalServerError, new { message = "An error occurred updating the construction plan." });
+        }
+    }
 }
+

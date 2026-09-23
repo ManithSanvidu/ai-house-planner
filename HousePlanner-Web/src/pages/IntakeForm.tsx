@@ -32,6 +32,7 @@ interface IntakeFormData {
   parkingRequired: boolean;
   accessibility: boolean;
   spacePriority: string;
+  targetCompletionDate: string;
 }
 
 const IntakeForm: React.FC = () => {
@@ -55,6 +56,7 @@ const IntakeForm: React.FC = () => {
     openPlan: false, masterEnsuite: false, separateDining: false,
     homeOffice: false, balcony: false, veranda: false, utilityRoom: false,
     parkingRequired: false, accessibility: false, spacePriority: 'balanced',
+    targetCompletionDate: '',
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -104,6 +106,7 @@ const IntakeForm: React.FC = () => {
           parkingRequired: formData.parkingRequired,
           accessibility: formData.accessibility,
           spacePriority: formData.spacePriority,
+          targetCompletionDate: formData.targetCompletionDate,
           circulationPreference: 'space_efficient'
         }
       };
@@ -394,6 +397,17 @@ const IntakeForm: React.FC = () => {
               <option value="spacious_living">Spacious Living Areas</option><option value="larger_bedrooms">Larger Bedrooms</option>
               <option value="outdoor_garden">Outdoor / Garden Priority</option>
             </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Target Completion Date (Optional)</label>
+            <input
+              type="date"
+              name="targetCompletionDate"
+              value={formData.targetCompletionDate}
+              onChange={handleInputChange}
+              className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 transition-colors"
+            />
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Used to estimate construction schedule status.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {([['openPlan', 'Open-plan Living / Dining'], ['masterEnsuite', 'Master Bedroom with Attached Bathroom'],

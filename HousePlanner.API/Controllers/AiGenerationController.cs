@@ -61,6 +61,16 @@ namespace HousePlanner.API.Controllers
                 var client = await _context.Users.FindAsync(currentUserCtx.Id);
                 if (client is null)
                     return Unauthorized(new { Message = "Authentication required. Application profile not found." });
+
+                if (request.Preferences != null && !string.IsNullOrEmpty(request.Preferences.TargetCompletionDate))
+                {
+                    if (DateTime.TryParse(request.Preferences.TargetCompletionDate, out var targetDate))
+                    {
+                        request.Preferences.TargetDurationDays = (int)(targetDate.Date - DateTime.UtcNow.Date).TotalDays;
+                        if (request.Preferences.TargetDurationDays < 0) request.Preferences.TargetDurationDays = 0;
+                    }
+                }
+
                 PreDesignedHousePlan? basePlan = null;
                 if (request.BasePreDesignedPlanId.HasValue)
                 {
@@ -221,6 +231,12 @@ namespace HousePlanner.API.Controllers
         public string? SpacePriority { get; set; }
         [System.Text.Json.Serialization.JsonPropertyName("circulation_preference")]
         public string? CirculationPreference { get; set; }
+        
+        [System.Text.Json.Serialization.JsonPropertyName("targetCompletionDate")]
+        public string? TargetCompletionDate { get; set; }
+        
+        [System.Text.Json.Serialization.JsonPropertyName("target_duration_days")]
+        public int? TargetDurationDays { get; set; }
     }
 
     public class PlotConstraintsDto

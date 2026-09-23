@@ -198,4 +198,8 @@ export const workflowService = {
     });
     return response.data;
   },
+  updateConstructionPlan: async (workflowId: string, planData: any) => {
+    const response = await apiClient.put(`/workflows/${workflowId}/construction-plan`, planData);
+    return response.data;
+  },
 };
