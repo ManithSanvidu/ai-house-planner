@@ -70,6 +70,8 @@ public class DailyConstructionLogService : IDailyConstructionLogService
 
         if (project.Status.Equals("completed", StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException("project_completed_logbook_read_only");
+        if (project.Status.Equals("cancelled", StringComparison.OrdinalIgnoreCase))
+            throw new HousePlanner.API.Exceptions.ProjectCancelledException();
 
         if (request.ConstructionPhaseId.HasValue)
         {
@@ -120,6 +122,8 @@ public class DailyConstructionLogService : IDailyConstructionLogService
 
         if (log.Project.Status.Equals("completed", StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException("project_completed_logbook_read_only");
+        if (log.Project.Status.Equals("cancelled", StringComparison.OrdinalIgnoreCase))
+            throw new HousePlanner.API.Exceptions.ProjectCancelledException();
 
         if (request.ConstructionPhaseId.HasValue && request.ConstructionPhaseId != log.ConstructionPhaseId)
         {
@@ -161,6 +165,8 @@ public class DailyConstructionLogService : IDailyConstructionLogService
 
         if (log.Project.Status.Equals("completed", StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException("project_completed_logbook_read_only");
+        if (log.Project.Status.Equals("cancelled", StringComparison.OrdinalIgnoreCase))
+            throw new HousePlanner.API.Exceptions.ProjectCancelledException();
 
         _db.DailyConstructionLogs.Remove(log);
         await _db.SaveChangesAsync(cancellationToken);
@@ -215,6 +221,20 @@ public class DailyConstructionLogService : IDailyConstructionLogService
                     PhaseId: phase.Id
                 ));
             }
+            else if (phase.PlannedStartDate.HasValue)
+            {
+                events.Add(new CalendarEventDto(
+                    Id: Guid.NewGuid(),
+                    Date: phase.PlannedStartDate.Value,
+                    Title: $"{phase.PhaseName} (Planned Start)",
+                    Type: "planned_phase_start",
+                    Status: "planned",
+                    Description: null,
+                    ProjectId: projectId,
+                    DailyLogId: null,
+                    PhaseId: phase.Id
+                ));
+            }
 
             if (phase.CompletedAt.HasValue)
             {
@@ -224,6 +244,20 @@ public class DailyConstructionLogService : IDailyConstructionLogService
                     Title: $"{phase.PhaseName} Completed",
                     Type: "phase_complete",
                     Status: "normal",
+                    Description: null,
+                    ProjectId: projectId,
+                    DailyLogId: null,
+                    PhaseId: phase.Id
+                ));
+            }
+            else if (phase.PlannedEndDate.HasValue)
+            {
+                events.Add(new CalendarEventDto(
+                    Id: Guid.NewGuid(),
+                    Date: phase.PlannedEndDate.Value,
+                    Title: $"{phase.PhaseName} (Planned End)",
+                    Type: "planned_phase_end",
+                    Status: "planned",
                     Description: null,
                     ProjectId: projectId,
                     DailyLogId: null,

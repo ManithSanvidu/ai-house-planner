@@ -1,10 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-
+import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 import '../models/user.dart';
 import '../core/network/api_client.dart';
-import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
-import 'package:google_sign_in/google_sign_in.dart';
 
 final authProvider = StateNotifierProvider<AuthNotifier, AsyncValue<User?>>((ref) {
   return AuthNotifier();
@@ -16,45 +14,95 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
   }
 
   final _storage = const FlutterSecureStorage();
+  final _supabaseAuth = supabase.Supabase.instance.client.auth;
 
   Future<void> _loadUser() async {
     state = const AsyncValue.loading();
     try {
-      final token = await _storage.read(key: 'auth_token');
-      final email = await _storage.read(key: 'user_email');
-      final role = await _storage.read(key: 'user_role');
-      final id = await _storage.read(key: 'user_id');
+      final session = _supabaseAuth.currentSession;
+      if (session != null) {
+        // We have a session, let's refresh user info from backend
+        final token = session.accessToken;
+        await _storage.write(key: 'auth_token', value: token);
 
-      if (token != null && email != null) {
-        state = AsyncValue.data(User(id: id ?? '', email: email, role: role ?? 'User', token: token));
+        final response = await ApiClient.instance.get('/auth/me');
+        final userData = response.data;
+
+        final user = User(
+          id: userData['uid'] ?? session.user.id,
+          email: userData['email'] ?? session.user.email ?? '',
+          role: userData['role'] ?? 'Customer',
+          token: token,
+        );
+        state = AsyncValue.data(user);
       } else {
         state = const AsyncValue.data(null);
       }
-    } catch (e, st) {
-      state = AsyncValue.error(e, st);
+    } catch (e) {
+      // If backend fails, we can fallback to supabase session or log out
+      state = const AsyncValue.data(null);
     }
   }
 
   Future<void> login(String email, String password) async {
     state = const AsyncValue.loading();
     try {
-      final response = await ApiClient.instance.post('/auth/local/login', data: {
-        'email': email,
-        'password': password,
-      });
-      final userData = response.data['user'];
-      final user = User(
-        id: userData['id']?.toString() ?? '',
-        email: userData['email'],
-        role: userData['role'] ?? 'User',
-        token: 'local_auth_placeholder',
+      final response = await _supabaseAuth.signInWithPassword(
+        email: email,
+        password: password,
       );
-      
-      await _storage.write(key: 'auth_token', value: user.token);
-      await _storage.write(key: 'user_email', value: user.email);
-      await _storage.write(key: 'user_role', value: user.role);
-      await _storage.write(key: 'user_id', value: user.id);
-      
+
+      final session = response.session;
+      if (session == null) throw Exception('Session missing after sign in');
+
+      await _storage.write(key: 'auth_token', value: session.accessToken);
+
+      // Notify backend to create session context
+      final backendResponse = await ApiClient.instance.post('/auth/session');
+      final userData = backendResponse.data;
+
+      final user = User(
+        id: userData['uid'] ?? session.user.id,
+        email: userData['email'] ?? session.user.email ?? '',
+        role: userData['role'] ?? 'Customer',
+        token: session.accessToken,
+      );
+
+      state = AsyncValue.data(user);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+
+  Future<void> register(String email, String password, String fullName) async {
+    state = const AsyncValue.loading();
+    try {
+      final response = await _supabaseAuth.signUp(
+        email: email,
+        password: password,
+      );
+
+      final session = response.session;
+      if (session == null) throw Exception('Session missing after sign up. Please confirm email if required.');
+
+      await _storage.write(key: 'auth_token', value: session.accessToken);
+
+      // Sync user to backend database
+      final backendResponse = await ApiClient.instance.post(
+        '/auth/register',
+        data: {
+          'fullName': fullName,
+        }
+      );
+
+      final userData = backendResponse.data;
+      final user = User(
+        id: userData['uid'] ?? session.user.id,
+        email: userData['email'] ?? session.user.email ?? '',
+        role: userData['role'] ?? 'Customer',
+        token: session.accessToken,
+      );
+
       state = AsyncValue.data(user);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
@@ -62,61 +110,15 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
   }
 
   Future<void> loginWithGoogle() async {
-    state = const AsyncValue.loading();
-    try {
-      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-      if (googleUser == null) {
-        state = const AsyncValue.data(null);
-        return;
-      }
-
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-      final firebase_auth.AuthCredential credential = firebase_auth.GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      final firebase_auth.UserCredential userCredential = await firebase_auth.FirebaseAuth.instance.signInWithCredential(credential);
-      final firebaseUser = userCredential.user;
-      
-      if (firebaseUser != null) {
-        final token = await firebaseUser.getIdToken() ?? 'google_auth_token';
-        final user = User(
-          id: firebaseUser.uid,
-          email: firebaseUser.email ?? '',
-          role: 'User',
-          token: token,
-        );
-
-        await _storage.write(key: 'auth_token', value: user.token);
-        await _storage.write(key: 'user_email', value: user.email);
-        await _storage.write(key: 'user_role', value: user.role);
-        await _storage.write(key: 'user_id', value: user.id);
-        
-        state = AsyncValue.data(user);
-      } else {
-        state = const AsyncValue.data(null);
-      }
-    } catch (e) {
-      // Fallback for demo when OAuth client is missing or unconfigured
-      final user = User(
-        id: 'mock-google-uid-123',
-        email: 'demo.user@gmail.com',
-        role: 'User',
-        token: 'mock-google-auth-token',
-      );
-
-      await _storage.write(key: 'auth_token', value: user.token);
-      await _storage.write(key: 'user_email', value: user.email);
-      await _storage.write(key: 'user_role', value: user.role);
-      await _storage.write(key: 'user_id', value: user.id);
-      
-      state = AsyncValue.data(user);
-    }
+    // Note: Proper Google Sign In with Supabase on mobile requires setup of
+    // deep links and Google OAuth client IDs. This is a placeholder that
+    // matches the web app's current throwing behavior.
+    state = AsyncValue.error(Exception("Google OAuth not implemented for Supabase yet."), StackTrace.current);
   }
 
   Future<void> logout() async {
     await _storage.deleteAll();
+    await _supabaseAuth.signOut();
     state = const AsyncValue.data(null);
   }
 }

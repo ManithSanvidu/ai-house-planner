@@ -25,7 +25,7 @@ namespace HousePlanner.API.Services
 
         public async Task<IEnumerable<HousePlanner.API.DTOs.ConstructorProjectDto>> GetConstructorProjectsAsync(Guid constructorId, string userRole)
         {
-            var query = _context.Projects.AsQueryable();
+            var query = _context.Projects.Where(p => p.Status != "Cancelled").AsQueryable();
 
             if (!string.Equals(userRole, "Admin", StringComparison.OrdinalIgnoreCase))
             {
@@ -41,6 +41,8 @@ namespace HousePlanner.API.Services
                     p.Status,
                     p.CreatedAt,
                     p.UpdatedAt,
+                    p.AiEstimatedTotalDurationDays,
+                    p.PlannedTotalDurationDays,
                     p.ConstructionPhases.OrderBy(cp => cp.SequenceOrder).Select(cp => new HousePlanner.API.DTOs.ConstructionPhaseDto(
                         cp.Id,
                         cp.PhaseName,
@@ -48,8 +50,28 @@ namespace HousePlanner.API.Services
                         cp.Status,
                         cp.StartedAt,
                         cp.CompletedAt,
-                        cp.EstimatedDurationDays
-                    )).ToList()
+                        cp.AiEstimatedDurationDays,
+                        cp.PlannedDurationDays,
+                        cp.PlannedStartDate,
+                        cp.PlannedEndDate
+                    )).ToList(),
+                    p.HouseDesign == null ? null : new HousePlanner.API.DTOs.ConstructorDesignDto(
+                        p.HouseDesign.Id,
+                        p.HouseDesign.Version,
+                        p.HouseDesign.FloorCount,
+                        p.HouseDesign.TotalBuiltUpAreaSqft,
+                        p.HouseDesign.FoundationType,
+                        p.HouseDesign.LayoutJson
+                    ),
+                    p.HouseDesign == null ? null : p.HouseDesign.CostEstimates
+                        .OrderByDescending(c => c.CreatedAt)
+                        .Select(c => new HousePlanner.API.DTOs.CostSummaryDto(
+                            c.MaterialCostLkr,
+                            c.LabourCostLkr,
+                            c.TotalCostLkr,
+                            c.BudgetDeltaPercent
+                        ))
+                        .FirstOrDefault()
                 ))
                 .ToListAsync();
         }
@@ -68,7 +90,7 @@ namespace HousePlanner.API.Services
             }
 
             var project = await query.FirstOrDefaultAsync();
-            
+
             if (project != null)
             {
                 project.ConstructionPhases = project.ConstructionPhases.OrderBy(c => c.SequenceOrder).ToList();
@@ -99,6 +121,7 @@ namespace HousePlanner.API.Services
             // Verify project access
             var project = await GetProjectDetailsAsync(log.ProjectId, constructorId, "Constructor");
             if (project == null) throw new UnauthorizedAccessException("Not authorized to log workflow for this project.");
+            if (project.Status.Equals("cancelled", StringComparison.OrdinalIgnoreCase)) throw new HousePlanner.API.Exceptions.ProjectCancelledException();
 
             log.ConstructorId = constructorId;
             log.CreatedAt = DateTimeOffset.UtcNow;
@@ -110,7 +133,7 @@ namespace HousePlanner.API.Services
                     .Where(l => l.ProjectId == log.ProjectId)
                     .OrderByDescending(l => l.DayNumber)
                     .FirstOrDefaultAsync();
-                
+
                 log.DayNumber = previousLogs != null ? previousLogs.DayNumber + 1 : 1;
             }
 
@@ -123,9 +146,12 @@ namespace HousePlanner.API.Services
         public async Task<ConstructorWorkflowLog> UpdateWorkflowLogAsync(Guid constructorId, Guid logId, ConstructorWorkflowLog updatedLog)
         {
             var existingLog = await _context.ConstructorWorkflowLogs
+                .Include(l => l.Project)
                 .FirstOrDefaultAsync(l => l.Id == logId && l.ConstructorId == constructorId);
 
             if (existingLog == null) throw new KeyNotFoundException("Log not found or unauthorized.");
+            if (existingLog.Project?.Status.Equals("cancelled", StringComparison.OrdinalIgnoreCase) == true)
+                throw new HousePlanner.API.Exceptions.ProjectCancelledException();
 
             existingLog.CompletedWork = updatedLog.CompletedWork;
             existingLog.ProgressPercentage = updatedLog.ProgressPercentage;
@@ -135,7 +161,7 @@ namespace HousePlanner.API.Services
             existingLog.TomorrowPlan = updatedLog.TomorrowPlan;
             existingLog.AdditionalNotes = updatedLog.AdditionalNotes;
             existingLog.Status = updatedLog.Status;
-            
+
             if (updatedLog.ConstructionPhaseId.HasValue && updatedLog.ConstructionPhaseId != Guid.Empty)
             {
                 existingLog.ConstructionPhaseId = updatedLog.ConstructionPhaseId;
@@ -152,11 +178,12 @@ namespace HousePlanner.API.Services
             var project = await GetProjectDetailsAsync(projectId, constructorId, userRole);
             if (project == null) throw new UnauthorizedAccessException("Not authorized.");
 
-            int totalEstimatedDays = project.ConstructionPhases.Sum(p => p.EstimatedDurationDays);
-            
+            int totalEstimatedDays = project.ConstructionPhases.Sum(p => p.AiEstimatedDurationDays);
+            int totalPlannedDays = project.ConstructionPhases.Sum(p => p.PlannedDurationDays);
+
             var logs = await GetWorkflowLogsAsync(projectId, constructorId, userRole);
             int daysCompleted = logs.Count(); // Each log is one day
-            
+
             int daysRemaining = totalEstimatedDays - daysCompleted;
             if (daysRemaining < 0) daysRemaining = 0;
 
@@ -167,13 +194,13 @@ namespace HousePlanner.API.Services
             }
 
             var latestLog = logs.FirstOrDefault();
-            
+
             string delayStatus = "On Schedule";
             if (daysCompleted > totalEstimatedDays)
             {
                 delayStatus = $"Delayed by {daysCompleted - totalEstimatedDays} days";
             }
-            
+
             return new
             {
                 TotalEstimatedDays = totalEstimatedDays,
@@ -228,8 +255,8 @@ namespace HousePlanner.API.Services
 
             if (request == null) throw new KeyNotFoundException("Request not found.");
             if (request.Project == null) throw new InvalidOperationException("Project data missing.");
-            
-            // In a real scenario, check if ownerId matches project.UserId 
+
+            // In a real scenario, check if ownerId matches project.UserId
             // For now, we assume the caller has the right to approve.
 
             request.Status = "Approved";
@@ -288,7 +315,8 @@ namespace HousePlanner.API.Services
                     Id = Guid.NewGuid(),
                     ProjectId = projectId,
                     PhaseName = "Main Construction",
-                    EstimatedDurationDays = estimatedDays,
+                    AiEstimatedDurationDays = estimatedDays,
+                    PlannedDurationDays = estimatedDays,
                     SequenceOrder = 1,
                     Status = "Not Started"
                 });
@@ -297,11 +325,64 @@ namespace HousePlanner.API.Services
             {
                 // Update the first phase with the estimated days
                 var firstPhase = project.ConstructionPhases.OrderBy(p => p.SequenceOrder).First();
-                firstPhase.EstimatedDurationDays = estimatedDays;
+                firstPhase.AiEstimatedDurationDays = estimatedDays;
+                firstPhase.PlannedDurationDays = estimatedDays;
             }
 
             await _context.SaveChangesAsync();
             return true;
+        }
+
+        public async Task<HousePlanner.API.DTOs.ConstructionPhaseDto?> UpdatePhaseScheduleAsync(Guid projectId, Guid phaseId, Guid constructorId, int plannedDurationDays)
+        {
+            var project = await _context.Projects
+                .Include(p => p.ConstructionPhases)
+                .FirstOrDefaultAsync(p => p.Id == projectId && p.ContractorId == constructorId);
+
+            if (project == null) return null;
+            if (project.Status.Equals("cancelled", StringComparison.OrdinalIgnoreCase))
+                throw new HousePlanner.API.Exceptions.ProjectCancelledException();
+
+
+            var targetPhase = project.ConstructionPhases.FirstOrDefault(p => p.Id == phaseId);
+            if (targetPhase == null) return null;
+
+            targetPhase.PlannedDurationDays = plannedDurationDays;
+
+            // Recalculate dates for all phases from this one onward based on sequence order
+            var orderedPhases = project.ConstructionPhases.OrderBy(p => p.SequenceOrder).ToList();
+            var targetIndex = orderedPhases.IndexOf(targetPhase);
+
+            if (targetIndex >= 0)
+            {
+                var currentDate = targetPhase.PlannedStartDate ?? DateOnly.FromDateTime(DateTime.UtcNow);
+
+                for (int i = targetIndex; i < orderedPhases.Count; i++)
+                {
+                    var phase = orderedPhases[i];
+                    phase.PlannedStartDate = currentDate;
+                    phase.PlannedEndDate = currentDate.AddDays(Math.Max(0, phase.PlannedDurationDays - 1));
+
+                    currentDate = currentDate.AddDays(Math.Max(1, phase.PlannedDurationDays));
+                }
+            }
+
+            project.PlannedTotalDurationDays = project.ConstructionPhases.Sum(p => p.PlannedDurationDays);
+
+            await _context.SaveChangesAsync();
+
+            return new HousePlanner.API.DTOs.ConstructionPhaseDto(
+                targetPhase.Id,
+                targetPhase.PhaseName,
+                targetPhase.SequenceOrder,
+                targetPhase.Status,
+                targetPhase.StartedAt,
+                targetPhase.CompletedAt,
+                targetPhase.AiEstimatedDurationDays,
+                targetPhase.PlannedDurationDays,
+                targetPhase.PlannedStartDate,
+                targetPhase.PlannedEndDate
+            );
         }
     }
 }

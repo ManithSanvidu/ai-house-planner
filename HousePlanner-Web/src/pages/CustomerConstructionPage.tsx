@@ -37,6 +37,19 @@ export default function CustomerConstructionPage() {
     try { await customerConstructionService.request(selectedDesign, constructorId); setMessage('Design approved for construction and request sent.'); await load(); }
     catch (e: any) { setMessage(e.response?.data?.message || 'Could not send construction request.'); }
   };
+  const cancelProject = async (projectId: string, hasProgress: boolean) => {
+    const msg = hasProgress
+      ? "This project already contains construction progress. Cancelling will stop further workflow updates but preserve all recorded history.\n\nCancel this construction project?"
+      : "Cancel this construction project?\n\nThis will remove it from Active Construction. Existing construction history, phases, and daily logs will be preserved.";
+    if (!window.confirm(msg)) return;
+    try {
+      await customerConstructionService.cancelProject(projectId);
+      setMessage('Construction project cancelled.');
+      await load();
+    } catch (e: any) {
+      setMessage(e.response?.data?.message || e.message || 'Could not cancel project.');
+    }
+  };
   if (loading) return <main className="mx-auto max-w-7xl p-4 sm:p-8 space-y-8 text-center text-zinc-500 py-20">Loading construction information...</main>;
   if (error) return <main className="mx-auto max-w-7xl p-4 sm:p-8 space-y-8 text-center py-20"><p className="text-red-500 mb-4">{error}</p><button onClick={() => void load()} className="rounded-xl border px-4 py-2 hover:bg-zinc-50">Try Again</button></main>;
 
@@ -48,7 +61,7 @@ export default function CustomerConstructionPage() {
     {design && <section className="space-y-6"><div><h2 className="text-xl font-bold">Review Approved Design</h2><p className="text-sm text-zinc-500">Confirm the architect-approved design and estimate before choosing a constructor.</p></div><CostBreakdownCard cost={design.cost}/><div><h2 className="text-xl font-bold">Choose a Constructor</h2><p className="text-sm text-zinc-500 mb-4">Building: {design.title}</p>{!constructors.length ? <p>No registered constructors are currently available.</p> : <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">{constructors.map(c => <article key={c.id} className="rounded-2xl border bg-white dark:bg-gray-950 p-5"><Building2 className="text-indigo-600"/><h3 className="font-bold mt-3">{c.name}</h3><button onClick={() => void request(c.id)} className="mt-4 w-full rounded-xl bg-indigo-600 py-2.5 text-white font-semibold">Approve &amp; Request Construction</button></article>)}</div>}</div></section>}
     <section><h2 className="text-xl font-bold mb-3">Pending Requests</h2>{!data?.pendingRequests.length?<p className="text-zinc-500">No pending requests.</p>:data.pendingRequests.map(r=><div key={r.id} className="rounded-xl border p-4 mb-2"><Clock className="inline mr-2" size={16}/>Pending with <strong>{r.constructorName}</strong><p className="text-sm text-zinc-500 mt-1 ml-6">Design v{r.designVersion} · Requested {new Date(r.requestedAt).toLocaleDateString()}</p></div>)}</section>
     {!!data?.declinedRequests.length && <section><h2 className="text-xl font-bold mb-3">Declined Requests</h2>{data.declinedRequests.map(r=><div key={r.id} className="rounded-xl bg-red-50 text-red-800 p-4 mb-2"><b>{r.constructorName} declined this request.</b>{r.declineReason&&<p>{r.declineReason}</p>}<p className="text-sm">You may choose another constructor above.</p></div>)}</section>}
-    <section><h2 className="text-xl font-bold mb-3">Active Construction</h2>{!data?.activeProjects.length?<p className="text-zinc-500">No active construction projects.</p>:<div className="grid md:grid-cols-2 gap-3">{data.activeProjects.map(p=><article key={p.id} className="rounded-2xl border p-5"><b>Design v{p.designVersion}</b><p>{p.constructorName}</p><p className="text-sm text-zinc-500">Current phase: {p.currentPhase||'Awaiting update'}</p><Link to={`/dashboard/construction/${p.id}`} className="inline-block mt-4 text-indigo-600 font-semibold">View Progress</Link></article>)}</div>}</section>
+    <section><h2 className="text-xl font-bold mb-3">Active Construction</h2>{!data?.activeProjects.length?<p className="text-zinc-500">No active construction projects.</p>:<div className="grid md:grid-cols-2 gap-3">{data.activeProjects.map(p=><article key={p.id} className="rounded-2xl border p-5"><b>Design v{p.designVersion}</b><p>{p.constructorName}</p><p className="text-sm text-zinc-500">Current phase: {p.currentPhase||'Awaiting update'}</p><div className="mt-4 flex gap-3"><Link to={`/dashboard/construction/${p.id}`} className="text-indigo-600 font-semibold">View Progress</Link><button onClick={() => void cancelProject(p.id, p.status === 'in_progress')} className="text-red-600 font-semibold ml-auto hover:underline">Cancel Construction</button></div></article>)}</div>}</section>
     {!!data?.completedProjects.length && <section><h2 className="text-xl font-bold mb-3">Completed Projects</h2>{data.completedProjects.map(p=><Link key={p.id} to={`/dashboard/construction/${p.id}`} className="block rounded-xl border p-4">Design v{p.designVersion} · {p.constructorName}</Link>)}</section>}
   </main>;
 }

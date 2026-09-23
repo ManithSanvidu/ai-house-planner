@@ -3,6 +3,7 @@ using System;
 using HousePlanner.API.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace HousePlanner.API.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260922110034_AddPlannedDurationsToPhases")]
+    partial class AddPlannedDurationsToPhases
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -561,58 +564,10 @@ namespace HousePlanner.API.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
-                    b.Property<string>("DisplayGroup")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<DateTimeOffset?>("EffectiveAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("ExternalItemId")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
-
-                    b.Property<string>("ExternalItemName")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
-
-                    b.Property<DateTimeOffset?>("ImportedAt")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<string>("ItemName")
                         .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
-
-                    b.Property<DateTimeOffset?>("ObservedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("OriginalCurrency")
-                        .HasMaxLength(10)
-                        .HasColumnType("character varying(10)");
-
-                    b.Property<decimal?>("OriginalPrice")
-                        .HasColumnType("decimal(18,4)");
-
-                    b.Property<string>("OriginalUnit")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<string>("Provider")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<string>("Region")
-                        .HasMaxLength(150)
-                        .HasColumnType("character varying(150)");
-
-                    b.Property<string>("SourceReference")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<string>("SourceUrl")
-                        .HasMaxLength(2048)
-                        .HasColumnType("character varying(2048)");
 
                     b.Property<string>("Unit")
                         .IsRequired()
@@ -627,60 +582,7 @@ namespace HousePlanner.API.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Provider", "ExternalItemId")
-                        .IsUnique()
-                        .HasDatabaseName("UX_PricingData_Provider_ExternalItemId");
-
-                    b.ToTable("PricingData", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_PricingData_Category", "\"Category\" IN ('material', 'labour')");
-                        });
-                });
-
-            modelBuilder.Entity("HousePlanner.API.Entities.PricingImportAudit", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTimeOffset?>("CompletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("DetailsJson")
-                        .HasColumnType("text");
-
-                    b.Property<int>("FailedCount")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("FailureMessage")
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
-
-                    b.Property<int>("ImportedCount")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Provider")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<int>("SkippedCount")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTimeOffset>("StartedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("character varying(30)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("StartedAt")
-                        .HasDatabaseName("IX_PricingImportAudits_StartedAt");
-
-                    b.ToTable("PricingImportAudits");
+                    b.ToTable("PricingData");
                 });
 
             modelBuilder.Entity("HousePlanner.API.Entities.Project", b =>

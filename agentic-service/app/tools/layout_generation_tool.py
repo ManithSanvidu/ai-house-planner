@@ -168,9 +168,17 @@ NO_DISTINCT_LAYOUT = 'No distinct compatible layout is currently available for t
 
 
 def _candidate_pool(req: Requirements, plot: PlotConstraints, previous_fingerprint=None,
-                    preferred_plan_code: Optional[str] = None):
+                    preferred_plan_code: Optional[str] = None,
+                    excluded_plan_code: Optional[str] = None):
 
     compatible = filter_compatible_base_plans(req, plot)
+
+    if excluded_plan_code:
+        # We explicitly exclude this plan code if alternatives exist.
+        # But if it's the ONLY plan, we might have to use it (or fail). The user requested to fail if no alternatives.
+        compatible = [plan for plan in compatible if plan.plan_code != excluded_plan_code]
+        if not compatible:
+            raise GenerationFailure('No sufficiently different compatible design is currently available.')
 
     if preferred_plan_code:
         compatible = [plan for plan in compatible if plan.plan_code == preferred_plan_code]
@@ -373,6 +381,8 @@ def generate_layout(
 
     design_seed: Optional[int] = None,
     preferred_plan_code: Optional[str] = None,
+    excluded_plan_code: Optional[str] = None,
+    excluded_fingerprint_explicit: Optional[str] = None,
 
 ) -> DesignResult:
 
@@ -429,8 +439,8 @@ def generate_layout(
                 raise GenerationFailure('Cannot compare geometry: the previous design is invalid.') from exc
             previous_fingerprint = None
 
-    excluded_fingerprint = previous_fingerprint if requests_another_design(revision_reason) else None
-    candidate_pool = _candidate_pool(req, plot, excluded_fingerprint, preferred_plan_code)
+    excluded_fingerprint = excluded_fingerprint_explicit or (previous_fingerprint if requests_another_design(revision_reason) else None)
+    candidate_pool = _candidate_pool(req, plot, excluded_fingerprint, preferred_plan_code, excluded_plan_code)
     shortlist = candidate_pool[:7]
 
     request_type = ('generate_another' if requests_another_design(revision_reason)

@@ -118,7 +118,7 @@ public sealed class CustomerOwnershipTests
     public async Task Customer_CannotSubmitAnotherCustomersDesignForArchitectReview()
     {
         _workflowB.PreferredHouseDesignId = _workflowB.HouseDesigns.Single().Id;
-        Assert.IsType<NotFoundObjectResult>(await Controller(_customerA).SubmitArchitectReview(_workflowB.Id));
+        Assert.IsType<NotFoundObjectResult>(await Controller(_customerA).SubmitArchitectReview(_workflowB.Id, _workflowB.HouseDesigns.Single().Id));
         Assert.Empty(_db.ValidationRequests);
     }
 

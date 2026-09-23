@@ -36,7 +36,7 @@ export const customerConstructionService = {
   constructors: () => apiClient.get<ConstructorProfile[]>('/customer/construction/constructors').then(r => r.data),
   request: (houseDesignId: string, constructorId: string) =>
     apiClient.post('/customer/construction/requests', { houseDesignId, constructorId }).then(r => r.data),
+  cancelProject: (projectId: string) => apiClient.patch(`/customer/construction/projects/${projectId}/cancel`).then(r => r.data),
   overview: () => apiClient.get<CustomerConstruction>('/customer/construction').then(r => r.data),
   project: (projectId: string) => apiClient.get<CustomerConstructionProjectDetails>(`/customer/construction/projects/${projectId}`).then(r => r.data)
 };
-

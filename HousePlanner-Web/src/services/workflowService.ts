@@ -183,8 +183,10 @@ export const workflowService = {
     (await apiClient.delete(`/workflows/${workflowId}/design-selection`)).data,
   removeDesign: async (workflowId: string, designId: string) =>
     (await apiClient.delete(`/workflows/${workflowId}/designs/${designId}`)).data,
-  submitArchitectReview: async (workflowId: string) =>
-    (await apiClient.post(`/workflows/${workflowId}/submit-architect-review`)).data,
+  submitArchitectReview: async (workflowId: string, designId: string) =>
+    (await apiClient.post(`/workflows/${workflowId}/submit-architect-review/${designId}`)).data,
+  regenerateDesign: async (workflowId: string, designId: string) =>
+    (await apiClient.post(`/workflows/${workflowId}/regenerate/${designId}`)).data,
   approveWorkflow: async (
     id: string,
     decision: 'approve' | 'reject' | 'request_revision',

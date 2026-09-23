@@ -43,6 +43,9 @@ namespace HousePlanner.API.Middleware
                 case Exceptions.UserNotRegisteredException:
                     statusCode = HttpStatusCode.NotFound;
                     return context.Response.WriteAsync(JsonSerializer.Serialize(new { code = "application_user_not_registered", message = exception.Message }));
+                case HousePlanner.API.Exceptions.ProjectCancelledException:
+                    statusCode = HttpStatusCode.Conflict;
+                    return context.Response.WriteAsync(JsonSerializer.Serialize(new { code = "project_cancelled", message = exception.Message }));
                 case ArgumentException:
                 case InvalidOperationException:
                     statusCode = HttpStatusCode.BadRequest;

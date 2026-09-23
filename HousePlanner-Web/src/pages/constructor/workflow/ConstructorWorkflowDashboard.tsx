@@ -92,7 +92,7 @@ export const ConstructorWorkflowDashboard: React.FC = () => {
   }
 
   const pendingRequests = requests.filter(r => r.status === 'Pending');
-  const activeProjects = projects.filter(p => p.status !== 'Completed');
+  const activeProjects = projects.filter(p => p.status !== 'Completed' && p.status !== 'Cancelled');
   const completedCount = projects.length - activeProjects.length;
 
   return (

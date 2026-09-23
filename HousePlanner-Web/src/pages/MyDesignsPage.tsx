@@ -30,14 +30,21 @@ const MyDesignsPage: React.FC = () => {
     await workflowService.clearDesignSelection(workflowId); await load();
   };
   const submit = async (workflowId: string) => {
-    await workflowService.submitArchitectReview(workflowId); await load();
+    const project = projects.find(p => p.workflowId === workflowId);
+    if (!project || !project.preferredHouseDesignId) return;
+    await workflowService.submitArchitectReview(workflowId, project.preferredHouseDesignId); await load();
   };
   const remove = async () => {
     if (!pendingRemoval) return;
-    await workflowService.removeDesign(pendingRemoval.workflow.workflowId, pendingRemoval.design.designId);
-    setPendingRemoval(null);
-    setCompareIds(previous => ({ ...previous, [pendingRemoval.workflow.workflowId]: (previous[pendingRemoval.workflow.workflowId] || []).filter(id => id !== pendingRemoval.design.designId) }));
-    await load();
+    try {
+      await workflowService.removeDesign(pendingRemoval.workflow.workflowId, pendingRemoval.design.designId);
+      setPendingRemoval(null);
+      setCompareIds(previous => ({ ...previous, [pendingRemoval.workflow.workflowId]: (previous[pendingRemoval.workflow.workflowId] || []).filter(id => id !== pendingRemoval.design.designId) }));
+      await load();
+    } catch (err: any) {
+      setError(err?.response?.data?.message || err.message || 'Failed to remove design');
+      setPendingRemoval(null);
+    }
   };
   const toggleCompare = (workflowId: string, designId: string) => setCompareIds(previous => {
     const selected = previous[workflowId] || [];
@@ -90,7 +97,7 @@ const DesignCard = ({ design, workflow, compared, compareFull, onCompare, onSele
     <p className="text-xs text-zinc-400 mb-3">{new Date(design.createdAt).toLocaleString()}</p>
     {approved && <div className="mb-3 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-800">✓ Architect Approved</div>}
     {submitted && <div className="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-xs font-bold text-amber-800">Awaiting Architect Review</div>}
-    <div className="flex flex-wrap gap-2"><Link to={`/dashboard/workflows/${workflow.workflowId}?design=${design.designId}`} className="px-3 py-2 rounded-lg border text-xs font-semibold">Preview</Link>{workflow.designs.length > 1 && !managementLocked && <button onClick={onCompare} disabled={!compared && compareFull} className={`px-3 py-2 rounded-lg border text-xs font-semibold disabled:opacity-40 ${compared ? 'bg-indigo-50 text-indigo-700' : ''}`}>{compared ? 'Remove Compare' : 'Add to Compare'}</button>}{approved?<Link to={`/dashboard/construction?design=${design.designId}`} className="px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold">Find Constructor</Link>:managementLocked?null:design.isPreferred ? <button onClick={onUnselect} className="px-3 py-2 rounded-lg bg-zinc-700 text-white text-xs font-semibold">Unselect</button> : <button onClick={onSelect} className="px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold">Select</button>}{!managementLocked&&<button onClick={onRemove} className="p-2 rounded-lg border text-red-600" aria-label={`Delete Version ${design.version}`}><Trash2 size={15}/></button>}</div>
+    <div className="flex flex-wrap gap-2"><Link to={`/dashboard/workflows/${workflow.workflowId}?design=${design.designId}`} className="px-3 py-2 rounded-lg border text-xs font-semibold">Preview</Link>{workflow.designs.length > 1 && !managementLocked && <button onClick={onCompare} disabled={!compared && compareFull} className={`px-3 py-2 rounded-lg border text-xs font-semibold disabled:opacity-40 ${compared ? 'bg-indigo-50 text-indigo-700' : ''}`}>{compared ? 'Remove Compare' : 'Add to Compare'}</button>}{approved?<Link to={`/dashboard/construction?design=${design.designId}`} className="px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold">Find Constructor</Link>:managementLocked?null:design.isPreferred ? <button onClick={onUnselect} className="px-3 py-2 rounded-lg bg-zinc-700 text-white text-xs font-semibold">Unselect</button> : <button onClick={onSelect} className="px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold">Select</button>}<button onClick={onRemove} className="p-2 rounded-lg border text-red-600" aria-label={`Delete Version ${design.version}`}><Trash2 size={15}/></button></div>
   </article>;
 };
 
@@ -103,8 +110,15 @@ const MiniPlan = ({ design }: { design: DesignHistoryDto }) => {
 const CompareModal = ({ comparison, onClose, onSelect }: { comparison: NonNullable<Comparison>; onClose: () => void; onSelect: (id: string) => void }) => <div role="dialog" aria-label="Compare designs" className="fixed inset-0 z-50 bg-black/50 p-4 overflow-auto"><div className="max-w-6xl mx-auto bg-white dark:bg-gray-900 rounded-3xl p-6"><div className="flex justify-between mb-5"><h2 className="text-2xl font-bold">Compare Designs</h2><button aria-label="Close comparison" onClick={onClose}><X/></button></div><div className="grid md:grid-cols-2 gap-5">{comparison.designs.map(design => <article key={design.designId} className="border rounded-2xl p-5"><h3 className="text-xl font-bold">Version {design.version}</h3><MiniPlan design={design}/><dl className="grid grid-cols-2 gap-3 mt-4 text-sm">{[['Layout',formatTopology(design.topology)],['Bedrooms',design.bedrooms],['Bathrooms',design.bathrooms],['Floors',design.floorCount],['Area',formatArea(design.totalBuiltUpAreaSqft)],['Created as',formatGenerationMode(design.generationMode)],['Suitability score',design.suitabilityScore ?? 'N/A'],['Architectural quality',design.architecturalQualityScore ?? 'N/A'],['Plan reference',design.selectedBasePlan || 'N/A'],['Created',new Date(design.createdAt).toLocaleString()]].map(([label,value]) => <div key={String(label)}><dt className="text-zinc-400">{label}</dt><dd className="font-semibold">{value}</dd></div>)}</dl><button onClick={() => onSelect(design.designId)} className="w-full mt-5 py-2.5 rounded-xl bg-indigo-600 text-white font-bold">Select Version {design.version}</button></article>)}</div></div></div>;
 
 const RemovalModal = ({ pending, onCancel, onConfirm }: { pending: PendingRemoval; onCancel: () => void; onConfirm: () => void }) => {
-  const archive = pending.workflow.status === 'awaiting_architect_review';
-  return <div role="dialog" aria-label={`Delete Version ${pending.design.version}`} className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"><div className="max-w-md bg-white dark:bg-gray-900 rounded-2xl p-6"><h2 className="text-xl font-bold">{archive ? 'Archive' : 'Delete'} Version {pending.design.version}?</h2><p className="text-zinc-600 dark:text-zinc-300 mt-3">This version will no longer be available for selection or approval. Approved or submitted designs are retained and archived instead of being hard-deleted.</p>{pending.design.isPreferred && <p className="mt-3 text-amber-700 bg-amber-50 p-3 rounded-lg">This is your selected design. Removing it will clear the project selection.</p>}<div className="flex justify-end gap-3 mt-6"><button onClick={onCancel} className="px-4 py-2 rounded-xl border">Cancel</button><button onClick={onConfirm} className="px-4 py-2 rounded-xl bg-red-600 text-white font-bold">{archive ? 'Archive' : 'Delete'}</button></div></div></div>;
+  const archive = pending.workflow.status === 'awaiting_architect_review' || pending.design.isArchitectApproved;
+  const isApproved = pending.design.isArchitectApproved;
+  return <div role="dialog" aria-label={`Delete Version ${pending.design.version}`} className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"><div className="max-w-md bg-white dark:bg-gray-900 rounded-2xl p-6"><h2 className="text-xl font-bold">{archive ? 'Archive' : 'Delete'} Version {pending.design.version}?</h2>
+  {isApproved ? (
+    <p className="text-zinc-600 dark:text-zinc-300 mt-3">This design has been architect approved. Removing it will hide/archive it from My Designs, but approval history will be preserved.</p>
+  ) : (
+    <p className="text-zinc-600 dark:text-zinc-300 mt-3">Are you sure you want to remove this design from My Designs? Approved or submitted designs are retained and archived instead of being hard-deleted.</p>
+  )}
+  {pending.design.isPreferred && <p className="mt-3 text-amber-700 bg-amber-50 p-3 rounded-lg">This is your selected design. Removing it will clear the project selection.</p>}<div className="flex justify-end gap-3 mt-6"><button onClick={onCancel} className="px-4 py-2 rounded-xl border">Cancel</button><button onClick={onConfirm} className="px-4 py-2 rounded-xl bg-red-600 text-white font-bold">Remove Design</button></div></div></div>;
 };
 
 export default MyDesignsPage;

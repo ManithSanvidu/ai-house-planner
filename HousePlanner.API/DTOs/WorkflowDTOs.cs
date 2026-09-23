@@ -116,7 +116,19 @@ public record ConstructionPhaseDto(
     string Status,
     DateTimeOffset? StartedAt,
     DateTimeOffset? CompletedAt,
-    int EstimatedDurationDays
+    int AiEstimatedDurationDays,
+    int PlannedDurationDays,
+    DateOnly? PlannedStartDate,
+    DateOnly? PlannedEndDate
+);
+
+public record ConstructorDesignDto(
+    Guid DesignId,
+    int Version,
+    int FloorCount,
+    decimal TotalBuiltUpAreaSqft,
+    string FoundationType,
+    string LayoutJson
 );
 
 public record ConstructorProjectDto(
@@ -127,5 +139,13 @@ public record ConstructorProjectDto(
     string Status,
     DateTimeOffset CreatedAt,
     DateTimeOffset UpdatedAt,
-    List<ConstructionPhaseDto> ConstructionPhases
+    int AiEstimatedTotalDurationDays,
+    int PlannedTotalDurationDays,
+    List<ConstructionPhaseDto> ConstructionPhases,
+    ConstructorDesignDto? Design = null,
+    CostSummaryDto? Cost = null
+);
+
+public record UpdatePhaseScheduleRequest(
+    int PlannedDurationDays
 );
