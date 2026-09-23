@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/land_submission.dart';
 import '../core/network/api_client.dart';
+import 'package:dio/dio.dart';
 
 final intakeProvider = StateNotifierProvider<IntakeNotifier, AsyncValue<LandSubmission>>((ref) {
   return IntakeNotifier();
@@ -9,7 +10,7 @@ final intakeProvider = StateNotifierProvider<IntakeNotifier, AsyncValue<LandSubm
 
 class IntakeNotifier extends StateNotifier<AsyncValue<LandSubmission>> {
   IntakeNotifier() : super(AsyncValue.data(LandSubmission(
-    landSizePerches: 10.0,
+    landSizePerches: 15.0,
     preferredBedrooms: 3,
     preferredBathrooms: 1,
     preferredFloors: 1,
@@ -128,18 +129,18 @@ class IntakeNotifier extends StateNotifier<AsyncValue<LandSubmission>> {
           'bedrooms': data.preferredBedrooms ?? 3,
           'bathrooms': data.preferredBathrooms ?? 1,
           'floors': data.preferredFloors ?? 1,
-          'architecturalStyle': data.stylePreference == 'modern' ? 'Modern' : data.stylePreference == 'traditional' ? 'Traditional' : data.stylePreference == 'contemporary' ? 'Contemporary' : 'Modern',
-          'openPlan': data.openPlan,
-          'masterEnsuite': data.masterEnsuite,
-          'separateDining': data.separateDining,
-          'homeOffice': data.homeOffice,
+          'architecturalStyle': data.stylePreference == 'modern' ? 'Modern Minimalist' : data.stylePreference == 'traditional' ? 'Traditional' : data.stylePreference == 'contemporary' ? 'Contemporary' : 'Modern Minimalist',
+          'open_plan': data.openPlan,
+          'master_ensuite': data.masterEnsuite,
+          'separate_dining': data.separateDining,
+          'home_office': data.homeOffice,
           'balcony': data.balcony,
           'veranda': data.veranda,
-          'utilityRoom': data.utilityLaundry,
-          'parkingRequired': data.parkingRequired,
+          'utility_room': data.utilityLaundry,
+          'parking_required': data.parkingRequired,
           'accessibility': data.accessibility,
-          'spacePriority': data.spacePriority ?? 'balanced',
-          'circulationPreference': 'space_efficient'
+          'space_priority': data.spacePriority ?? 'balanced',
+          'circulation_preference': 'space_efficient'
         },
         'designSeed': DateTime.now().millisecondsSinceEpoch % 100000,
       };
@@ -187,6 +188,11 @@ class IntakeNotifier extends StateNotifier<AsyncValue<LandSubmission>> {
       return response.data['workflowId'] as String? ?? response.data['WorkflowId'] as String?;
     } catch (e) {
       state = AsyncValue.data(data);
+      if (e is DioException && e.response?.data != null) {
+        final errorData = e.response!.data;
+        final message = errorData['message'] ?? errorData['Message'] ?? e.message;
+        throw Exception(message);
+      }
       rethrow;
     }
   }
