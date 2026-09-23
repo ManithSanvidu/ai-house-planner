@@ -123,8 +123,8 @@ class _IntakeViewState extends ConsumerState<IntakeView>{
                               const Text('Land size', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppTokens.inkSoft)),
                               const SizedBox(height: 8),
                               _buildTextField(
-                                hint: 'e.g. 10',
-                                initialValue: data.landSizePerches?.toString() ?? '10',
+                                hint: 'e.g. 15',
+                                initialValue: data.landSizePerches?.toString() ?? '15',
                                 keyboardType: TextInputType.number,
                                 validator: (val) => val == null || val.isEmpty ? 'Required' : null,
                                 onSaved: (val) => ref.read(intakeProvider.notifier).updateField(landSizePerches: double.tryParse(val!)),
