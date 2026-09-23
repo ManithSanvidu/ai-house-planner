@@ -29,9 +29,20 @@ class _IntakeViewState extends ConsumerState<IntakeView>{
   void _submit() async {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
-      final workflowId = await ref.read(intakeProvider.notifier).submitIntake();
-      if (workflowId != null && mounted) {
-        context.go('/design/$workflowId');
+      try {
+        final workflowId = await ref.read(intakeProvider.notifier).submitIntake();
+        if (workflowId != null && mounted) {
+          context.go('/design/$workflowId');
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to generate plan: $e', style: const TextStyle(color: Colors.white)),
+              backgroundColor: AppTokens.red,
+            ),
+          );
+        }
       }
     }
   }
@@ -335,40 +346,86 @@ class _IntakeViewState extends ConsumerState<IntakeView>{
                     ),
                   ],
                 ),
-                const SizedBox(height: 80),
-              ],
-            ),
-          ),
-        ),
-        
-        // Sticky Submit Bar
-        Container(
-          padding: const EdgeInsets.all(24),
-          decoration: const BoxDecoration(
-            color: AppTokens.bg,
-            border: Border(top: BorderSide(color: AppTokens.line)),
-          ),
-          child: ElevatedButton(
-            onPressed: _submit,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTokens.ink,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 18),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTokens.radiusButton)),
-              minimumSize: const Size(double.infinity, 0),
-              elevation: 0,
-            ),
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text('Generate AI Plan', style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold)),
-                SizedBox(width: 8),
-                Icon(Icons.auto_awesome, size: 16), // ✦
+                const SizedBox(height: 32),
+
+                // Generate AI Plan button — at the end of the form (same as web)
+                _buildGenerateButton(),
+                const SizedBox(height: 40),
               ],
             ),
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildGenerateButton() {
+    final intakeState = ref.watch(intakeProvider);
+    final isSubmitting = intakeState.isLoading;
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF18181B), Color(0xFF27272A)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x1A000000),
+            blurRadius: 14,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: isSubmitting ? null : _submit,
+          borderRadius: BorderRadius.circular(16),
+          splashColor: Colors.white12,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 18),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: isSubmitting
+                  ? const [
+                      SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(color: Color(0xFF818CF8), strokeWidth: 2),
+                      ),
+                      SizedBox(width: 12),
+                      Text(
+                        'Processing Details...',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ]
+                  : const [
+                      Icon(Icons.auto_awesome, color: Colors.white70, size: 18),
+                      SizedBox(width: 10),
+                      Text(
+                        'Generate AI Plan',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
