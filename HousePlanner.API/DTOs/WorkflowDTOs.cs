@@ -138,3 +138,12 @@ public record ConstructorProjectDto(
 public record UpdatePhaseScheduleRequest(
     int PlannedDurationDays
 );
+
+public record AdminWorkflowSummaryDto(
+    Guid WorkflowId,
+    string ClientName,
+    string ClientEmail,
+    string Status,
+    string ApprovalStatus,
+    DateTimeOffset CreatedAt
+);

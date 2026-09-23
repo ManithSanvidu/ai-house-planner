@@ -38,7 +38,7 @@ public class WorkflowController : ControllerBase
     /// </summary>
     /// <param name="id">The WorkflowState unique ID</param>
     [HttpGet("{id:guid}/status")]
-    [Authorize(Roles = "Customer")]
+    [Authorize(Roles = "Customer,Admin,Constructor")]
     [ProducesResponseType(typeof(WorkflowStatusResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
@@ -46,12 +46,16 @@ public class WorkflowController : ControllerBase
     {
         var user = await _currentUserService.GetAsync(HttpContext);
         if (user?.Id is null) return Unauthorized();
-        if (!string.Equals(user.Role, "Customer", StringComparison.OrdinalIgnoreCase)) return Forbid();
+        bool isCustomer = string.Equals(user.Role, "Customer", StringComparison.OrdinalIgnoreCase);
+        bool isAdmin = string.Equals(user.Role, "Admin", StringComparison.OrdinalIgnoreCase);
+        bool isConstructor = string.Equals(user.Role, "Constructor", StringComparison.OrdinalIgnoreCase);
+        
+        if (!isCustomer && !isAdmin && !isConstructor) return Forbid();
         try
         {
             var workflow = await _context.WorkflowStates
                 .AsNoTracking()
-                .Where(w => w.Id == id && w.LandSubmission.ClientId == user.Id.Value)
+                .Where(w => w.Id == id && (!isCustomer || w.LandSubmission.ClientId == user.Id.Value))
                 .Select(w => new
                 {
                     w.Id,
@@ -705,6 +709,50 @@ public class WorkflowController : ControllerBase
             _logger.LogError(ex, "Error updating construction plan for workflow {WorkflowId}", id);
             return StatusCode(StatusCodes.Status500InternalServerError, new { message = "An error occurred updating the construction plan." });
         }
+    }
+
+    [HttpGet("admin/all")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<IEnumerable<AdminWorkflowSummaryDto>>> GetAllWorkflows()
+    {
+        try
+        {
+            var workflows = await _context.WorkflowStates
+                .AsNoTracking()
+                .Include(w => w.LandSubmission)
+                    .ThenInclude(ls => ls.Client)
+                .OrderByDescending(w => w.CreatedAt)
+                .ToListAsync();
+
+            var result = workflows.Select(w => new AdminWorkflowSummaryDto(
+                w.Id,
+                w.LandSubmission?.Client?.FullName ?? "Unknown",
+                w.LandSubmission?.Client?.Email ?? "Unknown",
+                w.Status ?? "unknown",
+                w.ApprovalStatus ?? "unknown",
+                w.CreatedAt
+            )).ToList();
+
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching all workflows for admin");
+            return StatusCode(StatusCodes.Status500InternalServerError, new { message = "An error occurred fetching workflows." });
+        }
+    }
+
+    [HttpDelete("admin/{id:guid}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> DeleteWorkflow(Guid id)
+    {
+        var workflow = await _context.WorkflowStates.FindAsync(id);
+        if (workflow == null) return NotFound(new { message = $"Workflow {id} not found." });
+
+        _context.WorkflowStates.Remove(workflow);
+        await _context.SaveChangesAsync();
+
+        return Ok(new { message = "Workflow deleted successfully." });
     }
 }
 

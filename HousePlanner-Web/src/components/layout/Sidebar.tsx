@@ -35,6 +35,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       { to: '/dashboard', label: 'Admin Overview', icon: LayoutDashboard },
       { to: '/dashboard/admin/plans', label: 'Manage Plans', icon: Shield },
       { to: '/dashboard/admin/staff', label: 'Manage Staff', icon: UserCog },
+      { to: '/dashboard/admin/workflows', label: 'Customer Workflows', icon: FolderKanban },
     ];
 
   return (
