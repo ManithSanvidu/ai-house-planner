@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../core/theme/app_tokens.dart';
 
 class HomeView extends StatelessWidget {
   const HomeView({super.key});
@@ -240,41 +239,6 @@ class HomeView extends StatelessWidget {
             ),
           ),
 
-          // AI badge shown on top of the image.
-          Positioned(
-            left: 16,
-            top: 16,
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 8,
-              ),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.90),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.auto_awesome_rounded,
-                    size: 14,
-                    color: _primary,
-                  ),
-                  SizedBox(width: 6),
-                  Text(
-                    'AI POWERED',
-                    style: TextStyle(
-                      color: _primary,
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.8,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
 
           // Short tagline positioned at the bottom of the image.
           Positioned(
@@ -463,14 +427,15 @@ class HomeView extends StatelessWidget {
 
         // Create account button (register)
         TextButton(
-          onPressed: () => context.go('/register'),
-          style: TextButton.styleFrom(
-            foregroundColor: AppTokens.red,
-          ),
-          child: const Text(
-            'Create an account',
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-          ),
+            onPressed: () => context.go('/register'),
+            child: const Text(
+              'Create an account',
+              style: TextStyle(
+                color: Color(0xFF2563EB),
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
         ),
 
         const SizedBox(height: 24),

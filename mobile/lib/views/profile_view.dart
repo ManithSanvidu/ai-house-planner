@@ -10,8 +10,8 @@ class ProfileView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authProvider);
     final email = authState.value?.email ?? 'User';
-    final name = email.split('@').first;
-    final displayName = name[0].toUpperCase() + name.substring(1);
+    final fallbackName = email.split('@').first;
+    final displayName = authState.value?.fullName ?? (fallbackName[0].toUpperCase() + fallbackName.substring(1));
 
     return Scaffold(
       backgroundColor: AppTokens.bg,
