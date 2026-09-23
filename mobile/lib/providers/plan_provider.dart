@@ -25,10 +25,10 @@ class PlanService {
         final List<dynamic> data = response.data;
         return data.map((json) => Plan.fromJson(json)).toList();
       } else {
-        return _getMockPlans();
+        throw Exception('Failed to load plans');
       }
     } catch (e) {
-      return _getMockPlans();
+      throw Exception('Failed to load plans: $e');
     }
   }
 
@@ -41,64 +41,7 @@ class PlanService {
         throw Exception('Failed to load plan');
       }
     } catch (e) {
-      final mockPlans = _getMockPlans();
-      return mockPlans.firstWhere((p) => p.id == id, orElse: () => throw Exception('Plan not found'));
+      throw Exception('Failed to load plan: $e');
     }
-  }
-
-  List<Plan> _getMockPlans() {
-    return [
-      Plan(
-        id: 'HP-2B1B-1F-7',
-        name: 'Test Plan HP-2B1B-1F-7',
-        description: 'AI Generated Plan',
-        style: 'Modern Minimalist',
-        estimatedCost: 150000,
-        squareFootage: 1200,
-        bedrooms: 2,
-        bathrooms: 1,
-        imageUrls: [],
-        designCode: 'HP-2B1B-1F-7',
-        category: 'Standard',
-        suitableTerrain: 'hillside',
-        floorCount: 1,
-        totalBuiltUpAreaSqft: 1200,
-        createdAt: DateTime.now(),
-      ),
-      Plan(
-        id: 'HP-2B1B-1F-9',
-        name: 'Test Plan HP-2B1B-1F-9',
-        description: 'AI Generated Plan',
-        style: 'Modern Minimalist',
-        estimatedCost: 160000,
-        squareFootage: 1200,
-        bedrooms: 2,
-        bathrooms: 1,
-        imageUrls: [],
-        designCode: 'HP-2B1B-1F-9',
-        category: 'Standard',
-        suitableTerrain: 'hillside',
-        floorCount: 1,
-        totalBuiltUpAreaSqft: 1200,
-        createdAt: DateTime.now(),
-      ),
-      Plan(
-        id: 'HP-2B1B-2F-25',
-        name: 'Test Plan HP-2B1B-2F-25',
-        description: 'AI Generated Plan',
-        style: 'Modern Minimalist',
-        estimatedCost: 250000,
-        squareFootage: 1800,
-        bedrooms: 2,
-        bathrooms: 1,
-        imageUrls: [],
-        designCode: 'HP-2B1B-2F-25',
-        category: 'Standard',
-        suitableTerrain: 'hillside',
-        floorCount: 2,
-        totalBuiltUpAreaSqft: 1800,
-        createdAt: DateTime.now(),
-      )
-    ];
   }
 }
