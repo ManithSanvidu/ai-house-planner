@@ -48,7 +48,7 @@ class PlotConstraints(BaseModel):
             # - WIDE_SHALLOW: aspect = 0.6 (requires explicit user selection)
             aspect = 1.25
             
-            if rng.random() > 0.5:
+            if area < 3000 or rng.random() > 0.5:
                 self.plot_width_ft = sqrt(area / aspect)
             else:
                 self.plot_width_ft = sqrt(area * aspect)

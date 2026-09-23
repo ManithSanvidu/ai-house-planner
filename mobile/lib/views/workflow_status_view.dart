@@ -75,7 +75,107 @@ class _WorkflowStatusViewState extends ConsumerState<WorkflowStatusView> {
         loading: () => const Center(child: CircularProgressIndicator(color: AppTokens.ink)),
         error: (err, stack) => Center(child: Text('Error: $err', style: const TextStyle(color: AppTokens.red))),
         data: (data) {
-          final isCompleted = data.status == 'completed' || data.status == 'awaiting_approval';
+          if (data.status == 'failed' || data.status == 'rejected') {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline, color: AppTokens.red, size: 64),
+                    const SizedBox(height: 16),
+                    Text('Status: ${data.status.toUpperCase()}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTokens.ink)),
+                    const SizedBox(height: 8),
+                    Text(data.failureReason ?? 'The AI was unable to generate a plan that met all constraints.', 
+                      style: const TextStyle(fontSize: 15, color: AppTokens.inkSoft), textAlign: TextAlign.center),
+                    const SizedBox(height: 32),
+                    ElevatedButton(
+                      onPressed: () => context.pop(),
+                      style: ElevatedButton.styleFrom(backgroundColor: AppTokens.ink, foregroundColor: Colors.white, minimumSize: const Size(double.infinity, 50), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                      child: const Text('Try Again', style: TextStyle(fontWeight: FontWeight.w700)),
+                    )
+                  ],
+                ),
+              ),
+            );
+          }
+
+          if (data.status == 'failed' || data.status == 'rejected') {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline, color: AppTokens.red, size: 64),
+                    const SizedBox(height: 16),
+                    Text('Status: ${data.status.toUpperCase()}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTokens.ink)),
+                    const SizedBox(height: 8),
+                    Text(data.failureReason ?? 'The AI was unable to generate a plan that met all constraints.', 
+                      style: const TextStyle(fontSize: 15, color: AppTokens.inkSoft), textAlign: TextAlign.center),
+                    const SizedBox(height: 32),
+                    ElevatedButton(
+                      onPressed: () => context.pop(),
+                      style: ElevatedButton.styleFrom(backgroundColor: AppTokens.ink, foregroundColor: Colors.white, minimumSize: const Size(double.infinity, 50), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                      child: const Text('Try Again', style: TextStyle(fontWeight: FontWeight.w700)),
+                    )
+                  ],
+                ),
+              ),
+            );
+          }
+
+          if (data.status == 'failed' || data.status == 'rejected') {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline, color: AppTokens.red, size: 64),
+                    const SizedBox(height: 16),
+                    Text('Status: ${data.status.toUpperCase()}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTokens.ink)),
+                    const SizedBox(height: 8),
+                    Text(data.failureReason ?? 'The AI was unable to generate a plan that met all constraints.', 
+                      style: const TextStyle(fontSize: 15, color: AppTokens.inkSoft), textAlign: TextAlign.center),
+                    const SizedBox(height: 32),
+                    ElevatedButton(
+                      onPressed: () => context.pop(),
+                      style: ElevatedButton.styleFrom(backgroundColor: AppTokens.ink, foregroundColor: Colors.white, minimumSize: const Size(double.infinity, 50), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                      child: const Text('Try Again', style: TextStyle(fontWeight: FontWeight.w700)),
+                    )
+                  ],
+                ),
+              ),
+            );
+          }
+
+          if (data.status == 'failed' || data.status == 'rejected') {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline, color: AppTokens.red, size: 64),
+                    const SizedBox(height: 16),
+                    Text('Status: ${data.status.toUpperCase()}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTokens.ink)),
+                    const SizedBox(height: 8),
+                    Text(data.failureReason ?? 'The AI was unable to generate a plan that met all constraints.', 
+                      style: const TextStyle(fontSize: 15, color: AppTokens.inkSoft), textAlign: TextAlign.center),
+                    const SizedBox(height: 32),
+                    ElevatedButton(
+                      onPressed: () => context.pop(),
+                      style: ElevatedButton.styleFrom(backgroundColor: AppTokens.ink, foregroundColor: Colors.white, minimumSize: const Size(double.infinity, 50), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                      child: const Text('Try Again', style: TextStyle(fontWeight: FontWeight.w700)),
+                    )
+                  ],
+                ),
+              ),
+            );
+          }
+
+          final isCompleted = data.status == 'completed' || data.status == 'awaiting_approval' || data.status == 'design_generated';
           if (!isCompleted) {
             return Center(
               child: Column(
@@ -347,30 +447,144 @@ class _WorkflowStatusViewState extends ConsumerState<WorkflowStatusView> {
 
     final phases = plan['phases'] as List<dynamic>? ?? [];
     final summary = plan['project_summary'] as Map<String, dynamic>?;
+    final totalDays = summary?['estimated_duration_days'] ?? 0;
+    final months = (totalDays / 30).toStringAsFixed(1);
+    final terrainType = summary?['terrain_type'] ?? 'flat';
+    final optimizationNotes = summary?['optimization_notes'] as String?;
 
     return ListView(
       padding: const EdgeInsets.all(24),
       physics: const BouncingScrollPhysics(),
       children: [
-        if (summary != null) ...[
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppTokens.accentSoft,
-              borderRadius: BorderRadius.circular(AppTokens.radiusSection),
-              border: Border.all(color: AppTokens.accent),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.timer, color: AppTokens.accent),
-                const SizedBox(width: 12),
-                Text('Estimated Duration: ${summary['estimated_duration_days']} days', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5, color: AppTokens.ink)),
-              ],
-            ),
+        // ── Header Card ──
+        Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(AppTokens.radiusCardSolid),
+            border: Border.all(color: AppTokens.line),
+            boxShadow: const [BoxShadow(color: Color(0x0A000000), blurRadius: 12, offset: Offset(0, 4))],
           ),
-          const SizedBox(height: 24),
-        ],
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Project Timeline Estimate',
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppTokens.ink),
+                        ),
+                        const SizedBox(height: 6),
+                        const Text(
+                          'AI-generated construction roadmap based on architectural design',
+                          style: TextStyle(fontSize: 12.5, color: AppTokens.inkMute),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        '$totalDays',
+                        style: const TextStyle(
+                          fontSize: 36,
+                          fontWeight: FontWeight.w900,
+                          color: AppTokens.emerald,
+                          height: 1,
+                        ),
+                      ),
+                      Text(
+                        'days',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppTokens.emerald.withValues(alpha: 0.7),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '(~$months months)',
+                        style: const TextStyle(fontSize: 11, color: AppTokens.inkMute, fontStyle: FontStyle.italic),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              // Target Duration & Schedule Status
+              Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppTokens.line),
+                      ),
+                      child: const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('TARGET DURATION', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, letterSpacing: 1.0, color: AppTokens.inkMute)),
+                          SizedBox(height: 6),
+                          Text('Not Provided', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppTokens.ink)),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF0FDF4),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFBBF7D0)),
+                      ),
+                      child: const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('SCHEDULE STATUS', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, letterSpacing: 1.0, color: AppTokens.inkMute)),
+                          SizedBox(height: 6),
+                          Text('ON SCHEDULE', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppTokens.emerald)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 28),
+
+        // ── Construction Phases Header ──
+        const Text('Construction Phases', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppTokens.ink)),
+        const SizedBox(height: 16),
+
+        // ── Phase Cards ──
         ...phases.map((phase) {
+          final phaseId = phase['id'] ?? 0;
+          final phaseName = phase['name'] ?? '';
+          final durationDays = phase['duration_days'] ?? 0;
+          final startDay = phase['start_day'] ?? 0;
+          final endDay = phase['end_day'] ?? 0;
+          final dependencies = phase['dependencies'] as List<dynamic>? ?? [];
+
+          String dependencyText;
+          if (dependencies.isEmpty) {
+            dependencyText = 'No dependencies';
+          } else {
+            dependencyText = 'Depends on: ${dependencies.join(', ')}';
+          }
+
           return Container(
             margin: const EdgeInsets.only(bottom: 12),
             padding: const EdgeInsets.all(16),
@@ -378,36 +592,183 @@ class _WorkflowStatusViewState extends ConsumerState<WorkflowStatusView> {
               color: Colors.white,
               borderRadius: BorderRadius.circular(AppTokens.radiusCardSolid),
               border: Border.all(color: AppTokens.line),
-              boxShadow: const [BoxShadow(color: Color(0x0A000000), blurRadius: 8, offset: Offset(0, 4))],
+              boxShadow: const [BoxShadow(color: Color(0x08000000), blurRadius: 8, offset: Offset(0, 3))],
             ),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
+                // Phase Number
                 Container(
-                  width: 32,
-                  height: 32,
+                  width: 36,
+                  height: 36,
                   decoration: BoxDecoration(
-                    color: AppTokens.ink,
-                    borderRadius: BorderRadius.circular(16),
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF6366F1), Color(0xFF818CF8)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   alignment: Alignment.center,
-                  child: Text('${phase['id']}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                  child: Text(
+                    '$phaseId',
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14),
+                  ),
                 ),
                 const SizedBox(width: 16),
+                // Phase Info
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(phase['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5, color: AppTokens.ink)),
+                      Text(
+                        phaseName,
+                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5, color: AppTokens.ink),
+                      ),
                       const SizedBox(height: 4),
-                      Text('Days ${phase['start_day']} - ${phase['end_day']} (${phase['duration_days']} days)', style: const TextStyle(color: AppTokens.inkMute, fontSize: 12.5)),
+                      Text(
+                        dependencyText,
+                        style: TextStyle(
+                          color: dependencies.isEmpty ? AppTokens.inkSoft : AppTokens.accent,
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                     ],
                   ),
+                ),
+                // Duration & Day Range
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '$durationDays days',
+                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: AppTokens.ink),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Day $startDay – $endDay',
+                      style: const TextStyle(fontSize: 11.5, color: AppTokens.accent, fontWeight: FontWeight.w600),
+                    ),
+                  ],
                 ),
               ],
             ),
           );
         }),
+        const SizedBox(height: 28),
+
+        // ── Critical Path ──
+        const Text('Critical Path', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppTokens.ink)),
+        const SizedBox(height: 14),
+        SizedBox(
+          height: 42,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            itemCount: phases.length,
+            separatorBuilder: (_, _) => const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 4),
+              child: Icon(Icons.arrow_forward_ios, size: 10, color: AppTokens.inkSoft),
+            ),
+            itemBuilder: (context, index) {
+              final phase = phases[index];
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFEEF2FF), Color(0xFFE0E7FF)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(AppTokens.radiusPill),
+                  border: Border.all(color: const Color(0xFFC7D2FE)),
+                ),
+                child: Text(
+                  phase['name'] ?? '',
+                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF4338CA)),
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 28),
+
+        // ── Optimization Notes ──
+        Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFEFCE8),
+            borderRadius: BorderRadius.circular(AppTokens.radiusCardSolid),
+            border: Border.all(color: const Color(0xFFFDE68A)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Row(
+                children: [
+                  Icon(Icons.lightbulb_outline, size: 16, color: AppTokens.amber),
+                  SizedBox(width: 8),
+                  Text('Optimization Notes', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppTokens.ink)),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Text(
+                optimizationNotes ?? 'Optimized schedule duration: $totalDays days by parallelizing finishing work.',
+                style: const TextStyle(fontSize: 12.5, color: Color(0xFF78716C), height: 1.5),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // ── AI Assumptions ──
+        Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(AppTokens.radiusCardSolid),
+            border: Border.all(color: AppTokens.line),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Row(
+                children: [
+                  Icon(Icons.smart_toy_outlined, size: 16, color: AppTokens.inkMute),
+                  SizedBox(width: 8),
+                  Text('AI Assumptions', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppTokens.ink)),
+                ],
+              ),
+              const SizedBox(height: 10),
+              _buildAssumptionRow('Duration estimates are AI generated approximate planning estimates.'),
+              const SizedBox(height: 6),
+              _buildAssumptionRow('Normal working conditions assumed.'),
+              const SizedBox(height: 6),
+              _buildAssumptionRow('Terrain factored as: $terrainType.'),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+
+  Widget _buildAssumptionRow(String text) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(top: 4),
+          child: Icon(Icons.circle, size: 5, color: AppTokens.inkSoft),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(fontSize: 12, color: Color(0xFF78716C), height: 1.45),
+          ),
+        ),
       ],
     );
   }

@@ -18,7 +18,8 @@ class WorkflowNotifier extends StateNotifier<AsyncValue<WorkflowState>> {
 
   void _startPolling() {
     _timer = Timer.periodic(const Duration(seconds: 3), (timer) {
-      if (state.value?.status == 'completed' || state.value?.status == 'failed') {
+      final status = state.value?.status;
+      if (status == 'completed' || status == 'failed' || status == 'awaiting_approval' || status == 'design_generated') {
         timer.cancel();
       } else {
         _fetchStatus();

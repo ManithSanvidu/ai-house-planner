@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/land_submission.dart';
 import '../core/network/api_client.dart';
+import 'package:dio/dio.dart';
 
 final intakeProvider = StateNotifierProvider<IntakeNotifier, AsyncValue<LandSubmission>>((ref) {
   return IntakeNotifier();
@@ -9,7 +10,7 @@ final intakeProvider = StateNotifierProvider<IntakeNotifier, AsyncValue<LandSubm
 
 class IntakeNotifier extends StateNotifier<AsyncValue<LandSubmission>> {
   IntakeNotifier() : super(AsyncValue.data(LandSubmission(
-    landSizePerches: 10.0,
+    landSizePerches: 15.0,
     preferredBedrooms: 3,
     preferredBathrooms: 1,
     preferredFloors: 1,
@@ -121,39 +122,65 @@ class IntakeNotifier extends StateNotifier<AsyncValue<LandSubmission>> {
     state = const AsyncValue.loading();
     
     try {
-      final payload = {
-        'basePreDesignedPlanId': basePlanId ?? data.basePreDesignedPlanId,
-        'planSelectionMode': mode ?? data.planSelectionMode,
+      final payload = <String, dynamic>{
         'landSizePerches': data.landSizePerches,
         'manualTerrainType': data.manualTerrainType == 'flat' ? 'Flat' : data.manualTerrainType == 'hillside' ? 'Hillside' : data.manualTerrainType == 'coastal' ? 'Coastal' : data.manualTerrainType == 'forested' ? 'Forested' : 'Flat',
-        'budgetLkr': data.budgetLkr,
         'preferences': {
           'bedrooms': data.preferredBedrooms ?? 3,
           'bathrooms': data.preferredBathrooms ?? 1,
           'floors': data.preferredFloors ?? 1,
-          'architecturalStyle': data.stylePreference == 'modern' ? 'Modern' : data.stylePreference == 'traditional' ? 'Traditional' : data.stylePreference == 'contemporary' ? 'Contemporary' : 'Modern',
-          'openPlan': data.openPlan,
-          'masterEnsuite': data.masterEnsuite,
-          'separateDining': data.separateDining,
-          'homeOffice': data.homeOffice,
+          'architecturalStyle': data.stylePreference == 'modern' ? 'Modern Minimalist' : data.stylePreference == 'traditional' ? 'Traditional' : data.stylePreference == 'contemporary' ? 'Contemporary' : 'Modern Minimalist',
+          'open_plan': data.openPlan,
+          'master_ensuite': data.masterEnsuite,
+          'separate_dining': data.separateDining,
+          'home_office': data.homeOffice,
           'balcony': data.balcony,
           'veranda': data.veranda,
-          'utilityRoom': data.utilityLaundry,
-          'parkingRequired': data.parkingRequired,
+          'utility_room': data.utilityLaundry,
+          'parking_required': data.parkingRequired,
           'accessibility': data.accessibility,
-          'spacePriority': data.spacePriority ?? 'balanced',
-          'circulationPreference': 'space_efficient'
+          'space_priority': data.spacePriority ?? 'balanced',
+          'circulation_preference': 'space_efficient'
         },
-        'plotConstraints': {
-          'width_ft': data.plotWidth,
-          'length_ft': data.plotLength,
-          'road_side': data.roadSide ?? 'south',
-          'north_direction': data.northOrientation ?? 'north',
-          'entrance_side': data.entranceSide ?? 'south',
-          'setbacks': data.plotSetbacks
-        },
-        'designSeed': 12345,
+        'designSeed': DateTime.now().millisecondsSinceEpoch % 100000,
       };
+
+      // Conditionally add base plan fields (same as web)
+      final effectiveBasePlanId = basePlanId ?? data.basePreDesignedPlanId;
+      if (effectiveBasePlanId != null && effectiveBasePlanId.isNotEmpty) {
+        payload['basePreDesignedPlanId'] = effectiveBasePlanId;
+        payload['planSelectionMode'] = mode ?? data.planSelectionMode ?? 'use';
+      }
+
+      // Conditionally add budget
+      if (data.budgetLkr != null) {
+        payload['budgetLkr'] = data.budgetLkr;
+      }
+
+      // Build plotConstraints matching backend field names
+      final plotConstraints = <String, dynamic>{
+        'road_side': data.roadSide ?? 'south',
+        'north_direction': data.northOrientation ?? 'north',
+        'entrance_side': (data.entranceSide == 'road side') ? (data.roadSide ?? 'south') : (data.entranceSide ?? 'south'),
+      };
+
+      // Only include dimensions when provided (same as web)
+      if (data.plotWidth != null) {
+        plotConstraints['plot_width_ft'] = data.plotWidth;
+      }
+      if (data.plotLength != null) {
+        plotConstraints['plot_length_ft'] = data.plotLength;
+      }
+
+      // Parse setbacks string into object if provided
+      if (data.plotSetbacks != null && data.plotSetbacks!.isNotEmpty) {
+        final setbacks = _parseSetbacks(data.plotSetbacks!);
+        if (setbacks.isNotEmpty) {
+          plotConstraints['setbacks'] = setbacks;
+        }
+      }
+
+      payload['plotConstraints'] = plotConstraints;
 
       final response = await ApiClient.instance.post('/ai-generation/generate', data: payload);
       
@@ -161,7 +188,24 @@ class IntakeNotifier extends StateNotifier<AsyncValue<LandSubmission>> {
       return response.data['workflowId'] as String? ?? response.data['WorkflowId'] as String?;
     } catch (e) {
       state = AsyncValue.data(data);
+      if (e is DioException && e.response?.data != null) {
+        final errorData = e.response!.data;
+        final message = errorData['message'] ?? errorData['Message'] ?? e.message;
+        throw Exception(message);
+      }
       rethrow;
     }
+  }
+
+  /// Parses a free-text setbacks string like "Front 10ft, Rear 5ft" into a
+  /// structured map e.g. { "front": 10, "rear": 5 }.
+  Map<String, dynamic> _parseSetbacks(String input) {
+    final result = <String, dynamic>{};
+    final lower = input.toLowerCase();
+    final pattern = RegExp(r'(front|rear|left|right)\s*[:=]?\s*(\d+)');
+    for (final match in pattern.allMatches(lower)) {
+      result[match.group(1)!] = int.parse(match.group(2)!);
+    }
+    return result;
   }
 }
