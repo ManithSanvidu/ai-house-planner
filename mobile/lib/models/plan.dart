@@ -3,6 +3,7 @@ import '../widgets/floor_plan_painter.dart';
 class Plan {
   final String id;
   final String name;
+  final String slug;
   final String description;
   final String style;
   final double estimatedCost;
@@ -15,6 +16,19 @@ class Plan {
   final String suitableTerrain;
   final int floorCount;
   final double totalBuiltUpAreaSqft;
+  final int minimumLandSizePerches;
+  final int parkingSpaces;
+  final bool hasBalcony;
+  final bool hasVeranda;
+  final bool hasOffice;
+  final bool isAccessibleFriendly;
+  final List<String> tags;
+  final String thumbnailUrl;
+  final bool isActive;
+  final double? minimumPlotWidthFt;
+  final double? minimumPlotLengthFt;
+  final bool hasUtilityRoom;
+  final String? conceptualDisclaimer;
   final DateTime createdAt;
   final DateTime? updatedAt;
   final List<RoomLayout>? layout;
@@ -22,6 +36,7 @@ class Plan {
   Plan({
     required this.id,
     required this.name,
+    this.slug = '',
     required this.description,
     required this.style,
     required this.estimatedCost,
@@ -34,6 +49,19 @@ class Plan {
     this.suitableTerrain = 'Flat',
     this.floorCount = 1,
     this.totalBuiltUpAreaSqft = 0.0,
+    this.minimumLandSizePerches = 10,
+    this.parkingSpaces = 0,
+    this.hasBalcony = false,
+    this.hasVeranda = false,
+    this.hasOffice = false,
+    this.isAccessibleFriendly = false,
+    this.tags = const [],
+    this.thumbnailUrl = '',
+    this.isActive = true,
+    this.minimumPlotWidthFt,
+    this.minimumPlotLengthFt,
+    this.hasUtilityRoom = false,
+    this.conceptualDisclaimer,
     required this.createdAt,
     this.updatedAt,
     this.layout,
@@ -45,14 +73,26 @@ class Plan {
     
     List<RoomLayout>? parsedLayout;
     if (json['layout'] != null && json['layout']['rooms'] != null) {
-      parsedLayout = (json['layout']['rooms'] as List)
-          .map((r) => RoomLayout.fromJson(r))
-          .toList();
+      final entrancesJson = json['layout']['entrances'] as List?;
+      parsedLayout = (json['layout']['rooms'] as List).map((r) {
+        Map<String, dynamic> roomData = Map<String, dynamic>.from(r);
+        if (entrancesJson != null) {
+          final entrance = entrancesJson.firstWhere(
+            (e) => e['room_id'] == roomData['room_id'] || e['roomId'] == roomData['roomId'], 
+            orElse: () => null
+          );
+          if (entrance != null) {
+            roomData['entrance'] = entrance;
+          }
+        }
+        return RoomLayout.fromJson(roomData);
+      }).toList();
     }
     
     return Plan(
       id: json['id']?.toString() ?? '',
       name: json['name'] ?? '',
+      slug: json['slug'] ?? '',
       description: json['description'] ?? '',
       style: json['style'] ?? '',
       estimatedCost: (json['estimatedCost'] ?? 0).toDouble(),
@@ -65,6 +105,19 @@ class Plan {
       suitableTerrain: json['suitableTerrain'] ?? 'Flat',
       floorCount: json['floorCount'] ?? 1,
       totalBuiltUpAreaSqft: (json['totalBuiltUpAreaSqft'] ?? json['squareFootage'] ?? 0).toDouble(),
+      minimumLandSizePerches: json['minimumLandSizePerches'] ?? 10,
+      parkingSpaces: json['parkingSpaces'] ?? 0,
+      hasBalcony: json['hasBalcony'] ?? false,
+      hasVeranda: json['hasVeranda'] ?? false,
+      hasOffice: json['hasOffice'] ?? false,
+      isAccessibleFriendly: json['isAccessibleFriendly'] ?? false,
+      tags: (json['tags'] as List?)?.map((t) => t.toString()).toList() ?? [],
+      thumbnailUrl: thumb ?? '',
+      isActive: json['isActive'] ?? true,
+      minimumPlotWidthFt: (json['minimumPlotWidthFt'] as num?)?.toDouble(),
+      minimumPlotLengthFt: (json['minimumPlotLengthFt'] as num?)?.toDouble(),
+      hasUtilityRoom: json['hasUtilityRoom'] ?? false,
+      conceptualDisclaimer: json['conceptualDisclaimer'],
       createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : DateTime.now(),
       updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
       layout: parsedLayout,
