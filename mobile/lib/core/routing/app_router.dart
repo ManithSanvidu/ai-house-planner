@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -15,17 +16,24 @@ import 'package:mobile/views/construction_timeline_view.dart';
 import 'package:mobile/views/profile_view.dart';
 import 'package:mobile/widgets/main_scaffold.dart';
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authProvider);
+  final authStateListenable = ValueNotifier<bool>(false);
+
+  ref.listen(authProvider, (previous, next) {
+    authStateListenable.value = !authStateListenable.value;
+  });
 
   return GoRouter(
     initialLocation: '/',
+    refreshListenable: authStateListenable,
     redirect: (context, state) {
+      final authState = ref.read(authProvider);
       final isLoading = authState.isLoading;
       if (isLoading) return null;
 
       final isAuth = authState.valueOrNull != null;
-      final isLoggingIn = state.matchedLocation == '/login' || state.matchedLocation == '/register';
-      final isHome = state.matchedLocation == '/';
+      final path = state.uri.path;
+      final isLoggingIn = path == '/login' || path == '/register';
+      final isHome = path == '/';
 
       // If unauthenticated and not on login, register, or home, send to home
       if (!isAuth && !isLoggingIn && !isHome) {
