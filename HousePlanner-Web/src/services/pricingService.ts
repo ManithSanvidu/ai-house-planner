@@ -1,5 +1,5 @@
 import apiClient from './apiClient';
-import type { PricingItem, CreatePricingItemRequest, UpdatePricingItemRequest } from '../types/pricing.types';
+import type { PricingHistoryItem, PricingItem, CreatePricingItemRequest, UpdatePricingItemRequest } from '../types/pricing.types';
 
 /**
  * Pricing Service
@@ -33,6 +33,10 @@ const pricingService = {
     const response = await apiClient.put<PricingItem>(`/pricing/${id}`, body);
     return response.data;
   },
+  deactivate: async (id: number, reason?: string): Promise<PricingItem> =>
+    (await apiClient.patch<PricingItem>(`/pricing/${id}/deactivate`, { reason })).data,
+  getHistory: async (id: number): Promise<PricingHistoryItem[]> =>
+    (await apiClient.get<PricingHistoryItem[]>(`/pricing/${id}/history`)).data,
 };
 
 export { pricingService };

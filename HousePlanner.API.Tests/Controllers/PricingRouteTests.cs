@@ -28,11 +28,10 @@ public sealed class PricingRouteTests : IClassFixture<PricingApiFactory>
     // ──────────────────────────────────────────────
 
     [Fact]
-    public async Task GetAllPricing_IsPublic_ReturnsOk()
+    public async Task GetAllPricing_Unauthenticated_ReturnsUnauthorized()
     {
-        // No auth header — should still succeed
         var response = await _client.GetAsync("/api/v1/pricing");
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     // ──────────────────────────────────────────────
@@ -151,7 +150,7 @@ public sealed class PricingApiFactory : WebApplicationFactory<Program>
                 .Setup(s => s.GetAllPricingAsync())
                 .ReturnsAsync(Array.Empty<PricingDto>());
             pricingServiceMock
-                .Setup(s => s.CreatePricingAsync(It.IsAny<CreatePricingDto>()))
+                .Setup(s => s.CreatePricingAsync(It.IsAny<CreatePricingDto>(), It.IsAny<string?>()))
                 .ReturnsAsync(new PricingDto
                 {
                     Id = 1,

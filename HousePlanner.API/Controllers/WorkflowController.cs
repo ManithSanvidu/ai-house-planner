@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using HousePlanner.API.Data;
 using HousePlanner.API.DTOs;
+using HousePlanner.API.Entities;
 using HousePlanner.API.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -100,9 +101,15 @@ public class WorkflowController : ControllerBase
                                 .Select(c => new
                                 {
                                     c.MaterialCostLkr,
-                                    c.LabourCostLkr,
-                                    c.TotalCostLkr,
-                                    c.BudgetDeltaPercent
+                                     c.LabourCostLkr,
+                                     c.TotalCostLkr,
+                                     c.BudgetDeltaPercent,
+                                     c.PricingSnapshotJson,
+                                     c.BreakdownJson,
+                                     c.FormulaVersion,
+                                     c.AppliedAreaSqft,
+                                     c.TerrainType,
+                                     c.CreatedAt
                                 })
                                 .FirstOrDefault()
                         })
@@ -169,12 +176,20 @@ public class WorkflowController : ControllerBase
 
                 if (workflow.LatestDesign.LatestCost is not null)
                 {
-                    costDto = new CostSummaryDto(
-                        MaterialCostLkr: workflow.LatestDesign.LatestCost.MaterialCostLkr,
-                        LabourCostLkr: workflow.LatestDesign.LatestCost.LabourCostLkr,
-                        TotalCostLkr: workflow.LatestDesign.LatestCost.TotalCostLkr,
-                        BudgetDeltaPercent: workflow.LatestDesign.LatestCost.BudgetDeltaPercent
-                    );
+                     var latest = workflow.LatestDesign.LatestCost;
+                     costDto = CostBreakdownBuilder.ToSummary(new CostEstimate
+                     {
+                         MaterialCostLkr = latest.MaterialCostLkr,
+                         LabourCostLkr = latest.LabourCostLkr,
+                         TotalCostLkr = latest.TotalCostLkr,
+                         BudgetDeltaPercent = latest.BudgetDeltaPercent,
+                         PricingSnapshotJson = latest.PricingSnapshotJson,
+                         BreakdownJson = latest.BreakdownJson,
+                         FormulaVersion = latest.FormulaVersion,
+                         AppliedAreaSqft = latest.AppliedAreaSqft,
+                         TerrainType = latest.TerrainType,
+                         CreatedAt = latest.CreatedAt
+                     }, workflow.LatestDesign.TerrainType);
                 }
             }
 

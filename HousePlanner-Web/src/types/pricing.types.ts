@@ -21,6 +21,11 @@ export interface PricingItem {
   displayGroup?: string | null;
   provider?: string | null;
   sourceReference?: string | null;
+  region: string;
+  qualityLevel: 'Basic' | 'Standard' | 'Premium' | 'Luxury';
+  isActive: boolean;
+  createdAt: string;
+  updatedByUserId?: string | null;
   updatedAt: string; // ISO-8601 DateTimeOffset
 }
 
@@ -35,6 +40,8 @@ export interface CreatePricingItemRequest {
   unitCostLkr: number;
   terrainMultiplier: TerrainMultiplier;
   sourceReference?: string | null;
+  region: string;
+  qualityLevel: 'Basic' | 'Standard' | 'Premium' | 'Luxury';
 }
 
 /**
@@ -44,4 +51,15 @@ export interface CreatePricingItemRequest {
 export interface UpdatePricingItemRequest {
   unitCostLkr: number;
   terrainMultiplier: TerrainMultiplier;
+  reason?: string | null;
+}
+
+export interface PricingHistoryItem {
+  id: string;
+  pricingDataId: number;
+  previousValue: number;
+  newValue: number;
+  changedByUserId?: string | null;
+  changedAt: string;
+  reason?: string | null;
 }

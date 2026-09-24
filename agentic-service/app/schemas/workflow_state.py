@@ -22,6 +22,8 @@ class CoordinatorInput(BaseModel):
     regeneration:bool=False
     previous_base_plan_code:Optional[str]=None
     previous_design_fingerprint:Optional[str]=None
+    region:Optional[str]=None
+    quality_level:Optional[str]=None
 
 class WorkflowState(BaseModel):
     workflow_id:UUID

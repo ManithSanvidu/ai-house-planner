@@ -1,3 +1,82 @@
 {
-  "records": []
+  "records": [
+    {
+      "itemName": "Foundation Materials",
+      "category": "material",
+      "displayGroup": "Foundation",
+      "unit": "per_sqft",
+      "unitCostLkr": 3000,
+      "terrainMultiplier": { "flat": 1.0, "hillside": 1.15, "coastal": 1.10 },
+      "provider": "Manual",
+      "region": "Sri Lanka",
+      "qualityLevel": "Standard",
+      "isActive": true,
+      "sourceReference": "Initial contractor benchmark - Sri Lanka construction rates 2026"
+    },
+    {
+      "itemName": "Structural Materials",
+      "category": "material",
+      "displayGroup": "Structural",
+      "unit": "per_sqft",
+      "unitCostLkr": 4000,
+      "terrainMultiplier": { "flat": 1.0, "hillside": 1.15, "coastal": 1.10 },
+      "provider": "Manual",
+      "region": "Sri Lanka",
+      "qualityLevel": "Standard",
+      "isActive": true,
+      "sourceReference": "Initial contractor benchmark - Sri Lanka construction rates 2026"
+    },
+    {
+      "itemName": "Roofing Materials",
+      "category": "material",
+      "displayGroup": "Roofing",
+      "unit": "per_sqft",
+      "unitCostLkr": 2500,
+      "terrainMultiplier": { "flat": 1.0, "hillside": 1.15, "coastal": 1.10 },
+      "provider": "Manual",
+      "region": "Sri Lanka",
+      "qualityLevel": "Standard",
+      "isActive": true,
+      "sourceReference": "Initial contractor benchmark - Sri Lanka construction rates 2026"
+    },
+    {
+      "itemName": "Finishing Materials",
+      "category": "material",
+      "displayGroup": "Finishing",
+      "unit": "per_sqft",
+      "unitCostLkr": 2500,
+      "terrainMultiplier": { "flat": 1.0, "hillside": 1.15, "coastal": 1.10 },
+      "provider": "Manual",
+      "region": "Sri Lanka",
+      "qualityLevel": "Standard",
+      "isActive": true,
+      "sourceReference": "Initial contractor benchmark - Sri Lanka construction rates 2026"
+    },
+    {
+      "itemName": "MEP Materials",
+      "category": "material",
+      "displayGroup": "MEP",
+      "unit": "per_sqft",
+      "unitCostLkr": 1200,
+      "terrainMultiplier": { "flat": 1.0, "hillside": 1.15, "coastal": 1.10 },
+      "provider": "Manual",
+      "region": "Sri Lanka",
+      "qualityLevel": "Standard",
+      "isActive": true,
+      "sourceReference": "Initial contractor benchmark - Sri Lanka construction rates 2026"
+    },
+    {
+      "itemName": "Construction Labour",
+      "category": "labour",
+      "displayGroup": "Labour",
+      "unit": "factor",
+      "unitCostLkr": 0.35,
+      "terrainMultiplier": { "flat": 1.0, "hillside": 1.15, "coastal": 1.10 },
+      "provider": "Manual",
+      "region": "Sri Lanka",
+      "qualityLevel": "Standard",
+      "isActive": true,
+      "sourceReference": "Initial contractor benchmark - Sri Lanka construction rates 2026"
+    }
+  ]
 }

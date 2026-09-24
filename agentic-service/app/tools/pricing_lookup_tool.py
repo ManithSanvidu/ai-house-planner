@@ -12,7 +12,7 @@ from typing import List, Optional
 import requests
 from pydantic import ValidationError
 
-from app.config import ASPNET_API_URL, INTERNAL_API_KEY
+from app.config import ASPNET_API_URL, INTERNAL_API_KEY, PRICING_VERIFY_TLS
 from app.schemas.pricing_data import PricingItem
 
 logger = logging.getLogger(__name__)
@@ -27,6 +27,8 @@ def pricing_lookup_tool(
     api_url: Optional[str] = None,
     api_key: Optional[str] = None,
     timeout: int = 10,
+    region: Optional[str] = None,
+    quality_level: Optional[str] = None,
 ) -> List[PricingItem]:
     """
     Fetch current pricing catalog from ASP.NET backend.
@@ -59,8 +61,12 @@ def pricing_lookup_tool(
         response = requests.get(
             endpoint,
             headers=headers,
+            params={
+                "region": region or "Sri Lanka",
+                "qualityLevel": quality_level or "Standard",
+            },
             timeout=timeout,
-            verify=False  # Allow local dev SSL
+            verify=PRICING_VERIFY_TLS
         )
     except requests.exceptions.Timeout as e:
         msg = f"Pricing service request timed out after {timeout}s: {e}"
@@ -112,9 +118,13 @@ def pricing_lookup_tool(
         print(f"[Pricing Tool] Error: {msg}")
         raise PricingLookupError(msg) from e
 
-    logger.info("Successfully loaded %d pricing items", len(items))
-    print(f"[Pricing Tool] Successfully loaded {len(items)} pricing items.")
-    return items
+    active_items = [item for item in items if item.is_active]
+    if not active_items:
+        raise PricingLookupError("Pricing collection contains no active pricing rows.")
+
+    logger.info("Successfully loaded %d active pricing items", len(active_items))
+    print(f"[Pricing Tool] Successfully loaded {len(active_items)} active pricing items.")
+    return active_items
 
 
 # Alias for flexible importing

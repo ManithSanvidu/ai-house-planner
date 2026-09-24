@@ -22,7 +22,9 @@ namespace HousePlanner.API.Data
         public DbSet<DailyConstructionLog> DailyConstructionLogs { get; set; }
         public DbSet<PricingData> PricingItems { get; set; }
         public DbSet<PricingImportAudit> PricingImportAudits { get; set; }
+        public DbSet<PricingHistory> PricingHistory { get; set; }
         public DbSet<CostEstimate> CostEstimates { get; set; }
+        public DbSet<CostEstimationRun> CostEstimationRuns { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -55,8 +57,33 @@ namespace HousePlanner.API.Data
                 .HasDatabaseName("UX_PricingData_Provider_ExternalItemId");
 
             modelBuilder.Entity<PricingData>()
-                .ToTable("PricingData", table => table.HasCheckConstraint(
-                    "CK_PricingData_Category", "\"Category\" IN ('material', 'labour')"));
+                .ToTable("PricingData", table =>
+                {
+                    table.HasCheckConstraint("CK_PricingData_Category", "\"Category\" IN ('material', 'labour')");
+                    table.HasCheckConstraint("CK_PricingData_QualityLevel",
+                        "\"QualityLevel\" IN ('Basic', 'Standard', 'Premium', 'Luxury')");
+                });
+
+            modelBuilder.Entity<PricingData>()
+                .HasIndex(p => new { p.ItemName, p.Region, p.QualityLevel })
+                .IsUnique()
+                .HasFilter("\"IsActive\" = TRUE")
+                .HasDatabaseName("UX_PricingData_Active_Item_Region_Quality");
+
+            modelBuilder.Entity<PricingData>()
+                .HasIndex(p => new { p.Region, p.QualityLevel })
+                .IsUnique()
+                .HasFilter("\"IsActive\" = TRUE AND \"Category\" = 'labour'")
+                .HasDatabaseName("UX_PricingData_Active_Labour_Region_Quality");
+
+            modelBuilder.Entity<PricingHistory>(entity =>
+            {
+                entity.HasOne(history => history.PricingData)
+                    .WithMany(pricing => pricing.History)
+                    .HasForeignKey(history => history.PricingDataId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                entity.HasIndex(history => new { history.PricingDataId, history.ChangedAt });
+            });
 
             modelBuilder.Entity<PricingImportAudit>()
                 .HasIndex(audit => audit.StartedAt)
@@ -127,6 +154,20 @@ namespace HousePlanner.API.Data
                     .WithMany(d => d.CostEstimates)
                     .HasForeignKey(e => e.HouseDesignId);
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()");
+            });
+
+            modelBuilder.Entity<CostEstimationRun>(entity =>
+            {
+                entity.HasIndex(e => new { e.WorkflowStateId, e.StartedAt })
+                    .HasDatabaseName("IX_CostEstimationRuns_Workflow_StartedAt");
+                entity.HasOne(e => e.WorkflowState)
+                    .WithMany()
+                    .HasForeignKey(e => e.WorkflowStateId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(e => e.HouseDesign)
+                    .WithMany()
+                    .HasForeignKey(e => e.HouseDesignId)
+                    .OnDelete(DeleteBehavior.SetNull);
             });
 
             modelBuilder.Entity<PreDesignedHousePlan>(entity =>

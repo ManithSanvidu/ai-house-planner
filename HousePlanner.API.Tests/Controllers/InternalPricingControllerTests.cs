@@ -48,11 +48,11 @@ namespace HousePlanner.API.Tests.Controllers
                 }
             };
 
-            _pricingServiceMock.Setup(s => s.GetAllPricingAsync())
+            _pricingServiceMock.Setup(s => s.GetActivePricingAsync("Sri Lanka", "Standard"))
                 .ReturnsAsync(mockPricing);
 
             // Act
-            var actionResult = await _controller.GetPricing();
+            var actionResult = await _controller.GetPricing("Sri Lanka", "Standard");
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(actionResult.Result);
@@ -64,7 +64,7 @@ namespace HousePlanner.API.Tests.Controllers
         public async Task GetPricing_ReturnsOkResult_WhenCollectionIsEmpty()
         {
             // Arrange
-            _pricingServiceMock.Setup(s => s.GetAllPricingAsync())
+            _pricingServiceMock.Setup(s => s.GetActivePricingAsync(null, null))
                 .ReturnsAsync(new List<PricingDto>());
 
             // Act

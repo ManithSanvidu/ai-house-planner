@@ -3,10 +3,12 @@ import { beforeEach, expect, test, vi } from 'vitest';
 import PricingManagementPage from './PricingManagementPage';
 import type { PricingItem } from '../types/pricing.types';
 
-const { mockGetAll, mockCreate, mockUpdate } = vi.hoisted(() => ({
+const { mockGetAll, mockCreate, mockUpdate, mockDeactivate, mockGetHistory } = vi.hoisted(() => ({
   mockGetAll: vi.fn(),
   mockCreate: vi.fn(),
   mockUpdate: vi.fn(),
+  mockDeactivate: vi.fn(),
+  mockGetHistory: vi.fn(),
 }));
 
 vi.mock('../services/pricingService', () => ({
@@ -14,11 +16,15 @@ vi.mock('../services/pricingService', () => ({
     getAll: mockGetAll,
     create: mockCreate,
     update: mockUpdate,
+    deactivate: mockDeactivate,
+    getHistory: mockGetHistory,
   },
   pricingService: {
     getAll: mockGetAll,
     create: mockCreate,
     update: mockUpdate,
+    deactivate: mockDeactivate,
+    getHistory: mockGetHistory,
   },
 }));
 
@@ -37,6 +43,11 @@ const mockItems: PricingItem[] = [
     },
     provider: 'Manual',
     sourceReference: 'Local Baseline',
+    region: 'Sri Lanka',
+    qualityLevel: 'Standard',
+    isActive: true,
+    createdAt: '2026-09-01T10:00:00Z',
+    updatedByUserId: 'constructor-1',
     updatedAt: '2026-09-20T10:00:00Z',
   },
   {
@@ -53,6 +64,11 @@ const mockItems: PricingItem[] = [
     },
     provider: 'Manual',
     sourceReference: 'Standard Ratio',
+    region: 'Sri Lanka',
+    qualityLevel: 'Standard',
+    isActive: true,
+    createdAt: '2026-09-01T10:00:00Z',
+    updatedByUserId: 'constructor-1',
     updatedAt: '2026-09-20T10:00:00Z',
   },
 ];
@@ -62,6 +78,8 @@ beforeEach(() => {
   mockGetAll.mockResolvedValue(mockItems);
   mockCreate.mockResolvedValue(mockItems[0]);
   mockUpdate.mockResolvedValue(mockItems[0]);
+  mockDeactivate.mockResolvedValue({ ...mockItems[0], isActive: false });
+  mockGetHistory.mockResolvedValue([]);
 });
 
 test('1. renders empty state when no pricing items exist', async () => {
@@ -173,6 +191,10 @@ test('9. Successful create request adds/refreshes item', async () => {
     },
     provider: 'Manual',
     sourceReference: 'Supplier Quote A',
+    region: 'Sri Lanka',
+    qualityLevel: 'Standard',
+    isActive: true,
+    createdAt: '2026-09-22T10:00:00Z',
     updatedAt: '2026-09-22T10:00:00Z',
   };
   mockCreate.mockResolvedValue(newItem);
@@ -203,6 +225,8 @@ test('9. Successful create request adds/refreshes item', async () => {
         coastal: 1.25,
       },
       sourceReference: 'Supplier Quote A',
+      region: 'Sri Lanka',
+      qualityLevel: 'Standard',
     });
   });
 
@@ -237,9 +261,35 @@ test('10. Existing edit functionality still works', async () => {
         hillside: 1.2,
         coastal: 1.15,
       },
+      reason: undefined,
     });
   });
 
   expect(await screen.findByText('LKR 9,200 / sqft')).toBeTruthy();
   expect(screen.getByText(/updated rate for/i)).toBeTruthy();
+});
+
+test('11. constructor can deactivate an active price after confirmation', async () => {
+  vi.spyOn(window, 'confirm').mockReturnValue(true);
+  render(<PricingManagementPage />);
+  await screen.findByText('Foundation & Substructure Materials');
+
+  fireEvent.click(screen.getByRole('button', { name: 'Deactivate Foundation & Substructure Materials' }));
+
+  await waitFor(() => expect(mockDeactivate).toHaveBeenCalledWith(1, expect.any(String)));
+  expect(await screen.findByText(/deactivated pricing item/i)).toBeTruthy();
+});
+
+test('12. constructor can display pricing history', async () => {
+  mockGetHistory.mockResolvedValue([{
+    id: 'history-1', pricingDataId: 1, previousValue: 8000, newValue: 8500,
+    changedByUserId: 'constructor-1', changedAt: '2026-09-20T10:00:00Z', reason: 'Supplier update',
+  }]);
+  render(<PricingManagementPage />);
+  await screen.findByText('Foundation & Substructure Materials');
+
+  fireEvent.click(screen.getByRole('button', { name: 'History for Foundation & Substructure Materials' }));
+
+  expect(await screen.findByText('8,000 → 8,500')).toBeTruthy();
+  expect(screen.getByText('Supplier update')).toBeTruthy();
 });

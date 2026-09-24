@@ -8,7 +8,7 @@ import secrets
 
 from app.schemas.workflow_state import WorkflowState, CoordinatorInput
 from app.design.revision import preserve_revision_preferences
-from app.workflows.house_planning_graph import app_graph
+from app.workflows.house_planning_graph import app_graph, pre_designed_graph
 from app.config import INTERNAL_API_KEY
 
 app = FastAPI(title="Agentic AI Service - House Planner")
@@ -40,6 +40,12 @@ class StartWorkflowRequest(BaseModel):
     plot_constraints: Optional[Dict[str, Any]] = None
     design_seed: Optional[int] = None
     preferred_plan_code: Optional[str] = None
+    region: Optional[str] = None
+    quality_level: Optional[str] = None
+
+class StartFromDesignRequest(StartWorkflowRequest):
+    design_result: Dict[str, Any]
+    terrain_result: Dict[str, Any]
 
 class ResumeWorkflowRequest(BaseModel):
     workflow_id: UUID
@@ -61,6 +67,10 @@ def execute_workflow(initial_state:WorkflowState):
     """Background task to run the LangGraph workflow"""
     print(f"Starting workflow execution for {initial_state.workflow_id}")
     app_graph.invoke(initial_state)
+
+def execute_pre_designed_workflow(initial_state: WorkflowState):
+    print(f"Starting pre-designed cost workflow for {initial_state.workflow_id}")
+    pre_designed_graph.invoke(initial_state)
 
 @app.post("/workflows/start")
 def start_workflow(
@@ -85,6 +95,23 @@ def start_workflow(
         "message":"Workflow started successfully",
         "workflow_id":str(request.workflow_id)
     }
+
+@app.post("/workflows/start-from-design")
+def start_from_design(
+    request: StartFromDesignRequest,
+    background_tasks: BackgroundTasks,
+    api_key: str = Security(verify_api_key),
+):
+    state = WorkflowState(
+        workflow_id=request.workflow_id,
+        status="design_generated",
+        current_agent="cost_estimation",
+        input_data=CoordinatorInput(**request.model_dump(exclude={"design_result", "terrain_result"})),
+        design_result=request.design_result,
+        terrain_result=request.terrain_result,
+    )
+    background_tasks.add_task(execute_pre_designed_workflow, state)
+    return {"message": "Pre-designed cost workflow started", "workflow_id": str(request.workflow_id)}
 
 @app.post("/workflows/resume")
 def resume_workflow(

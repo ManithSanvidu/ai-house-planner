@@ -83,11 +83,7 @@ namespace HousePlanner.API.Controllers
                     design.FoundationType,
                     design.LayoutJson
                 ),
-                cost is null ? null : new CostSummaryDto(
-                    cost.MaterialCostLkr,
-                    cost.LabourCostLkr,
-                    cost.TotalCostLkr,
-                    cost.BudgetDeltaPercent)
+                cost is null ? null : CostBreakdownBuilder.ToSummary(cost, design?.TerrainType)
             );
 
             return Ok(dto);
@@ -244,7 +240,8 @@ namespace HousePlanner.API.Controllers
                     layoutJson = r.HouseDesign != null ? r.HouseDesign.LayoutJson : null,
                     cost = r.HouseDesign == null ? null : r.HouseDesign.CostEstimates
                         .OrderByDescending(c => c.CreatedAt)
-                        .Select(c => new { c.MaterialCostLkr, c.LabourCostLkr, c.TotalCostLkr, c.BudgetDeltaPercent })
+                        .Select(c => new { c.MaterialCostLkr, c.LabourCostLkr, c.TotalCostLkr, c.BudgetDeltaPercent,
+                            c.PricingSnapshotJson, c.BreakdownJson, c.FormulaVersion, c.AppliedAreaSqft, c.TerrainType, c.CreatedAt })
                         .FirstOrDefault(),
                     r.DeclineReason
                 })
@@ -252,7 +249,14 @@ namespace HousePlanner.API.Controllers
 
             return Ok(raw.Select(r => new {
                 r.Id, r.ProjectId, r.HouseDesignId, r.Status, r.requestedAt,
-                r.customerName, r.designVersion, r.area, r.floorCount, r.cost, r.DeclineReason,
+                r.customerName, r.designVersion, r.area, r.floorCount,
+                cost = r.cost == null ? null : CostBreakdownBuilder.ToSummary(new CostEstimate {
+                    MaterialCostLkr = r.cost.MaterialCostLkr, LabourCostLkr = r.cost.LabourCostLkr,
+                    TotalCostLkr = r.cost.TotalCostLkr, BudgetDeltaPercent = r.cost.BudgetDeltaPercent,
+                    PricingSnapshotJson = r.cost.PricingSnapshotJson, BreakdownJson = r.cost.BreakdownJson,
+                    FormulaVersion = r.cost.FormulaVersion, AppliedAreaSqft = r.cost.AppliedAreaSqft,
+                    TerrainType = r.cost.TerrainType, CreatedAt = r.cost.CreatedAt
+                }), r.DeclineReason,
                 title = DesignTitle(r.layoutJson, r.designVersion ?? 0),
                 bedrooms = CountRooms(r.layoutJson, "bedroom"),
                 bathrooms = CountRooms(r.layoutJson, "bathroom")

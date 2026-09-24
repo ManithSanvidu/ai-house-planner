@@ -65,7 +65,28 @@ public record CostSummaryDto(
     decimal MaterialCostLkr,
     decimal LabourCostLkr,
     decimal TotalCostLkr,
-    decimal BudgetDeltaPercent
+    decimal? BudgetDeltaPercent,
+    IReadOnlyList<CostBreakdownItemDto>? Breakdown = null,
+    string? FormulaVersion = null,
+    decimal? AppliedAreaSqft = null,
+    string? TerrainType = null,
+    DateTimeOffset? EstimatedAt = null
+);
+
+public record CostBreakdownItemDto(
+    string ItemName,
+    string CostHead,
+    string Category,
+    decimal UnitCostLkr,
+    string Unit,
+    decimal AppliedQuantity,
+    string QuantityUnit,
+    decimal TerrainMultiplier,
+    decimal AmountLkr,
+    decimal SharePercent,
+    string? Provider = null,
+    string? SourceReference = null,
+    DateTimeOffset? PricingUpdatedAt = null
 );
 
 public record DesignHistoryDto(

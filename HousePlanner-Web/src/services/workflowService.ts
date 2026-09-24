@@ -53,7 +53,28 @@ export interface CostSummaryDto {
   materialCostLkr: number;
   labourCostLkr: number;
   totalCostLkr: number;
-  budgetDeltaPercent: number;
+  budgetDeltaPercent: number | null;
+  breakdown?: CostBreakdownItemDto[] | null;
+  formulaVersion?: string | null;
+  appliedAreaSqft?: number | null;
+  terrainType?: string | null;
+  estimatedAt?: string | null;
+}
+
+export interface CostBreakdownItemDto {
+  itemName: string;
+  costHead: string;
+  category: 'material' | 'labour';
+  unitCostLkr: number;
+  unit: string;
+  appliedQuantity: number;
+  quantityUnit: string;
+  terrainMultiplier: number;
+  amountLkr: number;
+  sharePercent: number;
+  provider?: string | null;
+  sourceReference?: string | null;
+  pricingUpdatedAt?: string | null;
 }
 
 export interface ConstructionPhaseDto {
@@ -134,6 +155,8 @@ export interface StartDesignRequest {
   budgetLkr?: number;
   landSizePerches: number;
   manualTerrainType?: string;
+  region?: string;
+  qualityLevel?: 'Basic' | 'Standard' | 'Premium' | 'Luxury';
   designSeed?: number;
   preferences: {
     bedrooms: number;

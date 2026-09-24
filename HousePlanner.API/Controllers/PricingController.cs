@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using HousePlanner.API.DTOs;
 using HousePlanner.API.Services;
+using System.Security.Claims;
 
 namespace HousePlanner.API.Controllers
 {
@@ -20,6 +21,7 @@ namespace HousePlanner.API.Controllers
         /// Retrieves all current pricing items.
         /// </summary>
         [HttpGet]
+        [Authorize(Roles = "Constructor")]
         [ProducesResponseType(typeof(IEnumerable<PricingDto>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetAllPricing()
         {
@@ -75,7 +77,7 @@ namespace HousePlanner.API.Controllers
 
             try
             {
-                var created = await _pricingService.CreatePricingAsync(createDto);
+                var created = await _pricingService.CreatePricingAsync(createDto, ActorId());
                 return StatusCode(StatusCodes.Status201Created, created);
             }
             catch (InvalidOperationException ex)
@@ -121,35 +123,34 @@ namespace HousePlanner.API.Controllers
                 return BadRequest("TerrainMultiplier values must be provided and greater than zero.");
             }
 
-            var updatedItem = await _pricingService.UpdatePricingAsync(id, updateDto);
-            
-            if (updatedItem == null)
-            {
-                return NotFound($"Pricing item with ID {id} not found.");
-            }
-
-            return Ok(updatedItem);
-        }
-
-        /// <summary>
-        /// Imports the configured approved pricing feed and upserts normalized pricing records.
-        /// </summary>
-        [HttpPost("sync")]
-        [Authorize(Roles = "Constructor")]
-        [ProducesResponseType(typeof(PricingSyncResultDto), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(PricingSyncResultDto), StatusCodes.Status502BadGateway)]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        public async Task<IActionResult> SyncPricing(CancellationToken cancellationToken)
-        {
             try
             {
-                return Ok(await _pricingService.SyncExternalPricingAsync(cancellationToken));
+                var updatedItem = await _pricingService.UpdatePricingAsync(id, updateDto, ActorId());
+                if (updatedItem == null)
+                    return NotFound($"Pricing item with ID {id} not found.");
+                return Ok(updatedItem);
             }
-            catch (PricingSyncException ex)
-            {
-                return StatusCode(StatusCodes.Status502BadGateway, ex.Result);
-            }
+            catch (ArgumentException ex) { return BadRequest(ex.Message); }
+            catch (InvalidOperationException ex) { return BadRequest(ex.Message); }
         }
+
+        [HttpPatch("{id}/deactivate")]
+        [Authorize(Roles = "Constructor")]
+        [ProducesResponseType(typeof(PricingDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> DeactivatePricing(int id, [FromBody] DeactivatePricingDto? request)
+        {
+            var item = await _pricingService.DeactivatePricingAsync(id, request?.Reason, ActorId());
+            return item is null ? NotFound($"Pricing item with ID {id} not found.") : Ok(item);
+        }
+
+        [HttpGet("{id}/history")]
+        [Authorize(Roles = "Constructor")]
+        [ProducesResponseType(typeof(IReadOnlyList<PricingHistoryDto>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetPricingHistory(int id) =>
+            Ok(await _pricingService.GetPricingHistoryAsync(id));
+
+        private string? ActorId() =>
+            User?.FindFirstValue("sub") ?? User?.FindFirstValue(ClaimTypes.NameIdentifier);
     }
 }

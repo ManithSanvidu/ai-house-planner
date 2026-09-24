@@ -137,6 +137,26 @@ namespace HousePlanner.API.Controllers
                     workflowState.ConstructionPlan = "{\"project_summary\":{\"estimated_duration_days\":180},\"phases\":[{\"id\":1,\"name\":\"Site Preparation\",\"start_day\":1,\"end_day\":14,\"duration_days\":14},{\"id\":2,\"name\":\"Foundation\",\"start_day\":15,\"end_day\":35,\"duration_days\":20},{\"id\":3,\"name\":\"Framing\",\"start_day\":36,\"end_day\":65,\"duration_days\":30},{\"id\":4,\"name\":\"Roofing & Siding\",\"start_day\":66,\"end_day\":90,\"duration_days\":25},{\"id\":5,\"name\":\"Interior Finishes\",\"start_day\":91,\"end_day\":180,\"duration_days\":90}]}";
                     _context.HouseDesigns.Add(design);
                     await _context.SaveChangesAsync();
+
+                    var directPayload = new {
+                        workflow_id = workflowState.Id,
+                        submission_id = submission.Id,
+                        budget_lkr = request.BudgetLkr,
+                        land_size_perches = request.LandSizePerches,
+                        manual_terrain_type = request.ManualTerrainType,
+                        region = string.IsNullOrWhiteSpace(request.Region) ? "Sri Lanka" : request.Region.Trim(),
+                        quality_level = string.IsNullOrWhiteSpace(request.QualityLevel) ? "Standard" : request.QualityLevel.Trim(),
+                        preferences = request.Preferences,
+                        design_result = JsonSerializer.Deserialize<JsonElement>(basePlan.LayoutJson),
+                        terrain_result = new { terrain_type = request.ManualTerrainType ?? basePlan.SuitableTerrain ?? "flat" }
+                    };
+                    var directJson = JsonSerializer.Serialize(directPayload);
+                    var directResponse = await _agenticServiceClient.PostAsync(
+                        "/workflows/start-from-design",
+                        new StringContent(directJson, Encoding.UTF8, "application/json"),
+                        cancellationToken);
+                    if (!directResponse.IsSuccessStatusCode)
+                        return BadRequest(new { Message = $"Cost estimation service returned an error: {directResponse.StatusCode}", WorkflowId = workflowState.Id });
                     return Ok(new { Message = "Pre-designed plan selected successfully", WorkflowId = workflowState.Id });
                 }
 
@@ -146,6 +166,8 @@ namespace HousePlanner.API.Controllers
                     budget_lkr = request.BudgetLkr,
                     land_size_perches = request.LandSizePerches,
                     manual_terrain_type = request.ManualTerrainType,
+                    region = string.IsNullOrWhiteSpace(request.Region) ? "Sri Lanka" : request.Region.Trim(),
+                    quality_level = string.IsNullOrWhiteSpace(request.QualityLevel) ? "Standard" : request.QualityLevel.Trim(),
                     preferences = request.Preferences,
                     plot_constraints = request.PlotConstraints,
                     design_seed = request.DesignSeed,
@@ -193,6 +215,8 @@ namespace HousePlanner.API.Controllers
         public decimal? BudgetLkr { get; set; }
         public decimal LandSizePerches { get; set; }
         public string? ManualTerrainType { get; set; }
+        public string? Region { get; set; }
+        public string? QualityLevel { get; set; }
         public PreferencesDto? Preferences { get; set; }
         public PlotConstraintsDto? PlotConstraints { get; set; }
         public long? DesignSeed { get; set; }

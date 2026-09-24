@@ -265,15 +265,21 @@ namespace HousePlanner.API.Controllers
                             : req.Status is not ("Pending" or "Under Review")
                                 ? "This request has already been finalized."
                                 : null,
-                    budgetStatus = cost is null ? "unavailable" : cost.BudgetDeltaPercent < 100m
-                        ? "within_budget" : cost.BudgetDeltaPercent == 100m ? "at_budget" : "over_budget"
+                    budgetStatus = cost?.BudgetDeltaPercent is decimal budgetPercent
+                        ? budgetPercent < 100m ? "within_budget" : budgetPercent == 100m ? "at_budget" : "over_budget"
+                        : "unavailable"
                 },
                 cost = cost == null ? null : new
                 {
                     materialCostLkr = cost.MaterialCostLkr,
                     labourCostLkr = cost.LabourCostLkr,
                     totalCostLkr = cost.TotalCostLkr,
-                    budgetDeltaPercent = cost.BudgetDeltaPercent
+                    budgetDeltaPercent = cost.BudgetDeltaPercent,
+                    breakdown = CostBreakdownBuilder.Build(cost, design?.TerrainType),
+                    formulaVersion = cost.FormulaVersion,
+                    appliedAreaSqft = cost.AppliedAreaSqft,
+                    terrainType = cost.TerrainType,
+                    estimatedAt = cost.CreatedAt
                 },
                 design = design != null ? new
                 {

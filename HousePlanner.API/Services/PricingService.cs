@@ -1,8 +1,6 @@
-using System.Text.Json;
 using HousePlanner.API.Data;
 using HousePlanner.API.DTOs;
 using HousePlanner.API.Entities;
-using HousePlanner.API.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace HousePlanner.API.Services;
@@ -10,23 +8,49 @@ namespace HousePlanner.API.Services;
 public class PricingService : IPricingService
 {
     private readonly ApplicationDbContext _context;
-    private readonly IExternalPricingProvider _provider;
-    private readonly IPricingNormalizationService _normalizer;
     private readonly TimeProvider _timeProvider;
 
-    public PricingService(ApplicationDbContext context, IExternalPricingProvider provider,
-        IPricingNormalizationService normalizer, TimeProvider timeProvider)
+    public PricingService(ApplicationDbContext context, TimeProvider timeProvider)
     {
         _context = context;
-        _provider = provider;
-        _normalizer = normalizer;
         _timeProvider = timeProvider;
     }
 
     public async Task<IEnumerable<PricingDto>> GetAllPricingAsync()
     {
-        var items = await _context.PricingItems.AsNoTracking().ToListAsync();
+        var items = await _context.PricingItems.AsNoTracking()
+            .OrderByDescending(item => item.IsActive)
+            .ThenBy(item => item.DisplayGroup)
+            .ThenBy(item => item.ItemName)
+            .ThenBy(item => item.Region)
+            .ThenBy(item => item.QualityLevel)
+            .ToListAsync();
         return items.Select(MapToDto);
+    }
+
+    public async Task<IEnumerable<PricingDto>> GetActivePricingAsync(string? region, string? qualityLevel)
+    {
+        var requestedRegion = NormalizeRegion(region);
+        var requestedQuality = NormalizeQualityLevel(qualityLevel);
+        var regionKey = requestedRegion.ToLower();
+        var defaultRegionKey = "sri lanka";
+
+        var candidates = await _context.PricingItems.AsNoTracking()
+            .Where(item => item.IsActive && item.QualityLevel == requestedQuality &&
+                (item.Region.ToLower() == regionKey || item.Region.ToLower() == defaultRegionKey))
+            .ToListAsync();
+
+        var selected = candidates
+            .GroupBy(item => item.ItemName, StringComparer.OrdinalIgnoreCase)
+            .Select(group => group
+                .OrderByDescending(item => item.Region.Equals(requestedRegion, StringComparison.OrdinalIgnoreCase))
+                .ThenByDescending(item => item.Region.Equals("Sri Lanka", StringComparison.OrdinalIgnoreCase))
+                .First())
+            .OrderBy(item => item.DisplayGroup)
+            .ThenBy(item => item.ItemName)
+            .ToList();
+
+        return selected.Select(MapToDto);
     }
 
     public async Task<PricingDto?> GetPricingByIdAsync(int id)
@@ -35,7 +59,7 @@ public class PricingService : IPricingService
         return item is null ? null : MapToDto(item);
     }
 
-    public async Task<PricingDto> CreatePricingAsync(CreatePricingDto createDto)
+    public async Task<PricingDto> CreatePricingAsync(CreatePricingDto createDto, string? updatedByUserId = null)
     {
         if (createDto is null)
             throw new ArgumentNullException(nameof(createDto));
@@ -48,8 +72,7 @@ public class PricingService : IPricingService
         if (category is not ("material" or "labour"))
             throw new ArgumentException("Category must be 'material' or 'labour'.", nameof(createDto));
 
-        if (createDto.UnitCostLkr <= 0)
-            throw new ArgumentException("UnitCostLkr must be greater than zero.", nameof(createDto));
+        ValidatePrice(category, createDto.UnitCostLkr);
 
         if (createDto.TerrainMultiplier is null ||
             createDto.TerrainMultiplier.Flat <= 0 ||
@@ -57,25 +80,30 @@ public class PricingService : IPricingService
             createDto.TerrainMultiplier.Coastal <= 0)
             throw new ArgumentException("TerrainMultiplier values must be provided and greater than zero.", nameof(createDto));
 
-        // Labour uniqueness rule: Exactly one labour-factor pricing record is supported by the Cost Estimation Agent
+        var region = NormalizeRegion(createDto.Region);
+        var qualityLevel = NormalizeQualityLevel(createDto.QualityLevel);
+
+        // One active labour factor is allowed for each regional quality catalogue.
         if (category == "labour")
         {
             var hasLabourFactor = await _context.PricingItems
-                .AnyAsync(p => p.Category == "labour" && (p.Unit == "factor" || p.Unit == "ratio"));
+                .AnyAsync(p => p.IsActive && p.Category == "labour" &&
+                    p.Region.ToLower() == region.ToLower() && p.QualityLevel == qualityLevel);
 
             if (hasLabourFactor)
             {
-                throw new InvalidOperationException("Only one labour factor pricing record is supported by the current cost estimation model.");
+                throw new InvalidOperationException($"Only one active labour factor is allowed for region '{region}' and quality '{qualityLevel}'.");
             }
         }
 
         // Optional duplicate protection
-        var duplicateExists = await _context.PricingItems
-            .AnyAsync(p => p.ItemName.ToLower() == itemName.ToLower());
+        var duplicateExists = await _context.PricingItems.AnyAsync(p => p.IsActive &&
+            p.ItemName.ToLower() == itemName.ToLower() &&
+            p.Region.ToLower() == region.ToLower() && p.QualityLevel == qualityLevel);
 
         if (duplicateExists)
         {
-            throw new InvalidOperationException($"A pricing item named '{itemName}' already exists.");
+            throw new InvalidOperationException($"An active pricing item named '{itemName}' already exists for region '{region}' and quality '{qualityLevel}'.");
         }
 
         // Canonical unit derivation
@@ -100,8 +128,13 @@ public class PricingService : IPricingService
                 Coastal = createDto.TerrainMultiplier.Coastal
             },
             Provider = "Manual",
+            Region = region,
+            QualityLevel = qualityLevel,
+            IsActive = true,
             SourceReference = string.IsNullOrWhiteSpace(createDto.SourceReference) ? null : createDto.SourceReference.Trim(),
             ImportedAt = null,
+            CreatedAt = now,
+            UpdatedByUserId = NormalizeUserId(updatedByUserId),
             UpdatedAt = now
         };
 
@@ -111,10 +144,26 @@ public class PricingService : IPricingService
         return MapToDto(item);
     }
 
-    public async Task<PricingDto?> UpdatePricingAsync(int id, UpdatePricingDto updateDto)
+    public async Task<PricingDto?> UpdatePricingAsync(int id, UpdatePricingDto updateDto, string? updatedByUserId = null)
     {
         var item = await _context.PricingItems.FindAsync(id);
         if (item == null) return null;
+        if (!item.IsActive)
+            throw new InvalidOperationException("Inactive pricing records cannot be edited. Create a new active price instead.");
+
+        ValidatePrice(item.Category, updateDto.UnitCostLkr);
+        ValidateTerrainMultipliers(updateDto.TerrainMultiplier);
+        var now = _timeProvider.GetUtcNow();
+
+        _context.PricingHistory.Add(new PricingHistory
+        {
+            PricingDataId = item.Id,
+            PreviousValue = item.UnitCostLkr,
+            NewValue = updateDto.UnitCostLkr,
+            ChangedByUserId = NormalizeUserId(updatedByUserId),
+            ChangedAt = now,
+            Reason = NormalizeReason(updateDto.Reason)
+        });
 
         item.UnitCostLkr = updateDto.UnitCostLkr;
         if (updateDto.TerrainMultiplier != null)
@@ -124,125 +173,86 @@ public class PricingService : IPricingService
             item.TerrainMultiplier.Coastal = updateDto.TerrainMultiplier.Coastal;
         }
 
-        item.UpdatedAt = _timeProvider.GetUtcNow();
+        item.UpdatedAt = now;
+        item.UpdatedByUserId = NormalizeUserId(updatedByUserId);
         await _context.SaveChangesAsync();
         return MapToDto(item);
     }
 
-    public async Task<PricingSyncResultDto> SyncExternalPricingAsync(CancellationToken cancellationToken = default)
+    public async Task<PricingDto?> DeactivatePricingAsync(int id, string? reason, string? updatedByUserId = null)
     {
-        var audit = new PricingImportAudit
+        var item = await _context.PricingItems.FindAsync(id);
+        if (item is null) return null;
+        if (!item.IsActive) return MapToDto(item);
+
+        var now = _timeProvider.GetUtcNow();
+        item.IsActive = false;
+        item.UpdatedAt = now;
+        item.UpdatedByUserId = NormalizeUserId(updatedByUserId);
+        _context.PricingHistory.Add(new PricingHistory
         {
-            Id = Guid.NewGuid(),
-            Provider = _provider.Name,
-            Status = "running",
-            StartedAt = _timeProvider.GetUtcNow()
+            PricingDataId = item.Id,
+            PreviousValue = item.UnitCostLkr,
+            NewValue = item.UnitCostLkr,
+            ChangedByUserId = NormalizeUserId(updatedByUserId),
+            ChangedAt = now,
+            Reason = string.IsNullOrWhiteSpace(reason) ? "Pricing record deactivated." : $"Deactivated: {reason.Trim()}"
+        });
+        await _context.SaveChangesAsync();
+        return MapToDto(item);
+    }
+
+    public async Task<IReadOnlyList<PricingHistoryDto>> GetPricingHistoryAsync(int id) =>
+        await _context.PricingHistory.AsNoTracking()
+            .Where(history => history.PricingDataId == id)
+            .OrderByDescending(history => history.ChangedAt)
+            .Select(history => new PricingHistoryDto
+            {
+                Id = history.Id,
+                PricingDataId = history.PricingDataId,
+                PreviousValue = history.PreviousValue,
+                NewValue = history.NewValue,
+                ChangedByUserId = history.ChangedByUserId,
+                ChangedAt = history.ChangedAt,
+                Reason = history.Reason
+            })
+            .ToListAsync();
+
+    private static void ValidatePrice(string category, decimal value)
+    {
+        if (value <= 0)
+            throw new ArgumentException("UnitCostLkr must be greater than zero.");
+        if (category == "labour" && value > 1)
+            throw new ArgumentException("A labour factor must be greater than zero and no more than 1.");
+    }
+
+    private static void ValidateTerrainMultipliers(TerrainMultiplierData? multipliers)
+    {
+        if (multipliers is null || multipliers.Flat <= 0 || multipliers.Hillside <= 0 || multipliers.Coastal <= 0)
+            throw new ArgumentException("TerrainMultiplier values must be provided and greater than zero.");
+    }
+
+    private static string NormalizeRegion(string? region) =>
+        string.IsNullOrWhiteSpace(region) ? "Sri Lanka" : region.Trim();
+
+    private static string NormalizeQualityLevel(string? qualityLevel)
+    {
+        var normalized = string.IsNullOrWhiteSpace(qualityLevel) ? "Standard" : qualityLevel.Trim();
+        return normalized.ToLowerInvariant() switch
+        {
+            "basic" => "Basic",
+            "standard" => "Standard",
+            "premium" => "Premium",
+            "luxury" => "Luxury",
+            _ => throw new ArgumentException("QualityLevel must be Basic, Standard, Premium, or Luxury.")
         };
-        _context.PricingImportAudits.Add(audit);
-
-        IReadOnlyList<ExternalPriceRecord> records;
-        try
-        {
-            records = await _provider.GetPricesAsync(cancellationToken);
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            var issue = new PricingSyncIssueDto(null, ex.Message, "failed");
-            audit.Status = "failed";
-            audit.FailedCount = 1;
-            audit.CompletedAt = _timeProvider.GetUtcNow();
-            audit.FailureMessage = ex.Message;
-            audit.DetailsJson = JsonSerializer.Serialize(new[] { issue });
-            await _context.SaveChangesAsync(cancellationToken);
-            throw new PricingSyncException("The external pricing provider failed.", ToResult(audit, [issue]), ex);
-        }
-
-        var existingItems = await _context.PricingItems
-            .Where(item => item.Provider == _provider.Name && item.ExternalItemId != null)
-            .ToListAsync(cancellationToken);
-        var byExternalId = existingItems.ToDictionary(item => item.ExternalItemId!, StringComparer.OrdinalIgnoreCase);
-        var issues = new List<PricingSyncIssueDto>();
-
-        foreach (var record in records)
-        {
-            if (record is null)
-            {
-                audit.FailedCount++;
-                issues.Add(new(null, "The provider returned a null record.", "failed"));
-                continue;
-            }
-
-            var result = _normalizer.Normalize(record);
-            if (result.Status != PricingNormalizationStatus.Normalized || result.Value is null)
-            {
-                var outcome = result.Status == PricingNormalizationStatus.Skipped ? "skipped" : "failed";
-                if (result.Status == PricingNormalizationStatus.Skipped) audit.SkippedCount++;
-                else audit.FailedCount++;
-                issues.Add(new(record.ExternalItemId, result.Reason ?? "Record could not be normalized.", outcome));
-                continue;
-            }
-
-            var externalItemId = record.ExternalItemId.Trim();
-            if (!byExternalId.TryGetValue(externalItemId, out var item))
-            {
-                item = new PricingData
-                {
-                    Provider = _provider.Name,
-                    ExternalItemId = externalItemId,
-                    TerrainMultiplier = new TerrainMultiplierData()
-                };
-                _context.PricingItems.Add(item);
-                byExternalId[externalItemId] = item;
-            }
-
-            ApplyNormalizedRecord(item, record, result.Value, _provider.Name, _timeProvider.GetUtcNow());
-            audit.ImportedCount++;
-        }
-
-        audit.Status = "succeeded";
-        audit.CompletedAt = _timeProvider.GetUtcNow();
-        audit.DetailsJson = JsonSerializer.Serialize(issues);
-        await _context.SaveChangesAsync(cancellationToken);
-        return ToResult(audit, issues);
     }
 
-    private static void ApplyNormalizedRecord(PricingData item, ExternalPriceRecord record,
-        NormalizedExternalPrice normalized, string provider, DateTimeOffset importedAt)
-    {
-        item.ItemName = normalized.ItemName;
-        item.Category = normalized.Category;
-        item.UnitCostLkr = normalized.UnitCostLkr;
-        item.Unit = normalized.Unit;
-        item.DisplayGroup = normalized.DisplayGroup;
-        item.TerrainMultiplier.Flat = normalized.FlatMultiplier;
-        item.TerrainMultiplier.Hillside = normalized.HillsideMultiplier;
-        item.TerrainMultiplier.Coastal = normalized.CoastalMultiplier;
-        item.Provider = provider;
-        item.ExternalItemId = record.ExternalItemId.Trim();
-        item.ExternalItemName = record.Name.Trim();
-        item.OriginalUnit = record.Unit.Trim();
-        item.OriginalPrice = record.Price;
-        item.OriginalCurrency = record.Currency.Trim().ToUpperInvariant();
-        item.Region = record.Region?.Trim();
-        item.ObservedAt = record.ObservedAt;
-        item.EffectiveAt = record.EffectiveAt;
-        item.SourceUrl = record.SourceUrl?.Trim();
-        item.SourceReference = record.SourceReference?.Trim();
-        item.ImportedAt = importedAt;
-        item.UpdatedAt = importedAt;
-    }
+    private static string? NormalizeUserId(string? userId) =>
+        string.IsNullOrWhiteSpace(userId) ? null : userId.Trim()[..Math.Min(userId.Trim().Length, 100)];
 
-    private static PricingSyncResultDto ToResult(PricingImportAudit audit, IReadOnlyList<PricingSyncIssueDto> issues) => new()
-    {
-        AuditId = audit.Id,
-        Provider = audit.Provider,
-        ImportedCount = audit.ImportedCount,
-        SkippedCount = audit.SkippedCount,
-        FailedCount = audit.FailedCount,
-        StartedAt = audit.StartedAt,
-        CompletedAt = audit.CompletedAt ?? audit.StartedAt,
-        Issues = issues
-    };
+    private static string? NormalizeReason(string? reason) =>
+        string.IsNullOrWhiteSpace(reason) ? null : reason.Trim()[..Math.Min(reason.Trim().Length, 500)];
 
     private static PricingDto MapToDto(PricingData entity) => new()
     {
@@ -265,6 +275,10 @@ public class PricingService : IPricingService
         OriginalPrice = entity.OriginalPrice,
         OriginalCurrency = entity.OriginalCurrency,
         Region = entity.Region,
+        QualityLevel = entity.QualityLevel,
+        IsActive = entity.IsActive,
+        CreatedAt = entity.CreatedAt,
+        UpdatedByUserId = entity.UpdatedByUserId,
         ObservedAt = entity.ObservedAt,
         EffectiveAt = entity.EffectiveAt,
         SourceUrl = entity.SourceUrl,

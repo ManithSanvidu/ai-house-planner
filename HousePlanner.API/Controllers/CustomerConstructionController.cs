@@ -231,11 +231,8 @@ public class CustomerConstructionController : ControllerBase
             ?? p.ConstructionPhases.OrderBy(x => x.SequenceOrder).FirstOrDefault(x => x.Status != "completed")?.PhaseName
     };
 
-    private static CostSummaryDto? ToCostSummary(CostEstimate? cost) => cost is null ? null : new(
-        cost.MaterialCostLkr,
-        cost.LabourCostLkr,
-        cost.TotalCostLkr,
-        cost.BudgetDeltaPercent);
+    private static CostSummaryDto? ToCostSummary(CostEstimate? cost) =>
+        cost is null ? null : CostBreakdownBuilder.ToSummary(cost, cost.HouseDesign?.TerrainType);
 
     private static Project NewProject(Guid workflowId, Guid designId) => new()
     {

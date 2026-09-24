@@ -17,6 +17,11 @@ namespace HousePlanner.API.Tests.Controllers;
 
 public class InternalWorkflowControllerTests
 {
+    private static JsonElement PricingSnapshot() =>
+        JsonDocument.Parse("[{\"id\":1,\"itemName\":\"Test rate\"}]").RootElement.Clone();
+    private static JsonElement Breakdown() =>
+        JsonDocument.Parse("[{\"itemName\":\"Test rate\",\"costHead\":\"Test\",\"category\":\"material\",\"amountLkr\":1000}]").RootElement.Clone();
+
     private readonly ApplicationDbContext _dbContext;
     private readonly Mock<ILogger<InternalWorkflowController>> _loggerMock;
     private readonly InternalWorkflowController _controller;
@@ -175,7 +180,11 @@ public class InternalWorkflowControllerTests
                 MaterialCostLkr = 1000m,
                 LabourCostLkr = 300m,
                 TotalCostLkr = 1300m,
-                BudgetDeltaPercent = 13m
+                BudgetDeltaPercent = 13m,
+                PricingSnapshot = PricingSnapshot(),
+                Breakdown = Breakdown(),
+                AppliedAreaSqft = 1000m,
+                TerrainType = "flat"
             }));
         Assert.Empty(_dbContext.WorkflowStates);
         Assert.Empty(_dbContext.HouseDesigns);
@@ -183,7 +192,7 @@ public class InternalWorkflowControllerTests
     }
 
     [Fact]
-    public async Task SaveCostEstimate_SuccessfullyPersists_AndLinksToCurrentDesign()
+    public async Task SaveCostEstimate_WithoutBudget_SuccessfullyPersists_AndLinksToCurrentDesign()
     {
         // Arrange
         var workflowId = Guid.NewGuid();
@@ -216,7 +225,11 @@ public class InternalWorkflowControllerTests
             MaterialCostLkr = 500000m,
             LabourCostLkr = 150000m,
             TotalCostLkr = 650000m,
-            BudgetDeltaPercent = 13.0m
+            BudgetDeltaPercent = null,
+            PricingSnapshot = PricingSnapshot(),
+                Breakdown = Breakdown(),
+                AppliedAreaSqft = 1000m,
+                TerrainType = "flat"
         };
 
         // Act
@@ -231,7 +244,7 @@ public class InternalWorkflowControllerTests
         Assert.Equal(500000m, response.MaterialCostLkr);
         Assert.Equal(150000m, response.LabourCostLkr);
         Assert.Equal(650000m, response.TotalCostLkr);
-        Assert.Equal(13.0m, response.BudgetDeltaPercent);
+        Assert.Null(response.BudgetDeltaPercent);
 
         var dbEstimate = await _dbContext.CostEstimates.FirstOrDefaultAsync(c => c.Id == response.CostEstimateId);
         Assert.NotNull(dbEstimate);
@@ -239,7 +252,7 @@ public class InternalWorkflowControllerTests
         Assert.Equal(500000m, dbEstimate.MaterialCostLkr);
         Assert.Equal(150000m, dbEstimate.LabourCostLkr);
         Assert.Equal(650000m, dbEstimate.TotalCostLkr);
-        Assert.Equal(13.0m, dbEstimate.BudgetDeltaPercent);
+        Assert.Null(dbEstimate.BudgetDeltaPercent);
     }
 
     [Fact]
@@ -251,7 +264,11 @@ public class InternalWorkflowControllerTests
             MaterialCostLkr = 1000m,
             LabourCostLkr = 300m,
             TotalCostLkr = 1300m,
-            BudgetDeltaPercent = 13m
+            BudgetDeltaPercent = 13m,
+            PricingSnapshot = PricingSnapshot(),
+                Breakdown = Breakdown(),
+                AppliedAreaSqft = 1000m,
+                TerrainType = "flat"
         };
 
         var result = await _controller.SaveCostEstimate(nonExistentWorkflowId, request);
@@ -293,7 +310,11 @@ public class InternalWorkflowControllerTests
             MaterialCostLkr = 1000m,
             LabourCostLkr = 300m,
             TotalCostLkr = 1300m,
-            BudgetDeltaPercent = 13m
+            BudgetDeltaPercent = 13m,
+            PricingSnapshot = PricingSnapshot(),
+                Breakdown = Breakdown(),
+                AppliedAreaSqft = 1000m,
+                TerrainType = "flat"
         };
 
         // Act
@@ -318,7 +339,11 @@ public class InternalWorkflowControllerTests
             MaterialCostLkr = material,
             LabourCostLkr = labour,
             TotalCostLkr = total,
-            BudgetDeltaPercent = budgetDelta
+            BudgetDeltaPercent = budgetDelta,
+            PricingSnapshot = PricingSnapshot(),
+                Breakdown = Breakdown(),
+                AppliedAreaSqft = 1000m,
+                TerrainType = "flat"
         };
 
         var result = await _controller.SaveCostEstimate(workflowId, request);
@@ -336,7 +361,11 @@ public class InternalWorkflowControllerTests
             MaterialCostLkr = 1000m,
             LabourCostLkr = 300m,
             TotalCostLkr = 2000m, // Inconsistent: 1000 + 300 != 2000
-            BudgetDeltaPercent = 20m
+            BudgetDeltaPercent = 20m,
+            PricingSnapshot = PricingSnapshot(),
+                Breakdown = Breakdown(),
+                AppliedAreaSqft = 1000m,
+                TerrainType = "flat"
         };
 
         var result = await _controller.SaveCostEstimate(workflowId, request);
@@ -346,7 +375,7 @@ public class InternalWorkflowControllerTests
     }
 
     [Fact]
-    public async Task SaveCostEstimate_RetryDoesNotCreateDuplicateEstimates_UpdatesExisting()
+    public async Task SaveCostEstimate_RetryDoesNotCreateDuplicateOrRewriteLockedEstimate()
     {
         // Arrange
         var workflowId = Guid.NewGuid();
@@ -379,7 +408,11 @@ public class InternalWorkflowControllerTests
             MaterialCostLkr = 400000m,
             LabourCostLkr = 120000m,
             TotalCostLkr = 520000m,
-            BudgetDeltaPercent = 10.4m
+            BudgetDeltaPercent = 10.4m,
+            PricingSnapshot = PricingSnapshot(),
+                Breakdown = Breakdown(),
+                AppliedAreaSqft = 1000m,
+                TerrainType = "flat"
         };
 
         var retryRequest = new SaveCostEstimateRequestDto
@@ -387,7 +420,11 @@ public class InternalWorkflowControllerTests
             MaterialCostLkr = 450000m,
             LabourCostLkr = 135000m,
             TotalCostLkr = 585000m,
-            BudgetDeltaPercent = 11.7m
+            BudgetDeltaPercent = 11.7m,
+            PricingSnapshot = PricingSnapshot(),
+                Breakdown = Breakdown(),
+                AppliedAreaSqft = 1000m,
+                TerrainType = "flat"
         };
 
         // Act: Submit twice for the same workflow/design
@@ -408,10 +445,11 @@ public class InternalWorkflowControllerTests
         var currentEstimate = estimates.First();
         Assert.Equal(firstDto.CostEstimateId, currentEstimate.Id);
         Assert.Equal(secondDto.CostEstimateId, currentEstimate.Id);
-        Assert.Equal(450000m, currentEstimate.MaterialCostLkr);
-        Assert.Equal(135000m, currentEstimate.LabourCostLkr);
-        Assert.Equal(585000m, currentEstimate.TotalCostLkr);
-        Assert.Equal(11.7m, currentEstimate.BudgetDeltaPercent);
+        Assert.Equal(400000m, currentEstimate.MaterialCostLkr);
+        Assert.Equal(120000m, currentEstimate.LabourCostLkr);
+        Assert.Equal(520000m, currentEstimate.TotalCostLkr);
+        Assert.Equal(10.4m, currentEstimate.BudgetDeltaPercent);
+        Assert.True(secondDto.Locked);
     }
 
     [Fact]
@@ -422,5 +460,46 @@ public class InternalWorkflowControllerTests
             .Single(i => i.Properties.Single().Name == nameof(CostEstimate.HouseDesignId));
 
         Assert.True(index.IsUnique);
+    }
+
+    [Fact]
+    public async Task SaveCostEstimationRun_PersistsSuccessfulRunAgainstCurrentDesign()
+    {
+        var workflowId = Guid.NewGuid();
+        var designId = Guid.NewGuid();
+        _dbContext.WorkflowStates.Add(new WorkflowState
+        {
+            Id = workflowId,
+            LandSubmissionId = Guid.NewGuid(),
+            Status = "design_generated",
+            HouseDesigns = new List<HouseDesign>
+            {
+                new()
+                {
+                    Id = designId, WorkflowStateId = workflowId, Version = 1, IsCurrent = true,
+                    FloorCount = 1, TotalBuiltUpAreaSqft = 1000, FoundationType = "slab", LayoutJson = "{}"
+                }
+            }
+        });
+        await _dbContext.SaveChangesAsync();
+        var started = DateTimeOffset.UtcNow.AddSeconds(-2);
+
+        var result = await _controller.SaveCostEstimationRun(workflowId, new SaveCostEstimationRunDto
+        {
+            Status = "success",
+            FormulaVersion = "category-area-v1",
+            PricingRecordCount = 6,
+            AppliedAreaSqft = 1000,
+            TerrainType = "flat",
+            StartedAt = started,
+            CompletedAt = DateTimeOffset.UtcNow
+        });
+
+        Assert.IsType<OkObjectResult>(result);
+        var run = Assert.Single(await _dbContext.CostEstimationRuns.ToListAsync());
+        Assert.Equal(workflowId, run.WorkflowStateId);
+        Assert.Equal(designId, run.HouseDesignId);
+        Assert.Equal("success", run.Status);
+        Assert.Equal(6, run.PricingRecordCount);
     }
 }

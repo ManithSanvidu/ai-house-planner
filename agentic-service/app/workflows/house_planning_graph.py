@@ -68,3 +68,16 @@ workflow.add_conditional_edges(
 workflow.add_edge("rendering", END)
 
 app_graph = workflow.compile()
+
+# A selected pre-designed plan already has persisted geometry and a construction
+# plan. It enters Component C directly, then follows the same validation gate.
+pre_designed_workflow = StateGraph(WorkflowState)
+pre_designed_workflow.add_node("cost_estimation", cost_estimation_node)
+pre_designed_workflow.add_node("validation", validation_node)
+pre_designed_workflow.set_entry_point("cost_estimation")
+pre_designed_workflow.add_conditional_edges(
+    "cost_estimation", route_after_cost_estimation,
+    {"failed": END, "validation": "validation"},
+)
+pre_designed_workflow.add_edge("validation", END)
+pre_designed_graph = pre_designed_workflow.compile()

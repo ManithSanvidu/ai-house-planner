@@ -66,11 +66,16 @@ namespace HousePlanner.API.Services
                     p.HouseDesign == null ? null : p.HouseDesign.CostEstimates
                         .OrderByDescending(c => c.CreatedAt)
                         .Select(c => new HousePlanner.API.DTOs.CostSummaryDto(
-                            c.MaterialCostLkr,
-                            c.LabourCostLkr,
-                            c.TotalCostLkr,
-                            c.BudgetDeltaPercent
-                        ))
+                             c.MaterialCostLkr,
+                             c.LabourCostLkr,
+                             c.TotalCostLkr,
+                             c.BudgetDeltaPercent,
+                             null,
+                             c.FormulaVersion,
+                             c.AppliedAreaSqft,
+                             c.TerrainType,
+                             c.CreatedAt
+                         ))
                         .FirstOrDefault()
                 ))
                 .ToListAsync();

@@ -4,7 +4,24 @@ Structured result schema for the Cost Estimation Agent (Component C).
 Stored in WorkflowState.cost_result as a plain dict (via .model_dump()) so that
 the WorkflowState type annotation (Dict[str, Any]) is preserved without modification.
 """
+from typing import Any, List, Optional
 from pydantic import BaseModel, Field
+
+
+class CostBreakdownLine(BaseModel):
+    item_name: str
+    cost_head: str
+    category: str
+    unit_cost_lkr: float
+    unit: str
+    applied_quantity: float
+    quantity_unit: str
+    terrain_multiplier: float
+    amount_lkr: float
+    share_percent: float = 0
+    provider: Optional[str] = None
+    source_reference: Optional[str] = None
+    pricing_updated_at: Optional[str] = None
 
 
 class CostResult(BaseModel):
@@ -28,9 +45,9 @@ class CostResult(BaseModel):
         ...,
         description="material_cost_lkr + labour_cost_lkr.",
     )
-    budget_delta_percent: float = Field(
-        ...,
-        description="(total_cost_lkr / budget_lkr) × 100, rounded to 2 decimal places.",
+    budget_delta_percent: Optional[float] = Field(
+        None,
+        description="(total_cost_lkr / budget_lkr) × 100 when a positive budget is supplied; otherwise null.",
     )
     terrain_type: str = Field(
         ...,
@@ -46,3 +63,8 @@ class CostResult(BaseModel):
         gt=0,
         description="Sum of all room areas used in the calculation.",
     )
+    pricing_region: str = "Sri Lanka"
+    quality_level: str = "Standard"
+    pricing_snapshot: List[dict[str, Any]] = Field(default_factory=list)
+    formula_version: str = "category-area-v1"
+    breakdown: List[CostBreakdownLine] = Field(default_factory=list)

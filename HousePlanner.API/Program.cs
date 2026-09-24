@@ -4,7 +4,6 @@ using HousePlanner.API.Services;
 using Microsoft.OpenApi.Models;
 using Microsoft.EntityFrameworkCore;
 using HousePlanner.API.Data;
-using HousePlanner.API.Options;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.DataProtection;
 using System.Security.Claims;
@@ -192,26 +191,8 @@ builder.Services.AddScoped<IPreDesignedPlanLayoutValidator, PreDesignedPlanLayou
 builder.Services.AddScoped<PreDesignedPlanSeeder>();
 builder.Services.AddScoped<IWorkflowService, WorkflowService>();
 builder.Services.AddScoped<IDesignOptionsService, DesignOptionsService>();
-builder.Services.AddOptions<ExternalPricingOptions>()
-    .Bind(builder.Configuration.GetSection(ExternalPricingOptions.SectionName))
-    .Validate(options => !string.IsNullOrWhiteSpace(options.Provider), "ExternalPricing:Provider is required.")
-    .Validate(options => !string.IsNullOrWhiteSpace(options.ProviderName) && options.ProviderName.Length <= 100,
-        "ExternalPricing:ProviderName is required and must not exceed 100 characters.")
-    .Validate(options => !string.IsNullOrWhiteSpace(options.FilePath), "ExternalPricing:FilePath is required.")
-    .ValidateOnStart();
 builder.Services.AddSingleton(TimeProvider.System);
-builder.Services.AddScoped<IPricingNormalizationService, PricingNormalizationService>();
-builder.Services.AddScoped<FilePricingProvider>();
-builder.Services.AddScoped<IExternalPricingProvider>(services =>
-{
-    var options = services.GetRequiredService<Microsoft.Extensions.Options.IOptions<ExternalPricingOptions>>().Value;
-    if (!string.Equals(options.Provider, "File", StringComparison.OrdinalIgnoreCase))
-    {
-        throw new InvalidOperationException($"Unsupported external pricing provider '{options.Provider}'.");
-    }
-
-    return services.GetRequiredService<FilePricingProvider>();
-});
+builder.Services.AddScoped<PricingDataSeeder>();
 builder.Services.AddScoped<IPricingService, PricingService>();
 builder.Services.AddScoped<IConstructorWorkflowService, ConstructorWorkflowService>();
 builder.Services.AddScoped<IDailyConstructionLogService, DailyConstructionLogService>();
@@ -266,6 +247,7 @@ if (!app.Environment.IsEnvironment("Testing"))
     }
     await scope.ServiceProvider.GetRequiredService<ApplicationRoleSeeder>().SeedAsync();
     await scope.ServiceProvider.GetRequiredService<PreDesignedPlanSeeder>().SeedAsync();
+    await scope.ServiceProvider.GetRequiredService<PricingDataSeeder>().SeedAsync();
 }
 
 // 6. Register exception-handling middleware early in request pipeline

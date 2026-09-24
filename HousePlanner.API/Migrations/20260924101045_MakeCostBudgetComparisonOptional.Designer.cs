@@ -3,6 +3,7 @@ using System;
 using HousePlanner.API.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace HousePlanner.API.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260924101045_MakeCostBudgetComparisonOptional")]
+    partial class MakeCostBudgetComparisonOptional
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -193,13 +196,6 @@ namespace HousePlanner.API.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<decimal>("AppliedAreaSqft")
-                        .HasColumnType("decimal(10,2)");
-
-                    b.Property<string>("BreakdownJson")
-                        .IsRequired()
-                        .HasColumnType("jsonb");
-
                     b.Property<decimal?>("BudgetDeltaPercent")
                         .HasColumnType("decimal(6,2)");
 
@@ -207,11 +203,6 @@ namespace HousePlanner.API.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("now()");
-
-                    b.Property<string>("FormulaVersion")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
 
                     b.Property<Guid>("HouseDesignId")
                         .HasColumnType("uuid");
@@ -226,11 +217,6 @@ namespace HousePlanner.API.Migrations
                         .IsRequired()
                         .HasColumnType("jsonb");
 
-                    b.Property<string>("TerrainType")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("character varying(30)");
-
                     b.Property<decimal>("TotalCostLkr")
                         .HasColumnType("decimal(14,2)");
 
@@ -241,58 +227,6 @@ namespace HousePlanner.API.Migrations
                         .HasDatabaseName("IX_CostEstimates_HouseDesignId");
 
                     b.ToTable("CostEstimates");
-                });
-
-            modelBuilder.Entity("HousePlanner.API.Entities.CostEstimationRun", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal?>("AppliedAreaSqft")
-                        .HasColumnType("decimal(10,2)");
-
-                    b.Property<DateTimeOffset>("CompletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("FailureReason")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
-
-                    b.Property<string>("FormulaVersion")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<Guid?>("HouseDesignId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("PricingRecordCount")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTimeOffset>("StartedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
-
-                    b.Property<string>("TerrainType")
-                        .HasMaxLength(30)
-                        .HasColumnType("character varying(30)");
-
-                    b.Property<Guid>("WorkflowStateId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("HouseDesignId");
-
-                    b.HasIndex("WorkflowStateId", "StartedAt")
-                        .HasDatabaseName("IX_CostEstimationRuns_Workflow_StartedAt");
-
-                    b.ToTable("CostEstimationRuns");
                 });
 
             modelBuilder.Entity("HousePlanner.API.Entities.DailyConstructionLog", b =>
@@ -1175,24 +1109,6 @@ namespace HousePlanner.API.Migrations
                         .IsRequired();
 
                     b.Navigation("HouseDesign");
-                });
-
-            modelBuilder.Entity("HousePlanner.API.Entities.CostEstimationRun", b =>
-                {
-                    b.HasOne("HousePlanner.API.Entities.HouseDesign", "HouseDesign")
-                        .WithMany()
-                        .HasForeignKey("HouseDesignId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("HousePlanner.API.Entities.WorkflowState", "WorkflowState")
-                        .WithMany()
-                        .HasForeignKey("WorkflowStateId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("HouseDesign");
-
-                    b.Navigation("WorkflowState");
                 });
 
             modelBuilder.Entity("HousePlanner.API.Entities.DailyConstructionLog", b =>

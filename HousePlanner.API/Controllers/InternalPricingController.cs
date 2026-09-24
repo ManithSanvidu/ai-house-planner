@@ -21,9 +21,11 @@ namespace HousePlanner.API.Controllers
         /// </summary>
         [HttpGet]
         [ProducesResponseType(typeof(IEnumerable<PricingDto>), StatusCodes.Status200OK)]
-        public async Task<ActionResult<IEnumerable<PricingDto>>> GetPricing()
+        public async Task<ActionResult<IEnumerable<PricingDto>>> GetPricing(
+            [FromQuery] string? region = null,
+            [FromQuery] string? qualityLevel = null)
         {
-            var pricing = await _pricingService.GetAllPricingAsync();
+            var pricing = await _pricingService.GetActivePricingAsync(region, qualityLevel);
             return Ok(pricing);
         }
     }

@@ -2,12 +2,10 @@ using HousePlanner.API.Controllers;
 using HousePlanner.API.Data;
 using HousePlanner.API.DTOs;
 using HousePlanner.API.Entities;
-using HousePlanner.API.Options;
 using HousePlanner.API.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using Moq;
 using Xunit;
 
@@ -98,7 +96,7 @@ public class PricingCreationTests
             TerrainMultiplier = new TerrainMultiplierData { Flat = 1.0m, Hillside = 1.0m, Coastal = 1.0m }
         }));
 
-        Assert.Contains("Only one labour factor pricing record is supported", ex.Message);
+        Assert.Contains("Only one active labour factor", ex.Message);
     }
 
     [Fact]
@@ -236,7 +234,7 @@ public class PricingCreationTests
             TerrainMultiplier = new TerrainMultiplierData { Flat = 1.0m, Hillside = 1.25m, Coastal = 1.35m }
         };
 
-        mockService.Setup(s => s.CreatePricingAsync(It.IsAny<CreatePricingDto>()))
+        mockService.Setup(s => s.CreatePricingAsync(It.IsAny<CreatePricingDto>(), It.IsAny<string?>()))
             .ReturnsAsync(new PricingDto
             {
                 Id = 42,
@@ -267,8 +265,6 @@ public class PricingCreationTests
 
     private static PricingService CreateService(ApplicationDbContext context)
     {
-        var options = Microsoft.Extensions.Options.Options.Create(new ExternalPricingOptions());
-        var stubProvider = new Mock<IExternalPricingProvider>();
-        return new PricingService(context, stubProvider.Object, new PricingNormalizationService(options), TimeProvider.System);
+        return new PricingService(context, TimeProvider.System);
     }
 }

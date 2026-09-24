@@ -1,4 +1,3 @@
-using System.Text.Json.Serialization;
 using HousePlanner.API.Entities;
 
 namespace HousePlanner.API.DTOs
@@ -18,7 +17,11 @@ namespace HousePlanner.API.DTOs
         public string? OriginalUnit { get; set; }
         public decimal? OriginalPrice { get; set; }
         public string? OriginalCurrency { get; set; }
-        public string? Region { get; set; }
+        public string Region { get; set; } = "Sri Lanka";
+        public string QualityLevel { get; set; } = "Standard";
+        public bool IsActive { get; set; }
+        public DateTimeOffset CreatedAt { get; set; }
+        public string? UpdatedByUserId { get; set; }
         public DateTimeOffset? ObservedAt { get; set; }
         public DateTimeOffset? EffectiveAt { get; set; }
         public string? SourceUrl { get; set; }
@@ -31,6 +34,7 @@ namespace HousePlanner.API.DTOs
     {
         public decimal UnitCostLkr { get; set; }
         public TerrainMultiplierData TerrainMultiplier { get; set; } = null!;
+        public string? Reason { get; set; }
     }
 
     public class CreatePricingDto
@@ -41,19 +45,24 @@ namespace HousePlanner.API.DTOs
         public decimal UnitCostLkr { get; set; }
         public TerrainMultiplierData TerrainMultiplier { get; set; } = new();
         public string? SourceReference { get; set; }
+        public string Region { get; set; } = "Sri Lanka";
+        public string QualityLevel { get; set; } = "Standard";
     }
 
-    public sealed class PricingSyncResultDto
+    public sealed class DeactivatePricingDto
     {
-        public Guid AuditId { get; set; }
-        public string Provider { get; set; } = null!;
-        public int ImportedCount { get; set; }
-        public int SkippedCount { get; set; }
-        public int FailedCount { get; set; }
-        public DateTimeOffset StartedAt { get; set; }
-        public DateTimeOffset CompletedAt { get; set; }
-        public IReadOnlyList<PricingSyncIssueDto> Issues { get; set; } = [];
+        public string? Reason { get; set; }
     }
 
-    public sealed record PricingSyncIssueDto(string? ExternalItemId, string Reason, string Outcome);
+    public sealed class PricingHistoryDto
+    {
+        public Guid Id { get; set; }
+        public int PricingDataId { get; set; }
+        public decimal PreviousValue { get; set; }
+        public decimal NewValue { get; set; }
+        public string? ChangedByUserId { get; set; }
+        public DateTimeOffset ChangedAt { get; set; }
+        public string? Reason { get; set; }
+    }
+
 }

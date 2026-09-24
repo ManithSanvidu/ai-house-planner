@@ -12,7 +12,7 @@ Formula
   material_cost = Σ(room_area_sqft × material_unit_cost × terrain_multiplier)
   labour_cost   = material_cost × labour_rate_factor
   total_cost    = material_cost + labour_cost
-  budget_delta_percent = (total_cost / budget_lkr) × 100
+  budget_delta_percent = (total_cost / budget_lkr) × 100 when a budget is supplied
 
 No database access, no hardcoded rates, no fallback prices.
 """
@@ -23,6 +23,7 @@ from typing import List
 import requests
 
 from app.config import ASPNET_API_URL, INTERNAL_API_KEY
+from app.cost.calculator import FORMULA_VERSION, CostCalculationError, calculate_cost_lines
 from app.schemas.cost_result import CostResult
 from app.schemas.pricing_data import PricingItem
 from app.schemas.workflow_state import ExecutionLogEntry, WorkflowState
@@ -57,18 +58,25 @@ def cost_estimation_node(state: WorkflowState) -> WorkflowState:
     """
     print(f"[Cost Estimation Agent] Starting for workflow {state.workflow_id} …")
 
+    started_at = datetime.now(timezone.utc)
     try:
         result = _run_estimation(state)
         _persist_cost_estimate(state, result)
     except _CostEstimationFailure as exc:
+        _record_run(state, "failed", started_at, failure_reason=str(exc))
+        _persist_failure(state, str(exc))
         return _fail(state, str(exc))
+
+    _record_run(state, "success", started_at, result=result)
 
     state.cost_result = result.model_dump()
     state.current_agent = "validation"
-    print(
-        f"[Cost Estimation Agent] Done — total {result.total_cost_lkr:,.2f} LKR "
-        f"({result.budget_delta_percent:.2f}% of budget)."
+    budget_message = (
+        f" ({result.budget_delta_percent:.2f}% of budget)"
+        if result.budget_delta_percent is not None
+        else " (no customer budget supplied)"
     )
+    print(f"[Cost Estimation Agent] Done — total {result.total_cost_lkr:,.2f} LKR{budget_message}.")
     return state
 
 
@@ -83,6 +91,11 @@ def _persist_cost_estimate(state: WorkflowState, result: CostResult) -> None:
         "labourCostLkr": result.labour_cost_lkr,
         "totalCostLkr": result.total_cost_lkr,
         "budgetDeltaPercent": result.budget_delta_percent,
+        "pricingSnapshot": result.pricing_snapshot,
+        "breakdown": [line.model_dump(mode="json") for line in result.breakdown],
+        "formulaVersion": result.formula_version,
+        "appliedAreaSqft": result.total_area_sqft,
+        "terrainType": result.terrain_type,
     }
 
     try:
@@ -101,6 +114,34 @@ def _persist_cost_estimate(state: WorkflowState, result: CostResult) -> None:
         raise _CostEstimationFailure(
             f"Cost estimate persistence returned HTTP {response.status_code}."
         )
+
+
+def _record_run(state: WorkflowState, status: str, started_at: datetime,
+                result: CostResult | None = None, failure_reason: str | None = None) -> None:
+    endpoint = f"{ASPNET_API_URL.rstrip('/')}/internal/workflows/{state.workflow_id}/cost-estimation-runs"
+    payload = {
+        "status": status,
+        "formulaVersion": result.formula_version if result else FORMULA_VERSION,
+        "pricingRecordCount": len(result.pricing_snapshot) if result else 0,
+        "appliedAreaSqft": result.total_area_sqft if result else None,
+        "terrainType": result.terrain_type if result else None,
+        "failureReason": failure_reason,
+        "startedAt": started_at.isoformat(),
+        "completedAt": datetime.now(timezone.utc).isoformat(),
+    }
+    try:
+        requests.post(endpoint, json=payload, headers={"X-Internal-API-Key": INTERNAL_API_KEY}, timeout=10)
+    except requests.RequestException:
+        logger.warning("Could not persist cost estimation run audit", exc_info=True)
+
+
+def _persist_failure(state: WorkflowState, reason: str) -> None:
+    endpoint = f"{ASPNET_API_URL.rstrip('/')}/internal/workflows/{state.workflow_id}/status"
+    try:
+        requests.patch(endpoint, json={"status": "failed", "reason": reason},
+                       headers={"X-Internal-API-Key": INTERNAL_API_KEY}, timeout=10)
+    except requests.RequestException:
+        logger.warning("Could not persist cost estimation failure", exc_info=True)
 
 
 # ---------------------------------------------------------------------------
@@ -153,7 +194,14 @@ def _run_estimation(state: WorkflowState) -> CostResult:
         area = _extract_room_area(room, idx)
         room_areas.append(area)
 
-    total_area_sqft = sum(room_areas)
+    calculated_room_area = sum(room_areas)
+    authoritative_area = state.design_result.get("total_built_up_area_sqft")
+    try:
+        total_area_sqft = float(authoritative_area) if authoritative_area is not None else calculated_room_area
+    except (TypeError, ValueError):
+        raise _CostEstimationFailure("Design total_built_up_area_sqft is not a valid number.")
+    if total_area_sqft <= 0:
+        raise _CostEstimationFailure("Design total_built_up_area_sqft must be greater than zero.")
 
     # ------------------------------------------------------------------
     # 2. Terrain — authoritative source is state.terrain_result
@@ -163,70 +211,34 @@ def _run_estimation(state: WorkflowState) -> CostResult:
     # ------------------------------------------------------------------
     # 3. Pricing lookup
     # ------------------------------------------------------------------
+    pricing_region, quality_level = _resolve_pricing_context(state)
     try:
-        pricing_items: List[PricingItem] = pricing_lookup_tool()
+        pricing_items: List[PricingItem] = pricing_lookup_tool(
+            region=pricing_region,
+            quality_level=quality_level,
+        )
     except PricingLookupError as exc:
         raise _CostEstimationFailure(
             f"Pricing lookup failed; cannot proceed without live pricing data: {exc}"
         ) from exc
 
-    # ------------------------------------------------------------------
-    # 4. Material items — filter and validate units
-    # ------------------------------------------------------------------
-    material_items = [
-        item for item in pricing_items if item.category.strip().lower() == "material"
-    ]
-    if not material_items:
-        raise _CostEstimationFailure(
-            "No pricing items with category='material' found: at least one is required."
+    try:
+        breakdown, material_cost, labour_cost, total_cost = calculate_cost_lines(
+            total_area_sqft, terrain_type, pricing_items
         )
-
-    for item in material_items:
-        unit_norm = item.unit.strip().lower().replace(" ", "_").replace("-", "_")
-        if unit_norm not in _AREA_COMPATIBLE_UNITS:
-            raise _CostEstimationFailure(
-                f"Material pricing item '{item.item_name}' (id={item.id}) has incompatible unit "
-                f"'{item.unit}'. Only per-sqft units ({sorted(_AREA_COMPATIBLE_UNITS)}) may be "
-                f"multiplied by room area. Resolve the pricing catalog entry before continuing."
-            )
-
-    # ------------------------------------------------------------------
-    # 5. Labour factor — exactly one record with a dimensionless unit
-    # ------------------------------------------------------------------
-    labour_factor = _resolve_labour_factor(pricing_items)
-
-    # ------------------------------------------------------------------
-    # 6. Terrain multiplier
-    # ------------------------------------------------------------------
-    # TerrainMultiplier is a Pydantic model; access via attribute.
-    terrain_multiplier = _get_terrain_multiplier_for_items(material_items, terrain_type)
-
-    # ------------------------------------------------------------------
-    # 7. Material cost
-    # ------------------------------------------------------------------
-    material_cost = 0.0
-    for room_area in room_areas:
-        for item in material_items:
-            multiplier = _terrain_multiplier_value(item, terrain_type)
-            material_cost += room_area * item.unit_cost_lkr * multiplier
-
-    # ------------------------------------------------------------------
-    # 8. Labour cost
-    # ------------------------------------------------------------------
-    labour_cost = material_cost * labour_factor
+    except CostCalculationError as exc:
+        raise _CostEstimationFailure(str(exc)) from exc
 
     # ------------------------------------------------------------------
     # 9. Budget
     # ------------------------------------------------------------------
     budget_lkr = state.input_data.budget_lkr if state.input_data else None
-    if not budget_lkr or budget_lkr <= 0:
+    if budget_lkr is not None and budget_lkr < 0:
         raise _CostEstimationFailure(
-            f"Invalid budget_lkr={budget_lkr!r}: a positive budget is required to calculate "
-            "budget_delta_percent."
+            f"Invalid budget_lkr={budget_lkr!r}: budget cannot be negative."
         )
 
-    total_cost = material_cost + labour_cost
-    budget_delta_percent = (total_cost / budget_lkr) * 100
+    budget_delta_percent = (total_cost / budget_lkr) * 100 if budget_lkr and budget_lkr > 0 else None
 
     # ------------------------------------------------------------------
     # 10. Build structured result
@@ -235,11 +247,39 @@ def _run_estimation(state: WorkflowState) -> CostResult:
         material_cost_lkr=round(material_cost, 2),
         labour_cost_lkr=round(labour_cost, 2),
         total_cost_lkr=round(total_cost, 2),
-        budget_delta_percent=round(budget_delta_percent, 2),
+        budget_delta_percent=round(budget_delta_percent, 2) if budget_delta_percent is not None else None,
         terrain_type=terrain_type,
         room_count=len(room_areas),
         total_area_sqft=round(total_area_sqft, 2),
+        pricing_region=pricing_region,
+        quality_level=quality_level,
+        pricing_snapshot=[item.model_dump(by_alias=True, mode="json") for item in pricing_items],
+        formula_version=FORMULA_VERSION,
+        breakdown=breakdown,
     )
+
+
+def _resolve_pricing_context(state: WorkflowState) -> tuple[str, str]:
+    """Resolve optional catalogue dimensions without changing the cost formula."""
+    input_data = state.input_data
+    preferences = input_data.preferences if input_data and input_data.preferences else {}
+    region = (
+        (input_data.region if input_data else None)
+        or preferences.get("region")
+        or "Sri Lanka"
+    )
+    quality = (
+        (input_data.quality_level if input_data else None)
+        or preferences.get("quality_level")
+        or preferences.get("qualityLevel")
+        or "Standard"
+    )
+    quality_normalized = str(quality).strip().title()
+    if quality_normalized not in {"Basic", "Standard", "Premium", "Luxury"}:
+        raise _CostEstimationFailure(
+            f"Unsupported pricing quality level '{quality}'. Accepted values are Basic, Standard, Premium, and Luxury."
+        )
+    return str(region).strip() or "Sri Lanka", quality_normalized
 
 
 # ---------------------------------------------------------------------------

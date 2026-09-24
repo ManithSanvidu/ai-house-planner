@@ -27,9 +27,28 @@ public class CostEstimate
     [Column(TypeName = "decimal(14,2)")]
     public decimal TotalCostLkr { get; set; }
 
-    [Required]
     [Column(TypeName = "decimal(6,2)")]
-    public decimal BudgetDeltaPercent { get; set; }
+    public decimal? BudgetDeltaPercent { get; set; }
+
+    [Required]
+    [Column(TypeName = "jsonb")]
+    public string PricingSnapshotJson { get; set; } = "[]";
+
+    [Required]
+    [Column(TypeName = "jsonb")]
+    public string BreakdownJson { get; set; } = "[]";
+
+    [Required]
+    [MaxLength(50)]
+    public string FormulaVersion { get; set; } = "category-area-v1";
+
+    [Required]
+    [Column(TypeName = "decimal(10,2)")]
+    public decimal AppliedAreaSqft { get; set; }
+
+    [Required]
+    [MaxLength(30)]
+    public string TerrainType { get; set; } = "flat";
 
     [Column(TypeName = "timestamp with time zone")]
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;

@@ -62,6 +62,37 @@ def test_pricing_lookup_success():
     # Verify that X-Internal-API-Key was sent
     assert len(responses.calls) == 1
     assert responses.calls[0].request.headers.get("X-Internal-API-Key") == INTERNAL_API_KEY
+    assert "region=Sri+Lanka" in responses.calls[0].request.url
+    assert "qualityLevel=Standard" in responses.calls[0].request.url
+
+
+@responses.activate
+def test_pricing_lookup_requests_region_and_quality_and_filters_inactive_rows():
+    responses.add(
+        responses.GET,
+        f"{ASPNET_API_URL}/internal/pricing",
+        json=[
+            {
+                "id": 1, "itemName": "Colombo Structural", "category": "material",
+                "unitCostLkr": 4500, "unit": "per_sqft", "region": "Colombo",
+                "qualityLevel": "Premium", "isActive": True,
+                "terrainMultiplier": {"flat": 1, "hillside": 1.15, "coastal": 1.1},
+            },
+            {
+                "id": 2, "itemName": "Old Structural", "category": "material",
+                "unitCostLkr": 4000, "unit": "per_sqft", "region": "Colombo",
+                "qualityLevel": "Premium", "isActive": False,
+                "terrainMultiplier": {"flat": 1, "hillside": 1.15, "coastal": 1.1},
+            },
+        ],
+        status=200,
+    )
+
+    items = pricing_lookup_tool(region="Colombo", quality_level="Premium")
+
+    assert [item.id for item in items] == [1]
+    assert "region=Colombo" in responses.calls[0].request.url
+    assert "qualityLevel=Premium" in responses.calls[0].request.url
 
 
 @responses.activate

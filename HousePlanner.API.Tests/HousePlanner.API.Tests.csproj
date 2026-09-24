@@ -30,5 +30,6 @@
 
   <ItemGroup>
     <Content Include="..\HousePlanner.API\Data\Seed\pre-designed-plans.json" Link="Data\Seed\pre-designed-plans.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\HousePlanner.API\Data\Pricing\approved-pricing-feed.json" Link="Data\Pricing\approved-pricing-feed.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

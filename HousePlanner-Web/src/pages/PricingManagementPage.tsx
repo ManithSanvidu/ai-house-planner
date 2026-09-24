@@ -17,9 +17,11 @@ import {
   Users,
   Building2,
   Info,
+  Archive,
+  History,
 } from 'lucide-react';
 import pricingService from '../services/pricingService';
-import type { PricingItem as ApiPricingItem } from '../types/pricing.types';
+import type { PricingHistoryItem, PricingItem as ApiPricingItem } from '../types/pricing.types';
 
 // ─────────────────────────────────────────────
 // Types
@@ -37,6 +39,11 @@ interface PricingItem {
   coastalMultiplier: number;
   provider?: string | null;
   sourceReference?: string | null;
+  region: string;
+  qualityLevel: 'Basic' | 'Standard' | 'Premium' | 'Luxury';
+  isActive: boolean;
+  createdAt: string;
+  updatedByUserId?: string | null;
   lastUpdated: string;
 }
 
@@ -45,6 +52,7 @@ interface EditFormState {
   flatMultiplier: string;
   hillsideMultiplier: string;
   coastalMultiplier: string;
+  reason: string;
 }
 
 interface CreateFormState {
@@ -56,6 +64,8 @@ interface CreateFormState {
   hillsideMultiplier: string;
   coastalMultiplier: string;
   sourceReference: string;
+  region: string;
+  qualityLevel: 'Basic' | 'Standard' | 'Premium' | 'Luxury';
 }
 
 interface ValidationErrors {
@@ -95,6 +105,11 @@ function toViewModel(api: ApiPricingItem): PricingItem {
     coastalMultiplier: api.terrainMultiplier.coastal,
     provider: api.provider,
     sourceReference: api.sourceReference,
+    region: api.region,
+    qualityLevel: api.qualityLevel,
+    isActive: api.isActive,
+    createdAt: api.createdAt,
+    updatedByUserId: api.updatedByUserId,
     lastUpdated: api.updatedAt,
   };
 }
@@ -239,6 +254,8 @@ const CreateModal: React.FC<CreateModalProps> = ({ onClose, onCreateSuccess }) =
     hillsideMultiplier: '1.25',
     coastalMultiplier: '1.35',
     sourceReference: '',
+    region: 'Sri Lanka',
+    qualityLevel: 'Standard',
   });
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [submitting, setSubmitting] = useState(false);
@@ -286,6 +303,8 @@ const CreateModal: React.FC<CreateModalProps> = ({ onClose, onCreateSuccess }) =
           coastal: parseFloat(form.coastalMultiplier),
         },
         sourceReference: form.sourceReference.trim() || undefined,
+        region: form.region.trim() || 'Sri Lanka',
+        qualityLevel: form.qualityLevel,
       });
       onCreateSuccess(toViewModel(created));
     } catch (err: unknown) {
@@ -502,6 +521,32 @@ const CreateModal: React.FC<CreateModalProps> = ({ onClose, onCreateSuccess }) =
             </div>
           </div>
 
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1" htmlFor="create-region">Region</label>
+              <input
+                id="create-region"
+                type="text"
+                value={form.region}
+                onChange={handleChange('region')}
+                disabled={submitting}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 outline-none focus:bg-white focus:border-indigo-300"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1" htmlFor="create-qualityLevel">Quality Level</label>
+              <select
+                id="create-qualityLevel"
+                value={form.qualityLevel}
+                onChange={handleChange('qualityLevel')}
+                disabled={submitting}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 outline-none focus:bg-white focus:border-indigo-300"
+              >
+                {['Basic', 'Standard', 'Premium', 'Luxury'].map((level) => <option key={level} value={level}>{level}</option>)}
+              </select>
+            </div>
+          </div>
+
           {/* Source Reference */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1" htmlFor="create-sourceReference">
@@ -559,6 +604,7 @@ const EditModal: React.FC<EditModalProps> = ({ item, onClose, onSaveSuccess }) =
     flatMultiplier: String(item.flatMultiplier),
     hillsideMultiplier: String(item.hillsideMultiplier),
     coastalMultiplier: String(item.coastalMultiplier),
+    reason: '',
   });
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [saving, setSaving] = useState(false);
@@ -588,6 +634,7 @@ const EditModal: React.FC<EditModalProps> = ({ item, onClose, onSaveSuccess }) =
           hillside: parseFloat(form.hillsideMultiplier),
           coastal: parseFloat(form.coastalMultiplier),
         },
+        reason: form.reason.trim() || undefined,
       });
       onSaveSuccess(toViewModel(updated));
     } catch (err: unknown) {
@@ -725,6 +772,18 @@ const EditModal: React.FC<EditModalProps> = ({ item, onClose, onSaveSuccess }) =
               </div>
             </div>
           </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1" htmlFor="modal-reason">Reason for change</label>
+            <input
+              id="modal-reason"
+              type="text"
+              value={form.reason}
+              onChange={handleChange('reason')}
+              disabled={saving}
+              placeholder="e.g. September contractor rate review"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 outline-none focus:bg-white focus:border-indigo-300"
+            />
+          </div>
         </div>
 
         {/* Modal Footer */}
@@ -758,14 +817,17 @@ const EditModal: React.FC<EditModalProps> = ({ item, onClose, onSaveSuccess }) =
 const TABLE_COLUMNS = [
   'Item Name',
   'Group',
+  'Region / Quality',
   'Category',
+  'Status',
   'Unit',
   'Rate / Factor',
   'Flat x',
   'Hillside x',
   'Coastal x',
+  'Created',
   'Last Updated',
-  '',
+  'Actions',
 ];
 
 const PricingManagementPage: React.FC = () => {
@@ -781,6 +843,9 @@ const PricingManagementPage: React.FC = () => {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [bannerMessage, setBannerMessage] = useState<string | null>(null);
   const [savedItemId, setSavedItemId] = useState<number | null>(null);
+  const [historyItem, setHistoryItem] = useState<PricingItem | null>(null);
+  const [history, setHistory] = useState<PricingHistoryItem[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   // ── Fetch on mount ──
   const fetchPricing = async () => {
@@ -808,6 +873,8 @@ const PricingManagementPage: React.FC = () => {
         item.name.toLowerCase().includes(q) ||
         item.displayGroup.toLowerCase().includes(q) ||
         item.category.toLowerCase().includes(q) ||
+        item.region.toLowerCase().includes(q) ||
+        item.qualityLevel.toLowerCase().includes(q) ||
         item.unit.toLowerCase().includes(q);
       const matchCategory =
         selectedCategory === 'All' || item.category === selectedCategory;
@@ -816,11 +883,11 @@ const PricingManagementPage: React.FC = () => {
   }, [items, search, selectedCategory]);
 
   const materialCount = useMemo(
-    () => items.filter((i) => i.category === 'material').length,
+    () => items.filter((i) => i.isActive && i.category === 'material').length,
     [items]
   );
   const labourCount = useMemo(
-    () => items.filter((i) => i.category === 'labour').length,
+    () => items.filter((i) => i.isActive && i.category === 'labour').length,
     [items]
   );
 
@@ -845,6 +912,25 @@ const PricingManagementPage: React.FC = () => {
       setSavedItemId(null);
       setBannerMessage(null);
     }, 3000);
+  };
+
+  const handleDeactivate = async (item: PricingItem) => {
+    if (!window.confirm(`Deactivate ${item.name}? Existing estimates will remain unchanged.`)) return;
+    try {
+      const updated = toViewModel(await pricingService.deactivate(item.id, 'Archived from Constructor Pricing Management'));
+      setItems((prev) => prev.map((current) => current.id === updated.id ? updated : current));
+      setBannerMessage(`Deactivated pricing item "${updated.name}"`);
+    } catch {
+      setFetchError(`Could not deactivate "${item.name}".`);
+    }
+  };
+
+  const handleShowHistory = async (item: PricingItem) => {
+    setHistoryItem(item);
+    setHistoryLoading(true);
+    try { setHistory(await pricingService.getHistory(item.id)); }
+    catch { setHistory([]); }
+    finally { setHistoryLoading(false); }
   };
 
   // ── Loading state ──
@@ -956,7 +1042,7 @@ const PricingManagementPage: React.FC = () => {
         <SummaryCard
           icon={<Users size={18} />}
           label="Labour Factor"
-          value={labourCount > 0 ? `${items.find((i) => i.category === 'labour')?.unitCost ?? 0}×` : 'None'}
+          value={labourCount > 0 ? `${items.find((i) => i.isActive && i.category === 'labour')?.unitCost ?? 0}×` : 'None'}
           sub={labourCount === 1 ? '1 active factor' : labourCount === 0 ? 'Missing labour rate' : 'Multiple rates (Ambiguous)'}
         />
         <SummaryCard
@@ -1033,7 +1119,7 @@ const PricingManagementPage: React.FC = () => {
 
         {/* Table */}
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[960px]">
+          <table className="w-full min-w-[1380px]">
             <thead>
               <tr className="border-b border-slate-100">
                 {TABLE_COLUMNS.map((col, i) => (
@@ -1128,6 +1214,11 @@ const PricingManagementPage: React.FC = () => {
                       </span>
                     </td>
 
+                    <td className="px-4 py-4">
+                      <p className="text-xs font-semibold text-slate-700">{item.region}</p>
+                      <p className="text-[11px] text-slate-400">{item.qualityLevel}</p>
+                    </td>
+
                     {/* Machine Category */}
                     <td className="px-4 py-4">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
@@ -1136,6 +1227,12 @@ const PricingManagementPage: React.FC = () => {
                           : 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200'
                       }`}>
                         {item.category}
+                      </span>
+                    </td>
+
+                    <td className="px-4 py-4">
+                      <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold ring-1 ${item.isActive ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : 'bg-slate-100 text-slate-500 ring-slate-200'}`}>
+                        {item.isActive ? 'Active' : 'Inactive'}
                       </span>
                     </td>
 
@@ -1162,23 +1259,35 @@ const PricingManagementPage: React.FC = () => {
                     {/* Coastal Multiplier */}
                     <td className="px-4 py-4"><MultiplierBadge value={item.coastalMultiplier} /></td>
 
+                    <td className="px-4 py-4">
+                      <span className="text-xs text-slate-400 font-medium">{formatDate(item.createdAt)}</span>
+                    </td>
+
                     {/* Last Updated */}
                     <td className="px-4 py-4">
                       <span className="text-xs text-slate-400 font-medium">
                         {formatDate(item.lastUpdated)}
                       </span>
+                      <p className="max-w-[140px] truncate text-[10px] text-slate-400" title={item.updatedByUserId || 'System'}>
+                        {item.updatedByUserId || 'System'}
+                      </p>
                     </td>
 
                     {/* Edit Action */}
                     <td className="px-4 pr-6 py-4 text-right">
-                      <button
-                        onClick={() => setEditingItem(item)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-500 border border-slate-200 bg-white hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 transition-all opacity-0 group-hover:opacity-100"
-                        aria-label={`Edit ${item.name}`}
-                      >
-                        <Pencil size={11} />
-                        Edit
-                      </button>
+                      <div className="flex justify-end gap-1.5">
+                        <button onClick={() => void handleShowHistory(item)} className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1.5 text-xs font-semibold text-slate-500 hover:text-indigo-600" aria-label={`History for ${item.name}`}>
+                          <History size={11} /> History
+                        </button>
+                        {item.isActive && <>
+                          <button onClick={() => setEditingItem(item)} className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1.5 text-xs font-semibold text-slate-500 hover:text-indigo-600" aria-label={`Edit ${item.name}`}>
+                            <Pencil size={11} /> Edit
+                          </button>
+                          <button onClick={() => void handleDeactivate(item)} className="inline-flex items-center gap-1 rounded-lg border border-rose-200 px-2 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50" aria-label={`Deactivate ${item.name}`}>
+                            <Archive size={11} /> Deactivate
+                          </button>
+                        </>}
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -1220,6 +1329,36 @@ const PricingManagementPage: React.FC = () => {
           onClose={() => setEditingItem(null)}
           onSaveSuccess={handleSaveSuccess}
         />
+      )}
+
+      {historyItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 p-4 backdrop-blur-sm" onClick={() => setHistoryItem(null)}>
+          <div className="w-full max-w-xl rounded-2xl border border-slate-200 bg-white p-6 shadow-xl" onClick={(event) => event.stopPropagation()}>
+            <div className="mb-5 flex items-start justify-between gap-4">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-500">Pricing history</p>
+                <h2 className="mt-1 text-xl font-bold text-slate-900">{historyItem.name}</h2>
+              </div>
+              <button onClick={() => setHistoryItem(null)} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100" aria-label="Close pricing history"><X size={16} /></button>
+            </div>
+            {historyLoading ? <p className="py-8 text-center text-sm text-slate-500">Loading history…</p> : history.length === 0 ? (
+              <p className="rounded-xl border border-slate-200 bg-slate-50 p-5 text-sm text-slate-500">No pricing changes recorded yet.</p>
+            ) : (
+              <div className="max-h-96 space-y-3 overflow-y-auto">
+                {history.map((entry) => (
+                  <div key={entry.id} className="rounded-xl border border-slate-200 p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="font-semibold text-slate-900">{entry.previousValue.toLocaleString()} → {entry.newValue.toLocaleString()}</p>
+                      <time className="text-xs text-slate-400">{new Date(entry.changedAt).toLocaleString()}</time>
+                    </div>
+                    <p className="mt-1 text-xs text-slate-500">{entry.reason || 'No reason provided'}</p>
+                    <p className="mt-1 text-[10px] text-slate-400">Updated by: {entry.changedByUserId || 'System'}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

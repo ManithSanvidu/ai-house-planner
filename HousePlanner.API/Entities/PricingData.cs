@@ -52,7 +52,18 @@ namespace HousePlanner.API.Entities
         public string? OriginalCurrency { get; set; }
 
         [StringLength(150)]
-        public string? Region { get; set; }
+        public string Region { get; set; } = "Sri Lanka";
+
+        [Required]
+        [StringLength(20)]
+        public string QualityLevel { get; set; } = "Standard";
+
+        public bool IsActive { get; set; } = true;
+
+        public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+
+        [StringLength(100)]
+        public string? UpdatedByUserId { get; set; }
 
         public DateTimeOffset? ObservedAt { get; set; }
 
@@ -67,6 +78,8 @@ namespace HousePlanner.API.Entities
         public DateTimeOffset? ImportedAt { get; set; }
 
         public DateTimeOffset UpdatedAt { get; set; }
+
+        public ICollection<PricingHistory> History { get; set; } = new List<PricingHistory>();
     }
 
     public class TerrainMultiplierData
