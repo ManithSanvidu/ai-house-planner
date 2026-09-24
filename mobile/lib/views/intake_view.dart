@@ -126,7 +126,12 @@ class _IntakeViewState extends ConsumerState<IntakeView>{
                                 hint: 'e.g. 15',
                                 initialValue: data.landSizePerches?.toString() ?? '15',
                                 keyboardType: TextInputType.number,
-                                validator: (val) => val == null || val.isEmpty ? 'Required' : null,
+                                validator: (val) {
+                                  if (val == null || val.isEmpty) return 'Required';
+                                  final num = double.tryParse(val);
+                                  if (num != null && num < 0) return 'Cannot be negative';
+                                  return null;
+                                },
                                 onSaved: (val) => ref.read(intakeProvider.notifier).updateField(landSizePerches: double.tryParse(val!)),
                               ),
                             ],
@@ -217,7 +222,13 @@ class _IntakeViewState extends ConsumerState<IntakeView>{
                                 hint: 'e.g. 50',
                                 initialValue: data.plotWidth?.toString(),
                                 keyboardType: TextInputType.number,
-                                validator: (val) => null,
+                                validator: (val) {
+                                  if (val != null && val.isNotEmpty) {
+                                    final num = double.tryParse(val);
+                                    if (num != null && num <= 0) return 'Must be positive';
+                                  }
+                                  return null;
+                                },
                                 onSaved: (val) => ref.read(intakeProvider.notifier).updateField(plotWidth: double.tryParse(val ?? '')),
                               ),
                             ],
@@ -234,7 +245,13 @@ class _IntakeViewState extends ConsumerState<IntakeView>{
                                 hint: 'e.g. 100',
                                 initialValue: data.plotLength?.toString(),
                                 keyboardType: TextInputType.number,
-                                validator: (val) => null,
+                                validator: (val) {
+                                  if (val != null && val.isNotEmpty) {
+                                    final num = double.tryParse(val);
+                                    if (num != null && num <= 0) return 'Must be positive';
+                                  }
+                                  return null;
+                                },
                                 onSaved: (val) => ref.read(intakeProvider.notifier).updateField(plotLength: double.tryParse(val ?? '')),
                               ),
                             ],
