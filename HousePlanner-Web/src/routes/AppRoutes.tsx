@@ -4,6 +4,7 @@ import PageContainer from '../components/layout/PageContainer';
 import AdminPlanFormPage from '../pages/AdminPlanFormPage';
 import AdminPlansPage from '../pages/AdminPlansPage';
 import AdminStaffPage from '../pages/AdminStaffPage';
+import AdminWorkflowsPage from '../pages/AdminWorkflowsPage';
 import DashboardPage from '../pages/DashboardPage';
 import HomePage from '../pages/HomePage';
 import IntakeForm from '../pages/IntakeForm';
@@ -42,7 +43,8 @@ export const AppRoutes: React.FC = () => (
     <Route path="/dashboard/admin/plans/new" element={<ProtectedRoute allowedRoles={['Admin']}><PageContainer><AdminPlanFormPage /></PageContainer></ProtectedRoute>} />
     <Route path="/dashboard/admin/plans/:id/edit" element={<ProtectedRoute allowedRoles={['Admin']}><PageContainer><AdminPlanFormPage /></PageContainer></ProtectedRoute>} />
     <Route path="/dashboard/admin/staff" element={<ProtectedRoute allowedRoles={['Admin']}><PageContainer><AdminStaffPage /></PageContainer></ProtectedRoute>} />
-    <Route path="/dashboard/workflows/:id" element={<ProtectedRoute allowedRoles={['Customer']}><PageContainer><WorkflowReviewPage /></PageContainer></ProtectedRoute>} />
+    <Route path="/dashboard/admin/workflows" element={<ProtectedRoute allowedRoles={['Admin']}><PageContainer><AdminWorkflowsPage /></PageContainer></ProtectedRoute>} />
+    <Route path="/dashboard/workflows/:id" element={<ProtectedRoute allowedRoles={['Customer', 'Admin', 'Constructor']}><PageContainer><WorkflowReviewPage /></PageContainer></ProtectedRoute>} />
     <Route path="/architect/dashboard" element={<ProtectedRoute allowedRoles={['Architect']}><PageContainer><ArchitectDashboard /></PageContainer></ProtectedRoute>} />
     <Route path="/architect/requests" element={<ProtectedRoute allowedRoles={['Architect']}><PageContainer><ValidationRequestsPage /></PageContainer></ProtectedRoute>} />
     <Route path="/architect/approved" element={<ProtectedRoute allowedRoles={['Architect']}><PageContainer><ApprovedRequestsPage /></PageContainer></ProtectedRoute>} />
