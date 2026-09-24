@@ -205,6 +205,7 @@ const IntakeForm: React.FC = () => {
                   type="number" 
                   name="landSize"
                   required
+                  min="0"
                   placeholder="e.g. 10"
                   value={formData.landSize}
                   onChange={handleInputChange}
@@ -281,7 +282,7 @@ const IntakeForm: React.FC = () => {
               <input 
                 name="plotWidth" 
                 type="number" 
-                min="1" 
+                min="0" 
                 step="any"
                 value={formData.plotWidth} 
                 onChange={handleInputChange} 
@@ -293,7 +294,7 @@ const IntakeForm: React.FC = () => {
               <input 
                 name="plotLength" 
                 type="number" 
-                min="1" 
+                min="0" 
                 step="any"
                 value={formData.plotLength} 
                 onChange={handleInputChange} 
@@ -403,6 +404,7 @@ const IntakeForm: React.FC = () => {
             <input
               type="date"
               name="targetCompletionDate"
+              min={new Date().toISOString().split('T')[0]}
               value={formData.targetCompletionDate}
               onChange={handleInputChange}
               className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 transition-colors"
