@@ -49,8 +49,27 @@ class WorkflowNotifier extends StateNotifier<AsyncValue<WorkflowState>> {
       });
       await _fetchStatus(); // Refresh immediately
     } catch (e) {
-      // Handle error (e.g. show toast in UI)
       throw Exception('Failed to approve/reject workflow');
+    }
+  }
+
+  Future<void> submitArchitectReview(String designId) async {
+    try {
+      await ApiClient.instance.post('/workflows/$workflowId/submit-architect-review/$designId');
+      await _fetchStatus();
+    } catch (e) {
+      throw Exception('Failed to submit architect review');
+    }
+  }
+
+  Future<void> regenerateDesign(String designId) async {
+    try {
+      await ApiClient.instance.post('/workflows/$workflowId/regenerate/$designId');
+      state = const AsyncValue.loading();
+      _startPolling(); // Ensure polling is active
+      await _fetchStatus();
+    } catch (e) {
+      throw Exception('Failed to regenerate design');
     }
   }
 
@@ -60,3 +79,54 @@ class WorkflowNotifier extends StateNotifier<AsyncValue<WorkflowState>> {
     super.dispose();
   }
 }
+
+final myDesignsProvider = StateNotifierProvider.autoDispose<MyDesignsNotifier, AsyncValue<List<dynamic>>>((ref) {
+  return MyDesignsNotifier();
+});
+
+class MyDesignsNotifier extends StateNotifier<AsyncValue<List<dynamic>>> {
+  MyDesignsNotifier() : super(const AsyncValue.loading()) {
+    fetch();
+  }
+
+  Future<void> fetch() async {
+    state = const AsyncValue.loading();
+    try {
+      final response = await ApiClient.instance.get('/workflows/designs');
+      state = AsyncValue.data(response.data as List<dynamic>);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+
+  Future<void> selectDesign(String workflowId, String designId) async {
+    await ApiClient.instance.post('/workflows/$workflowId/designs/$designId/select');
+    await fetch();
+  }
+
+  Future<void> clearSelection(String workflowId) async {
+    await ApiClient.instance.delete('/workflows/$workflowId/design-selection');
+    await fetch();
+  }
+
+  Future<void> submitToArchitect(String workflowId, String designId) async {
+    await ApiClient.instance.post('/workflows/$workflowId/submit-architect-review/$designId');
+    await fetch();
+  }
+}
+
+final customerDashboardProvider = FutureProvider.autoDispose<Map<String, dynamic>>((ref) async {
+  try {
+    final approvedDesignsRes = await ApiClient.instance.get('/customer/construction/approved-designs');
+    final overviewRes = await ApiClient.instance.get('/customer/construction');
+    final allDesignsRes = await ApiClient.instance.get('/workflows/designs');
+    
+    return {
+      'approvedDesigns': approvedDesignsRes.data as List<dynamic>,
+      'overview': overviewRes.data as Map<String, dynamic>,
+      'allDesigns': allDesignsRes.data as List<dynamic>,
+    };
+  } catch (e) {
+    throw Exception('Failed to load dashboard data');
+  }
+});
