@@ -1,10 +1,8 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
 import '../providers/workflow_provider.dart';
-import '../core/theme/app_tokens.dart';
 
 class DashboardView extends ConsumerWidget {
   const DashboardView({super.key});
@@ -189,7 +187,7 @@ class DashboardView extends ConsumerWidget {
                                 children: [
                                   Container(
                                     padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(12)),
+                                    decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(12)),
                                     child: const Icon(Icons.check_circle_outline, color: Colors.white, size: 24),
                                   ),
                                   const SizedBox(height: 16),
@@ -213,7 +211,7 @@ class DashboardView extends ConsumerWidget {
                                 children: [
                                   Container(
                                     padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(12)),
+                                    decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(12)),
                                     child: const Icon(Icons.hourglass_empty, color: Colors.white, size: 24),
                                   ),
                                   const SizedBox(height: 16),

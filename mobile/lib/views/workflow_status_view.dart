@@ -275,7 +275,7 @@ class _WorkflowStatusViewState extends ConsumerState<WorkflowStatusView> {
                     decoration: BoxDecoration(
                       color: AppTokens.emeraldSoft,
                       borderRadius: BorderRadius.circular(AppTokens.radiusButton),
-                      border: Border.all(color: AppTokens.emerald.withOpacity(0.3)),
+                      border: Border.all(color: AppTokens.emerald.withValues(alpha: 0.3)),
                     ),
                     child: const Center(
                       child: Text('Request sent to architecture successfully', style: TextStyle(color: AppTokens.emerald, fontWeight: FontWeight.bold)),

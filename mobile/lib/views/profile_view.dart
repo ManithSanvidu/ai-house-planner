@@ -137,7 +137,7 @@ class ProfileView extends ConsumerWidget {
                                 Flexible(
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                                    decoration: BoxDecoration(color: AppTokens.emerald.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                                    decoration: BoxDecoration(color: AppTokens.emerald.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
                                     child: const Text('✓ Approved', style: TextStyle(color: AppTokens.emerald, fontSize: 11, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
                                   ),
                                 )
