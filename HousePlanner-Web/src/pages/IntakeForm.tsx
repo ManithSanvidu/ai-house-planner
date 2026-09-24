@@ -65,7 +65,15 @@ const IntakeForm: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState('');
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
+    let { name, value } = e.target;
+    if (['landSize', 'plotWidth', 'plotLength'].includes(name)) {
+      if (Number(value) < 0) return;
+      if (name !== 'landSize' && Number(value) === 0 && value !== '') return; // positive only for plot width/length
+    }
+    if (name === 'targetCompletionDate') {
+      const today = new Date().toISOString().split('T')[0];
+      if (value !== '' && value < today) return;
+    }
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -206,6 +214,7 @@ const IntakeForm: React.FC = () => {
                   name="landSize"
                   required
                   min="0"
+                  onKeyDown={(e) => e.key === '-' && e.preventDefault()}
                   placeholder="e.g. 10"
                   value={formData.landSize}
                   onChange={handleInputChange}
@@ -282,7 +291,8 @@ const IntakeForm: React.FC = () => {
               <input 
                 name="plotWidth" 
                 type="number" 
-                min="0" 
+                min="0.01" 
+                onKeyDown={(e) => e.key === '-' && e.preventDefault()}
                 step="any"
                 value={formData.plotWidth} 
                 onChange={handleInputChange} 
@@ -294,7 +304,8 @@ const IntakeForm: React.FC = () => {
               <input 
                 name="plotLength" 
                 type="number" 
-                min="0" 
+                min="0.01" 
+                onKeyDown={(e) => e.key === '-' && e.preventDefault()}
                 step="any"
                 value={formData.plotLength} 
                 onChange={handleInputChange} 
@@ -404,7 +415,6 @@ const IntakeForm: React.FC = () => {
             <input
               type="date"
               name="targetCompletionDate"
-              min={new Date().toISOString().split('T')[0]}
               value={formData.targetCompletionDate}
               onChange={handleInputChange}
               className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 transition-colors"
