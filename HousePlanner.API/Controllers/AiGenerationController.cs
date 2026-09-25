@@ -202,7 +202,7 @@ namespace HousePlanner.API.Controllers
 
             var options = new JsonSerializerOptions
             {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
                 DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
             };
             var content = new StringContent(JsonSerializer.Serialize(payload, options), Encoding.UTF8, "application/json");
