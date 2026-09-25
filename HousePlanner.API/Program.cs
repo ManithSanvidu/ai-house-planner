@@ -39,6 +39,10 @@ if (!isTesting)
 
 var internalApiKey = builder.Configuration["AgenticService:InternalApiKey"]
     ?? Environment.GetEnvironmentVariable("AGENTIC_INTERNAL_API_KEY");
+if (internalApiKey != null)
+{
+    internalApiKey = internalApiKey.Trim();
+}
 if (string.IsNullOrWhiteSpace(internalApiKey))
 {
     if (!isTesting)
