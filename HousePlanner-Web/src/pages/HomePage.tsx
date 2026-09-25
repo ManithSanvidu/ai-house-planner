@@ -5,7 +5,7 @@ import { OrbitControls, Html, useGLTF } from '@react-three/drei';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
 import { Mic, ArrowRight, Sparkles, Box, Moon, Sun, ChevronRight, ChevronLeft, Menu, X } from 'lucide-react';
 import * as THREE from 'three';
-
+import apiClient from '../services/apiClient';
 // ---------------------------------------------------------
 // 3D Components
 // ---------------------------------------------------------
@@ -286,14 +286,23 @@ const HomePage: React.FC = () => {
 
   const [prompt, setPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [assistantResult, setAssistantResult] = useState<any>(null);
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const handleGenerate = (e: React.FormEvent) => {
+  const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!prompt) return;
     setIsGenerating(true);
-    setTimeout(() => setIsGenerating(false), 3000);
+    try {
+      const { data } = await apiClient.post('/assistant/interpret', { message: prompt });
+      setAssistantResult(data);
+    } catch (err) {
+      console.error('Assistant error:', err);
+      setAssistantResult({ error: 'Failed to interpret message.' });
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const nextImg = () => setCurrentImgIndex((prev) => (prev + 1) % carouselImages.length);
@@ -461,6 +470,12 @@ const HomePage: React.FC = () => {
                     {isGenerating ? 'ANALYZING' : 'GENERATE'}
                   </button>
                 </form>
+                {assistantResult && (
+                  <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg text-xs overflow-auto max-h-60 text-left border border-gray-200 dark:border-gray-700">
+                    <pre className="text-gray-800 dark:text-gray-300 whitespace-pre-wrap">{JSON.stringify(assistantResult, null, 2)}</pre>
+                    <button onClick={() => setAssistantResult(null)} className="mt-2 text-indigo-600 dark:text-indigo-400 font-bold">Clear</button>
+                  </div>
+                )}
               </motion.div>
             </div>
           </div>

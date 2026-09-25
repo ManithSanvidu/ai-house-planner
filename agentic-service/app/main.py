@@ -156,3 +156,13 @@ def resume_workflow(
     background_tasks.add_task(execute_workflow, state)
     return {"message": "Workflow resumed successfully", "workflow_id": str(request.workflow_id)}
 
+class AssistantRequest(BaseModel):
+    message: str
+
+@app.post("/assistant/interpret")
+def interpret_message(
+    request: AssistantRequest,
+    api_key: str = Security(verify_api_key)
+):
+    from app.agents.architecture_assistant import interpret_user_message
+    return interpret_user_message(request.message)
