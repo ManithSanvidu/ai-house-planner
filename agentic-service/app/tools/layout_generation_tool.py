@@ -446,7 +446,7 @@ def generate_layout(
                         provider_name, model_name, decision.selected_plan_code,
                         decision.alternative_plan_codes, decision.reason_codes)
             break
-        except Exception as exc:  # noqa: BLE001 - preserve per-candidate failure isolation
+        except Exception as exc:
             print(f'[Design Agent] {provider_name} decision failed ({type(exc).__name__}); trying next provider.')
             provider = get_next_design_provider(provider_name or '')
             provider_name = None
@@ -511,7 +511,7 @@ def generate_layout(
             return final_design
         except GenerationFailure as exc:
             failures.extend(exc.failures or [{'plan_code': plan.plan_code, 'failures': [str(exc)]}])
-        except Exception as exc:  # noqa: BLE001 - preserve per-candidate failure isolation
+        except Exception as exc:
             failures.append({'plan_code': plan.plan_code, 'failures': [str(exc)]})
         return None
 

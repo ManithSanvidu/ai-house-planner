@@ -213,16 +213,16 @@ public class PricingService : IPricingService
         var userNames = await LoadUserNamesAsync(historyItems.Select(history => history.ChangedByUserId));
 
         return historyItems.Select(history => new PricingHistoryDto
-            {
-                Id = history.Id,
-                PricingDataId = history.PricingDataId,
-                PreviousValue = history.PreviousValue,
-                NewValue = history.NewValue,
-                ChangedByUserId = history.ChangedByUserId,
-                ChangedByName = GetUserName(userNames, history.ChangedByUserId),
-                ChangedAt = history.ChangedAt,
-                Reason = history.Reason
-            })
+        {
+            Id = history.Id,
+            PricingDataId = history.PricingDataId,
+            PreviousValue = history.PreviousValue,
+            NewValue = history.NewValue,
+            ChangedByUserId = history.ChangedByUserId,
+            ChangedByName = GetUserName(userNames, history.ChangedByUserId),
+            ChangedAt = history.ChangedAt,
+            Reason = history.Reason
+        })
             .ToList();
     }
 

@@ -50,7 +50,7 @@ public class WorkflowController : ControllerBase
         bool isCustomer = string.Equals(user.Role, "Customer", StringComparison.OrdinalIgnoreCase);
         bool isAdmin = string.Equals(user.Role, "Admin", StringComparison.OrdinalIgnoreCase);
         bool isConstructor = string.Equals(user.Role, "Constructor", StringComparison.OrdinalIgnoreCase);
-        
+
         if (!isCustomer && !isAdmin && !isConstructor) return Forbid();
         try
         {

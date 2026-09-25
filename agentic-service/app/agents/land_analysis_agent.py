@@ -56,7 +56,7 @@ def land_analysis_node(state: WorkflowState) -> WorkflowState:
                     tool = "vision_classify_tool"
                     success = True
                     break
-                except Exception as e:  # noqa: BLE001 - provider adapters may raise SDK-specific errors
+                except Exception as e:
                     print(f"[Land Analysis] Vision API failed on attempt {attempt+1}: {e}")
 
             if not success:

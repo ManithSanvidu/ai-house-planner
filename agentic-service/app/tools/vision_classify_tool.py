@@ -60,7 +60,7 @@ def vision_classify_tool(photo_url: str) -> TerrainResult:
         if terrain:
             return terrain
         return _safe_fallback("vision_parse_failed")
-    except Exception as e:  # noqa: BLE001 - external vision SDK exceptions are provider-specific
+    except Exception as e:
         print(f"[Vision Tool] Vision API error: {e}")
         return _safe_fallback(f"api_error: {str(e)[:100]}")
 

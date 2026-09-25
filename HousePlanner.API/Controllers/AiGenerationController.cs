@@ -270,10 +270,10 @@ namespace HousePlanner.API.Controllers
         public string? SpacePriority { get; set; }
         [System.Text.Json.Serialization.JsonPropertyName("circulation_preference")]
         public string? CirculationPreference { get; set; }
-        
+
         [System.Text.Json.Serialization.JsonPropertyName("targetCompletionDate")]
         public string? TargetCompletionDate { get; set; }
-        
+
         [System.Text.Json.Serialization.JsonPropertyName("target_duration_days")]
         public int? TargetDurationDays { get; set; }
     }
