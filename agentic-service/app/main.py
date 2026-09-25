@@ -1,3 +1,4 @@
+from typing import Optional, Union
 import secrets
 from typing import Any
 from uuid import UUID
@@ -35,28 +36,28 @@ class StartWorkflowRequest(BaseModel):
     workflow_id: UUID
     submission_id: UUID
     land_size_perches: float
-    budget_lkr: float | None = None
-    manual_terrain_type: str | None = None
+    budget_lkr: Optional[float] = None
+    manual_terrain_type: Optional[str] = None
     preferences: dict[str, Any]
-    plot_constraints: dict[str, Any] | None = None
-    design_seed: int | None = None
-    preferred_plan_code: str | None = None
+    plot_constraints: Optional[dict[str, Any]] = None
+    design_seed: Optional[int] = None
+    preferred_plan_code: Optional[str] = None
 
 class ResumeWorkflowRequest(BaseModel):
     workflow_id: UUID
     resume_from: str
     user_revision_prompt: str
     land_size_perches: float
-    budget_lkr: float | None = None
-    manual_terrain_type: str | None = None
+    budget_lkr: Optional[float] = None
+    manual_terrain_type: Optional[str] = None
     preferences: dict[str, Any]
-    terrain_result: dict[str, Any] | None = None
-    previous_design: dict[str, Any] | None = None
-    plot_constraints: dict[str, Any] | None = None
-    design_seed: int | None = None
+    terrain_result: Optional[dict[str, Any]] = None
+    previous_design: Optional[dict[str, Any]] = None
+    plot_constraints: Optional[dict[str, Any]] = None
+    design_seed: Optional[int] = None
     regeneration: bool = False
-    previous_base_plan_code: str | None = None
-    previous_design_fingerprint: str | None = None
+    previous_base_plan_code: Optional[str] = None
+    previous_design_fingerprint: Optional[str] = None
 
 def execute_workflow(initial_state:WorkflowState):
     """Background task to run the LangGraph workflow"""

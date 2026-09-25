@@ -1,9 +1,9 @@
+from __future__ import annotations
 """Add the small, hand-authored diversity set to the base-plan seed file.
 
 This script is deliberately idempotent.  It replaces only plans whose codes use
 the HP-CURATED prefix and leaves the historical catalogue untouched.
 """
-from __future__ import annotations
 
 import json
 import logging

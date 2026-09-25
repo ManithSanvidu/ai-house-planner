@@ -1,3 +1,4 @@
+from typing import Optional, Union
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -34,7 +35,7 @@ class Requirements(BaseModel):
     privacy_priority: bool = False
     living_area_scale: float = Field(1.0, ge=0.8, le=1.3)
     kitchen_area_scale: float = Field(1.0, ge=0.8, le=1.3)
-    design_seed: int | None = None
+    design_seed: Optional[int] = None
 
 
 class RoomSpec(BaseModel):

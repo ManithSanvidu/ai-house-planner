@@ -1,3 +1,4 @@
+from typing import Optional, Union
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -52,4 +53,4 @@ class DesignStrategy(BaseModel):
     kitchen_relationship: str = Field(description="How the kitchen connects to living/dining vs service areas.")
     wet_zone_strategy: str = Field(description="Consolidation of plumbing walls if applicable.")
     style_intent: str = Field(description="General architectural styling implications.")
-    garden_orientation: str | None = Field(None, description="Which side the primary outdoor space is favored.")
+    garden_orientation: Optional[str] = Field(None, description="Which side the primary outdoor space is favored.")

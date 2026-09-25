@@ -1,6 +1,7 @@
+from __future__ import annotations
+from typing import Optional, Union
 """Validated base-plan selection with deterministic adaptation and strict quality gates."""
 
-from __future__ import annotations
 
 import json
 import logging
@@ -54,9 +55,9 @@ def prepare_inputs(
 
     preferences: dict,
 
-    plot_constraints: dict | PlotConstraints | None = None,
+    plot_constraints: Union[dict, PlotConstraints, None] = None,
 
-    design_seed: int | None = None,
+    design_seed: Optional[int] = None,
 
 ) -> tuple[Requirements, PlotConstraints]:
 
@@ -150,8 +151,8 @@ NO_DISTINCT_LAYOUT = 'No distinct compatible layout is currently available for t
 
 
 def _candidate_pool(req: Requirements, plot: PlotConstraints, previous_fingerprint=None,
-                    preferred_plan_code: str | None = None,
-                    excluded_plan_code: str | None = None):
+                    preferred_plan_code: Optional[str] = None,
+                    excluded_plan_code: Optional[str] = None):
 
     compatible = filter_compatible_base_plans(req, plot)
 
@@ -206,7 +207,7 @@ def _candidate_pool(req: Requirements, plot: PlotConstraints, previous_fingerpri
 def _build_ai_prompt(normalized: NormalizedDesignInput, plans, req: Requirements,
                      plot: PlotConstraints, previous_plan_code=None,
 
-                     previous_fingerprint=None, revision_reason: str | None = None) -> str:
+                     previous_fingerprint=None, revision_reason: Optional[str] = None) -> str:
 
     payload = {
 
@@ -293,7 +294,7 @@ def _fallback_decision(plans, req: Requirements, plot: PlotConstraints, previous
 
 def _validate_and_finalize(design: DesignResult, req: Requirements, plot: PlotConstraints,
 
-                           base_plan_code: str, provider_name: str | None, model_name: str | None,
+                           base_plan_code: str, provider_name: Optional[str], model_name: Optional[str],
 
                            ai_decision: AIPlanDecision, tried_codes: list[str], candidate_pool) -> DesignResult:
 
@@ -353,18 +354,18 @@ def generate_layout(
 
     preferences: dict,
 
-    previous_design: dict | None = None,
+    previous_design: Optional[dict] = None,
 
-    revision_reason: str | None = None,
+    revision_reason: Optional[str] = None,
 
     *,
 
-    plot_constraints: dict | PlotConstraints | None = None,
+    plot_constraints: Union[dict, PlotConstraints, None] = None,
 
-    design_seed: int | None = None,
-    preferred_plan_code: str | None = None,
-    excluded_plan_code: str | None = None,
-    excluded_fingerprint_explicit: str | None = None,
+    design_seed: Optional[int] = None,
+    preferred_plan_code: Optional[str] = None,
+    excluded_plan_code: Optional[str] = None,
+    excluded_fingerprint_explicit: Optional[str] = None,
 
 ) -> DesignResult:
 
@@ -604,8 +605,8 @@ def _mock_layout(
     terrain_type: str,
     foundation_type: str,
     max_area: float,
-    template_id: str | None = None,
-    template: dict | None = None,
+    template_id: Optional[str] = None,
+    template: Optional[dict] = None,
 ) -> DesignResult:
     """Compatibility wrapper: the offline path uses the same validated base-plan engine."""
     import math

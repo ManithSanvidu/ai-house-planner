@@ -1,3 +1,4 @@
+from typing import Optional, Union
 """
 Cost Estimation Agent — LangGraph node (Component C).
 
@@ -120,7 +121,7 @@ def _persist_cost_estimate(state: WorkflowState, result: CostResult) -> None:
 
 
 def _record_run(state: WorkflowState, status: str, started_at: datetime,
-                result: CostResult | None = None, failure_reason: str | None = None) -> None:
+                result: Optional[CostResult] = None, failure_reason: Optional[str] = None) -> None:
     endpoint = f"{ASPNET_API_URL.rstrip('/')}/internal/workflows/{state.workflow_id}/cost-estimation-runs"
     payload = {
         "status": status,
