@@ -107,19 +107,31 @@ Put anything inferred into 'assumptions'."""
                 
         elif intent == 'DESIGN_REQUEST':
             if reqs:
-                feasibility = check_feasibility(reqs)
-                context_str += f"System Feasibility Result:\n{feasibility.to_dict()}\n"
+                from app.agents.requirement_validator import validate_requirements_sanity
+                sanity = validate_requirements_sanity(reqs)
                 
-                # Never navigate or create design brief if feasibility failed.
-                if getattr(feasibility, 'can_proceed', False):
-                    brief = create_design_brief(reqs)
-                    context_str += f"Design Brief Created:\n{brief}\n"
-                    action_type = "CONTINUE_TO_DESIGN"
-                    action_payload = {"requirements": reqs, "feasibility": feasibility.to_dict()}
-                else:
+                if sanity.status == 'INVALID':
+                    context_str += f"Semantic Validation Failed:\n{sanity.to_dict()}\n"
                     action_type = "NONE"
-                    # Pass the rejection reasons and suggestions to the payload just in case frontend needs it
-                    action_payload = {"feasibility": feasibility.to_dict()}
+                    action_payload = {"sanity": sanity.to_dict()}
+                elif sanity.status == 'NEEDS_CONFIRMATION':
+                    context_str += f"Semantic Validation Needs Confirmation:\n{sanity.to_dict()}\n"
+                    action_type = "NONE"
+                    action_payload = {"sanity": sanity.to_dict()}
+                else:
+                    feasibility = check_feasibility(reqs)
+                    context_str += f"System Feasibility Result:\n{feasibility.to_dict()}\n"
+                    
+                    # Never navigate or create design brief if feasibility failed.
+                    if getattr(feasibility, 'can_proceed', False):
+                        brief = create_design_brief(reqs)
+                        context_str += f"Design Brief Created:\n{brief}\n"
+                        action_type = "CONTINUE_TO_DESIGN"
+                        action_payload = {"requirements": reqs, "feasibility": feasibility.to_dict()}
+                    else:
+                        action_type = "NONE"
+                        # Pass the rejection reasons and suggestions to the payload just in case frontend needs it
+                        action_payload = {"feasibility": feasibility.to_dict()}
                     
         elif intent == 'PROJECT_QUESTION':
             proj_context = get_current_user_project_context()
