@@ -361,31 +361,39 @@ const IntakeForm: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Bedrooms</label>
-              <input 
-                type="number" 
+              <select 
                 name="bedrooms"
-                min="1"
                 required
                 value={formData.bedrooms}
                 onChange={handleInputChange}
                 className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 transition-colors"
-              />
+              >
+                {[1, 2, 3, 4, 5, 6].map(num => <option key={num} value={num}>{num}</option>)}
+              </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Bathrooms</label>
-              <input type="number" name="bathrooms" min="1" max="6" required value={formData.bathrooms} onChange={handleInputChange} className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500" />
+              <select 
+                name="bathrooms" 
+                required 
+                value={formData.bathrooms} 
+                onChange={handleInputChange} 
+                className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500"
+              >
+                {[1, 2, 3, 4, 5, 6].map(num => <option key={num} value={num}>{num}</option>)}
+              </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Floors</label>
-              <input 
-                type="number" 
+              <select 
                 name="floors"
-                min="1"
                 required
                 value={formData.floors}
                 onChange={handleInputChange}
                 className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 transition-colors"
-              />
+              >
+                {[1, 2, 3, 4].map(num => <option key={num} value={num}>{num}</option>)}
+              </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Architectural Style</label>
