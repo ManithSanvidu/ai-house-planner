@@ -5,11 +5,13 @@ Analyzes a land photo using the vision classify tool and updates
 the workflow state with terrain results. If no photo URL is available,
 uses the manual terrain fallback from the coordinator.
 """
-import requests
-from app.schemas.workflow_state import WorkflowState, ExecutionLogEntry
-from app.tools.vision_classify_tool import vision_classify_tool
-from app.config import ASPNET_API_URL, INTERNAL_API_KEY
 from datetime import datetime, timezone
+
+import requests
+
+from app.config import ASPNET_API_URL, INTERNAL_API_KEY
+from app.schemas.workflow_state import ExecutionLogEntry, WorkflowState
+from app.tools.vision_classify_tool import vision_classify_tool
 
 
 def land_analysis_node(state: WorkflowState) -> WorkflowState:
@@ -54,15 +56,15 @@ def land_analysis_node(state: WorkflowState) -> WorkflowState:
                     tool = "vision_classify_tool"
                     success = True
                     break
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001 - provider adapters may raise SDK-specific errors
                     print(f"[Land Analysis] Vision API failed on attempt {attempt+1}: {e}")
-            
+
             if not success:
                 # Fallback to manual terrain
                 manual_terrain = state.input_data.manual_terrain_type if state.input_data else "unknown"
                 if not manual_terrain:
                     manual_terrain = "unknown"
-                    
+
                 state.terrain_result = {
                     "terrain_type": manual_terrain,
                     "slope_estimate": "unknown",
@@ -111,5 +113,5 @@ def _persist_terrain(state: WorkflowState):
             print(f"[Land Analysis] Terrain persisted to database for workflow {state.workflow_id}")
         else:
             print(f"[Land Analysis] Failed to persist terrain: {response.status_code}")
-    except Exception as e:
+    except requests.RequestException as e:
         print(f"[Land Analysis] Could not reach ASP.NET for terrain update: {e}")

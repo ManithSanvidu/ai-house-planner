@@ -1,4 +1,4 @@
-﻿"""
+"""
 Validation / Safety Agent (Component D — Stage 1)
 =================================================
 
@@ -15,15 +15,17 @@ Key Rules:
 Author: Member 4 (Component D)
 """
 
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
+
 import requests
+
+from app.config import ASPNET_API_URL, INTERNAL_API_KEY
 from app.schemas.validation_schemas import (
     HousePlanValidationInput,
     RuleValidationResult,
     ValidationResult,
 )
 from app.schemas.workflow_state import WorkflowState
-from app.config import ASPNET_API_URL, INTERNAL_API_KEY
 
 # ---------------------------------------------------------------------------
 # Business Rule Constants & Configuration Defaults
@@ -33,7 +35,7 @@ DEFAULT_MAX_COVERAGE_RATIO: float = 0.65
 DEFAULT_BUDGET_TOLERANCE_RATIO: float = 0.10
 MAX_VALIDATION_RETRIES: int = 2
 
-TERRAIN_FOUNDATION_COMPATIBILITY_MAP: Dict[str, List[str]] = {
+TERRAIN_FOUNDATION_COMPATIBILITY_MAP: dict[str, list[str]] = {
     "flat": ["strip", "raft", "pad", "slab", "shallow_strip", "isolated_pad", "conceptual"],
     "slight_slope": ["strip", "stepped_strip", "raft", "pad", "shallow_strip"],
     "moderate_slope": ["stepped_strip", "raft", "pier", "pile", "caisson"],
@@ -45,7 +47,7 @@ TERRAIN_FOUNDATION_COMPATIBILITY_MAP: Dict[str, List[str]] = {
 }
 
 
-def _normalize_string(val: Optional[str]) -> str:
+def _normalize_string(val: str | None) -> str:
     if not val:
         return ""
     return val.strip().lower().replace("-", "_").replace(" ", "_")
@@ -55,8 +57,8 @@ def _normalize_string(val: Optional[str]) -> str:
 # Rule 1: Building / Land Ground Coverage
 # ---------------------------------------------------------------------------
 def validate_coverage(
-    land_size_perches: Optional[float],
-    ground_coverage_sqft: Optional[float],
+    land_size_perches: float | None,
+    ground_coverage_sqft: float | None,
     max_coverage_ratio: float = DEFAULT_MAX_COVERAGE_RATIO,
 ) -> RuleValidationResult:
     rule_name = "coverage"
@@ -120,9 +122,9 @@ def validate_coverage(
 # Rule 2: Terrain & Foundation Compatibility
 # ---------------------------------------------------------------------------
 def validate_terrain_foundation(
-    terrain_type: Optional[str],
-    slope_estimate: Optional[str],
-    foundation_type: Optional[str],
+    terrain_type: str | None,
+    slope_estimate: str | None,
+    foundation_type: str | None,
 ) -> RuleValidationResult:
     rule_name = "terrain_foundation"
 
@@ -186,8 +188,8 @@ def validate_terrain_foundation(
 # Rule 3: Budget Tolerance
 # ---------------------------------------------------------------------------
 def validate_budget(
-    budget_lkr: Optional[float],
-    estimated_cost_lkr: Optional[float],
+    budget_lkr: float | None,
+    estimated_cost_lkr: float | None,
     tolerance_ratio: float = DEFAULT_BUDGET_TOLERANCE_RATIO,
 ) -> RuleValidationResult:
     rule_name = "budget"
@@ -256,13 +258,13 @@ def validate_budget(
 # Rule 4: Client Requirement Match
 # ---------------------------------------------------------------------------
 def validate_preferences(
-    requested_bedrooms: Optional[int],
-    actual_bedrooms: Optional[int],
-    requested_floors: Optional[int],
-    actual_floors: Optional[int],
+    requested_bedrooms: int | None,
+    actual_bedrooms: int | None,
+    requested_floors: int | None,
+    actual_floors: int | None,
 ) -> RuleValidationResult:
     rule_name = "preferences"
-    failures: List[str] = []
+    failures: list[str] = []
 
     if requested_bedrooms is not None:
         if actual_bedrooms is None:
@@ -307,7 +309,7 @@ def extract_validation_input_from_state(state: Any) -> HousePlanValidationInput:
     if isinstance(state, HousePlanValidationInput):
         return state
 
-    state_dict: Dict[str, Any] = {}
+    state_dict: dict[str, Any] = {}
     if hasattr(state, "model_dump"):
         state_dict = state.model_dump()
     elif hasattr(state, "dict"):
@@ -354,8 +356,8 @@ def extract_validation_input_from_state(state: Any) -> HousePlanValidationInput:
     computed_bedroom_count = None
     if rooms_list and isinstance(rooms_list, list):
         floor1_rooms = [
-            r for r in rooms_list 
-            if (isinstance(r, dict) and r.get("floor", 1) == 1) or (hasattr(r, "floor") and getattr(r, "floor") == 1)
+            r for r in rooms_list
+            if (isinstance(r, dict) and r.get("floor", 1) == 1) or (hasattr(r, "floor") and r.floor == 1)
         ]
         if floor1_rooms:
             computed_footprint = sum(
@@ -432,13 +434,13 @@ def extract_validation_input_from_state(state: Any) -> HousePlanValidationInput:
 # Core Public Validation Function & Agent Interface
 # ---------------------------------------------------------------------------
 def validate_house_plan(
-    data: Union[HousePlanValidationInput, Any],
+    data: HousePlanValidationInput | Any,
     max_coverage_ratio: float = DEFAULT_MAX_COVERAGE_RATIO,
     budget_tolerance_ratio: float = DEFAULT_BUDGET_TOLERANCE_RATIO,
 ) -> ValidationResult:
     val_input = extract_validation_input_from_state(data)
 
-    rule_results: List[RuleValidationResult] = [
+    rule_results: list[RuleValidationResult] = [
         validate_coverage(
             land_size_perches=val_input.land_size_perches,
             ground_coverage_sqft=val_input.ground_coverage_sqft,
@@ -490,7 +492,7 @@ class ValidationAgent:
         self.max_coverage_ratio = max_coverage_ratio
         self.budget_tolerance_ratio = budget_tolerance_ratio
 
-    def validate(self, data: Union[HousePlanValidationInput, Any]) -> ValidationResult:
+    def validate(self, data: HousePlanValidationInput | Any) -> ValidationResult:
         return validate_house_plan(
             data=data,
             max_coverage_ratio=self.max_coverage_ratio,
@@ -511,7 +513,7 @@ def _submit_validation_result(state: WorkflowState, val_result: ValidationResult
             timeout=10,
             verify=False
         )
-    except Exception as e:
+    except requests.RequestException as e:
         print(f"[Validation Agent] Could not sync validation status to ASP.NET Core: {e}")
 
 

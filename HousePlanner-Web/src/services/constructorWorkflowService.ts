@@ -1,5 +1,6 @@
-import axios from 'axios';
+﻿import axios from 'axios';
 import { supabase } from '../lib/supabase';
+import type { CostSummaryDto } from './workflowService';
 
 const API_URL = 'http://localhost:5265/api/constructor/workflow';
 
@@ -36,6 +37,15 @@ export interface ConstructorWorkflowProject {
     aiEstimatedTotalDurationDays: number;
     plannedTotalDurationDays: number;
     constructionPhases: ConstructionPhase[];
+    design: {
+        designId: string;
+        version: number;
+        floorCount: number;
+        totalBuiltUpAreaSqft: number;
+        foundationType: string;
+        layoutJson: string;
+    } | null;
+    cost: CostSummaryDto | null;
 }
 
 export interface ConstructorWorkflowLog {
@@ -134,7 +144,7 @@ export const constructorWorkflowService = {
     },
 
     setEstimatedDuration: async (projectId: string, estimatedDays: number) => {
-        const response = await axios.post(`${API_URL}/projects/${projectId}/duration`, estimatedDays, { 
+        const response = await axios.post(`${API_URL}/projects/${projectId}/duration`, estimatedDays, {
             headers: {
                 ...await getAuthHeaders(),
                 'Content-Type': 'application/json'

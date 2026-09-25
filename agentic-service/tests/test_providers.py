@@ -1,7 +1,8 @@
-import os
-from unittest.mock import patch, MagicMock
-from app.providers.provider_factory import get_available_design_provider
+from unittest.mock import patch
+
 from app.providers.openai_provider import OpenAIProvider
+from app.providers.provider_factory import get_available_design_provider
+
 
 def test_provider_fallback():
     # Mock environment to have no API keys

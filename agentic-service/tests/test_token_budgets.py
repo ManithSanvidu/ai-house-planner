@@ -7,7 +7,6 @@ import pytest
 from app.design.candidate_generator import GenerationFailure
 from app.tools import layout_generation_tool as generation
 
-
 PREFERENCES = {'bedrooms': 3, 'bathrooms': 1, 'floors': 2, 'style': 'modern'}
 PLOT = {'plot_width_ft': 70, 'plot_length_ft': 75}
 

@@ -65,7 +65,28 @@ public record CostSummaryDto(
     decimal MaterialCostLkr,
     decimal LabourCostLkr,
     decimal TotalCostLkr,
-    decimal BudgetDeltaPercent
+    decimal? BudgetDeltaPercent,
+    IReadOnlyList<CostBreakdownItemDto>? Breakdown = null,
+    string? FormulaVersion = null,
+    decimal? AppliedAreaSqft = null,
+    string? TerrainType = null,
+    DateTimeOffset? EstimatedAt = null
+);
+
+public record CostBreakdownItemDto(
+    string ItemName,
+    string CostHead,
+    string Category,
+    decimal UnitCostLkr,
+    string Unit,
+    decimal AppliedQuantity,
+    string QuantityUnit,
+    decimal TerrainMultiplier,
+    decimal AmountLkr,
+    decimal SharePercent,
+    string? Provider = null,
+    string? SourceReference = null,
+    DateTimeOffset? PricingUpdatedAt = null
 );
 
 public record DesignHistoryDto(
@@ -122,6 +143,15 @@ public record ConstructionPhaseDto(
     DateOnly? PlannedEndDate
 );
 
+public record ConstructorDesignDto(
+    Guid DesignId,
+    int Version,
+    int FloorCount,
+    decimal TotalBuiltUpAreaSqft,
+    string FoundationType,
+    string LayoutJson
+);
+
 public record ConstructorProjectDto(
     Guid Id,
     Guid WorkflowStateId,
@@ -132,7 +162,9 @@ public record ConstructorProjectDto(
     DateTimeOffset UpdatedAt,
     int AiEstimatedTotalDurationDays,
     int PlannedTotalDurationDays,
-    List<ConstructionPhaseDto> ConstructionPhases
+    List<ConstructionPhaseDto> ConstructionPhases,
+    ConstructorDesignDto? Design = null,
+    CostSummaryDto? Cost = null
 );
 
 public record UpdatePhaseScheduleRequest(

@@ -1,9 +1,9 @@
 """Deterministic conceptual quality scores, applied only to valid candidates."""
-from app.design.adjacency import exterior_segments, graph_for, reachable, shared_wall
+from app.design.adjacency import graph_for, shared_wall
 from app.design.models import Requirements
 from app.design.plot_constraints import PlotConstraints
-from app.design.room_rules import CIRCULATION_TYPES, room_kind
 from app.design.quality_metrics import calculate_quality_metrics
+from app.design.room_rules import room_kind
 from app.schemas.design_result import DesignResult
 
 SCORE_WEIGHTS = {
@@ -23,12 +23,12 @@ def family_affinity(family: str, req: Requirements, plot: PlotConstraints) -> fl
         return 1.0 if family == 'HILLSIDE_STEPPED' else 0.5
     if plot.terrain_type == 'coastal':
         return 1.0 if family == 'COASTAL_RAISED_COMPACT' else 0.5
-    
+
     if req.floors > 1 and family == 'DUPLEX_STACKED':
         return 1.0
-        
+
     preferred = set()
-    
+
     # Topology preferences based on plot class
     pc = plot.plot_class
     if "NARROW" in pc:
@@ -39,7 +39,7 @@ def family_affinity(family: str, req: Requirements, plot: PlotConstraints) -> fl
         preferred.update(('COMPACT_RECTANGLE', 'L_SHAPE', 'SPLIT_ZONE'))
     elif pc in ("LARGE_COMPACT", "LARGE_MODERATE", "LARGE_WIDE"):
         preferred.update(('L_SHAPE', 'T_SHAPE', 'SPLIT_ZONE'))
-        
+
     if req.garden_priority or any(word in req.style.lower() for word in ('tropical', 'courtyard')):
         preferred.update(('L_SHAPE', 'T_SHAPE'))
     if req.open_plan or any(word in req.style.lower() for word in ('modern', 'contemporary')):
@@ -50,10 +50,10 @@ def family_affinity(family: str, req: Requirements, plot: PlotConstraints) -> fl
         preferred.update(('COMPACT_RECTANGLE', 'CENTRAL_CORE'))
     if req.privacy_priority:
         preferred.add('SPLIT_ZONE')
-        
+
     if not preferred:
         preferred.add('COMPACT_RECTANGLE')
-        
+
     if family in preferred:
         return 0.9 if family == 'COMPACT_RECTANGLE' else 0.8
     return 0.2
@@ -62,7 +62,7 @@ def family_affinity(family: str, req: Requirements, plot: PlotConstraints) -> fl
 def score_layout(layout: DesignResult, requirements: Requirements,
                  plot: PlotConstraints) -> tuple[float, dict]:
     rooms = layout.rooms
-    total = sum(r.width*r.length for r in rooms)
+    sum(r.width*r.length for r in rooms)
     quality = calculate_quality_metrics(layout)
     graph = graph_for(rooms, layout.connections)
     start = layout.entrances[0].room_id if layout.entrances else (rooms[0].room_id if rooms else "unknown")

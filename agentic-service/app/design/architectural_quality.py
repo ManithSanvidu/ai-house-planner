@@ -1,8 +1,9 @@
 """Deterministic residential quality gate, independent of geometry certification."""
+import itertools
 import logging
 from dataclasses import asdict, dataclass
 from heapq import heappop, heappush
-from math import inf, hypot
+from math import hypot, inf
 
 from app.design.adjacency import exterior_segments, graph_for, shared_wall
 from app.design.quality_config import QUALITY, WEIGHTS
@@ -84,8 +85,8 @@ def _topology_geometry(design):
     density = sum(room.width * room.length for room in rooms) / max(width * height, 0.01)
     useful = [room for room in rooms if room_kind(room.room_type) in PUBLIC | {'bedroom', 'home_office', 'family_lounge'}]
     corridor_only = [room for room in rooms if room_kind(room.room_type) in CIRCULATION_TYPES]
-    cross_sections_x = all(any(room.x < (a + b) / 2 < room.x + room.width for room in useful) for a, b in zip(xs, xs[1:]))
-    cross_sections_y = all(any(room.y < (a + b) / 2 < room.y + room.length for room in useful) for a, b in zip(ys, ys[1:]))
+    cross_sections_x = all(any(room.x < (a + b) / 2 < room.x + room.width for room in useful) for a, b in itertools.pairwise(xs))
+    cross_sections_y = all(any(room.y < (a + b) / 2 < room.y + room.length for room in useful) for a, b in itertools.pairwise(ys))
     meaningful = cross_sections_x and cross_sections_y
     broad_wings = all(min(xs[i] - xs[0], xs[-1] - xs[i], ys[j] - ys[0], ys[-1] - ys[j]) >= 8 for i, j in concave)
     family = design.template_family or ''
@@ -250,7 +251,7 @@ def validate_architectural_quality(design, req=None, plot=None, config=QUALITY):
         side_doors = [door.offset + door.width / 2 for door in room.doors if door.wall not in ({'north', 'south'} if room.length >= room.width else {'east', 'west'})]
         dead_end = max(0, length - max(side_doors, default=0)) if len(ends) < 2 else 0
         dependency_count = len(graph.get(room.room_id, set()))
-        halls.append(dict(width=width, length=length, aspect_ratio=round(length / max(width, 0.01), 3), dead_end_length=round(dead_end, 2), dependent_rooms=dependency_count))
+        halls.append({'width': width, 'length': length, 'aspect_ratio': round(length / max(width, 0.01), 3), 'dead_end_length': round(dead_end, 2), 'dependent_rooms': dependency_count})
         if (
             length > config.hallway_max_ft
             or length / max(width, 0.01) > config.hallway_max_aspect
@@ -332,17 +333,17 @@ def validate_architectural_quality(design, req=None, plot=None, config=QUALITY):
         return max(0, min(100, 100 - 50 * max(0, value - good) / max(limit - good, 1)))
 
     bedroom_private_distance = max((dist(bed, room) for i, bed in enumerate(beds) for room in beds[i + 1:] if bed.floor == room.floor), default=0)
-    scores = dict(
-        circulation_efficiency=proximity(ratio, config.circulation_excellent, config.circulation_reject),
-        compactness=min(100, compact * 110),
-        public_zone_quality=proximity(public_distance, 12, config.public_travel_max_ft),
-        private_zone_quality=proximity(bedroom_private_distance, 18, config.bedroom_travel_max_ft),
-        wet_core_quality=proximity(wet, 16, config.wet_core_max_ft),
-        entrance_quality=proximity(entrance_distance, 0, config.entrance_public_max_ft),
-        privacy=max(0, 100 - private_edges * 35),
-        topology_fidelity=100 if topology_valid else 0,
-        preference_match=0 if preference else 100,
-    )
+    scores = {
+        'circulation_efficiency': proximity(ratio, config.circulation_excellent, config.circulation_reject),
+        'compactness': min(100, compact * 110),
+        'public_zone_quality': proximity(public_distance, 12, config.public_travel_max_ft),
+        'private_zone_quality': proximity(bedroom_private_distance, 18, config.bedroom_travel_max_ft),
+        'wet_core_quality': proximity(wet, 16, config.wet_core_max_ft),
+        'entrance_quality': proximity(entrance_distance, 0, config.entrance_public_max_ft),
+        'privacy': max(0, 100 - private_edges * 35),
+        'topology_fidelity': 100 if topology_valid else 0,
+        'preference_match': 0 if preference else 100,
+    }
     score = round(sum(scores[key] * weight for key, weight in WEIGHTS.items()), 2)
     if score < config.minimum_score:
         failures.append('minimum_quality_score')

@@ -1,17 +1,18 @@
-import requests
 import json
-from typing import Any, Dict, Type
+from typing import Any
+
+import requests
 from pydantic import BaseModel
 
 from app.config import OLLAMA_BASE_URL, OLLAMA_MODEL
 from app.providers.base_provider import (
     ModelProvider,
-    ProviderAuthenticationError,
     ProviderMalformedResponseError,
     ProviderTimeoutError,
     ProviderUnavailableError,
     ProviderUnknownError,
 )
+
 
 class OllamaProvider(ModelProvider):
     @property
@@ -37,9 +38,9 @@ class OllamaProvider(ModelProvider):
         except requests.RequestException:
             return False
 
-    def generate_json(self, system_prompt: str, user_prompt: str, schema: Type[BaseModel]) -> Dict[str, Any]:
+    def generate_json(self, system_prompt: str, user_prompt: str, schema: type[BaseModel]) -> dict[str, Any]:
         url = f"{OLLAMA_BASE_URL.rstrip('/')}/api/chat"
-        
+
         schema_str = json.dumps(schema.model_json_schema())
         system_instruction = f"{system_prompt}\n\nYou must respond ONLY with raw JSON matching this schema exactly: {schema_str}"
 
@@ -73,7 +74,7 @@ class OllamaProvider(ModelProvider):
         data = response.json()
         if "message" not in data or "content" not in data["message"]:
             raise ProviderMalformedResponseError("Ollama response missing message content.")
-            
+
         content = data["message"]["content"]
         try:
             parsed = json.loads(content)

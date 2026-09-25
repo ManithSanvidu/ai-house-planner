@@ -1,5 +1,6 @@
+from typing import Literal
+
 from pydantic import BaseModel, Field
-from typing import List, Literal
 
 
 class TerrainResult(BaseModel):
@@ -13,7 +14,7 @@ class TerrainResult(BaseModel):
     slope_estimate: Literal["flat", "gentle", "moderate", "steep", "unknown"] = Field(
         ..., description="Estimated slope severity"
     )
-    notable_features: List[str] = Field(
+    notable_features: list[str] = Field(
         default_factory=list,
         description="Notable features observed (e.g., tree_cover_north, retaining_wall)"
     )

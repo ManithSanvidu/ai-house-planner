@@ -6,11 +6,12 @@ both validators; a failed arrangement aborts the export.
 """
 import json
 from pathlib import Path
-from app.schemas.design_result import DesignResult, RoomLayout
-from app.design.models import Requirements
-from app.design.room_counts import count_bathrooms
-from app.design.plan_adapter import finish_layout
+
 from app.design.architectural_quality import validate_architectural_quality
+from app.design.models import Requirements
+from app.design.plan_adapter import finish_layout
+from app.design.room_counts import count_bathrooms
+from app.schemas.design_result import DesignResult, RoomLayout
 from app.tools.geometry_validator import validate_geometry
 
 
@@ -94,16 +95,16 @@ def build():
         design.candidate_summary={'base_plan_code':code,'quality_metrics':quality.metrics}
         w=max(r.x+r.width for r in rooms); h=max(r.y+r.length for r in rooms)
         kinds={r.room_type for r in rooms}
-        output.append(dict(plan_code=code,name=f'{beds} bedroom {family.replace("_"," ").title()} ({floors} floor)',
-            bedrooms=beds,bathrooms=baths,floors=floors,topology_family=family,
-            minimum_land_perches=round(max((w+10)*(h+17),design.total_built_up_area_sqft/.65)/272.25,2),maximum_land_perches=1000,
-            minimum_plot_width_ft=w+10,minimum_plot_length_ft=h+17,
-            supported_plot_shapes=['COMPACT','BALANCED','NARROW','VERY_NARROW'],supported_terrains=['flat','coastal'],
-            supported_styles=['Modern Minimalist','Contemporary','Traditional Sri Lankan','Tropical Modernism'],
-            capabilities=dict(open_plan=True,master_ensuite='bathroom_attached' in kinds,separate_dining='dining' in kinds,
-                 home_office='home_office' in kinds,balcony=False,veranda=False,utility_room='utility' in kinds,parking=True,accessibility=True),
-            adaptation_support=dict(rotations=[0,90,180,270],living_scale=floors==1,bedroom_scale=floors==1,public_depth=10),
-            architectural_metrics=quality.metrics,layout_json=design.model_dump(),active=True))
+        output.append({'plan_code': code,'name': f'{beds} bedroom {family.replace("_"," ").title()} ({floors} floor)',
+            'bedrooms': beds,'bathrooms': baths,'floors': floors,'topology_family': family,
+            'minimum_land_perches': round(max((w+10)*(h+17),design.total_built_up_area_sqft/.65)/272.25,2),'maximum_land_perches': 1000,
+            'minimum_plot_width_ft': w+10,'minimum_plot_length_ft': h+17,
+            'supported_plot_shapes': ['COMPACT','BALANCED','NARROW','VERY_NARROW'],'supported_terrains': ['flat','coastal'],
+            'supported_styles': ['Modern Minimalist','Contemporary','Traditional Sri Lankan','Tropical Modernism'],
+            'capabilities': {'open_plan': True,'master_ensuite': 'bathroom_attached' in kinds,'separate_dining': 'dining' in kinds,
+                 'home_office': 'home_office' in kinds,'balcony': False,'veranda': False,'utility_room': 'utility' in kinds,'parking': True,'accessibility': True},
+            'adaptation_support': {'rotations': [0,90,180,270],'living_scale': floors==1,'bedroom_scale': floors==1,'public_depth': 10},
+            'architectural_metrics': quality.metrics,'layout_json': design.model_dump(),'active': True})
     path=Path(__file__).resolve().parents[1]/'app/design/data/base_plans.json'
     path.write_text(json.dumps(output,indent=2)+'\n')
     print('VALIDATED',len(output))

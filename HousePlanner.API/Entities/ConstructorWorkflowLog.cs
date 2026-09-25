@@ -27,7 +27,7 @@ namespace HousePlanner.API.Entities
         public virtual ConstructionPhase? ConstructionPhase { get; set; }
 
         public int DayNumber { get; set; }
-        
+
         public DateTimeOffset Date { get; set; } = DateTimeOffset.UtcNow;
 
         [Required]

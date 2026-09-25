@@ -17,7 +17,6 @@ def finish_layout(design, entrance_side='south', open_plan=False):
     design.connections = build_connections(design.rooms, open_plan)
 
     from app.design.adjacency import OPPOSITE, shared_wall
-    from app.design.models import Connection
 
     attached = {room.room_id for room in design.rooms if room.room_type == 'bathroom_attached'}
     if attached:
@@ -191,12 +190,12 @@ class PlanAdapter:
 
         if req.parking:
             width, length = (9, 18) if plot.road_side in ('north', 'south') else (18, 9)
-            design.site_features = [dict(
-                type='parking', coordinate_space='plot', road_side=plot.road_side,
-                x=plot.plot_width_ft - width if plot.road_side == 'east' else 0,
-                y=plot.plot_length_ft - length if plot.road_side == 'north' else 0,
-                width=width, length=length,
-            )]
+            design.site_features = [{
+                'type': 'parking', 'coordinate_space': 'plot', 'road_side': plot.road_side,
+                'x': plot.plot_width_ft - width if plot.road_side == 'east' else 0,
+                'y': plot.plot_length_ft - length if plot.road_side == 'north' else 0,
+                'width': width, 'length': length,
+            }]
         return design
 
     @staticmethod

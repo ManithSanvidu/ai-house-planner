@@ -1,12 +1,10 @@
-import os
-import json
-import requests
 from datetime import datetime, timezone
-from typing import Dict, Any
-from google import genai
-from google.genai import types
-from app.schemas.workflow_state import WorkflowState, ExecutionLogEntry
-from app.config import ASPNET_API_URL, INTERNAL_API_KEY, GOOGLE_API_KEY
+
+import requests
+
+from app.config import ASPNET_API_URL, INTERNAL_API_KEY
+from app.schemas.workflow_state import ExecutionLogEntry, WorkflowState
+
 
 def get_construction_phases()->list:
     """Return the standard construction phases and their general relationships."""
@@ -63,8 +61,7 @@ def calculate_schedule(phases_list:list)->dict:
         p["start_day"]=start_day
         p["end_day"]=end_day
 
-        if end_day>total_duration:
-            total_duration=end_day
+        total_duration = max(total_duration, end_day)
 
     return {"phases":phases_list,"total_duration":total_duration}
 
@@ -78,7 +75,7 @@ def construction_planning_node(state:WorkflowState)->WorkflowState:
         return state
     print(f"[Construction Planning Agent] Planning for workflow {state.workflow_id}...")
 
-    # 1.Analyze House 
+    # 1.Analyze House
     design=state.design_result
     floor_count=design.get("floor_count",1)
     total_area=design.get("total_built_up_area_sqft",1000)
@@ -92,14 +89,14 @@ def construction_planning_node(state:WorkflowState)->WorkflowState:
         p["description"] = f"Estimated based on {floor_count} floors and {total_area} sqft."
         p["status"] = "planned"
 
-    # 3.Build Schedule 
+    # 3.Build Schedule
     schedule_result=calculate_schedule(phases)
     estimate_duration_days=schedule_result["total_duration"]
 
     # 4.Check user constraints
     # Target duration might be passed in preferences if implemented
-    target_duration=state.input_data.preferences.get("target_duration_days") if state.input_data else None 
-    status="ON_SCHEDULE" 
+    target_duration=state.input_data.preferences.get("target_duration_days") if state.input_data else None
+    status="ON_SCHEDULE"
     opt_notes=[]
 
     # 5.Optimize/Replan if needed
@@ -107,7 +104,7 @@ def construction_planning_node(state:WorkflowState)->WorkflowState:
         status="DELAYED"
         opt_notes.append(f"Target is {target_duration}  days but estimate is {estimate_duration_days} days.")
 
-    #Simple optimization: overlap some parallel work by reducing dependencies if possible 
+    #Simple optimization: overlap some parallel work by reducing dependencies if possible
     for p in schedule_result["phases"]:
         if p["name"] in ["Electrical","Plumbing","Painting"]:
             p["duration_days"]=max(5,int(p["duration_days"]*0.8))  #20% faster
@@ -119,7 +116,7 @@ def construction_planning_node(state:WorkflowState)->WorkflowState:
     if target_duration and estimate_duration_days<=target_duration:
         status="ON_SCHEDULE"
 
-    # 6.Structured Final Output 
+    # 6.Structured Final Output
     critical_path=[p["name"] for p in schedule_result["phases"] if p["depends_on"]]
     if "Site Preparation" not in critical_path:
         critical_path.insert(0,"Site Preparation")
@@ -157,7 +154,7 @@ def construction_planning_node(state:WorkflowState)->WorkflowState:
             api_result="success"
         else:
             api_result=f"api_failed:{response.status_code}"
-    except Exception as e:
+    except requests.RequestException as e:
         print(f"[Construction Planning Agent] Could not reach ASP.NET:{e}")
 
     duration=int((datetime.now(timezone.utc)-start_time).total_seconds()*1000)

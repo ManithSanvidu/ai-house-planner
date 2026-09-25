@@ -1,7 +1,5 @@
 from copy import deepcopy
 
-import pytest
-
 from app.design.architectural_quality import validate_architectural_quality
 from app.design.base_plan_library import load_base_plan_catalog
 from app.design.models import Requirements

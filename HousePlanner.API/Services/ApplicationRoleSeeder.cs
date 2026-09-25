@@ -11,9 +11,32 @@ public sealed class ApplicationRoleSeeder(ApplicationDbContext db)
 
     public async Task SeedAsync(CancellationToken cancellationToken = default)
     {
-        var existing = await db.Roles.Select(x => x.Name).ToListAsync(cancellationToken);
-        var missing = RequiredRoles.Where(role => !existing.Contains(role, StringComparer.OrdinalIgnoreCase));
-        foreach (var role in missing) db.Roles.Add(new Role { Name = role });
+        var existingNames = await db.Roles
+            .AsNoTracking()
+            .Select(role => role.Name)
+            .ToListAsync(cancellationToken);
+        var missingRoles = RequiredRoles
+            .Where(required => !existingNames.Contains(required, StringComparer.OrdinalIgnoreCase))
+            .ToArray();
+
+        if (missingRoles.Length == 0)
+            return;
+
+        // InitialCreate inserts roles with explicit IDs, so PostgreSQL's identity
+        // sequence may still point at an ID that is already in use.
+        if (db.Database.IsNpgsql())
+        {
+            await db.Database.ExecuteSqlRawAsync(
+                """
+                SELECT setval(
+                    pg_get_serial_sequence('"Roles"', 'Id'),
+                    COALESCE((SELECT MAX("Id") FROM "Roles"), 1),
+                    EXISTS (SELECT 1 FROM "Roles"));
+                """,
+                cancellationToken);
+        }
+
+        db.Roles.AddRange(missingRoles.Select(name => new Role { Name = name }));
         await db.SaveChangesAsync(cancellationToken);
     }
 }

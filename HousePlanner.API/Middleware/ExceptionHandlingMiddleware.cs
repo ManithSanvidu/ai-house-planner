@@ -30,7 +30,7 @@ namespace HousePlanner.API.Middleware
         private static Task HandleExceptionAsync(HttpContext context, Exception exception)
         {
             context.Response.ContentType = "application/json";
-            
+
             var statusCode = HttpStatusCode.InternalServerError;
             var message = "An internal server error occurred.";
 
@@ -52,7 +52,7 @@ namespace HousePlanner.API.Middleware
                     message = exception.Message;
                     break;
                 default:
-                    message = "An internal server error occurred."; 
+                    message = "An internal server error occurred.";
                     break;
             }
 

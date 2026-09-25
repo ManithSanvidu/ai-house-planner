@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 using Microsoft.EntityFrameworkCore;
 using HousePlanner.API.Data;
 using HousePlanner.API.DTOs;
@@ -192,7 +192,8 @@ namespace HousePlanner.API.Services
                     session.RevisionNotes = request.RevisionNotes;
                     session.UpdatedAt = DateTimeOffset.UtcNow;
 
-                    if (dbWorkflowState != null) {
+                    if (dbWorkflowState != null)
+                    {
                         dbWorkflowState.ApprovalStatus = session.ApprovalStatus;
                         dbWorkflowState.Status = session.Status;
                         dbWorkflowState.UpdatedAt = session.UpdatedAt;
@@ -220,7 +221,8 @@ namespace HousePlanner.API.Services
                     session.RetryCount++;
                     session.UpdatedAt = DateTimeOffset.UtcNow;
 
-                    if (dbWorkflowState != null) {
+                    if (dbWorkflowState != null)
+                    {
                         dbWorkflowState.ApprovalStatus = session.ApprovalStatus;
                         dbWorkflowState.Status = session.Status;
                         dbWorkflowState.UpdatedAt = session.UpdatedAt;

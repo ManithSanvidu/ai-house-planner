@@ -33,11 +33,11 @@ namespace HousePlanner.API.Controllers
             var userId = userCtx.Id;
             if (userCtx.Role != "Customer") return StatusCode(403);
 
-            var workflow = await _context.WorkflowStates.Include(w=>w.HouseDesigns).FirstOrDefaultAsync(w =>
+            var workflow = await _context.WorkflowStates.Include(w => w.HouseDesigns).FirstOrDefaultAsync(w =>
                 w.Id == dto.WorkflowStateId && w.LandSubmission.ClientId == userId.Value);
             if (workflow == null) return NotFound(new { message = "Workflow/Design not found." });
             var selected = workflow.PreferredHouseDesignId is Guid selectedId
-                ? workflow.HouseDesigns.FirstOrDefault(d=>d.Id==selectedId && !d.IsArchived) : null;
+                ? workflow.HouseDesigns.FirstOrDefault(d => d.Id == selectedId && !d.IsArchived) : null;
             if (selected is null) return BadRequest(new { message = "Select a design before submitting it for architect review." });
 
             var existingRequest = await _context.ValidationRequests
@@ -71,7 +71,7 @@ namespace HousePlanner.API.Controllers
                 .Include(v => v.Client)
                 .Include(v => v.WorkflowState)
                     .ThenInclude(w => w.LandSubmission)
-                .Include(v=>v.HouseDesign).ThenInclude(d=>d.Rooms)
+                .Include(v => v.HouseDesign).ThenInclude(d => d!.Rooms)
                 .OrderByDescending(v => v.CreatedAt);
 
             if (role == "Architect")
@@ -105,8 +105,9 @@ namespace HousePlanner.API.Controllers
                 .Include(v => v.WorkflowState)
                     .ThenInclude(w => w.LandSubmission)
                 .Include(v => v.WorkflowState)
-                    .ThenInclude(w => w.HouseDesigns)
-                .Include(v=>v.HouseDesign).ThenInclude(d=>d.Rooms)
+                    .ThenInclude(w => w.HouseDesigns).ThenInclude(d => d.CostEstimates)
+                .Include(v => v.HouseDesign).ThenInclude(d => d!.Rooms)
+                .Include(v => v.HouseDesign).ThenInclude(d => d!.CostEstimates)
                 .FirstOrDefaultAsync(v => v.Id == id);
 
             if (request == null) return NotFound();
@@ -137,11 +138,16 @@ namespace HousePlanner.API.Controllers
             if (role != "Architect") return StatusCode(403);
 
             var userId = userCtx.Id;
-            var request = await _context.ValidationRequests.Include(v => v.WorkflowState).FirstOrDefaultAsync(v => v.Id == id);
+            var request = await _context.ValidationRequests
+                .Include(v => v.WorkflowState)
+                .Include(v => v.HouseDesign).ThenInclude(d => d!.CostEstimates)
+                .FirstOrDefaultAsync(v => v.Id == id);
             if (request == null) return NotFound();
 
             if (request.Status is not ("Pending" or "Under Review")) return Conflict(new { message = "This request has already been finalized." });
             if (request.ArchitectId.HasValue && request.ArchitectId != userId) return StatusCode(403);
+            if (request.HouseDesign is null) return BadRequest(new { message = "A selected design is required before approval." });
+            if (!request.HouseDesign.CostEstimates.Any()) return BadRequest(new { message = "A cost estimate is required before approval." });
 
             request.Status = "Approved";
             request.ArchitectReview = dto.Review;
@@ -158,8 +164,10 @@ namespace HousePlanner.API.Controllers
             {
                 project = new Project
                 {
-                    Id = Guid.NewGuid(), WorkflowStateId = request.WorkflowStateId,
-                    HouseDesignId = request.HouseDesignId, Status = "awaiting_constructor",
+                    Id = Guid.NewGuid(),
+                    WorkflowStateId = request.WorkflowStateId,
+                    HouseDesignId = request.HouseDesignId,
+                    Status = "awaiting_constructor",
                     ConstructionPhases = new List<ConstructionPhase>
                     {
                         new() { Id = Guid.NewGuid(), PhaseName = "Site Preparation", Status = "pending", SequenceOrder = 1 },
@@ -177,7 +185,7 @@ namespace HousePlanner.API.Controllers
                 project.Status = project.ContractorId.HasValue ? project.Status : "awaiting_constructor";
                 project.UpdatedAt = DateTimeOffset.UtcNow;
             }
-            
+
             await _context.SaveChangesAsync();
             return Ok(new { message = "Request approved." });
         }
@@ -205,7 +213,7 @@ namespace HousePlanner.API.Controllers
             request.WorkflowState.Status = "revision_requested";
             request.WorkflowState.ApprovalStatus = "revision_requested";
             request.WorkflowState.UpdatedAt = DateTimeOffset.UtcNow;
-            
+
             await _context.SaveChangesAsync();
             return Ok(new { message = "Request rejected." });
         }
@@ -223,15 +231,20 @@ namespace HousePlanner.API.Controllers
                 bedrooms = req.WorkflowState?.LandSubmission?.PreferredBedrooms,
                 floors = req.WorkflowState?.LandSubmission?.PreferredFloors,
                 style = req.WorkflowState?.LandSubmission?.StylePreference
-                ,designVersion = req.HouseDesign?.Version
-                ,bathrooms = req.HouseDesign?.Rooms.Count(r=>r.RoomType.Contains("bathroom"))
-                ,area = req.HouseDesign?.TotalBuiltUpAreaSqft
+                ,
+                designVersion = req.HouseDesign?.Version
+                ,
+                bathrooms = req.HouseDesign?.Rooms.Count(r => r.RoomType.Contains("bathroom"))
+                ,
+                area = req.HouseDesign?.TotalBuiltUpAreaSqft
             };
         }
 
         private object MapToDetailedDto(ValidationRequest req)
         {
-            var design = req.HouseDesign ?? req.WorkflowState?.HouseDesigns?.OrderByDescending(d=>d.Version).FirstOrDefault();
+            var design = req.HouseDesign ?? req.WorkflowState?.HouseDesigns?.OrderByDescending(d => d.Version).FirstOrDefault();
+            var cost = design?.CostEstimates.OrderByDescending(c => c.CreatedAt).FirstOrDefault();
+            var canApprove = design is not null && cost is not null && req.Status is "Pending" or "Under Review";
             return new
             {
                 id = req.Id,
@@ -247,6 +260,32 @@ namespace HousePlanner.API.Controllers
                 terrainType = req.WorkflowState?.TerrainType,
                 architectReview = req.ArchitectReview,
                 decisionAt = req.DecisionAt,
+                approvalEligibility = new
+                {
+                    canApprove,
+                    reason = design is null
+                        ? "A selected design is required before approval."
+                        : cost is null
+                            ? "A cost estimate is required before approval."
+                            : req.Status is not ("Pending" or "Under Review")
+                                ? "This request has already been finalized."
+                                : null,
+                    budgetStatus = cost?.BudgetDeltaPercent is decimal budgetPercent
+                        ? budgetPercent < 100m ? "within_budget" : budgetPercent == 100m ? "at_budget" : "over_budget"
+                        : "unavailable"
+                },
+                cost = cost == null ? null : new
+                {
+                    materialCostLkr = cost.MaterialCostLkr,
+                    labourCostLkr = cost.LabourCostLkr,
+                    totalCostLkr = cost.TotalCostLkr,
+                    budgetDeltaPercent = cost.BudgetDeltaPercent,
+                    breakdown = CostBreakdownBuilder.Build(cost, design?.TerrainType),
+                    formulaVersion = cost.FormulaVersion,
+                    appliedAreaSqft = cost.AppliedAreaSqft,
+                    terrainType = cost.TerrainType,
+                    estimatedAt = cost.CreatedAt
+                },
                 design = design != null ? new
                 {
                     designId = design.Id,
@@ -254,8 +293,8 @@ namespace HousePlanner.API.Controllers
                     floorCount = design.FloorCount,
                     totalBuiltUpAreaSqft = design.TotalBuiltUpAreaSqft,
                     layoutJson = design.LayoutJson,
-                    
-                    
+
+
                 } : null
             };
         }

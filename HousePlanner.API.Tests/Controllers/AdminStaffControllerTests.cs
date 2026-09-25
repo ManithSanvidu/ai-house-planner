@@ -36,7 +36,7 @@ public sealed class AdminStaffControllerTests
     {
         var staff = new Mock<IStaffAccountService>();
         var result = await Controller(role, staff).Create(new CreateStaffRequestDto
-            { FullName = "X", Email = "x@example.com", Password = "secret1", Role = "Architect" }, default);
+        { FullName = "X", Email = "x@example.com", Password = "secret1", Role = "Architect" }, default);
         Assert.IsType(expected, result);
         staff.Verify(x => x.CreateAsync(It.IsAny<CreateStaffRequestDto>(), It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -50,7 +50,7 @@ public sealed class AdminStaffControllerTests
         staff.Setup(x => x.CreateAsync(It.IsAny<CreateStaffRequestDto>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new StaffAccountDto(Guid.NewGuid(), "Staff", "staff@example.com", role, "Active"));
         var result = await Controller("Admin", staff).Create(new CreateStaffRequestDto
-            { FullName = "Staff", Email = "staff@example.com", Password = "secret1", Role = role }, default);
+        { FullName = "Staff", Email = "staff@example.com", Password = "secret1", Role = role }, default);
         Assert.IsType<ObjectResult>(result);
         Assert.Equal(StatusCodes.Status201Created, ((ObjectResult)result).StatusCode);
     }

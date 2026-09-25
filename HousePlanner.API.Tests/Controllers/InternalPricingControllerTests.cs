@@ -32,27 +32,27 @@ namespace HousePlanner.API.Tests.Controllers
                 {
                     Id = 1,
                     ItemName = "Concrete Foundation",
-                    Category = "Foundation",
+                    Category = "material",
                     UnitCostLkr = 5000.00m,
-                    Unit = "sqft",
+                    Unit = "per_sqft",
                     TerrainMultiplier = new TerrainMultiplierData { Flat = 1.0m, Hillside = 1.25m, Coastal = 1.15m }
                 },
                 new()
                 {
                     Id = 2,
                     ItemName = "Brick Wall",
-                    Category = "Walls",
+                    Category = "material",
                     UnitCostLkr = 3500.00m,
-                    Unit = "sqft",
+                    Unit = "per_sqft",
                     TerrainMultiplier = new TerrainMultiplierData { Flat = 1.0m, Hillside = 1.1m, Coastal = 1.2m }
                 }
             };
 
-            _pricingServiceMock.Setup(s => s.GetAllPricingAsync())
+            _pricingServiceMock.Setup(s => s.GetActivePricingAsync("Sri Lanka", "Standard"))
                 .ReturnsAsync(mockPricing);
 
             // Act
-            var actionResult = await _controller.GetPricing();
+            var actionResult = await _controller.GetPricing("Sri Lanka", "Standard");
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(actionResult.Result);
@@ -64,7 +64,7 @@ namespace HousePlanner.API.Tests.Controllers
         public async Task GetPricing_ReturnsOkResult_WhenCollectionIsEmpty()
         {
             // Arrange
-            _pricingServiceMock.Setup(s => s.GetAllPricingAsync())
+            _pricingServiceMock.Setup(s => s.GetActivePricingAsync(null, null))
                 .ReturnsAsync(new List<PricingDto>());
 
             // Act

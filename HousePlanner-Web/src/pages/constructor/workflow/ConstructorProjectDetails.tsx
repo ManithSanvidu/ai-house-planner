@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { constructorWorkflowService, dailyConstructionLogService } from '../../../services/constructorWorkflowService';
 import type { ConstructorWorkflowProject, DailyConstructionLogDto, ConstructionPhase } from '../../../services/constructorWorkflowService';
@@ -11,12 +11,12 @@ import type { CalendarEventDto } from '../../../services/constructorWorkflowServ
 
 export const ConstructorProjectDetails: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
-  
+
   const [project, setProject] = useState<ConstructorWorkflowProject | null>(null);
   const [logs, setLogs] = useState<DailyConstructionLogDto[]>([]);
   const [calendarEvents, setCalendarEvents] = useState<CalendarEventDto[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   const [showForm, setShowForm] = useState(false);
   const [editingLog, setEditingLog] = useState<DailyConstructionLogDto | undefined>(undefined);
   const [activeTab, setActiveTab] = useState<'list' | 'calendar'>('list');
@@ -27,7 +27,7 @@ export const ConstructorProjectDetails: React.FC = () => {
   const [editPhaseDuration, setEditPhaseDuration] = useState<number>(0);
   const [savingPhase, setSavingPhase] = useState(false);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!projectId) return;
     try {
       const p = await constructorWorkflowService.getProjectDetails(projectId);
@@ -42,11 +42,11 @@ export const ConstructorProjectDetails: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [projectId]);
 
   useEffect(() => {
     loadData();
-  }, [projectId]);
+  }, [loadData]);
 
   const handleDelete = async (logId: string) => {
     if (!projectId) return;
@@ -126,8 +126,8 @@ export const ConstructorProjectDetails: React.FC = () => {
           <h2 className="text-lg font-bold text-gray-900 dark:text-white">Construction Phases Schedule</h2>
           {project && (
             <div className="text-sm text-gray-500">
-              Total Duration: {project.plannedTotalDurationDays} days 
-              {project.aiEstimatedTotalDurationDays !== project.plannedTotalDurationDays && 
+              Total Duration: {project.plannedTotalDurationDays} days
+              {project.aiEstimatedTotalDurationDays !== project.plannedTotalDurationDays &&
                 ` (AI est: ${project.aiEstimatedTotalDurationDays} days)`}
             </div>
           )}
@@ -142,19 +142,19 @@ export const ConstructorProjectDetails: React.FC = () => {
                    <span>End: {phase.plannedEndDate ? new Date(phase.plannedEndDate).toLocaleDateString() : 'N/A'}</span>
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-4">
                 {editingPhaseId === phase.id ? (
                   <div className="flex items-center gap-2">
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       min="1"
                       className="w-20 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                       value={editPhaseDuration}
                       onChange={(e) => setEditPhaseDuration(parseInt(e.target.value) || 0)}
                       disabled={savingPhase}
                     />
-                    <button 
+                    <button
                       onClick={async () => {
                         if (editPhaseDuration < 1) return toast.error('Duration must be at least 1 day');
                         setSavingPhase(true);
@@ -163,7 +163,7 @@ export const ConstructorProjectDetails: React.FC = () => {
                           toast.success('Phase schedule updated');
                           setEditingPhaseId(null);
                           loadData();
-                        } catch (e) {
+                        } catch {
                           toast.error('Failed to update phase schedule');
                         } finally {
                           setSavingPhase(false);
@@ -174,7 +174,7 @@ export const ConstructorProjectDetails: React.FC = () => {
                     >
                       Save
                     </button>
-                    <button 
+                    <button
                       onClick={() => setEditingPhaseId(null)}
                       className="text-sm bg-gray-200 text-gray-700 px-3 py-1 rounded hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
                       disabled={savingPhase}
@@ -187,7 +187,7 @@ export const ConstructorProjectDetails: React.FC = () => {
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium">{phase.plannedDurationDays} days</span>
                       {!isCompleted && (
-                        <button 
+                        <button
                           onClick={() => {
                             setEditingPhaseId(phase.id);
                             setEditPhaseDuration(phase.plannedDurationDays);
@@ -222,15 +222,15 @@ export const ConstructorProjectDetails: React.FC = () => {
             <h2 className="text-lg font-bold text-gray-900 dark:text-white">Daily Workflow</h2>
             {isCompleted && <p className="text-sm text-amber-600 mt-1">Project completed. Logbook is read-only.</p>}
           </div>
-          
+
           <div className="flex items-center gap-4 w-full sm:w-auto">
             {!showForm && (
               <div className="flex rounded-lg shadow-sm">
                 <button
                   onClick={() => setActiveTab('list')}
                   className={`px-4 py-2 text-sm font-medium border border-gray-200 rounded-l-lg dark:border-gray-700 ${
-                    activeTab === 'list' 
-                      ? 'bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-white' 
+                    activeTab === 'list'
+                      ? 'bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-white'
                       : 'bg-white text-gray-500 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'
                   }`}
                 >
@@ -239,8 +239,8 @@ export const ConstructorProjectDetails: React.FC = () => {
                 <button
                   onClick={() => setActiveTab('calendar')}
                   className={`px-4 py-2 text-sm font-medium border border-l-0 border-gray-200 rounded-r-lg dark:border-gray-700 ${
-                    activeTab === 'calendar' 
-                      ? 'bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-white' 
+                    activeTab === 'calendar'
+                      ? 'bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-white'
                       : 'bg-white text-gray-500 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'
                   }`}
                 >
@@ -248,7 +248,7 @@ export const ConstructorProjectDetails: React.FC = () => {
                 </button>
               </div>
             )}
-            
+
             {!isCompleted && !showForm && (
               <button
                 onClick={() => { setEditingLog(undefined); setShowForm(true); setActiveTab('list'); }}
@@ -259,7 +259,7 @@ export const ConstructorProjectDetails: React.FC = () => {
             )}
           </div>
         </div>
-        
+
         <div className="p-6">
           {showForm ? (
             <DailyLogbookForm
@@ -308,7 +308,7 @@ export const ConstructorProjectDetails: React.FC = () => {
                         </div>
                       )}
                     </div>
-                    
+
                     <div className="space-y-3 text-sm">
                       <div>
                         <span className="font-semibold text-gray-900 dark:text-gray-200">Work Completed: </span>

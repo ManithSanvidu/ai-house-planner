@@ -25,14 +25,22 @@ public sealed class StaffAccountServiceTests
 
     private static User AddStaff(ApplicationDbContext db, string role, string email = "staff@example.com")
     {
-        var user = new User { Id = Guid.NewGuid(), Email = email, SupabaseUid = "staff-uid", PasswordHash = null,
-            FullName = $"Original {role}", RoleId = role == "Architect" ? 10 : 11,
-            CreatedAt = DateTimeOffset.UtcNow, UpdatedAt = DateTimeOffset.UtcNow };
+        var user = new User
+        {
+            Id = Guid.NewGuid(),
+            Email = email,
+            SupabaseUid = "staff-uid",
+            PasswordHash = null,
+            FullName = $"Original {role}",
+            RoleId = role == "Architect" ? 10 : 11,
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow
+        };
         db.Users.Add(user); db.SaveChanges(); return user;
     }
 
     private static UpdateStaffRequestDto Update(string role, string email = "updated@example.com") => new()
-        { FullName = "Updated Staff", Email = email, Role = role };
+    { FullName = "Updated Staff", Email = email, Role = role };
 
     private static CreateStaffRequestDto Request(string role) => new()
     { FullName = "Staff User", Email = $"{role.ToLowerInvariant()}@example.com", Password = "secret123", Role = role };
@@ -164,8 +172,16 @@ public sealed class StaffAccountServiceTests
     public async Task CreateStaff_DuplicateEmail_DoesNotCreatePartialUser()
     {
         await using var db = Database();
-        db.Users.Add(new User { Id = Guid.NewGuid(), Email = "architect@example.com", SupabaseUid = "existing",
-            FullName = "Existing", RoleId = 10, CreatedAt = DateTimeOffset.UtcNow, UpdatedAt = DateTimeOffset.UtcNow });
+        db.Users.Add(new User
+        {
+            Id = Guid.NewGuid(),
+            Email = "architect@example.com",
+            SupabaseUid = "existing",
+            FullName = "Existing",
+            RoleId = 10,
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow
+        });
         await db.SaveChangesAsync();
         var supabase = new Mock<ISupabaseStaffAccountService>();
 
@@ -220,8 +236,16 @@ public sealed class StaffAccountServiceTests
     public async Task DuplicateDatabaseEmail_IsRejectedBeforeSupabaseCreation()
     {
         await using var db = Database();
-        db.Users.Add(new User { Id = Guid.NewGuid(), Email = "architect@example.com", SupabaseUid = "existing",
-            FullName = "Existing", RoleId = 10, CreatedAt = DateTimeOffset.UtcNow, UpdatedAt = DateTimeOffset.UtcNow });
+        db.Users.Add(new User
+        {
+            Id = Guid.NewGuid(),
+            Email = "architect@example.com",
+            SupabaseUid = "existing",
+            FullName = "Existing",
+            RoleId = 10,
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow
+        });
         await db.SaveChangesAsync();
         var supabase = new Mock<ISupabaseStaffAccountService>();
 
@@ -236,8 +260,16 @@ public sealed class StaffAccountServiceTests
     public async Task ProfileConflict_RollsBackOnlyNewSupabaseIdentity()
     {
         await using var db = Database();
-        db.Users.Add(new User { Id = Guid.NewGuid(), Email = "different@example.com", SupabaseUid = "duplicate-uid",
-            FullName = "Existing", RoleId = 10, CreatedAt = DateTimeOffset.UtcNow, UpdatedAt = DateTimeOffset.UtcNow });
+        db.Users.Add(new User
+        {
+            Id = Guid.NewGuid(),
+            Email = "different@example.com",
+            SupabaseUid = "duplicate-uid",
+            FullName = "Existing",
+            RoleId = 10,
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow
+        });
         await db.SaveChangesAsync();
         var supabase = new Mock<ISupabaseStaffAccountService>();
         supabase.Setup(x => x.CreateAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
@@ -254,8 +286,16 @@ public sealed class StaffAccountServiceTests
     public async Task ExistingStaffLoginSync_DoesNotOverwriteRole()
     {
         await using var db = Database();
-        db.Users.Add(new User { Id = Guid.NewGuid(), Email = "architect@example.com", SupabaseUid = "staff-uid",
-            FullName = "Architect", RoleId = 10, CreatedAt = DateTimeOffset.UtcNow, UpdatedAt = DateTimeOffset.UtcNow });
+        db.Users.Add(new User
+        {
+            Id = Guid.NewGuid(),
+            Email = "architect@example.com",
+            SupabaseUid = "staff-uid",
+            FullName = "Architect",
+            RoleId = 10,
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow
+        });
         await db.SaveChangesAsync();
         var user = await new SupabaseUserSyncService(db).SynchronizeAsync(
             new UserInfoResponseDto { Uid = "staff-uid", Email = "architect@example.com", Role = "Customer" });
@@ -306,8 +346,16 @@ public sealed class StaffAccountServiceTests
     public async Task UpdateStaff_RejectsDuplicateDatabaseEmailBeforeSupabase()
     {
         await using var db = Database(); var staff = AddStaff(db, "Architect");
-        db.Users.Add(new User { Id = Guid.NewGuid(), Email = "taken@example.com", SupabaseUid = "other-uid",
-            FullName = "Other", RoleId = 11, CreatedAt = DateTimeOffset.UtcNow, UpdatedAt = DateTimeOffset.UtcNow });
+        db.Users.Add(new User
+        {
+            Id = Guid.NewGuid(),
+            Email = "taken@example.com",
+            SupabaseUid = "other-uid",
+            FullName = "Other",
+            RoleId = 11,
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow
+        });
         await db.SaveChangesAsync();
         var supabase = new Mock<ISupabaseStaffAccountService>();
         var error = await Assert.ThrowsAsync<StaffAccountException>(() =>
@@ -406,7 +454,7 @@ public sealed class StaffAccountServiceTests
         // The invariant: public.Users.SupabaseUid == auth.users.id (from response)
         Assert.Equal(authUid, saved.SupabaseUid);
         // Sanity: application PK is different — it's a Guid but not the auth uid
-        Assert.NotEqual(saved.Id.ToString(), authUid);
+        Assert.NotEqual(authUid, saved.Id.ToString());
     }
 
     /// <summary>
@@ -466,10 +514,13 @@ public sealed class StaffAccountServiceTests
         // Seed an orphaned public.Users row: email present, no SupabaseUid
         db.Users.Add(new User
         {
-            Id = Guid.NewGuid(), Email = "architect@example.com",
+            Id = Guid.NewGuid(),
+            Email = "architect@example.com",
             SupabaseUid = null!,  // deliberately orphaned
-            FullName = "Orphan", RoleId = 10,
-            CreatedAt = DateTimeOffset.UtcNow, UpdatedAt = DateTimeOffset.UtcNow
+            FullName = "Orphan",
+            RoleId = 10,
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow
         });
         await db.SaveChangesAsync();
 

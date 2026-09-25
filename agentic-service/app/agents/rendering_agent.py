@@ -5,7 +5,7 @@ try:
     import matplotlib
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
-    import matplotlib.patches as patches
+    from matplotlib import patches
     HAS_MATPLOTLIB = True
 except ImportError:
     HAS_MATPLOTLIB = False

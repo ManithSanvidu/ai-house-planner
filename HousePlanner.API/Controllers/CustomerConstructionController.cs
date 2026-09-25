@@ -1,6 +1,7 @@
 using System.Text.Json;
 using HousePlanner.API.Data;
 using HousePlanner.API.Entities;
+using HousePlanner.API.DTOs;
 using HousePlanner.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -36,7 +37,9 @@ public class CustomerConstructionController : ControllerBase
     private async Task<Guid?> CustomerId()
     {
         var user = await _currentUser.GetAsync(HttpContext);
-        return string.Equals(user?.Role, "Customer", StringComparison.OrdinalIgnoreCase) ? user.Id : null;
+        if (user is null || !string.Equals(user.Role, "Customer", StringComparison.OrdinalIgnoreCase))
+            return null;
+        return user.Id;
     }
 
     [HttpGet("approved-designs")]
@@ -51,23 +54,31 @@ public class CustomerConstructionController : ControllerBase
 
         var items = await _db.ValidationRequests.AsNoTracking()
             .Where(v => customerWorkflowIds.Contains(v.WorkflowStateId) && v.Status == "Approved")
-            .Include(v => v.HouseDesign).ThenInclude(d => d!.WorkflowState)
-            .Include(v => v.WorkflowState).ThenInclude(w => w.HouseDesigns)
+            .Include(v => v.HouseDesign).ThenInclude(d => d!.CostEstimates)
+            .Include(v => v.WorkflowState).ThenInclude(w => w.HouseDesigns).ThenInclude(d => d.CostEstimates)
             .OrderByDescending(v => v.DecisionAt)
             .ToListAsync();
-            
-        var distinctDesigns = items.Select(v => {
+
+        var distinctDesigns = items.Select(v =>
+        {
             var design = v.HouseDesign ?? v.WorkflowState?.HouseDesigns?.FirstOrDefault(d => d.Id == v.WorkflowState.PreferredHouseDesignId && !d.IsArchived);
             if (design == null || design.IsArchived) return null;
-            return new {
-                designId = design.Id, workflowId = v.WorkflowStateId,
-                version = design.Version, floorCount = design.FloorCount,
-                area = design.TotalBuiltUpAreaSqft, layoutJson = design.LayoutJson,
+            var cost = design.CostEstimates.OrderByDescending(c => c.CreatedAt).FirstOrDefault();
+            return new
+            {
+                designId = design.Id,
+                workflowId = v.WorkflowStateId,
+                version = design.Version,
+                floorCount = design.FloorCount,
+                area = design.TotalBuiltUpAreaSqft,
+                layoutJson = design.LayoutJson,
                 approvedAt = v.DecisionAt,
-                title = DesignTitle(design.LayoutJson, design.Version), bedrooms = CountRooms(design.LayoutJson, "bedroom"),
+                cost = ToCostSummary(cost),
+                title = DesignTitle(design.LayoutJson, design.Version),
+                bedrooms = CountRooms(design.LayoutJson, "bedroom"),
                 bathrooms = CountRooms(design.LayoutJson, "bathroom")
             };
-        }).Where(x => x != null).DistinctBy(x => x.designId).ToList();
+        }).Where(x => x is not null).Select(x => x!).DistinctBy(x => x.designId).ToList();
 
         return Ok(distinctDesigns);
     }
@@ -114,8 +125,13 @@ public class CustomerConstructionController : ControllerBase
 
         var request = new ConstructorProjectRequest
         {
-            Id = Guid.NewGuid(), Project = project, ProjectId = project.Id, CustomerId = customerId.Value,
-            ConstructorId = dto.ConstructorId, HouseDesignId = dto.HouseDesignId, Status = "Pending"
+            Id = Guid.NewGuid(),
+            Project = project,
+            ProjectId = project.Id,
+            CustomerId = customerId.Value,
+            ConstructorId = dto.ConstructorId,
+            HouseDesignId = dto.HouseDesignId,
+            Status = "Pending"
         };
         _db.ConstructorProjectRequests.Add(request);
         try { await _db.SaveChangesAsync(cancellationToken); }
@@ -141,18 +157,26 @@ public class CustomerConstructionController : ControllerBase
 
         var requests = await _db.ConstructorProjectRequests.AsNoTracking()
             .Where(r => r.CustomerId == customerId).Include(r => r.Constructor).Include(r => r.HouseDesign)
-            .OrderByDescending(r => r.CreatedAt).Select(r => new {
-                r.Id, r.ProjectId, r.HouseDesignId, constructorName = r.Constructor != null ? r.Constructor.FullName : "Unknown",
-                r.Status, r.DeclineReason, requestedAt = r.CreatedAt, r.RespondedAt,
+            .OrderByDescending(r => r.CreatedAt).Select(r => new
+            {
+                r.Id,
+                r.ProjectId,
+                r.HouseDesignId,
+                constructorName = r.Constructor != null ? r.Constructor.FullName : "Unknown",
+                r.Status,
+                r.DeclineReason,
+                requestedAt = r.CreatedAt,
+                r.RespondedAt,
                 designVersion = r.HouseDesign != null ? (int?)r.HouseDesign.Version : null
             }).ToListAsync();
-            
+
         var projects = await _db.Projects.AsNoTracking()
             .Where(p => customerWorkflowIds.Contains(p.WorkflowStateId) && p.ContractorId != null && p.Status != "Cancelled")
-            .Include(p => p.Contractor).Include(p => p.HouseDesign).Include(p => p.ConstructionPhases)
+            .Include(p => p.Contractor).Include(p => p.HouseDesign).ThenInclude(d => d!.CostEstimates).Include(p => p.ConstructionPhases)
             .OrderByDescending(p => p.UpdatedAt).ToListAsync();
-            
-        return Ok(new {
+
+        return Ok(new
+        {
             pendingRequests = requests.Where(r => r.Status == "Pending"),
             declinedRequests = requests.Where(r => r.Status == "Declined"),
             activeProjects = projects.Where(p => !p.Status.Equals("completed", StringComparison.OrdinalIgnoreCase) && !p.Status.Equals("cancelled", StringComparison.OrdinalIgnoreCase)).Select(ProjectSummary),
@@ -165,14 +189,16 @@ public class CustomerConstructionController : ControllerBase
     {
         var customerId = await CustomerId(); if (customerId is null) return Unauthorized();
         var project = await _db.Projects.AsNoTracking()
-            .Include(p => p.Contractor).Include(p => p.HouseDesign).Include(p => p.ConstructionPhases)
+            .Include(p => p.Contractor).Include(p => p.HouseDesign).ThenInclude(d => d!.CostEstimates).Include(p => p.ConstructionPhases)
             .FirstOrDefaultAsync(p => p.Id == projectId && p.WorkflowState!.LandSubmission.ClientId == customerId);
         if (project == null || project.ContractorId == null) return NotFound();
         var logs = await _db.ConstructorWorkflowLogs.AsNoTracking().Include(l => l.ConstructionPhase)
             .Where(l => l.ProjectId == projectId).OrderByDescending(l => l.Date).ThenByDescending(l => l.CreatedAt).ToListAsync();
         var progress = await _workflow.GetProjectProgressAsync(projectId, Guid.Empty, "Admin");
-        return Ok(new {
-            project = ProjectSummary(project), progress,
+        return Ok(new
+        {
+            project = ProjectSummary(project),
+            progress,
             phases = project.ConstructionPhases.OrderBy(p => p.SequenceOrder).Select(p => new { p.Id, p.PhaseName, p.Status, p.SequenceOrder, p.AiEstimatedDurationDays, p.PlannedDurationDays, p.PlannedStartDate, p.PlannedEndDate }),
             logs = logs.Select(l => new { l.Id, l.Date, l.CompletedWork, l.ProgressPercentage, l.Status, l.Challenges, l.Issues, l.Resolution, l.TomorrowPlan, l.AdditionalNotes, phase = l.ConstructionPhase == null ? null : l.ConstructionPhase.PhaseName }),
             activity = logs.GroupBy(l => DateOnly.FromDateTime(l.Date.UtcDateTime)).Select(g => new { date = g.Key, count = g.Count(), intensity = Math.Min(3, g.Count()) })
@@ -187,11 +213,11 @@ public class CustomerConstructionController : ControllerBase
         var project = await _db.Projects
             .Include(p => p.WorkflowState).ThenInclude(w => w!.LandSubmission)
             .FirstOrDefaultAsync(p => p.Id == projectId, cancellationToken);
-            
+
         if (project == null) return NotFound(new { message = "Project not found." });
         if (project.WorkflowState?.LandSubmission.ClientId != customerId) return Forbid();
-        
-        if (project.Status.Equals("completed", StringComparison.OrdinalIgnoreCase) || 
+
+        if (project.Status.Equals("completed", StringComparison.OrdinalIgnoreCase) ||
             project.Status.Equals("cancelled", StringComparison.OrdinalIgnoreCase))
         {
             return BadRequest(new { message = $"Cannot cancel a project that is already {project.Status.ToLower()}." });
@@ -205,7 +231,7 @@ public class CustomerConstructionController : ControllerBase
             var pendingRequests = await _db.ConstructorProjectRequests
                 .Where(r => r.HouseDesignId == project.HouseDesignId && r.Status == "Pending")
                 .ToListAsync(cancellationToken);
-                
+
             foreach (var req in pendingRequests)
             {
                 req.Status = "Cancelled";
@@ -214,20 +240,33 @@ public class CustomerConstructionController : ControllerBase
         }
 
         await _db.SaveChangesAsync(cancellationToken);
-        
+
         return Ok(new { projectId = project.Id, status = "Cancelled" });
     }
 
-    private static object ProjectSummary(Project p) => new {
-        p.Id, p.Status, p.CreatedAt, p.UpdatedAt, p.HouseDesignId,
-        constructorName = p.Contractor?.FullName, designVersion = p.HouseDesign?.Version,
+    private static object ProjectSummary(Project p) => new
+    {
+        p.Id,
+        p.Status,
+        p.CreatedAt,
+        p.UpdatedAt,
+        p.HouseDesignId,
+        constructorName = p.Contractor?.FullName,
+        designVersion = p.HouseDesign?.Version,
+        cost = ToCostSummary(p.HouseDesign?.CostEstimates.OrderByDescending(c => c.CreatedAt).FirstOrDefault()),
         currentPhase = p.ConstructionPhases.OrderBy(x => x.SequenceOrder).FirstOrDefault(x => x.Status == "in_progress")?.PhaseName
             ?? p.ConstructionPhases.OrderBy(x => x.SequenceOrder).FirstOrDefault(x => x.Status != "completed")?.PhaseName
     };
 
+    private static CostSummaryDto? ToCostSummary(CostEstimate? cost) =>
+        cost is null ? null : CostBreakdownBuilder.ToSummary(cost, cost.HouseDesign?.TerrainType);
+
     private static Project NewProject(Guid workflowId, Guid designId) => new()
     {
-        Id = Guid.NewGuid(), WorkflowStateId = workflowId, HouseDesignId = designId, Status = "awaiting_constructor",
+        Id = Guid.NewGuid(),
+        WorkflowStateId = workflowId,
+        HouseDesignId = designId,
+        Status = "awaiting_constructor",
         ConstructionPhases = new List<ConstructionPhase> {
             new() { Id=Guid.NewGuid(), PhaseName="Site Preparation", Status="pending", SequenceOrder=1 },
             new() { Id=Guid.NewGuid(), PhaseName="Foundation", Status="pending", SequenceOrder=2 },

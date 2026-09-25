@@ -12,7 +12,6 @@ from app.schemas.design_result import DesignResult
 from app.tools import layout_generation_tool as generation
 from app.tools.geometry_validator import validate_geometry
 
-
 TARGETS = ((3, 1, 1), (3, 2, 1), (4, 2, 2))
 PREFIX = "HP-CURATED-"
 

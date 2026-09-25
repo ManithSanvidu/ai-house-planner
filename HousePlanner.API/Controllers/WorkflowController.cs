@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using HousePlanner.API.Data;
 using HousePlanner.API.DTOs;
+using HousePlanner.API.Entities;
 using HousePlanner.API.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -106,7 +107,13 @@ public class WorkflowController : ControllerBase
                                     c.MaterialCostLkr,
                                     c.LabourCostLkr,
                                     c.TotalCostLkr,
-                                    c.BudgetDeltaPercent
+                                    c.BudgetDeltaPercent,
+                                    c.PricingSnapshotJson,
+                                    c.BreakdownJson,
+                                    c.FormulaVersion,
+                                    c.AppliedAreaSqft,
+                                    c.TerrainType,
+                                    c.CreatedAt
                                 })
                                 .FirstOrDefault()
                         })
@@ -173,12 +180,20 @@ public class WorkflowController : ControllerBase
 
                 if (workflow.LatestDesign.LatestCost is not null)
                 {
-                    costDto = new CostSummaryDto(
-                        MaterialCostLkr: workflow.LatestDesign.LatestCost.MaterialCostLkr,
-                        LabourCostLkr: workflow.LatestDesign.LatestCost.LabourCostLkr,
-                        TotalCostLkr: workflow.LatestDesign.LatestCost.TotalCostLkr,
-                        BudgetDeltaPercent: workflow.LatestDesign.LatestCost.BudgetDeltaPercent
-                    );
+                    var latest = workflow.LatestDesign.LatestCost;
+                    costDto = CostBreakdownBuilder.ToSummary(new CostEstimate
+                    {
+                        MaterialCostLkr = latest.MaterialCostLkr,
+                        LabourCostLkr = latest.LabourCostLkr,
+                        TotalCostLkr = latest.TotalCostLkr,
+                        BudgetDeltaPercent = latest.BudgetDeltaPercent,
+                        PricingSnapshotJson = latest.PricingSnapshotJson,
+                        BreakdownJson = latest.BreakdownJson,
+                        FormulaVersion = latest.FormulaVersion,
+                        AppliedAreaSqft = latest.AppliedAreaSqft,
+                        TerrainType = latest.TerrainType,
+                        CreatedAt = latest.CreatedAt
+                    }, workflow.LatestDesign.TerrainType);
                 }
             }
 
@@ -208,11 +223,11 @@ public class WorkflowController : ControllerBase
                 FailureReason: workflow.FailureReason,
                 PreferredHouseDesignId: workflow.PreferredHouseDesignId,
                 ArchitectReviewStatus: designDto is null ? null : await _context.ValidationRequests.AsNoTracking()
-                    .Where(r=>r.WorkflowStateId==workflow.Id && r.HouseDesignId==designDto.DesignId)
-                    .OrderByDescending(r=>r.CreatedAt).Select(r=>r.Status).FirstOrDefaultAsync(),
+                    .Where(r => r.WorkflowStateId == workflow.Id && r.HouseDesignId == designDto.DesignId)
+                    .OrderByDescending(r => r.CreatedAt).Select(r => r.Status).FirstOrDefaultAsync(),
                 ArchitectFeedback: designDto is null ? null : await _context.ValidationRequests.AsNoTracking()
-                    .Where(r=>r.WorkflowStateId==workflow.Id && r.HouseDesignId==designDto.DesignId)
-                    .OrderByDescending(r=>r.CreatedAt).Select(r=>r.ArchitectReview).FirstOrDefaultAsync()
+                    .Where(r => r.WorkflowStateId == workflow.Id && r.HouseDesignId == designDto.DesignId)
+                    .OrderByDescending(r => r.CreatedAt).Select(r => r.ArchitectReview).FirstOrDefaultAsync()
             );
 
             return Ok(responseDto);
@@ -311,9 +326,9 @@ public class WorkflowController : ControllerBase
             .Include(w => w.HouseDesigns).ThenInclude(d => d.Rooms)
             .FirstOrDefaultAsync(w => w.Id == id && w.LandSubmission.ClientId == user.Id.Value);
         if (workflow is null) return NotFound(new { message = $"Workflow {id} not found." });
-        var review = await _context.ValidationRequests.AsNoTracking().Where(r=>r.WorkflowStateId==id)
-            .OrderByDescending(r=>r.CreatedAt).Select(r=>new {r.Status,r.ArchitectReview}).FirstOrDefaultAsync();
-        var approvedDesignId = await _context.ValidationRequests.AsNoTracking().Where(r=>r.WorkflowStateId==id && r.Status=="Approved").Select(r=>r.HouseDesignId).FirstOrDefaultAsync();
+        var review = await _context.ValidationRequests.AsNoTracking().Where(r => r.WorkflowStateId == id)
+            .OrderByDescending(r => r.CreatedAt).Select(r => new { r.Status, r.ArchitectReview }).FirstOrDefaultAsync();
+        var approvedDesignId = await _context.ValidationRequests.AsNoTracking().Where(r => r.WorkflowStateId == id && r.Status == "Approved").Select(r => r.HouseDesignId).FirstOrDefaultAsync();
         return Ok(ToHistory(workflow, includeArchived, null, review?.Status, review?.ArchitectReview, approvedDesignId));
     }
 
@@ -331,9 +346,9 @@ public class WorkflowController : ControllerBase
             .ToListAsync();
         var workflowIds = workflows.Select(w => w.Id).ToList();
         var projects = await _context.Projects.AsNoTracking().Where(p => workflowIds.Contains(p.WorkflowStateId)).ToDictionaryAsync(p => p.WorkflowStateId, p => p.Id);
-        var reviews = await _context.ValidationRequests.AsNoTracking().Where(r=>workflowIds.Contains(r.WorkflowStateId))
-            .OrderByDescending(r=>r.CreatedAt).ToListAsync();
-        return Ok(workflows.Select(w => {var review=reviews.FirstOrDefault(r=>r.WorkflowStateId==w.Id);var approved=reviews.FirstOrDefault(r=>r.WorkflowStateId==w.Id&&r.Status=="Approved")?.HouseDesignId;return ToHistory(w, false, projects.TryGetValue(w.Id, out var pid) ? pid : null,review?.Status,review?.ArchitectReview,approved);}).Where(w => w.Designs.Count > 0));
+        var reviews = await _context.ValidationRequests.AsNoTracking().Where(r => workflowIds.Contains(r.WorkflowStateId))
+            .OrderByDescending(r => r.CreatedAt).ToListAsync();
+        return Ok(workflows.Select(w => { var review = reviews.FirstOrDefault(r => r.WorkflowStateId == w.Id); var approved = reviews.FirstOrDefault(r => r.WorkflowStateId == w.Id && r.Status == "Approved")?.HouseDesignId; return ToHistory(w, false, projects.TryGetValue(w.Id, out var pid) ? pid : null, review?.Status, review?.ArchitectReview, approved); }).Where(w => w.Designs.Count > 0));
     }
 
     [HttpPost("{id:guid}/designs/{designId:guid}/select")]
@@ -399,7 +414,7 @@ public class WorkflowController : ControllerBase
         // The prompt says: "Accepted request with ACTIVE construction Project: BLOCK archive with 409."
         var hasActiveProject = await _context.Projects
             .AnyAsync(p => p.HouseDesignId == designId && p.ContractorId != null && p.Status != "Cancelled" && p.Status != "completed");
-            
+
         if (hasActiveProject)
         {
             return Conflict(new
@@ -417,33 +432,33 @@ public class WorkflowController : ControllerBase
             workflow.ApprovalStatus == "awaiting_architect_review" ||
             await _context.ValidationRequests.AnyAsync(r => r.WorkflowStateId == id &&
                 (r.Status == "Pending" || r.Status == "Under Review"));
-        
-        
 
-        
-        if (workflow.PreferredHouseDesignId == designId) 
+
+
+
+        if (workflow.PreferredHouseDesignId == designId)
         {
             workflow.PreferredHouseDesignId = null;
             workflow.UpdatedAt = DateTimeOffset.UtcNow;
         }
-        
+
         foreach (var req in pendingRequests)
         {
             req.Status = "Cancelled";
             req.UpdatedAt = DateTimeOffset.UtcNow;
         }
-        
+
         design.IsArchived = true;
         design.IsCurrent = false;
-        
+
         var newestRemaining = workflow.HouseDesigns.Where(d => !d.IsArchived && d.Id != designId)
             .OrderByDescending(d => d.Version).FirstOrDefault();
         if (newestRemaining is not null && !workflow.HouseDesigns.Any(d => !d.IsArchived && d.Id != designId && d.IsCurrent))
             newestRemaining.IsCurrent = true;
-            
+
         workflow.UpdatedAt = DateTimeOffset.UtcNow;
         await _context.SaveChangesAsync();
-        
+
         return Ok(new { workflowId = id, designId, action = submitted ? "archived" : "deleted", selectionCleared = workflow.PreferredHouseDesignId is null });
     }
 
@@ -470,8 +485,10 @@ public class WorkflowController : ControllerBase
         if (alreadyReviewed) return Conflict(new { message = "Select a new design version before submitting another review." });
         _context.ValidationRequests.Add(new HousePlanner.API.Entities.ValidationRequest
         {
-            WorkflowStateId = id, HouseDesignId = selected.Id,
-            ClientId = workflow.LandSubmission.ClientId, Status = "Pending"
+            WorkflowStateId = id,
+            HouseDesignId = selected.Id,
+            ClientId = workflow.LandSubmission.ClientId,
+            Status = "Pending"
         });
         workflow.Status = "awaiting_architect_review";
         workflow.ApprovalStatus = "awaiting_architect_review";
@@ -480,7 +497,7 @@ public class WorkflowController : ControllerBase
         return Ok(new { workflowId = id, status = workflow.Status });
     }
 
-    private static WorkflowDesignHistoryDto ToHistory(HousePlanner.API.Entities.WorkflowState workflow, bool includeArchived = true, Guid? projectId = null, string? reviewStatus=null, string? architectFeedback=null, Guid? approvedDesignId=null) =>
+    private static WorkflowDesignHistoryDto ToHistory(HousePlanner.API.Entities.WorkflowState workflow, bool includeArchived = true, Guid? projectId = null, string? reviewStatus = null, string? architectFeedback = null, Guid? approvedDesignId = null) =>
         new(workflow.Id, workflow.Status, workflow.PreferredHouseDesignId, workflow.CreatedAt,
             workflow.HouseDesigns.Where(d => includeArchived || !d.IsArchived).OrderByDescending(d => d.Version).Select(d =>
             {
@@ -504,7 +521,7 @@ public class WorkflowController : ControllerBase
                     Number(root, "design_score"),
                     d.Rooms.Select(r => new DesignPreviewRoomDto(r.RoomType, r.FloorNumber, r.X, r.Y, r.Width, r.Length)).ToList(),
                     d.CreatedAt);
-            }).ToList(),projectId,reviewStatus,architectFeedback);
+            }).ToList(), projectId, reviewStatus, architectFeedback);
 
     [HttpPost("{id}/approve")]
     [Authorize(Roles = "Customer,Architect,Admin")]
@@ -605,12 +622,19 @@ public class WorkflowController : ControllerBase
         {
             var mappings = new Dictionary<string, string>
             {
-                ["bedrooms"] = "bedrooms", ["bathrooms"] = "bathrooms", ["floors"] = "floors",
-                ["architectural_style"] = "style", ["space_priority"] = "space_priority",
-                ["open_plan"] = "open_plan", ["master_ensuite"] = "attached_bathroom",
-                ["separate_dining"] = "dining_required", ["home_office"] = "home_office",
-                ["balcony"] = "balcony", ["veranda"] = "veranda",
-                ["utility_room"] = "utility_room", ["parking_required"] = "parking",
+                ["bedrooms"] = "bedrooms",
+                ["bathrooms"] = "bathrooms",
+                ["floors"] = "floors",
+                ["architectural_style"] = "style",
+                ["space_priority"] = "space_priority",
+                ["open_plan"] = "open_plan",
+                ["master_ensuite"] = "attached_bathroom",
+                ["separate_dining"] = "dining_required",
+                ["home_office"] = "home_office",
+                ["balcony"] = "balcony",
+                ["veranda"] = "veranda",
+                ["utility_room"] = "utility_room",
+                ["parking_required"] = "parking",
                 ["accessibility"] = "accessibility"
             };
             foreach (var mapping in mappings)
@@ -636,14 +660,14 @@ public class WorkflowController : ControllerBase
     {
         var user = await _currentUserService.GetAsync(HttpContext);
         if (user?.Id is null) return Unauthorized();
-        
+
         var workflow = await _context.WorkflowStates
             .Include(w => w.LandSubmission)
             .Include(w => w.HouseDesigns)
             .FirstOrDefaultAsync(w => w.Id == id && w.LandSubmission.ClientId == user.Id.Value);
-            
+
         if (workflow is null) return NotFound(new { message = $"Workflow {id} not found." });
-        
+
         var currentDesign = workflow.HouseDesigns.FirstOrDefault(d => d.Id == designId && !d.IsArchived);
         if (currentDesign is null) return NotFound(new { message = "Current design version not found." });
 
@@ -678,11 +702,11 @@ public class WorkflowController : ControllerBase
 
         var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
         await _agenticServiceClient.PostAsync("/workflows/resume", content);
-        
+
         workflow.Status = "running";
         workflow.UpdatedAt = DateTimeOffset.UtcNow;
         await _context.SaveChangesAsync();
-        
+
         return Ok(new { message = "Regeneration started." });
     }
 

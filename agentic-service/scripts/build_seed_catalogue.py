@@ -6,15 +6,15 @@ from agentic-service when catalogue regeneration is authorized.
 """
 import json
 from pathlib import Path
-from app.design.room_counts import count_bathrooms
 
 from app.design.adjacency import build_connections
-from app.schemas.design_result import RoomLayout, DesignResult
-from app.tools.geometry_validator import validate_geometry
 from app.design.architectural_quality import validate_architectural_quality
-from app.design.plot_constraints import PlotConstraints
 from app.design.models import Requirements
 from app.design.plan_adapter import finish_layout
+from app.design.plot_constraints import PlotConstraints
+from app.design.room_counts import count_bathrooms
+from app.schemas.design_result import DesignResult, RoomLayout
+from app.tools.geometry_validator import validate_geometry
 
 r1 = [
     {"room_id": "living", "room_type": "living_room", "floor": 1, "x": 0, "y": 0, "width": 11, "length": 13},
@@ -40,11 +40,11 @@ def make_rooms(beds, baths, floors, base_r=r1):
     rooms = []
     current_beds = 3
     current_baths = 1
-    
+
     for r in base_r:
         new_r = dict(r)
         rooms.append(new_r)
-        
+
     for f in range(2, floors + 1):
         for r in base_r:
             new_r = dict(r)
@@ -67,7 +67,7 @@ def make_rooms(beds, baths, floors, base_r=r1):
                 new_r['room_id'] = f"hall_{f}"
                 new_r['room_type'] = "hallway"
             rooms.append(new_r)
-            
+
     # Convert excess bedrooms to studies to avoid voids
     beds_to_remove = current_beds - beds
     for r in reversed(rooms):
@@ -75,7 +75,7 @@ def make_rooms(beds, baths, floors, base_r=r1):
             r['room_id'] = r['room_id'].replace('bed', 'study')
             r['room_type'] = 'study'
             beds_to_remove -= 1
-                
+
     baths_to_add = baths - current_baths
     for r in rooms:
         if baths_to_add > 0 and 'study' in r['room_id']:
@@ -95,29 +95,29 @@ def make_rooms(beds, baths, floors, base_r=r1):
     rooms.append({"room_id": "stair_1", "room_type": "staircase", "floor": 1, "x": 11, "y": stair_y, "width": 8, "length": 10})
     for f in range(2, floors + 1):
         rooms.append({"room_id": f"stair_{f}", "room_type": "staircase", "floor": f, "x": 11, "y": stair_y, "width": 8, "length": 10})
-    
+
     return rooms
 
 def validate_plan(plan_data, terrain):
     rooms = plan_data['layout']['rooms']
     floors = plan_data['floors']
     beds = plan_data['bedrooms']
-    
+
     # 1. Exact bedroom count
     actual_beds = sum(1 for r in rooms if 'bedroom' in r['room_type'])
     if actual_beds != beds:
         return False, f"Bedroom count mismatch: configured {beds}, actual {actual_beds}"
-        
+
     # 2. Exact floor count
     actual_floors = max([r['floor'] for r in rooms]) if rooms else 0
     if actual_floors != floors:
         return False, f"Floor count mismatch: configured {floors}, actual {actual_floors}"
-        
+
     # 3. Metadata must describe the layout exactly; surplus bathrooms also fail.
     actual_baths = count_bathrooms(rooms)
     if actual_baths != plan_data['bathrooms']:
         return False, f"Bathroom count mismatch: configured {plan_data['bathrooms']}, actual {actual_baths}"
-        
+
     # 4. No same-floor room overlaps
     for i, a in enumerate(rooms):
         for b in rooms[i+1:]:
@@ -126,12 +126,12 @@ def validate_plan(plan_data, terrain):
                 overlap_y = max(0, min(a['y'] + a.get('length', 0), b['y'] + b.get('length', 0)) - max(a['y'], b['y']))
                 if overlap_x > 0 and overlap_y > 0:
                     return False, f"Overlap between {a['room_id']} and {b['room_id']}"
-                    
+
     # 5. Hallway width minimum
     for r in rooms:
         if r['room_type'] == 'hallway' and r['width'] < 3.5:
             return False, f"Hallway width {r['width']} below minimum 3.5"
-            
+
     # 6 & 7. Staircase existence and alignment
     if floors > 1:
         staircases = [r for r in rooms if r['room_type'] == 'staircase']
@@ -145,25 +145,25 @@ def validate_plan(plan_data, terrain):
     # 8. Geometry validator & 9. Architectural quality
     design = DesignResult.model_validate(plan_data['layout'])
     finish_layout(design) # adds doors/connections
-    
+
     req = Requirements(bedrooms=beds, bathrooms=plan_data['bathrooms'], floors=floors, target_budget_lkr=0)
     plot = PlotConstraints(land_size_perches=20.0, plot_width_ft=44, plot_length_ft=123, terrain_type=terrain)
-    
+
     geom_res = validate_geometry(design.rooms, beds, floors, plot.land_size_perches, plot=plot, design=design)
     if not geom_res.passed:
         return False, f"Geometry failed: {geom_res.failures}"
-        
+
     arch_res = validate_architectural_quality(design, req, plot)
     if not arch_res.passed:
         return False, f"Architecture failed: {arch_res.failures}"
-        
+
     return True, "Valid"
 
 def gen_plan(code, beds, baths, floors, family, min_land, terrain, base_r=r1):
     rooms = make_rooms(beds, baths, floors, base_r=base_r)
     r_objs = [RoomLayout(**r) for r in rooms]
     conns = build_connections(r_objs, False)
-    
+
     return {
         "designCode": code,
         "name": f"Test Plan {code}",
@@ -220,7 +220,7 @@ def build(output_path=None):
                     family = 'COMPACT_RECTANGLE'
                     if terrain == 'hillside': family = 'HILLSIDE_STEPPED'
                     if terrain == 'coastal': family = 'COASTAL_RAISED_COMPACT'
-                    
+
                     for _ in range(3):
                         for br in [r1, r2]:
                             plan = gen_plan(f"HP-{beds}B{baths}B-{floors}F-{idx}", beds, baths, floors, family, 5, terrain, base_r=br)

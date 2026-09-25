@@ -46,7 +46,7 @@ public class DailyConstructionLogbookTests
         var project = new Project { Id = Guid.NewGuid(), WorkflowStateId = workflow.Id, ContractorId = constructorId, Status = status, CreatedAt = DateTimeOffset.UtcNow, UpdatedAt = DateTimeOffset.UtcNow };
         var phase = new ConstructionPhase { Id = Guid.NewGuid(), ProjectId = project.Id, PhaseName = "Phase 1", SequenceOrder = 1, Status = "pending", PlannedDurationDays = 7 };
         project.ConstructionPhases.Add(phase);
-        
+
         _db.Projects.Add(project);
         await _db.SaveChangesAsync();
 
@@ -122,7 +122,7 @@ public class DailyConstructionLogbookTests
     public async Task GetLogs_MissingProject_Returns404()
     {
         SetUser(Guid.NewGuid(), "Constructor");
-        
+
         var result = await _controller.GetLogs(Guid.NewGuid(), CancellationToken.None);
         var status = Assert.IsType<NotFoundResult>(result);
     }
@@ -153,7 +153,7 @@ public class DailyConstructionLogbookTests
         SetUser(Guid.NewGuid(), "Constructor"); // Different
         var updateReq = new UpdateDailyConstructionLogRequest { LogDate = DateOnly.FromDateTime(DateTime.UtcNow), WorkCompleted = "Updated" };
         var result = await _controller.UpdateLog(projectId, log.Id, updateReq, CancellationToken.None);
-        
+
         var status = Assert.IsType<NotFoundResult>(result);
     }
 
@@ -167,7 +167,7 @@ public class DailyConstructionLogbookTests
 
         var result = await _controller.DeleteLog(projectId, log.Id, CancellationToken.None);
         Assert.IsType<NoContentResult>(result);
-        
+
         Assert.Empty(await _db.DailyConstructionLogs.ToListAsync());
     }
 
@@ -196,7 +196,8 @@ public class DailyConstructionLogbookTests
         var result = await _controller.CreateLog(projectId1, req, CancellationToken.None);
 
         var badRequest = Assert.IsType<BadRequestObjectResult>(result);
-        Assert.Contains("does not exist on this project", badRequest.Value.ToString());
+        Assert.NotNull(badRequest.Value);
+        Assert.Contains("does not exist on this project", badRequest.Value.ToString()!);
     }
 
     [Fact]
@@ -206,10 +207,10 @@ public class DailyConstructionLogbookTests
         SetUser(constructorId, "Constructor");
 
         var log = await _service.CreateLogAsync(projectId, constructorId, new CreateDailyConstructionLogRequest { LogDate = DateOnly.FromDateTime(DateTime.UtcNow), WorkCompleted = "Test1", ConstructionPhaseId = phaseId });
-        
+
         var result = await _controller.GetLog(projectId, log.Id, CancellationToken.None);
         var ok = Assert.IsType<OkObjectResult>(result);
-        
+
         var json = JsonSerializer.Serialize(ok.Value);
         Assert.DoesNotContain("\"Project\":", json, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"Constructor\":", json, StringComparison.OrdinalIgnoreCase);
@@ -222,15 +223,16 @@ public class DailyConstructionLogbookTests
         SetUser(constructorId, "Constructor");
 
         var logDate = DateOnly.FromDateTime(DateTime.UtcNow);
-        await _service.CreateLogAsync(projectId, constructorId, new CreateDailyConstructionLogRequest { 
-            LogDate = logDate, 
-            WorkCompleted = "Test log", 
+        await _service.CreateLogAsync(projectId, constructorId, new CreateDailyConstructionLogRequest
+        {
+            LogDate = logDate,
+            WorkCompleted = "Test log",
             Challenges = "Some issue",
-            ConstructionPhaseId = phaseId 
+            ConstructionPhaseId = phaseId
         });
 
         var events = await _service.GetProjectCalendarAsync(projectId, constructorId, CancellationToken.None);
-        
+
         var logEvent = events.FirstOrDefault(e => e.Type == "daily_log");
         Assert.NotNull(logEvent);
         Assert.Equal(logDate, logEvent.Date);
@@ -243,14 +245,15 @@ public class DailyConstructionLogbookTests
         var (constructorId, projectId, phaseId) = await SeedProjectAsync();
         SetUser(constructorId, "Constructor");
 
-        await _service.CreateLogAsync(projectId, constructorId, new CreateDailyConstructionLogRequest { 
-            LogDate = DateOnly.FromDateTime(DateTime.UtcNow), 
-            WorkCompleted = "Test log", 
-            ConstructionPhaseId = phaseId 
+        await _service.CreateLogAsync(projectId, constructorId, new CreateDailyConstructionLogRequest
+        {
+            LogDate = DateOnly.FromDateTime(DateTime.UtcNow),
+            WorkCompleted = "Test log",
+            ConstructionPhaseId = phaseId
         });
 
         var events = await _service.GetProjectCalendarAsync(projectId, constructorId, CancellationToken.None);
-        
+
         var json = JsonSerializer.Serialize(events);
         Assert.DoesNotContain("\"Project\":", json, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"Constructor\":", json, StringComparison.OrdinalIgnoreCase);

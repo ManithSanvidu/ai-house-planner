@@ -48,7 +48,7 @@ public sealed class StaffAccountService(
     public async Task<StaffAccountDto> CreateAsync(CreateStaffRequestDto request, CancellationToken cancellationToken = default)
     {
         var fullName = request.FullName.Trim();
-        var email    = request.Email.Trim().ToLowerInvariant();
+        var email = request.Email.Trim().ToLowerInvariant();
         var roleName = ValidateRole(request.Role);
 
         if (string.IsNullOrWhiteSpace(fullName)) throw Invalid("Full name is required.");
@@ -111,15 +111,15 @@ public sealed class StaffAccountService(
 
             var user = new User
             {
-                Id          = Guid.NewGuid(),       // application PK — may be any Guid
+                Id = Guid.NewGuid(),       // application PK — may be any Guid
                 SupabaseUid = identity.Uid,          // AUTHORITATIVE: from auth.users.id
-                Email       = identity.Email,
-                FullName    = fullName,
-                RoleId      = role.Id,
-                Role        = role,
+                Email = identity.Email,
+                FullName = fullName,
+                RoleId = role.Id,
+                Role = role,
                 PasswordHash = null,
-                CreatedAt   = DateTimeOffset.UtcNow,
-                UpdatedAt   = DateTimeOffset.UtcNow
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow
             };
             db.Users.Add(user);
             await db.SaveChangesAsync(cancellationToken);

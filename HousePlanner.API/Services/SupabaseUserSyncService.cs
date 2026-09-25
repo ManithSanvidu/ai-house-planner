@@ -56,12 +56,12 @@ public sealed class SupabaseUserSyncService(ApplicationDbContext db) : ISupabase
         // via repeated registration calls.
         var existing = await db.Users.Include(x => x.Role)
             .FirstOrDefaultAsync(x => x.SupabaseUid == supabaseUser.Uid || x.Email.ToLower() == supabaseUser.Email.ToLower(), cancellationToken);
-        
+
         if (existing is not null)
         {
             if (existing.SupabaseUid == supabaseUser.Uid)
                 return existing;
-            
+
             throw new InvalidOperationException("An account with this email already exists.");
         }
 

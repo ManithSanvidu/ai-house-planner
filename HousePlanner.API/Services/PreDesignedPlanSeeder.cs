@@ -65,23 +65,23 @@ public sealed class PreDesignedPlanSeeder(
             {
                 entity = new PreDesignedHousePlan
                 {
-                Name = seed.name,
-                Slug = seed.designCode.ToLowerInvariant(),
-                DesignCode = seed.designCode,
-                Description = "AI Generated Plan",
-                Style = seed.supportedStyles?.FirstOrDefault() ?? "Modern",
-                Bedrooms = seed.bedrooms,
-                Bathrooms = seed.bathrooms,
-                FloorCount = seed.floors,
-                TotalBuiltUpAreaSqft = totalArea,
-                MinimumLandSizePerches = seed.minimumLandSizePerches,
-                MinimumPlotWidthFt = seed.minimumPlotWidthFt,
-                MinimumPlotLengthFt = seed.minimumPlotLengthFt,
-                SuitableTerrain = seed.supportedTerrains?.FirstOrDefault() ?? "Flat",
-                Category = "Standard",
-                TagsJson = "[]",
-                LayoutJson = seed.layout.GetRawText(),
-                IsActive = true
+                    Name = seed.name,
+                    Slug = seed.designCode.ToLowerInvariant(),
+                    DesignCode = seed.designCode,
+                    Description = "AI Generated Plan",
+                    Style = seed.supportedStyles?.FirstOrDefault() ?? "Modern",
+                    Bedrooms = seed.bedrooms,
+                    Bathrooms = seed.bathrooms,
+                    FloorCount = seed.floors,
+                    TotalBuiltUpAreaSqft = totalArea,
+                    MinimumLandSizePerches = seed.minimumLandSizePerches,
+                    MinimumPlotWidthFt = seed.minimumPlotWidthFt,
+                    MinimumPlotLengthFt = seed.minimumPlotLengthFt,
+                    SuitableTerrain = seed.supportedTerrains?.FirstOrDefault() ?? "Flat",
+                    Category = "Standard",
+                    TagsJson = "[]",
+                    LayoutJson = seed.layout.GetRawText(),
+                    IsActive = true
                 };
                 db.PreDesignedHousePlans.Add(entity);
             }

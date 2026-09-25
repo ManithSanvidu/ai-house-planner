@@ -24,10 +24,10 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
         // We have a session, let's refresh user info from backend
         final token = session.accessToken;
         await _storage.write(key: 'auth_token', value: token);
-        
+
         final response = await ApiClient.instance.get('/auth/me');
         final userData = response.data;
-        
+
         final user = User(
           id: userData['uid'] ?? session.user.id,
           email: userData['email'] ?? session.user.email ?? '',
@@ -52,12 +52,12 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
         email: email,
         password: password,
       );
-      
+
       final session = response.session;
       if (session == null) throw Exception('Session missing after sign in');
-      
+
       await _storage.write(key: 'auth_token', value: session.accessToken);
-      
+
       // Notify backend to create session context
       final backendResponse = await ApiClient.instance.post('/auth/session');
       final userData = backendResponse.data;
@@ -69,13 +69,13 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
         fullName: userData['fullName'] ?? userData['full_name'] ?? session.user.userMetadata?['full_name'],
         token: session.accessToken,
       );
-      
+
       state = AsyncValue.data(user);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }
   }
-  
+
   Future<void> register(String email, String password, String fullName) async {
     state = const AsyncValue.loading();
     try {
@@ -83,12 +83,12 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
         email: email,
         password: password,
       );
-      
+
       final session = response.session;
       if (session == null) throw Exception('Session missing after sign up. Please confirm email if required.');
-      
+
       await _storage.write(key: 'auth_token', value: session.accessToken);
-      
+
       // Sync user to backend database
       final backendResponse = await ApiClient.instance.post(
         '/auth/register',
@@ -96,7 +96,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
           'fullName': fullName,
         }
       );
-      
+
       final userData = backendResponse.data;
       final user = User(
         id: userData['uid'] ?? session.user.id,
@@ -105,7 +105,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
         fullName: userData['fullName'] ?? userData['full_name'] ?? session.user.userMetadata?['full_name'],
         token: session.accessToken,
       );
-      
+
       state = AsyncValue.data(user);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
@@ -113,8 +113,8 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
   }
 
   Future<void> loginWithGoogle() async {
-    // Note: Proper Google Sign In with Supabase on mobile requires setup of 
-    // deep links and Google OAuth client IDs. This is a placeholder that 
+    // Note: Proper Google Sign In with Supabase on mobile requires setup of
+    // deep links and Google OAuth client IDs. This is a placeholder that
     // matches the web app's current throwing behavior.
     state = AsyncValue.error(Exception("Google OAuth not implemented for Supabase yet."), StackTrace.current);
   }

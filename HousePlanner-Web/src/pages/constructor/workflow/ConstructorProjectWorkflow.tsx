@@ -5,6 +5,8 @@ import type { ConstructorWorkflowProject, ProjectProgress, ConstructorWorkflowLo
 import { ArrowLeft, Clock, CheckCircle2, FileText, AlertTriangle, Plus } from 'lucide-react';
 import DailyWorkflowForm from './DailyWorkflowForm';
 import WorkflowHistory from './WorkflowHistory';
+import CostBreakdownCard from '../../../components/cost/CostBreakdownCard';
+import { FloorPlanViewer, type FloorPlanData } from '../../../components/floorplan/FloorPlanViewer';
 
 export const ConstructorProjectWorkflow: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
@@ -45,6 +47,12 @@ export const ConstructorProjectWorkflow: React.FC = () => {
   }
 
   const isDelayed = progress.daysCompleted > progress.totalEstimatedDays;
+  let floorPlan: FloorPlanData | null = null;
+  try {
+    floorPlan = project.design?.layoutJson ? JSON.parse(project.design.layoutJson) as FloorPlanData : null;
+  } catch {
+    floorPlan = null;
+  }
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -76,6 +84,30 @@ export const ConstructorProjectWorkflow: React.FC = () => {
             </>
           )}
         </button>
+      </div>
+
+      <div className="mb-8 grid grid-cols-1 gap-6 xl:grid-cols-2">
+        <CostBreakdownCard cost={project.cost} />
+        <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Approved Design</h2>
+          {project.design ? (
+            <>
+              <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                <div className="rounded-xl bg-gray-50 p-3 dark:bg-gray-800/50"><span className="text-gray-500">Version</span><p className="font-semibold">{project.design.version}</p></div>
+                <div className="rounded-xl bg-gray-50 p-3 dark:bg-gray-800/50"><span className="text-gray-500">Floors</span><p className="font-semibold">{project.design.floorCount}</p></div>
+                <div className="rounded-xl bg-gray-50 p-3 dark:bg-gray-800/50"><span className="text-gray-500">Area</span><p className="font-semibold">{project.design.totalBuiltUpAreaSqft.toLocaleString()} sq ft</p></div>
+                <div className="rounded-xl bg-gray-50 p-3 dark:bg-gray-800/50"><span className="text-gray-500">Foundation</span><p className="font-semibold capitalize">{project.design.foundationType}</p></div>
+              </div>
+              {floorPlan && (
+                <div className="mt-4 h-80 overflow-hidden rounded-xl border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-950">
+                  <FloorPlanViewer data={floorPlan} />
+                </div>
+              )}
+            </>
+          ) : (
+            <p className="mt-4 text-sm text-gray-500">Approved design details are unavailable.</p>
+          )}
+        </section>
       </div>
 
       <div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-3">

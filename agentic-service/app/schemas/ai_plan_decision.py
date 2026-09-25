@@ -1,7 +1,10 @@
 """Coordinate-free selection contract. Unknown fields are rejected at every level."""
 from typing import Literal
+
 from pydantic import BaseModel, ConfigDict, Field
+
 from app.design.models import Direction
+
 
 class StrictDecision(BaseModel):
     model_config = ConfigDict(extra='forbid', strict=True, allow_inf_nan=False)

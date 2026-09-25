@@ -37,7 +37,7 @@ public sealed class AdminStaffRouteTests : IClassFixture<AdminStaffApiFactory>
     {
         using var request = AdminRequest(HttpMethod.Post, "/api/v1/admin/staff");
         request.Content = JsonContent.Create(new CreateStaffRequestDto
-            { FullName = "Test Architect", Email = "architect@example.com", Password = "secret1", Role = "Architect" });
+        { FullName = "Test Architect", Email = "architect@example.com", Password = "secret1", Role = "Architect" });
         var response = await _client.SendAsync(request);
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
     }
@@ -58,7 +58,7 @@ public sealed class AdminStaffRouteTests : IClassFixture<AdminStaffApiFactory>
         var id = Guid.NewGuid();
         using var request = AdminRequest(HttpMethod.Put, $"/api/v1/admin/staff/{id}");
         request.Content = JsonContent.Create(new UpdateStaffRequestDto
-            { FullName = "Updated Staff", Email = "updated@example.com", Role = "Constructor" });
+        { FullName = "Updated Staff", Email = "updated@example.com", Role = "Constructor" });
         var response = await _client.SendAsync(request);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
@@ -73,7 +73,7 @@ public sealed class AdminStaffRouteTests : IClassFixture<AdminStaffApiFactory>
             $"/api/v1/admin/staff/{Guid.NewGuid()}");
         request.Headers.Add("X-Test-Role", role);
         request.Content = JsonContent.Create(new UpdateStaffRequestDto
-            { FullName = "Updated Staff", Email = "updated@example.com", Role = "Architect" });
+        { FullName = "Updated Staff", Email = "updated@example.com", Role = "Architect" });
         var response = await _client.SendAsync(request);
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }

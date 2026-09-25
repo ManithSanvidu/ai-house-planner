@@ -1,6 +1,7 @@
-import requests
 import json
-from typing import Any, Dict, Type
+from typing import Any
+
+import requests
 from pydantic import BaseModel
 
 from app.config import OPENAI_API_KEY, OPENAI_MODEL
@@ -15,6 +16,7 @@ from app.providers.base_provider import (
     ProviderUnknownError,
 )
 
+
 class OpenAIProvider(ModelProvider):
     @property
     def provider_name(self) -> str:
@@ -27,7 +29,7 @@ class OpenAIProvider(ModelProvider):
     def health_check(self) -> bool:
         return bool(OPENAI_API_KEY and OPENAI_API_KEY.startswith("sk-"))
 
-    def generate_json(self, system_prompt: str, user_prompt: str, schema: Type[BaseModel]) -> Dict[str, Any]:
+    def generate_json(self, system_prompt: str, user_prompt: str, schema: type[BaseModel]) -> dict[str, Any]:
         if not self.health_check():
             raise ProviderUnavailableError("OpenAI API key is missing or invalid.")
 
@@ -40,11 +42,11 @@ class OpenAIProvider(ModelProvider):
         # Use Structured Outputs (json_schema) for absolute reliability
         schema_dict = schema.model_json_schema()
         schema_dict["additionalProperties"] = False
-        
+
         # OpenAI requires all properties to be explicitly listed in 'required'
         if "properties" in schema_dict:
             schema_dict["required"] = list(schema_dict["properties"].keys())
-            
+
         payload = {
             "model": self.model_name,
             "max_tokens": 300,  # Strategy schema is tiny, limit strictly to avoid massive token dumps
@@ -62,14 +64,14 @@ class OpenAIProvider(ModelProvider):
                 {"role": "user", "content": user_prompt}
             ]
         }
-        
+
         # Diagnostic logging before request
         serialized = json.dumps(payload)
         char_count = len(serialized)
         # Rough estimation: 1 token ~ 4 chars for English JSON
         est_tokens = char_count // 4
         print(f"[AI Request] purpose=design_strategy characters={char_count} estimated_tokens={est_tokens} messages={len(payload['messages'])}")
-        
+
         if est_tokens > 1500:
             print("WARNING: design_strategy request exceeds expected token budget!")
 
@@ -84,7 +86,7 @@ class OpenAIProvider(ModelProvider):
             data = response.json() if response.text else {}
             err_type = data.get("error", {}).get("type", "")
             err_code = data.get("error", {}).get("code", "")
-            
+
             if response.status_code == 401:
                 raise ProviderAuthenticationError(f"OpenAI Auth Error: {data}")
             elif response.status_code == 429:
@@ -99,15 +101,15 @@ class OpenAIProvider(ModelProvider):
         data = response.json()
         if "choices" not in data or not data["choices"]:
             raise ProviderMalformedResponseError("OpenAI response missing 'choices'.")
-            
+
         usage = data.get("usage", {})
         input_tokens = usage.get("prompt_tokens", "unknown")
         output_tokens = usage.get("completion_tokens", "unknown")
         total_tokens = usage.get("total_tokens", "unknown")
         cached_input_tokens = usage.get("prompt_tokens_details", {}).get("cached_tokens", 0)
-        
+
         print(f"[Model Usage] provider=openai purpose=design_strategy input_tokens={input_tokens} cached_input_tokens={cached_input_tokens} output_tokens={output_tokens} total_tokens={total_tokens}")
-            
+
         content = data["choices"][0]["message"]["content"]
         try:
             parsed = json.loads(content)

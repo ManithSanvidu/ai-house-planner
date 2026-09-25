@@ -187,7 +187,7 @@ public class DailyConstructionLogService : IDailyConstructionLogService
         foreach (var log in logs)
         {
             var isIssue = !string.IsNullOrWhiteSpace(log.Challenges) || !string.IsNullOrWhiteSpace(log.SafetyIssues);
-            
+
             // Log Event
             events.Add(new CalendarEventDto(
                 Id: Guid.NewGuid(),

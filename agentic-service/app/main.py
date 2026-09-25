@@ -62,6 +62,20 @@ def execute_workflow(initial_state:WorkflowState):
     print(f"Starting workflow execution for {initial_state.workflow_id}")
     app_graph.invoke(initial_state)
 
+@app.get("/")
+async def root():
+    return {
+        "message": "AI House Planner Agentic Service is running on Render",
+        "version": "1.0.0"
+    }
+
+@app.get("/health")
+async def health():
+    return {
+        "status": "ok",
+        "service": "agentic-service"
+    }
+
 @app.post("/workflows/start")
 def start_workflow(
     request:StartWorkflowRequest,

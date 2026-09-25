@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using HousePlanner.API.Data;
 using Microsoft.EntityFrameworkCore;
+using HousePlanner.API.DTOs;
 
 namespace HousePlanner.API.Controllers
 {
@@ -19,7 +20,7 @@ namespace HousePlanner.API.Controllers
 
         public ConstructorWorkflowController(
             IConstructorWorkflowService workflowService,
-            ICurrentUserContextService currentUserContext, 
+            ICurrentUserContextService currentUserContext,
             ApplicationDbContext db,
             IDailyConstructionLogService logService)
         {
@@ -47,31 +48,42 @@ namespace HousePlanner.API.Controllers
             var user = await _currentUserContext.GetAsync(HttpContext);
             if (user?.Id == null) return Unauthorized();
 
-            var p = await _workflowService.GetProjectDetailsAsync(projectId, user.Id.Value, user.Role);
-            if (p == null) return NotFound("Project not found or unauthorized.");
+            var project = await _workflowService.GetProjectDetailsAsync(projectId, user.Id.Value, user.Role);
+            if (project == null) return NotFound("Project not found or unauthorized.");
 
-            var dto = new HousePlanner.API.DTOs.ConstructorProjectDto(
-                p.Id,
-                p.WorkflowStateId,
-                p.HouseDesignId,
-                p.ContractorId,
-                p.Status,
-                p.CreatedAt,
-                p.UpdatedAt,
-                p.AiEstimatedTotalDurationDays,
-                p.PlannedTotalDurationDays,
-                p.ConstructionPhases.Select(cp => new HousePlanner.API.DTOs.ConstructionPhaseDto(
-                    cp.Id,
-                    cp.PhaseName,
-                    cp.SequenceOrder,
-                    cp.Status,
-                    cp.StartedAt,
-                    cp.CompletedAt,
-                    cp.AiEstimatedDurationDays,
-                    cp.PlannedDurationDays,
-                    cp.PlannedStartDate,
-                    cp.PlannedEndDate
-                )).ToList()
+            var design = project.HouseDesign;
+            var cost = design?.CostEstimates.OrderByDescending(c => c.CreatedAt).FirstOrDefault();
+            var dto = new ConstructorProjectDto(
+                project.Id,
+                project.WorkflowStateId,
+                project.HouseDesignId,
+                project.ContractorId,
+                project.Status,
+                project.CreatedAt,
+                project.UpdatedAt,
+                project.AiEstimatedTotalDurationDays,
+                project.PlannedTotalDurationDays,
+                project.ConstructionPhases.Select(phase => new ConstructionPhaseDto(
+                    phase.Id,
+                    phase.PhaseName,
+                    phase.SequenceOrder,
+                    phase.Status,
+                    phase.StartedAt,
+                    phase.CompletedAt,
+                    phase.AiEstimatedDurationDays,
+                    phase.PlannedDurationDays,
+                    phase.PlannedStartDate,
+                    phase.PlannedEndDate
+                )).ToList(),
+                design is null ? null : new ConstructorDesignDto(
+                    design.Id,
+                    design.Version,
+                    design.FloorCount,
+                    design.TotalBuiltUpAreaSqft,
+                    design.FoundationType,
+                    design.LayoutJson
+                ),
+                cost is null ? null : CostBreakdownBuilder.ToSummary(cost, design?.TerrainType)
             );
 
             return Ok(dto);
@@ -102,7 +114,7 @@ namespace HousePlanner.API.Controllers
         {
             var user = await _currentUserContext.GetAsync(HttpContext);
             if (user?.Id == null) return Unauthorized();
-            
+
             try
             {
                 var createdLog = await _workflowService.CreateWorkflowLogAsync(user.Id.Value, log);
@@ -120,7 +132,7 @@ namespace HousePlanner.API.Controllers
         {
             var user = await _currentUserContext.GetAsync(HttpContext);
             if (user?.Id == null) return Unauthorized();
-            
+
             try
             {
                 var log = await _workflowService.UpdateWorkflowLogAsync(user.Id.Value, id, updatedLog);
@@ -142,9 +154,9 @@ namespace HousePlanner.API.Controllers
             if (request.PlannedDurationDays < 0) return BadRequest("Duration cannot be negative.");
 
             var updatedPhase = await _workflowService.UpdatePhaseScheduleAsync(projectId, phaseId, user.Id.Value, request.PlannedDurationDays);
-            
+
             if (updatedPhase == null) return NotFound("Project or phase not found, or unauthorized.");
-            
+
             return Ok(updatedPhase);
         }
 
@@ -161,8 +173,9 @@ namespace HousePlanner.API.Controllers
             if (!allowed) return NotFound("Project not found.");
             var project = await _workflowService.SearchProjectByIdAsync(projectId);
             if (project == null) return NotFound("Project not found.");
-            
-            return Ok(new {
+
+            return Ok(new
+            {
                 project.Id,
                 project.Status,
                 project.CreatedAt,
@@ -219,20 +232,63 @@ namespace HousePlanner.API.Controllers
                 .Where(r => r.ConstructorId == user.Id.Value && r.Status == "Pending")
                 .Include(r => r.Customer).Include(r => r.HouseDesign)
                 .OrderByDescending(r => r.CreatedAt)
-                .Select(r => new {
-                    r.Id, r.ProjectId, r.HouseDesignId, r.Status, requestedAt = r.CreatedAt,
+                .Select(r => new
+                {
+                    r.Id,
+                    r.ProjectId,
+                    r.HouseDesignId,
+                    r.Status,
+                    requestedAt = r.CreatedAt,
                     customerName = r.Customer != null ? r.Customer.FullName : "Unknown",
                     designVersion = r.HouseDesign != null ? (int?)r.HouseDesign.Version : null,
                     area = r.HouseDesign != null ? r.HouseDesign.TotalBuiltUpAreaSqft : 0m,
                     floorCount = r.HouseDesign != null ? r.HouseDesign.FloorCount : 0,
                     layoutJson = r.HouseDesign != null ? r.HouseDesign.LayoutJson : null,
+                    cost = r.HouseDesign == null ? null : r.HouseDesign.CostEstimates
+                        .OrderByDescending(c => c.CreatedAt)
+                        .Select(c => new
+                        {
+                            c.MaterialCostLkr,
+                            c.LabourCostLkr,
+                            c.TotalCostLkr,
+                            c.BudgetDeltaPercent,
+                            c.PricingSnapshotJson,
+                            c.BreakdownJson,
+                            c.FormulaVersion,
+                            c.AppliedAreaSqft,
+                            c.TerrainType,
+                            c.CreatedAt
+                        })
+                        .FirstOrDefault(),
                     r.DeclineReason
                 })
                 .ToListAsync();
 
-            return Ok(raw.Select(r => new {
-                r.Id, r.ProjectId, r.HouseDesignId, r.Status, r.requestedAt,
-                r.customerName, r.designVersion, r.area, r.floorCount, r.DeclineReason,
+            return Ok(raw.Select(r => new
+            {
+                r.Id,
+                r.ProjectId,
+                r.HouseDesignId,
+                r.Status,
+                r.requestedAt,
+                r.customerName,
+                r.designVersion,
+                r.area,
+                r.floorCount,
+                cost = r.cost == null ? null : CostBreakdownBuilder.ToSummary(new CostEstimate
+                {
+                    MaterialCostLkr = r.cost.MaterialCostLkr,
+                    LabourCostLkr = r.cost.LabourCostLkr,
+                    TotalCostLkr = r.cost.TotalCostLkr,
+                    BudgetDeltaPercent = r.cost.BudgetDeltaPercent,
+                    PricingSnapshotJson = r.cost.PricingSnapshotJson,
+                    BreakdownJson = r.cost.BreakdownJson,
+                    FormulaVersion = r.cost.FormulaVersion,
+                    AppliedAreaSqft = r.cost.AppliedAreaSqft,
+                    TerrainType = r.cost.TerrainType,
+                    CreatedAt = r.cost.CreatedAt
+                }),
+                r.DeclineReason,
                 title = DesignTitle(r.layoutJson, r.designVersion ?? 0),
                 bedrooms = CountRooms(r.layoutJson, "bedroom"),
                 bathrooms = CountRooms(r.layoutJson, "bathroom")
@@ -261,7 +317,7 @@ namespace HousePlanner.API.Controllers
         {
             var user = await _currentUserContext.GetAsync(HttpContext);
             if (user?.Id == null) return Unauthorized();
-            var request = await _db.ConstructorProjectRequests.Include(r => r.Project).ThenInclude(p => p.WorkflowState)
+            var request = await _db.ConstructorProjectRequests.Include(r => r.Project).ThenInclude(p => p!.WorkflowState)
                 .FirstOrDefaultAsync(r => r.Id == requestId && r.ConstructorId == user.Id.Value);
             if (request == null) return NotFound();
             if (request.Status != "Pending") return Conflict(new { message = "Only pending requests can be accepted." });
@@ -272,7 +328,7 @@ namespace HousePlanner.API.Controllers
             request.Status = "Accepted"; request.RespondedAt = DateTimeOffset.UtcNow; request.UpdatedAt = request.RespondedAt.Value;
             request.Project.ContractorId = user.Id.Value; request.Project.HouseDesignId = request.HouseDesignId;
             request.Project.Status = "active"; request.Project.UpdatedAt = DateTimeOffset.UtcNow;
-            
+
             // Initialize ConstructionPhases from AI plan
             if (request.Project.WorkflowState != null && !string.IsNullOrEmpty(request.Project.WorkflowState.ConstructionPlan))
             {
@@ -280,24 +336,24 @@ namespace HousePlanner.API.Controllers
                 {
                     using var doc = System.Text.Json.JsonDocument.Parse(request.Project.WorkflowState.ConstructionPlan);
                     var root = doc.RootElement;
-                    
+
                     if (root.TryGetProperty("project_summary", out var summary) && summary.TryGetProperty("estimated_duration_days", out var estTotal))
                     {
                         request.Project.AiEstimatedTotalDurationDays = estTotal.GetInt32();
                         request.Project.PlannedTotalDurationDays = estTotal.GetInt32();
                     }
-                    
+
                     if (root.TryGetProperty("phases", out var phasesList))
                     {
                         var currentDate = DateOnly.FromDateTime(DateTime.UtcNow);
                         int order = 1;
-                        
+
                         foreach (var phaseEl in phasesList.EnumerateArray())
                         {
                             string phaseName = phaseEl.TryGetProperty("name", out var nameEl) ? nameEl.GetString() ?? "Unknown Phase" : "Unknown Phase";
                             int duration = phaseEl.TryGetProperty("duration_days", out var durEl) ? durEl.GetInt32() : 7;
                             int seq = phaseEl.TryGetProperty("id", out var idEl) ? idEl.GetInt32() : order;
-                            
+
                             var cp = new HousePlanner.API.Entities.ConstructionPhase
                             {
                                 Id = Guid.NewGuid(),
@@ -310,7 +366,7 @@ namespace HousePlanner.API.Controllers
                                 PlannedStartDate = currentDate,
                                 PlannedEndDate = currentDate.AddDays(Math.Max(0, duration - 1))
                             };
-                            
+
                             request.Project.ConstructionPhases.Add(cp);
                             _db.ConstructionPhases.Add(cp);
                             currentDate = currentDate.AddDays(Math.Max(1, duration));
@@ -326,9 +382,12 @@ namespace HousePlanner.API.Controllers
 
             var competing = await _db.ConstructorProjectRequests.Where(r => r.ProjectId == request.ProjectId && r.Id != request.Id && r.Status == "Pending").ToListAsync();
             foreach (var other in competing) { other.Status = "Cancelled"; other.UpdatedAt = DateTimeOffset.UtcNow; }
-            try {
+            try
+            {
                 await _db.SaveChangesAsync();
-            } catch (Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException ex) {
+            }
+            catch (Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException ex)
+            {
                 var entry = ex.Entries.FirstOrDefault();
                 throw new Exception($"Failed on {entry?.Entity.GetType().Name}. State: {entry?.State}", ex);
             }

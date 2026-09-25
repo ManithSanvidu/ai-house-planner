@@ -12,7 +12,6 @@ from app.design.plan_adapter import PlanAdapter, transform_design
 from app.schemas.design_result import DesignResult
 from app.tools import layout_generation_tool as generation
 
-
 PREFERENCES = {'bedrooms': 2, 'bathrooms': 1, 'floors': 1}
 PLOT = {'plot_width_ft': 90, 'plot_length_ft': 90}
 

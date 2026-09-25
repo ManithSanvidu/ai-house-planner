@@ -1,9 +1,9 @@
-import pytest
-from app.schemas.workflow_state import WorkflowState, CoordinatorInput
-from app.schemas.design_result import DesignResult
+from unittest.mock import MagicMock, patch
+
 from app.agents.design_agent import design_node
-from app.tools.layout_generation_tool import select_template, generate_layout
-from unittest.mock import patch, MagicMock
+from app.schemas.design_result import DesignResult
+from app.schemas.workflow_state import CoordinatorInput, WorkflowState
+from app.tools.layout_generation_tool import select_template
 
 
 def test_select_template_for_hillside_three_bedroom_two_floor():
@@ -18,17 +18,17 @@ def test_select_template_for_hillside_three_bedroom_two_floor():
 @patch('app.agents.design_agent._submit_design')
 def test_design_node_generation(mock_submit):
     mock_submit.return_value = "success"
-    
+
     state = WorkflowState(workflow_id="00000000-0000-0000-0000-000000000123")
     state.input_data = CoordinatorInput(
-        submission_id="00000000-0000-0000-0000-000000000123", 
+        submission_id="00000000-0000-0000-0000-000000000123",
         land_size_perches=20.0,
         preferences={"bedrooms": 4, "floors": 2}
     )
     state.terrain_result = {"terrain_type": "flat"}
-    
+
     updated_state = design_node(state)
-    
+
     assert updated_state.design_result is not None
     assert updated_state.design_result["floor_count"] == 2
     # Template system now returns a real template ID (e.g. "4BR_2F_FLAT") on mock/quota-exceeded fallback.
@@ -46,15 +46,15 @@ def test_design_node_revision_flow(mock_submit, mock_generate, mock_quality, moc
     mock_submit.return_value = "success"
     mock_quality.return_value = MagicMock(passed=True, status='VALID_HIGH_QUALITY')
     mock_geometry.return_value = MagicMock(passed=True)
-    
+
     state = WorkflowState(workflow_id="00000000-0000-0000-0000-000000000123")
     state.input_data = CoordinatorInput(
-        submission_id="00000000-0000-0000-0000-000000000123", 
+        submission_id="00000000-0000-0000-0000-000000000123",
         land_size_perches=10.0,
         preferences={"bedrooms": 3, "bathrooms": 2, "floors": 1}
     )
     state.terrain_result = {"terrain_type": "flat"}
-    
+
     # Simulate a validation failure causing a revision
     state.validation_result = {"passed": False, "revision_reason": "Coverage limit exceeded"}
     valid_design = DesignResult(
@@ -64,9 +64,9 @@ def test_design_node_revision_flow(mock_submit, mock_generate, mock_quality, moc
     )
     state.design_result = valid_design.model_dump()
     mock_generate.return_value = valid_design
-    
+
     updated_state = design_node(state)
-    
+
     assert updated_state.design_result is not None
     assert updated_state.current_agent == "cost_estimation"
     assert mock_submit.called

@@ -1,12 +1,12 @@
 """Parametric room banks used as the primary deterministic layout generator."""
 from math import sqrt
+
 from app.design.adjacency import build_connections, exterior_segments, road_access_clear
 from app.design.diversity import candidate_rng, stable_id, stable_seed
-from app.design.models import Entrance, Requirements, SpatialProgram, RoomSpec
+from app.design.models import Entrance, Requirements, RoomSpec, SpatialProgram
 from app.design.plot_constraints import PlotConstraints
 from app.design.room_rules import room_kind
-from app.schemas.design_result import DesignResult, RoomLayout, Opening
-from app.schemas.design_strategy import DesignStrategy
+from app.schemas.design_result import DesignResult, Opening, RoomLayout
 
 TERRAIN_FOUNDATION_MAP = {'flat': 'slab', 'hillside': 'stepped', 'coastal': 'raised'}
 
@@ -15,13 +15,13 @@ def generate_geometry(program: SpatialProgram, req: Requirements, plot: PlotCons
     rng = candidate_rng(seed, family, candidate_index)
     # Calculate base minimum program area
     min_program_area = sum(spec.min_width * spec.min_length for spec in program.rooms)
-    
+
     # Calculate available footprint vs required footprint
     available_ratio = plot.maximum_ground_footprint / max(min_program_area, 1)
-    
+
     # Scale from 0.82 (very tight) to 1.5 (very generous) based on available land
     base_factor = min(1.5, max(0.82, available_ratio * 0.7))
-    
+
     # Apply a wide variance per candidate index so that at least one candidate
     # shrinks aggressively enough to fit tight boundaries, even when base_factor is high.
     size_factor = base_factor * (1.0, 0.75, 0.5)[candidate_index % 3]
@@ -46,7 +46,7 @@ def generate_geometry(program: SpatialProgram, req: Requirements, plot: PlotCons
         buildable_aspect = plot.buildable_width / plot.buildable_length if plot.buildable_length > 0 else 1.0
         # Limit stretch to reasonable room proportions (0.5 to 2.0)
         aspect_stretch = max(0.5, min(2.0, buildable_aspect))
-        
+
         w = round(max(spec.min_width * min_scale, sqrt(target) * aspect_stretch * rng.uniform(0.95, 1.05)), 1)
         d = round(target/w, 1)
         # Cap depth for LINEAR to ensure it fits the narrow plot
@@ -60,14 +60,14 @@ def generate_geometry(program: SpatialProgram, req: Requirements, plot: PlotCons
         return min(spec.max_width, w), min(spec.max_length, d)
 
     stair_core = None
-    
+
     floor_specs = {}
     for floor in range(1, req.floors+1):
         specs = [s for s in program.rooms if s.floor == floor]
         priority = {'living_room': 0, 'dining': 1, 'kitchen': 2, 'bedroom_1': 4, 'bathroom_attached': 4.1}
         specs.sort(key=lambda s: (priority.get(s.id, 5 if s.zone == 'private' else 6), s.id))
         floor_specs[floor] = [(s, *dimensions(s)) for s in specs]
-        
+
     # Equalize lengths across floors so they align structurally.
     if req.floors > 1:
         if family == 'LINEAR' and floor_specs.get(1) and floor_specs.get(2):
@@ -90,30 +90,30 @@ def generate_geometry(program: SpatialProgram, req: Requirements, plot: PlotCons
                         split += 1; top_w, bot_w = sum(x[1] for x in f_specs[:split]), sum(x[1] for x in f_specs[split:])
                     top = f_specs[:split]
                 return sum(w for _, w, d in top), top
-            
+
             top_span1, top1 = calc_top_span(floor_specs[1])
-            top_span2, top2 = calc_top_span(floor_specs[2])
+            top_span2, _top2 = calc_top_span(floor_specs[2])
             if top_span1 < top_span2 and top1:
                 # Add padding to the last room in top1
                 s, w, d = top1[-1]
                 idx = floor_specs[1].index((s, w, d))
                 floor_specs[1][idx] = (s, w + (top_span2 - top_span1), d)
-                
+
     for floor in range(1, req.floors+1):
         sized = floor_specs[floor]
         cw = circulation_width
-        def bank(items: list, x: float, y: float, side: str) -> float:
+        def bank(items: list, x: float, y: float, side: str, floor_number: int = floor) -> float:
             pos = 0.0
             for spec, w, d in items:
                 if side == 'north':
-                    put(spec.id, spec.room_type, floor, x+pos, y, w, d)
+                    put(spec.id, spec.room_type, floor_number, x+pos, y, w, d)
                 elif side == 'south':
-                    put(spec.id, spec.room_type, floor, x+pos, y-d, w, d)
+                    put(spec.id, spec.room_type, floor_number, x+pos, y-d, w, d)
                 elif side == 'east':
-                    put(spec.id, spec.room_type, floor, x, y-pos-w, d, w)
+                    put(spec.id, spec.room_type, floor_number, x, y-pos-w, d, w)
                 pos = round(pos+w, 4)
             return pos
-            
+
         if family == 'LINEAR':
             span = bank(sized, cw, 0, 'east')
             put(f'hall_{floor}', 'hallway', floor, 0, -span, cw, span)
@@ -128,7 +128,7 @@ def generate_geometry(program: SpatialProgram, req: Requirements, plot: PlotCons
             public_count = sum(s.zone == 'public' or s.id == 'kitchen' for s in specs)
             split = max(2, public_count)
             first, rest = sized[:split], sized[split:]
-            
+
             span = bank(first, 0, cw, 'north')
             if family == 'L_SHAPE':
                 depth = bank(rest, span+cw, 0, 'east')
@@ -173,13 +173,13 @@ def generate_geometry(program: SpatialProgram, req: Requirements, plot: PlotCons
                     split += 1
                     top_w = sum(x[1] for x in sized[:split])
                     bot_w = sum(x[1] for x in sized[split:])
-                
+
                 top, bottom = sized[:split], sized[split:]
-                
+
             offset = 4.0 if family == 'HILLSIDE_STEPPED' else 0.0
             a = bank(top, 0, cw, 'north')
             b = bank(bottom, offset, 0, 'south') + offset
-            
+
             span = max(a, b, 6)
             put(f'hall_{floor}', 'foyer' if family == 'CENTRAL_CORE' else 'hallway', floor, 0, 0, span, cw)
             if req.floors > 1:
@@ -221,10 +221,10 @@ def generate_geometry(program: SpatialProgram, req: Requirements, plot: PlotCons
                        for wall, lo, hi in exterior_segments(r, rotated) if wall == plot.effective_entrance_side and road_access_clear(r, rotated, wall, (lo+hi-3)/2)]
             if entries:
                 # Select the circulation opening closest to the road edge.
-                def road_distance(entry: tuple) -> float:
+                def road_distance(entry: tuple, building_width: float = width, building_length: float = length) -> float:
                     r = entry[0]
-                    return {'south': r.y, 'north': length-r.y-r.length,
-                            'west': r.x, 'east': width-r.x-r.width}[plot.effective_entrance_side]
+                    return {'south': r.y, 'north': building_length-r.y-r.length,
+                            'west': r.x, 'east': building_width-r.x-r.width}[plot.effective_entrance_side]
                 entry = min(entries, key=road_distance)
                 slope_penalty = width if plot.terrain_type == 'hillside' and plot.slope_direction in ('north', 'south') else 0
                 options.append((road_distance(entry)+slope_penalty, turns, rotated, entry))
