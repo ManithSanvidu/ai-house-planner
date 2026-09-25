@@ -1,39 +1,4 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from app.main import app
 
-app = FastAPI(
-    title="AI House Planner Agentic Service",
-    version="1.0.0",
-    description="Agentic service for the AI House Planner application",
-)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-
-@app.get("/")
-async def root():
-    return {
-        "message": "AI House Planner Agentic Service is running",
-        "version": "1.0.0",
-    }
-
-
-@app.get("/health")
-async def health():
-    return {
-        "status": "ok",
-        "service": "agentic-service",
-    }
-
-
-@app.get("/api")
-async def api_status():
-    return {
-        "message": "AI House Planner API is working"
-    }
+# This file connects Vercel's serverless functions to your actual FastAPI app.
+# Vercel will now serve the endpoints defined in app/main.py, such as /workflows/start
