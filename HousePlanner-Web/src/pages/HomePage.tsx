@@ -474,16 +474,16 @@ const HomePage: React.FC = () => {
                 {assistantResult && (
                   <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm text-left border border-gray-200 dark:border-gray-700">
                     <p className="text-gray-900 dark:text-gray-100 mb-4 whitespace-pre-wrap leading-relaxed">
-                      {assistantResult.message || 'No response from assistant.'}
+                      {assistantResult.reply || 'No response from assistant.'}
                     </p>
 
-                    {assistantResult.intent === 'DESIGN_REQUEST' && assistantResult.feasibility?.can_proceed && (
+                    {assistantResult.action?.type === 'CONTINUE_TO_DESIGN' && (
                       <div className="mt-6 p-4 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl border border-indigo-100 dark:border-indigo-800">
                         <p className="font-semibold text-indigo-900 dark:text-indigo-200 mb-3">
                           Your request is feasible. I can start the design setup with these requirements.
                         </p>
                         <button 
-                          onClick={() => navigate('/dashboard/new-project', { state: { prefill: assistantResult.requirements } })}
+                          onClick={() => navigate('/dashboard/new-project', { state: { prefill: assistantResult.action.payload.requirements } })}
                           className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-lg font-bold text-xs tracking-wider transition-colors"
                         >
                           Continue to Design
@@ -491,14 +491,14 @@ const HomePage: React.FC = () => {
                       </div>
                     )}
 
-                    {assistantResult.intent === 'DESIGN_REQUEST' && assistantResult.feasibility && !assistantResult.feasibility.can_proceed && (
+                    {assistantResult.intent === 'DESIGN_REQUEST' && assistantResult.action?.type === 'NONE' && assistantResult.action.payload?.feasibility && !assistantResult.action.payload.feasibility.can_proceed && (
                       <div className="mt-6 p-4 bg-amber-50 dark:bg-amber-900/30 rounded-xl border border-amber-200 dark:border-amber-800">
                         <p className="font-semibold text-amber-900 dark:text-amber-200 mb-2">
                           Your request is not supported with the available buildable area or catalogue.
                         </p>
-                        {assistantResult.feasibility.suggestions?.length > 0 && (
+                        {assistantResult.action.payload.feasibility.suggestions?.length > 0 && (
                           <ul className="list-disc list-inside text-amber-800 dark:text-amber-300 text-xs space-y-1 mt-2">
-                            {assistantResult.feasibility.suggestions.map((s: string, i: number) => (
+                            {assistantResult.action.payload.feasibility.suggestions.map((s: string, i: number) => (
                               <li key={i}>{s}</li>
                             ))}
                           </ul>

@@ -29,108 +29,145 @@ class AssistantInterpretation(BaseModel):
     model_config = ConfigDict(extra='forbid')
     intent: str = Field(description="One of: GENERAL_ADVICE, LAND_FEASIBILITY_ADVICE, DESIGN_REQUEST, PROJECT_QUESTION, CONSTRUCTION_QUESTION, UNKNOWN")
     confidence: float = Field(description="Confidence score between 0.0 and 1.0")
-    message: str = Field(description="The parsed message or advice for the user based on intent")
     requirements: Optional[Requirements] = Field(description="Extracted requirements for DESIGN_REQUEST and LAND_FEASIBILITY_ADVICE")
     missing_required_fields: List[str] = Field(description="Missing required fields for the intent")
     assumptions: List[str] = Field(description="Assumptions made by the AI")
     user_goal: Optional[str] = Field(description="The user's inferred goal")
 
+def get_current_user_project_context():
+    # Stub for getting project context
+    return {"status": "No active project found in context."}
+
+def get_supported_plan_options():
+    # Stub for getting supported plans
+    return []
+
+def create_design_brief(requirements: dict):
+    # Stub for creating design brief
+    return {"brief_id": "temp-1234", "requirements": requirements}
+
+class AssistantAction(BaseModel):
+    type: str
+    payload: dict
+
+class AgentResponse(BaseModel):
+    reply: str
+    intent: str
+    action: AssistantAction
+
 def interpret_user_message(message: str) -> dict:
     from app.providers.provider_factory import get_available_design_provider, get_provider
     from app.agents.feasibility_engine import check_feasibility, generate_feasibility_advice
-
+    
     provider = get_available_design_provider() or get_provider("openai")
     
+    # Tool 1: interpret_user_request
     system_prompt = """You are an AI Architecture Assistant.
 Analyze the user message and extract the intent and structural requirements.
 Supported intents:
-- GENERAL_ADVICE: general architecture/design/construction question.
-- LAND_FEASIBILITY_ADVICE: asking for advice based on land size / house requirements.
-- DESIGN_REQUEST: asking the system to design/generate a house.
-- PROJECT_QUESTION: asking a project-specific question.
-- CONSTRUCTION_QUESTION: asking a construction related question.
-- UNKNOWN: ambiguous text.
+- GENERAL_ADVICE
+- LAND_FEASIBILITY_ADVICE
+- DESIGN_REQUEST
+- PROJECT_QUESTION
+- CONSTRUCTION_QUESTION
+- UNKNOWN
 
-If intent is DESIGN_REQUEST or LAND_FEASIBILITY_ADVICE, extract structural fields into 'requirements'. Do NOT invent values unless explicitly marked as inferred/default. Put them in 'assumptions'.
-Also identify 'missing_required_fields' (e.g. land_size, bedrooms) and 'user_goal'."""
-
-    user_prompt = f'User message: "{message}"'
-
+If intent is DESIGN_REQUEST or LAND_FEASIBILITY_ADVICE, extract structural fields into 'requirements'. 
+Put anything inferred into 'assumptions'."""
+    
     try:
-        if not provider:
-            raise Exception("No provider available")
-        res = provider.generate_json(system_prompt, user_prompt, AssistantInterpretation)
-
-        # Run deterministic feasibility checks based on intent
+        res = provider.generate_json(system_prompt, f'User message: "{message}"', AssistantInterpretation)
         intent = res.get('intent', 'UNKNOWN')
-        reqs = res.get('requirements')
-
-        if intent == 'DESIGN_REQUEST' and reqs:
-            feasibility = check_feasibility(reqs)
-            res['feasibility'] = feasibility.to_dict()
-
-        elif intent == 'LAND_FEASIBILITY_ADVICE' and reqs:
-            advice = generate_feasibility_advice(reqs)
-            res['feasibility_advice'] = advice
-
-        # RAG retrieval for knowledge-based intents
-        rag_intents = {'GENERAL_ADVICE', 'CONSTRUCTION_QUESTION', 'DESIGN_REQUEST', 'LAND_FEASIBILITY_ADVICE'}
-        if intent in rag_intents:
+        reqs_obj = res.get('requirements')
+        reqs = reqs_obj if isinstance(reqs_obj, dict) else (reqs_obj.dict() if reqs_obj else None)
+        
+        context_str = f"User Message: {message}\nIntent: {intent}\n"
+        action_type = "NONE"
+        action_payload = {}
+        
+        # Determine tools based on intent
+        if intent == 'GENERAL_ADVICE':
+            from app.knowledge.rag_pipeline import search_knowledge_as_dicts
             try:
-                from app.knowledge.rag_pipeline import search_knowledge_as_dicts
                 knowledge = search_knowledge_as_dicts(message, top_k=3)
-                if knowledge:
-                    res['knowledge_context'] = knowledge
-                    res['response_sources'] = []
-                    if intent in ('DESIGN_REQUEST', 'LAND_FEASIBILITY_ADVICE'):
-                        res['response_sources'].append('system_feasibility')
-                    if knowledge:
-                        res['response_sources'].append('architecture_knowledge_base')
-            except Exception as rag_err:
-                # RAG failure is non-fatal — proceed without knowledge context
-                res['knowledge_context'] = []
-                res['rag_error'] = str(rag_err)
-
-        # Generate final response using context
-        if intent != 'UNKNOWN':
-            class FinalResponse(BaseModel):
-                message: str = Field(description="The final response to the user incorporating context")
+                context_str += f"RAG Knowledge:\n{knowledge}\n"
+            except Exception:
+                pass
+                
+        elif intent == 'LAND_FEASIBILITY_ADVICE':
+            if reqs:
+                advice = generate_feasibility_advice(reqs)
+                context_str += f"System Feasibility Advice:\n{advice}\n"
+            from app.knowledge.rag_pipeline import search_knowledge_as_dicts
+            try:
+                knowledge = search_knowledge_as_dicts(message, top_k=2)
+                context_str += f"RAG Knowledge:\n{knowledge}\n"
+            except Exception:
+                pass
+                
+        elif intent == 'DESIGN_REQUEST':
+            if reqs:
+                feasibility = check_feasibility(reqs)
+                context_str += f"System Feasibility Result:\n{feasibility.to_dict()}\n"
+                
+                # Never navigate or create design brief if feasibility failed.
+                if getattr(feasibility, 'can_proceed', False):
+                    brief = create_design_brief(reqs)
+                    context_str += f"Design Brief Created:\n{brief}\n"
+                    action_type = "CONTINUE_TO_DESIGN"
+                    action_payload = {"requirements": reqs, "feasibility": feasibility.to_dict()}
+                else:
+                    action_type = "NONE"
+                    # Pass the rejection reasons and suggestions to the payload just in case frontend needs it
+                    action_payload = {"feasibility": feasibility.to_dict()}
+                    
+        elif intent == 'PROJECT_QUESTION':
+            proj_context = get_current_user_project_context()
+            context_str += f"Project Context:\n{proj_context}\n"
+            action_type = "OPEN_PROJECT"
+            action_payload = {"context": proj_context}
             
-            final_system_prompt = """You are an AI Architecture Assistant.
+        elif intent == 'CONSTRUCTION_QUESTION':
+            from app.knowledge.rag_pipeline import search_knowledge_as_dicts
+            try:
+                knowledge = search_knowledge_as_dicts(message, top_k=3)
+                context_str += f"RAG Knowledge:\n{knowledge}\n"
+            except Exception:
+                pass
+            proj_context = get_current_user_project_context()
+            context_str += f"Project Context:\n{proj_context}\n"
+            
+        # Final LLM pass to synthesize reply
+        class FinalResponse(BaseModel):
+            reply: str = Field(description="The final response to the user incorporating context")
+            
+        final_system_prompt = """You are an AI Architecture Assistant.
 Generate a helpful response to the user's message based on the provided context.
-
 RULES:
 1. For general/design/construction advice, use the RAG Knowledge Context.
-2. For design feasibility, combine the system feasibility result + RAG explanation.
-3. NEVER use RAG to override the deterministic feasibility result (e.g. if system says land is too small, agree with it).
-4. Clearly distinguish between "System Feasibility Result" and "General Architecture Guidance" in your response formatting.
-5. Do NOT claim structural or code approval. Always include a brief disclaimer that this is conceptual guidance only.
-"""
-            context_str = f"User Message: {message}\nIntent: {intent}\n"
-            if reqs and intent == 'DESIGN_REQUEST' and 'feasibility' in res:
-                context_str += f"System Feasibility Result: {res['feasibility']}\n"
-            elif reqs and intent == 'LAND_FEASIBILITY_ADVICE' and 'feasibility_advice' in res:
-                context_str += f"System Feasibility Advice: {res['feasibility_advice']}\n"
-            
-            if res.get('knowledge_context'):
-                context_str += "\nRAG Knowledge Context:\n"
-                for k in res['knowledge_context']:
-                    context_str += f"- {k['title']} ({k['category']}): {k['content']}\n"
-                    
-            try:
-                final_res = provider.generate_json(final_system_prompt, context_str, FinalResponse)
-                res['message'] = final_res.get('message', res['message'])
-            except Exception as e:
-                pass # Fallback to original message if second pass fails
+2. For design feasibility, NEVER override the deterministic feasibility result.
+3. Do NOT claim structural or code approval. Include a brief disclaimer."""
 
-        return res
+        try:
+            final_res = provider.generate_json(final_system_prompt, context_str, FinalResponse)
+            reply = final_res.get('reply', 'No reply generated.')
+        except Exception as e:
+            reply = res.get('message', str(e))
+            
+        return {
+            "reply": reply,
+            "intent": intent,
+            "action": {
+                "type": action_type,
+                "payload": action_payload
+            }
+        }
     except Exception as e:
         return {
+            "reply": f"Failed to process request: {str(e)}",
             "intent": "UNKNOWN",
-            "confidence": 0.0,
-            "message": f"Failed to parse response: {e}",
-            "requirements": None,
-            "missing_required_fields": [],
-            "assumptions": [],
-            "user_goal": None
+            "action": {
+                "type": "NONE",
+                "payload": {}
+            }
         }

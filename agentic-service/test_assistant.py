@@ -20,20 +20,18 @@ for msg, expected_intent in messages:
     intent = result.get('intent', 'UNKNOWN')
     print(f"ACTUAL INTENT: {intent}")
     
-    if intent == 'DESIGN_REQUEST' and 'feasibility' in result:
-        f = result['feasibility']
+    if intent == 'DESIGN_REQUEST' and result.get('action') and 'feasibility' in result['action'].get('payload', {}):
+        f = result['action']['payload']['feasibility']
         print(f"  can_proceed: {f['can_proceed']}")
         print(f"  compatible_plan_count: {f['compatible_plan_count']}")
         print(f"  reason_codes: {f['reason_codes']}")
         print(f"  suggestions: {f['suggestions']}")
         print(f"  land: {json.dumps(f.get('land'), indent=2)}")
     
-    elif intent == 'LAND_FEASIBILITY_ADVICE' and 'feasibility_advice' in result:
-        a = result['feasibility_advice']
-        print(f"  advice message:\n    {a['message']}")
-        if a.get('ranges'):
-            for fc, info in a['ranges'].items():
-                print(f"    {fc}-floor: {info['bedroom_range'][0]}-{info['bedroom_range'][1]} beds, {info['plan_count']} plans")
+    # We didn't explicitly include feasibility_advice in the action payload for LAND_FEASIBILITY_ADVICE, 
+    # but we included it in context_str. For test purposes, let's just print the reply.
+    elif intent == 'LAND_FEASIBILITY_ADVICE':
+        print(f"  reply message:\n    {result['reply']}")
     
     print()
 

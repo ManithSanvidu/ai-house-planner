@@ -62,17 +62,22 @@ test('Valid DESIGN_REQUEST shows Continue button and navigates', async () => {
   mockPost.mockResolvedValueOnce({
     data: {
       intent: 'DESIGN_REQUEST',
-      message: 'Sure, I can design a 4 bedroom house for you.',
-      requirements: {
-        bedrooms: 4,
-        bathrooms: 2,
-        floors: 2,
-        land_size: 25,
-        land_unit: 'perches'
-      },
-      feasibility: {
-        can_proceed: true,
-        suggestions: []
+      reply: 'Your request is feasible. I can start the design setup with these requirements.',
+      action: {
+        type: 'CONTINUE_TO_DESIGN',
+        payload: {
+          requirements: {
+            bedrooms: 4,
+            bathrooms: 2,
+            floors: 2,
+            land_size: 25,
+            land_unit: 'perches'
+          },
+          feasibility: {
+            can_proceed: true,
+            suggestions: []
+          }
+        }
       }
     }
   });
@@ -103,13 +108,18 @@ test('Invalid DESIGN_REQUEST hides Continue button and shows suggestions', async
   mockPost.mockResolvedValueOnce({
     data: {
       intent: 'DESIGN_REQUEST',
-      message: 'I cannot design this.',
-      feasibility: {
-        can_proceed: false,
-        suggestions: [
-          'Reduce bedrooms from 6 to 4',
-          'Use 2 floors instead of 1'
-        ]
+      reply: 'Your request is not supported with the available buildable area or catalogue.',
+      action: {
+        type: 'NONE',
+        payload: {
+          feasibility: {
+            can_proceed: false,
+            suggestions: [
+              'Reduce bedrooms from 6 to 4',
+              'Use 2 floors instead of 1'
+            ]
+          }
+        }
       }
     }
   });
