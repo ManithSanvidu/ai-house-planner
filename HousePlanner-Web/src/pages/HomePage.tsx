@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Html, useGLTF } from '@react-three/drei';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
-import { Mic, ArrowRight, Sparkles, Box, Moon, Sun, ChevronRight, ChevronLeft, Menu, X } from 'lucide-react';
+import { Mic, ArrowRight, Sparkles, Box, Moon, Sun, ChevronRight, ChevronLeft, Menu, X, MessageSquare } from 'lucide-react';
 import * as THREE from 'three';
 import apiClient from '../services/apiClient';
 // ---------------------------------------------------------
@@ -295,6 +295,7 @@ const HomePage: React.FC = () => {
   const [prompt, setPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -449,109 +450,9 @@ const HomePage: React.FC = () => {
               <Link to="/login" className="bg-gray-900 dark:bg-white hover:bg-black dark:hover:bg-gray-200 text-white dark:text-gray-900 px-8 py-4 text-xs font-bold tracking-[0.15em] transition-all flex items-center justify-center gap-3 w-max">
                 START DESIGNING <ArrowRight size={16} />
               </Link>
-            </div>
-
-            {/* AI Prompt Bar embedded below text */}
-            <div className="w-full max-w-xl">
-              <motion.div 
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.5, duration: 0.8 }}
-                className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border border-gray-200 dark:border-gray-800 p-2 rounded-2xl shadow-xl flex flex-col relative overflow-hidden transition-colors"
-              >
-                {/* Scanning animation overlay */}
-                <AnimatePresence>
-                  {isGenerating && (
-                    <motion.div 
-                      initial={{ left: '-100%' }}
-                      animate={{ left: '200%' }}
-                      transition={{ duration: 1.5, ease: "linear", repeat: Infinity }}
-                      className="absolute top-0 bottom-0 w-1/2 bg-gradient-to-r from-transparent via-blue-400/20 dark:via-blue-500/20 to-transparent z-0 pointer-events-none skew-x-12"
-                    />
-                  )}
-                </AnimatePresence>
-
-                <div className="flex items-center justify-between px-4 pt-3 pb-2 relative z-10 border-b border-gray-100 dark:border-gray-800/50">
-                  <div className="flex items-center gap-2">
-                    <Sparkles size={12} className="text-yellow-600" />
-                    <span className="text-[9px] font-bold tracking-[0.2em] text-gray-500 dark:text-gray-400">AI ARCHITECT</span>
-                  </div>
-                  {chatHistory.length > 0 && (
-                    <button type="button" onClick={() => setChatHistory([])} className="text-[10px] uppercase font-bold tracking-wider text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors">
-                      Clear Chat
-                    </button>
-                  )}
-                </div>
-
-                {/* Chat History Area */}
-                {chatHistory.length > 0 && (
-                  <div className="px-4 py-4 max-h-[400px] overflow-y-auto flex flex-col gap-4 relative z-10">
-                    {chatHistory.map((msg, idx) => (
-                      <div key={idx} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                        <div className={`px-4 py-3 rounded-2xl max-w-[90%] text-sm shadow-sm ${msg.role === 'user' ? 'bg-black dark:bg-white text-white dark:text-black rounded-br-sm' : 'bg-gray-100 dark:bg-gray-800 text-black dark:text-white rounded-bl-sm border border-gray-200 dark:border-gray-700'}`}>
-                          <p className="whitespace-pre-wrap leading-relaxed">
-                            {msg.content}
-                          </p>
-                        </div>
-                        
-                        {/* Render actions if assistant message */}
-                        {msg.role === 'assistant' && msg.action && (
-                          <div className="mt-3 w-full pl-2">
-                            {msg.action.type === 'CONTINUE_TO_DESIGN' && (
-                              <div className="p-4 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl border border-indigo-100 dark:border-indigo-800 max-w-[90%]">
-                                <p className="font-semibold text-indigo-900 dark:text-indigo-200 mb-3 text-sm">
-                                  Your request is feasible. I can start the design setup with these requirements.
-                                </p>
-                                <button 
-                                  onClick={() => navigate('/dashboard/new-project', { state: { prefill: msg.action.payload.requirements } })}
-                                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-lg font-bold text-xs tracking-wider transition-colors shadow-sm"
-                                >
-                                  Continue to Design
-                                </button>
-                              </div>
-                            )}
-
-                            {msg.intent === 'DESIGN_REQUEST' && msg.action.type === 'NONE' && msg.action.payload?.feasibility && !msg.action.payload.feasibility.can_proceed && (
-                              <div className="p-4 bg-amber-50 dark:bg-amber-900/30 rounded-xl border border-amber-200 dark:border-amber-800 max-w-[90%]">
-                                <p className="font-semibold text-amber-900 dark:text-amber-200 mb-2 text-sm">
-                                  Your request is not supported with the available buildable area or catalogue.
-                                </p>
-                                {msg.action.payload.feasibility.suggestions?.length > 0 && (
-                                  <ul className="list-disc list-inside text-amber-800 dark:text-amber-300 text-xs space-y-1.5 mt-2">
-                                    {msg.action.payload.feasibility.suggestions.map((s: string, i: number) => (
-                                      <li key={i}>{s}</li>
-                                    ))}
-                                  </ul>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-                
-                <form onSubmit={handleGenerate} className="flex items-center gap-2 relative z-10 bg-white/50 dark:bg-gray-900/50 rounded-xl mx-2 my-2 border border-gray-100 dark:border-gray-800">
-                  <input
-                    type="text"
-                    value={prompt}
-                    onChange={(e) => setPrompt(e.target.value)}
-                    placeholder={chatHistory.length > 0 ? "Reply to AI Architect..." : "Describe your dream home..."}
-                    className="flex-1 bg-transparent border-none focus:ring-0 text-black dark:text-white placeholder-gray-500 dark:placeholder-gray-400 px-4 py-3.5 outline-none text-sm font-light transition-colors"
-                  />
-                  <button type="button" className="p-3 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors hidden sm:block">
-                    <Mic size={18} />
-                  </button>
-                  <button 
-                    type="submit"
-                    disabled={isGenerating || !prompt}
-                    className="bg-black dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-200 text-white dark:text-black px-6 py-2.5 mr-1 rounded-lg text-xs font-bold tracking-[0.1em] transition-colors disabled:opacity-50 flex items-center gap-2 shadow-sm"
-                  >
-                    {isGenerating ? 'WAIT' : 'SEND'}
-                  </button>
-                </form>
-              </motion.div>
+              <button onClick={() => setIsChatOpen(true)} className="bg-transparent border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-900 dark:text-white px-8 py-4 text-xs font-bold tracking-[0.15em] transition-all flex items-center justify-center gap-3 w-max">
+                ASK AI ARCHITECT <MessageSquare size={16} />
+              </button>
             </div>
           </div>
         </motion.div>
@@ -809,6 +710,137 @@ const HomePage: React.FC = () => {
         </div>
       </footer>
       
+      {/* FLOATING CHAT WIDGET */}
+      <AnimatePresence>
+        {isChatOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            transition={{ duration: 0.2 }}
+            className="fixed bottom-6 right-6 z-50 w-[420px] max-w-[calc(100vw-2rem)] bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border border-gray-200 dark:border-gray-800 rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 bg-gray-50/80 dark:bg-gray-800/80 border-b border-gray-100 dark:border-gray-800">
+              <div className="flex items-center gap-2">
+                <Sparkles size={14} className="text-yellow-600" />
+                <span className="text-[10px] font-bold tracking-[0.2em] text-gray-700 dark:text-gray-300">AI ARCHITECT</span>
+              </div>
+              <div className="flex items-center gap-4">
+                {chatHistory.length > 0 && (
+                  <button type="button" onClick={() => setChatHistory([])} className="text-[10px] uppercase font-bold tracking-wider text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
+                    Clear
+                  </button>
+                )}
+                <button type="button" onClick={() => setIsChatOpen(false)} className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors">
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+
+            {/* Chat History Area */}
+            <div className="px-5 py-4 h-[400px] overflow-y-auto flex flex-col gap-4 scrollbar-thin relative">
+              <AnimatePresence>
+                {isGenerating && (
+                  <motion.div 
+                    initial={{ left: '-100%' }}
+                    animate={{ left: '200%' }}
+                    transition={{ duration: 1.5, ease: "linear", repeat: Infinity }}
+                    className="absolute top-0 bottom-0 w-1/2 bg-gradient-to-r from-transparent via-blue-400/10 dark:via-blue-500/10 to-transparent z-0 pointer-events-none skew-x-12"
+                  />
+                )}
+              </AnimatePresence>
+
+              {chatHistory.length === 0 ? (
+                <div className="flex-1 flex flex-col items-center justify-center text-center opacity-70 my-8 relative z-10">
+                  <MessageSquare size={32} className="mb-3 text-gray-400" />
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Describe your dream home or ask any architectural question to get started.</p>
+                </div>
+              ) : (
+                chatHistory.map((msg, idx) => (
+                  <div key={idx} className={`flex flex-col relative z-10 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                    <div className={`px-4 py-3 rounded-2xl max-w-[90%] text-sm shadow-sm ${msg.role === 'user' ? 'bg-black dark:bg-white text-white dark:text-black rounded-br-sm' : 'bg-gray-100 dark:bg-gray-800 text-black dark:text-white rounded-bl-sm border border-gray-200 dark:border-gray-700'}`}>
+                      <p className="whitespace-pre-wrap leading-relaxed">
+                        {msg.content}
+                      </p>
+                    </div>
+                    
+                    {/* Render actions if assistant message */}
+                    {msg.role === 'assistant' && msg.action && (
+                      <div className="mt-3 w-full pl-2">
+                        {msg.action.type === 'CONTINUE_TO_DESIGN' && (
+                          <div className="p-4 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl border border-indigo-100 dark:border-indigo-800 max-w-[90%]">
+                            <p className="font-semibold text-indigo-900 dark:text-indigo-200 mb-3 text-sm">
+                              Your request is feasible. I can start the design setup with these requirements.
+                            </p>
+                            <button 
+                              onClick={() => navigate('/dashboard/new-project', { state: { prefill: msg.action.payload.requirements } })}
+                              className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-lg font-bold text-xs tracking-wider transition-colors shadow-sm"
+                            >
+                              Continue to Design
+                            </button>
+                          </div>
+                        )}
+
+                        {msg.intent === 'DESIGN_REQUEST' && msg.action.type === 'NONE' && msg.action.payload?.feasibility && !msg.action.payload.feasibility.can_proceed && (
+                          <div className="p-4 bg-amber-50 dark:bg-amber-900/30 rounded-xl border border-amber-200 dark:border-amber-800 max-w-[90%]">
+                            <p className="font-semibold text-amber-900 dark:text-amber-200 mb-2 text-sm">
+                              Your request is not supported with the available buildable area or catalogue.
+                            </p>
+                            {msg.action.payload.feasibility.suggestions?.length > 0 && (
+                              <ul className="list-disc list-inside text-amber-800 dark:text-amber-300 text-xs space-y-1.5 mt-2">
+                                {msg.action.payload.feasibility.suggestions.map((s: string, i: number) => (
+                                  <li key={i}>{s}</li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Input Form */}
+            <form onSubmit={handleGenerate} className="flex items-center gap-2 p-3 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 relative z-10">
+              <input
+                type="text"
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                placeholder="Message AI Architect..."
+                className="flex-1 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-black dark:focus:ring-white focus:border-transparent text-black dark:text-white placeholder-gray-500 dark:placeholder-gray-400 px-4 py-3 outline-none text-sm transition-all"
+              />
+              <button 
+                type="submit"
+                disabled={isGenerating || !prompt}
+                className="bg-black dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-200 text-white dark:text-black w-12 h-12 flex-shrink-0 rounded-xl flex items-center justify-center transition-colors disabled:opacity-50 shadow-sm"
+              >
+                {isGenerating ? <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div> : <ArrowRight size={18} />}
+              </button>
+            </form>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* FLOATING ACTION BUTTON (FAB) when chat is closed */}
+      <AnimatePresence>
+        {!isChatOpen && (
+          <motion.button
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            exit={{ scale: 0 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setIsChatOpen(true)}
+            className="fixed bottom-6 right-6 z-50 w-16 h-16 bg-black dark:bg-white text-white dark:text-black rounded-full shadow-2xl flex items-center justify-center"
+          >
+            <MessageSquare size={24} />
+          </motion.button>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 };
