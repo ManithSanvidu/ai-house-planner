@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from typing import Optional, Union, List
 import secrets
 from typing import Any
 from uuid import UUID
@@ -156,8 +156,13 @@ def resume_workflow(
     background_tasks.add_task(execute_workflow, state)
     return {"message": "Workflow resumed successfully", "workflow_id": str(request.workflow_id)}
 
+class MessageEntry(BaseModel):
+    role: str
+    content: str
+
 class AssistantRequest(BaseModel):
     message: str
+    history: Optional[List[MessageEntry]] = None
 
 @app.post("/assistant/interpret")
 def interpret_message(
@@ -165,7 +170,8 @@ def interpret_message(
     api_key: str = Security(verify_api_key)
 ):
     from app.agents.architecture_assistant import interpret_user_message
-    return interpret_user_message(request.message)
+    history_dicts = [m.model_dump() for m in request.history] if request.history else None
+    return interpret_user_message(request.message, history=history_dicts)
 
 class KnowledgeSearchRequest(BaseModel):
     query: str

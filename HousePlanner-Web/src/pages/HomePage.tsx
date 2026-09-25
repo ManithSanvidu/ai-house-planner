@@ -285,9 +285,16 @@ const HomePage: React.FC = () => {
   const heroOpacity = useTransform(scrollY, [0, 300], [1, 0]);
   const heroY = useTransform(scrollY, [0, 300], [0, -50]);
 
+  type ChatMessage = {
+    role: 'user' | 'assistant';
+    content: string;
+    action?: any;
+    intent?: string;
+  };
+
   const [prompt, setPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
-  const [assistantResult, setAssistantResult] = useState<any>(null);
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -295,12 +302,29 @@ const HomePage: React.FC = () => {
     e.preventDefault();
     if (!prompt) return;
     setIsGenerating(true);
+    const currentPrompt = prompt;
+    setPrompt(''); // clear input immediately
+    
+    // Add user message to UI history
+    setChatHistory(prev => [...prev, { role: 'user', content: currentPrompt }]);
+    
     try {
-      const { data } = await apiClient.post('/assistant/interpret', { message: prompt });
-      setAssistantResult(data);
+      const historyToSend = chatHistory.map(msg => ({ role: msg.role, content: msg.content }));
+      const { data } = await apiClient.post('/assistant/interpret', { 
+        message: currentPrompt,
+        history: historyToSend 
+      });
+      if (data.reply) {
+        setChatHistory(prev => [...prev, { 
+          role: 'assistant', 
+          content: data.reply,
+          action: data.action,
+          intent: data.intent
+        }]);
+      }
     } catch (err) {
       console.error('Assistant error:', err);
-      setAssistantResult({ error: 'Failed to interpret message.' });
+      setChatHistory(prev => [...prev, { role: 'assistant', content: 'Failed to interpret message.' }]);
     } finally {
       setIsGenerating(false);
     }
@@ -447,77 +471,90 @@ const HomePage: React.FC = () => {
                   )}
                 </AnimatePresence>
 
-                <div className="flex items-center gap-2 px-4 pt-2 pb-1 relative z-10">
-                  <Sparkles size={12} className="text-yellow-600" />
-                  <span className="text-[9px] font-bold tracking-[0.2em] text-gray-500 dark:text-gray-400">AI ARCHITECT</span>
+                <div className="flex items-center justify-between px-4 pt-3 pb-2 relative z-10 border-b border-gray-100 dark:border-gray-800/50">
+                  <div className="flex items-center gap-2">
+                    <Sparkles size={12} className="text-yellow-600" />
+                    <span className="text-[9px] font-bold tracking-[0.2em] text-gray-500 dark:text-gray-400">AI ARCHITECT</span>
+                  </div>
+                  {chatHistory.length > 0 && (
+                    <button type="button" onClick={() => setChatHistory([])} className="text-[10px] uppercase font-bold tracking-wider text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors">
+                      Clear Chat
+                    </button>
+                  )}
                 </div>
+
+                {/* Chat History Area */}
+                {chatHistory.length > 0 && (
+                  <div className="px-4 py-4 max-h-[400px] overflow-y-auto flex flex-col gap-4 relative z-10">
+                    {chatHistory.map((msg, idx) => (
+                      <div key={idx} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                        <div className={`px-4 py-3 rounded-2xl max-w-[90%] text-sm shadow-sm ${msg.role === 'user' ? 'bg-black dark:bg-white text-white dark:text-black rounded-br-sm' : 'bg-gray-100 dark:bg-gray-800 text-black dark:text-white rounded-bl-sm border border-gray-200 dark:border-gray-700'}`}>
+                          <p className="whitespace-pre-wrap leading-relaxed">
+                            {msg.content}
+                          </p>
+                        </div>
+                        
+                        {/* Render actions if assistant message */}
+                        {msg.role === 'assistant' && msg.action && (
+                          <div className="mt-3 w-full pl-2">
+                            {msg.action.type === 'CONTINUE_TO_DESIGN' && (
+                              <div className="p-4 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl border border-indigo-100 dark:border-indigo-800 max-w-[90%]">
+                                <p className="font-semibold text-indigo-900 dark:text-indigo-200 mb-3 text-sm">
+                                  Your request is feasible. I can start the design setup with these requirements.
+                                </p>
+                                <button 
+                                  onClick={() => navigate('/dashboard/new-project', { state: { prefill: msg.action.payload.requirements } })}
+                                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-lg font-bold text-xs tracking-wider transition-colors shadow-sm"
+                                >
+                                  Continue to Design
+                                </button>
+                              </div>
+                            )}
+
+                            {msg.intent === 'DESIGN_REQUEST' && msg.action.type === 'NONE' && msg.action.payload?.feasibility && !msg.action.payload.feasibility.can_proceed && (
+                              <div className="p-4 bg-amber-50 dark:bg-amber-900/30 rounded-xl border border-amber-200 dark:border-amber-800 max-w-[90%]">
+                                <p className="font-semibold text-amber-900 dark:text-amber-200 mb-2 text-sm">
+                                  Your request is not supported with the available buildable area or catalogue.
+                                </p>
+                                {msg.action.payload.feasibility.suggestions?.length > 0 && (
+                                  <ul className="list-disc list-inside text-amber-800 dark:text-amber-300 text-xs space-y-1.5 mt-2">
+                                    {msg.action.payload.feasibility.suggestions.map((s: string, i: number) => (
+                                      <li key={i}>{s}</li>
+                                    ))}
+                                  </ul>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
                 
-                <form onSubmit={handleGenerate} className="flex items-center gap-2 relative z-10">
+                <form onSubmit={handleGenerate} className="flex items-center gap-2 relative z-10 bg-white/50 dark:bg-gray-900/50 rounded-xl mx-2 my-2 border border-gray-100 dark:border-gray-800">
                   <input
                     type="text"
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
-                    placeholder="Describe your dream home..."
-                    className="flex-1 bg-transparent border-none focus:ring-0 text-black dark:text-white placeholder-gray-500 dark:placeholder-gray-400 px-4 py-3 outline-none text-sm font-light transition-colors"
+                    placeholder={chatHistory.length > 0 ? "Reply to AI Architect..." : "Describe your dream home..."}
+                    className="flex-1 bg-transparent border-none focus:ring-0 text-black dark:text-white placeholder-gray-500 dark:placeholder-gray-400 px-4 py-3.5 outline-none text-sm font-light transition-colors"
                   />
                   <button type="button" className="p-3 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors hidden sm:block">
                     <Mic size={18} />
                   </button>
                   <button 
                     type="submit"
-                    disabled={isGenerating}
-                    className="bg-black dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-200 text-white dark:text-black px-6 py-3 rounded-xl text-xs font-bold tracking-[0.1em] transition-colors disabled:opacity-70 flex items-center gap-2"
+                    disabled={isGenerating || !prompt}
+                    className="bg-black dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-200 text-white dark:text-black px-6 py-2.5 mr-1 rounded-lg text-xs font-bold tracking-[0.1em] transition-colors disabled:opacity-50 flex items-center gap-2 shadow-sm"
                   >
-                    {isGenerating ? 'ANALYZING' : 'GENERATE'}
+                    {isGenerating ? 'WAIT' : 'SEND'}
                   </button>
                 </form>
-                {assistantResult && (
-                  <div className="mt-4 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm text-left border border-gray-200 dark:border-gray-700">
-                    <p className="text-black dark:text-white mb-4 whitespace-pre-wrap leading-relaxed">
-                      {assistantResult.reply || 'No response from assistant.'}
-                    </p>
-
-                    {assistantResult.action?.type === 'CONTINUE_TO_DESIGN' && (
-                      <div className="mt-6 p-4 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl border border-indigo-100 dark:border-indigo-800">
-                        <p className="font-semibold text-indigo-900 dark:text-indigo-200 mb-3">
-                          Your request is feasible. I can start the design setup with these requirements.
-                        </p>
-                        <button 
-                          onClick={() => navigate('/dashboard/new-project', { state: { prefill: assistantResult.action.payload.requirements } })}
-                          className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-lg font-bold text-xs tracking-wider transition-colors"
-                        >
-                          Continue to Design
-                        </button>
-                      </div>
-                    )}
-
-                    {assistantResult.intent === 'DESIGN_REQUEST' && assistantResult.action?.type === 'NONE' && assistantResult.action.payload?.feasibility && !assistantResult.action.payload.feasibility.can_proceed && (
-                      <div className="mt-6 p-4 bg-amber-50 dark:bg-amber-900/30 rounded-xl border border-amber-200 dark:border-amber-800">
-                        <p className="font-semibold text-amber-900 dark:text-amber-200 mb-2">
-                          Your request is not supported with the available buildable area or catalogue.
-                        </p>
-                        {assistantResult.action.payload.feasibility.suggestions?.length > 0 && (
-                          <ul className="list-disc list-inside text-amber-800 dark:text-amber-300 text-xs space-y-1 mt-2">
-                            {assistantResult.action.payload.feasibility.suggestions.map((s: string, i: number) => (
-                              <li key={i}>{s}</li>
-                            ))}
-                          </ul>
-                        )}
-                      </div>
-                    )}
-
-                    <div className="mt-4 flex justify-end">
-                      <button onClick={() => setAssistantResult(null)} className="text-gray-700 hover:text-black dark:text-gray-300 dark:hover:text-white font-medium text-xs transition-colors bg-black/5 dark:bg-white/10 px-3 py-1.5 rounded hover:bg-black/10 dark:hover:bg-white/20">
-                        Clear
-                      </button>
-                    </div>
-                  </div>
-                )}
               </motion.div>
             </div>
           </div>
         </motion.div>
-
       </section>
 
       {/* 8. SMALL SECOND SECTION */}

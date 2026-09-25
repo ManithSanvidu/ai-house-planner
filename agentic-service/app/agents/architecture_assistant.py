@@ -55,7 +55,7 @@ class AgentResponse(BaseModel):
     intent: str
     action: AssistantAction
 
-def interpret_user_message(message: str) -> dict:
+def interpret_user_message(message: str, history: Optional[List[dict]] = None) -> dict:
     from app.providers.provider_factory import get_available_design_provider, get_provider
     from app.agents.feasibility_engine import check_feasibility, generate_feasibility_advice
     
@@ -73,15 +73,20 @@ Supported intents:
 - UNKNOWN
 
 If intent is DESIGN_REQUEST or LAND_FEASIBILITY_ADVICE, extract structural fields into 'requirements'. 
-Put anything inferred into 'assumptions'."""
-    
+Put anything inferred into 'assumptions'.
+Pay attention to the previous conversation history if provided, as the user might be referring to previously stated requirements."""
+
+    history_context = ""
+    if history:
+        history_context = "Chat History:\n" + "\n".join([f"{msg['role'].capitalize()}: {msg['content']}" for msg in history]) + "\n\n"
+
     try:
-        res = provider.generate_json(system_prompt, f'User message: "{message}"', AssistantInterpretation)
+        res = provider.generate_json(system_prompt, f'{history_context}User message: "{message}"', AssistantInterpretation)
         intent = res.get('intent', 'UNKNOWN')
         reqs_obj = res.get('requirements')
         reqs = reqs_obj if isinstance(reqs_obj, dict) else (reqs_obj.dict() if reqs_obj else None)
         
-        context_str = f"User Message: {message}\nIntent: {intent}\n"
+        context_str = f"{history_context}User Message: {message}\nIntent: {intent}\n"
         action_type = "NONE"
         action_payload = {}
         
