@@ -37,6 +37,7 @@ class AssistantInterpretation(BaseModel):
 
 def interpret_user_message(message: str) -> dict:
     from app.providers.provider_factory import get_available_design_provider, get_provider
+    from app.agents.feasibility_engine import check_feasibility, generate_feasibility_advice
     provider = get_available_design_provider() or get_provider("openai")
     
     system_prompt = """You are an AI Architecture Assistant.
@@ -58,6 +59,19 @@ Also identify 'missing_required_fields' (e.g. land_size, bedrooms) and 'user_goa
         if not provider:
             raise Exception("No provider available")
         res = provider.generate_json(system_prompt, user_prompt, AssistantInterpretation)
+
+        # Run deterministic feasibility checks based on intent
+        intent = res.get('intent', 'UNKNOWN')
+        reqs = res.get('requirements')
+
+        if intent == 'DESIGN_REQUEST' and reqs:
+            feasibility = check_feasibility(reqs)
+            res['feasibility'] = feasibility.to_dict()
+
+        elif intent == 'LAND_FEASIBILITY_ADVICE' and reqs:
+            advice = generate_feasibility_advice(reqs)
+            res['feasibility_advice'] = advice
+
         return res
     except Exception as e:
         return {
