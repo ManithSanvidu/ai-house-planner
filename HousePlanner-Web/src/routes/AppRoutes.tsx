@@ -7,6 +7,8 @@ import AdminStaffPage from '../pages/AdminStaffPage';
 import AdminWorkflowsPage from '../pages/AdminWorkflowsPage';
 import DashboardPage from '../pages/DashboardPage';
 import HomePage from '../pages/HomePage';
+import FeaturesPage from '../pages/FeaturesPage';
+import GalleryPage from '../pages/GalleryPage';
 import IntakeForm from '../pages/IntakeForm';
 import LoginPage from '../pages/LoginPage';
 import RegisterPage from '../pages/RegisterPage';
@@ -29,6 +31,8 @@ import ProtectedRoute from './ProtectedRoute';
 export const AppRoutes: React.FC = () => (
   <Routes>
     <Route path="/" element={<HomePage />} />
+    <Route path="/features" element={<FeaturesPage />} />
+    <Route path="/gallery" element={<GalleryPage />} />
     <Route path="/login" element={<LoginPage />} />
     <Route path="/register" element={<RegisterPage />} />
     <Route path="/dashboard" element={<ProtectedRoute><PageContainer><DashboardPage /></PageContainer></ProtectedRoute>} />
