@@ -35,8 +35,12 @@ public class RevisionBathroomTests
             .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options);
         var submission = new LandSubmission
         {
-            Id = Guid.NewGuid(), ClientId = Guid.NewGuid(), LandSizePerches = 20,
-            PreferredBedrooms = 3, PreferredFloors = 2, StylePreference = "modern"
+            Id = Guid.NewGuid(),
+            ClientId = Guid.NewGuid(),
+            LandSizePerches = 20,
+            PreferredBedrooms = 3,
+            PreferredFloors = 2,
+            StylePreference = "modern"
         };
         var layout = new Dictionary<string, object?>
         {
@@ -44,15 +48,26 @@ public class RevisionBathroomTests
             ["rooms"] = Enumerable.Range(1, actualBathrooms).Select(index => new { room_type = $"bathroom_{index}" }).ToArray()
         };
         if (savedRequirements)
-            layout["candidate_summary"] = new { normalized_input = new
+            layout["candidate_summary"] = new
             {
-                bedrooms = 3, bathrooms = 2, floors = 2, architectural_style = "conventional",
-                home_office = true, utility_room = true, open_plan = false
-            } };
+                normalized_input = new
+                {
+                    bedrooms = 3,
+                    bathrooms = 2,
+                    floors = 2,
+                    architectural_style = "conventional",
+                    home_office = true,
+                    utility_room = true,
+                    open_plan = false
+                }
+            };
         var workflow = new WorkflowState
         {
-            Id = Guid.NewGuid(), LandSubmissionId = submission.Id, LandSubmission = submission,
-            TerrainType = "flat", HouseDesigns = new List<HouseDesign>
+            Id = Guid.NewGuid(),
+            LandSubmissionId = submission.Id,
+            LandSubmission = submission,
+            TerrainType = "flat",
+            HouseDesigns = new List<HouseDesign>
             {
                 new() { Id = Guid.NewGuid(), Version = 1, FloorCount = 2, FoundationType = "slab",
                         LayoutJson = JsonSerializer.Serialize(layout) }
@@ -69,7 +84,9 @@ public class RevisionBathroomTests
             workflow.Id, It.IsAny<ApprovalRequestDto>(), It.IsAny<string?>(), It.IsAny<string?>()))
             .ReturnsAsync(ApprovalServiceResult.Success(new ApprovalResponseDto
             {
-                WorkflowId = workflow.Id, Decision = "request_revision", Status = "revision_requested"
+                WorkflowId = workflow.Id,
+                Decision = "request_revision",
+                Status = "revision_requested"
             }));
         var currentUser = new Mock<ICurrentUserContextService>();
         currentUser.Setup(x => x.GetAsync(It.IsAny<HttpContext>()))

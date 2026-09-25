@@ -15,7 +15,7 @@ const project = { workflowId: 'workflow-1234', status: 'design_generated', prefe
 const selectedProject = () => ({ ...structuredClone(project), status: 'selected_by_client', preferredHouseDesignId: 'd2', designs: project.designs.map(d => ({ ...d, isPreferred: d.designId === 'd2' })) });
 
 beforeEach(() => {
-  vi.clearAllMocks();
+  vi.resetAllMocks();
   vi.mocked(workflowService.getMyDesigns).mockResolvedValue([structuredClone(project)]);
   vi.mocked(workflowService.selectDesign).mockResolvedValue({});
   vi.mocked(workflowService.clearDesignSelection).mockResolvedValue({});
@@ -68,7 +68,7 @@ test('delete action shows confirmation and refetches after confirmation', async 
   fireEvent.click(screen.getByRole('button', { name: 'Delete Version 2' }));
   const dialog = screen.getByRole('dialog', { name: 'Delete Version 2' });
   expect(within(dialog).getByText('Delete Version 2?')).toBeTruthy();
-  fireEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Remove Design' }));
   await waitFor(() => expect(workflowService.removeDesign).toHaveBeenCalledWith('workflow-1234', 'd2'));
   await waitFor(() => expect(screen.queryByText('Version 2')).toBeNull());
 });

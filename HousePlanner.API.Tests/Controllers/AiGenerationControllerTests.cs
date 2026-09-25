@@ -27,7 +27,7 @@ namespace HousePlanner.API.Tests.Controllers
             var options = new DbContextOptionsBuilder<ApplicationDbContext>()
                 .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
                 .Options;
-            
+
             _dbContext = new ApplicationDbContext(options);
 
             // Add a mock client to avoid foreign key/user null checks
@@ -39,12 +39,12 @@ namespace HousePlanner.API.Tests.Controllers
             {
                 BaseAddress = new Uri("http://localhost:8001")
             };
-            
+
             var httpClientFactory = new Mock<IHttpClientFactory>();
             httpClientFactory.Setup(f => f.CreateClient("AgenticService")).Returns(httpClient);
 
             _mockDesignOptionsService = new Mock<IDesignOptionsService>();
-            
+
             var currentUser = new Mock<ICurrentUserContextService>();
             currentUser.Setup(x => x.GetAsync(It.IsAny<HttpContext>()))
                 .ReturnsAsync(new CurrentUserContext(_clientId, "test@example.com", "Customer"));
@@ -62,7 +62,8 @@ namespace HousePlanner.API.Tests.Controllers
             await _dbContext.SaveChangesAsync();
             var request = new AiGenerationRequest
             {
-                ClientId = otherCustomer.Id, LandSizePerches = 15,
+                ClientId = otherCustomer.Id,
+                LandSizePerches = 15,
                 Preferences = new PreferencesDto { Bedrooms = 3, Bathrooms = 2, Floors = 1 }
             };
             _mockDesignOptionsService.Setup(s => s.ValidateFinalSelectionAsync(request, It.IsAny<CancellationToken>()))
@@ -102,7 +103,7 @@ namespace HousePlanner.API.Tests.Controllers
             var okResult = Assert.IsType<OkObjectResult>(result);
             var response = JsonSerializer.Deserialize<JsonElement>(JsonSerializer.Serialize(okResult.Value));
             Assert.True(response.TryGetProperty("WorkflowId", out var workflowIdProp));
-            
+
             var workflowId = workflowIdProp.GetGuid();
             var workflow = await _dbContext.WorkflowStates.FindAsync(workflowId);
             Assert.NotNull(workflow);
@@ -138,11 +139,11 @@ namespace HousePlanner.API.Tests.Controllers
             // Assert
             var badRequest = Assert.IsType<BadRequestObjectResult>(result);
             var response = JsonSerializer.Deserialize<JsonElement>(JsonSerializer.Serialize(badRequest.Value));
-            
+
             Assert.Equal("UNSUPPORTED_DESIGN_CONFIGURATION", response.GetProperty("code").GetString());
             var conflicts = response.GetProperty("conflicts").EnumerateArray().Select(e => e.GetString()).ToList();
             Assert.Contains("parking", conflicts);
-            
+
             var suggestions = response.GetProperty("suggestions").EnumerateArray();
             Assert.Equal("parkingRequired", suggestions.First().GetProperty("field").GetString());
 
@@ -153,17 +154,35 @@ namespace HousePlanner.API.Tests.Controllers
         [Fact]
         public async Task Generate_SelectedPlanIsRevalidatedBeforeWorkflowCreation()
         {
-            var plan = new PreDesignedHousePlan { Name="Selected",Slug="selected",DesignCode="SELECTED",
-                Style="Modern",Bedrooms=2,Bathrooms=1,FloorCount=1,MinimumLandSizePerches=8,
-                SuitableTerrain="flat",TagsJson="[]",LayoutJson="{\"rooms\":[]}",IsActive=true };
+            var plan = new PreDesignedHousePlan
+            {
+                Name = "Selected",
+                Slug = "selected",
+                DesignCode = "SELECTED",
+                Style = "Modern",
+                Bedrooms = 2,
+                Bathrooms = 1,
+                FloorCount = 1,
+                MinimumLandSizePerches = 8,
+                SuitableTerrain = "flat",
+                TagsJson = "[]",
+                LayoutJson = "{\"rooms\":[]}",
+                IsActive = true
+            };
             _dbContext.PreDesignedHousePlans.Add(plan); await _dbContext.SaveChangesAsync();
-            var request = new AiGenerationRequest { BasePreDesignedPlanId=plan.Id,PlanSelectionMode="reference",
-                LandSizePerches=10,ManualTerrainType="flat",Preferences=new PreferencesDto{Bedrooms=3,Bathrooms=2,Floors=1} };
-            _mockDesignOptionsService.Setup(x=>x.ValidateFinalSelectionAsync(request,It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new DesignOptionsValidationResult{IsValid=true});
-            _mockDesignOptionsService.Setup(x=>x.ValidateSpecificPlanAsync(plan,request,It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new DesignOptionsValidationResult{IsValid=false,ErrorCode="SELECTED_PLAN_INCOMPATIBLE",Message="Incompatible",Conflicts=["bedrooms"]});
-            var result=Assert.IsType<BadRequestObjectResult>(await _controller.Generate(request,CancellationToken.None));
+            var request = new AiGenerationRequest
+            {
+                BasePreDesignedPlanId = plan.Id,
+                PlanSelectionMode = "reference",
+                LandSizePerches = 10,
+                ManualTerrainType = "flat",
+                Preferences = new PreferencesDto { Bedrooms = 3, Bathrooms = 2, Floors = 1 }
+            };
+            _mockDesignOptionsService.Setup(x => x.ValidateFinalSelectionAsync(request, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new DesignOptionsValidationResult { IsValid = true });
+            _mockDesignOptionsService.Setup(x => x.ValidateSpecificPlanAsync(plan, request, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new DesignOptionsValidationResult { IsValid = false, ErrorCode = "SELECTED_PLAN_INCOMPATIBLE", Message = "Incompatible", Conflicts = ["bedrooms"] });
+            var result = Assert.IsType<BadRequestObjectResult>(await _controller.Generate(request, CancellationToken.None));
             Assert.Equal(StatusCodes.Status400BadRequest, result.StatusCode);
             var response = JsonSerializer.SerializeToElement(result.Value);
             Assert.Equal("SELECTED_PLAN_INCOMPATIBLE", response.GetProperty("code").GetString());
@@ -179,32 +198,50 @@ namespace HousePlanner.API.Tests.Controllers
         [Fact]
         public async Task Generate_CompatibleSelectedPlanReachesAiAsServerResolvedPlanCode()
         {
-            var plan = new PreDesignedHousePlan { Name="Selected",Slug="selected-ai",DesignCode="SELECTED-AI",
-                Style="Modern",Bedrooms=2,Bathrooms=1,FloorCount=1,MinimumLandSizePerches=8,
-                SuitableTerrain="flat",TagsJson="[]",LayoutJson="{\"rooms\":[]}",IsActive=true };
+            var plan = new PreDesignedHousePlan
+            {
+                Name = "Selected",
+                Slug = "selected-ai",
+                DesignCode = "SELECTED-AI",
+                Style = "Modern",
+                Bedrooms = 2,
+                Bathrooms = 1,
+                FloorCount = 1,
+                MinimumLandSizePerches = 8,
+                SuitableTerrain = "flat",
+                TagsJson = "[]",
+                LayoutJson = "{\"rooms\":[]}",
+                IsActive = true
+            };
             _dbContext.PreDesignedHousePlans.Add(plan); await _dbContext.SaveChangesAsync();
-            var request = new AiGenerationRequest { BasePreDesignedPlanId=plan.Id,PlanSelectionMode="reference",
-                LandSizePerches=10,ManualTerrainType="flat",Preferences=new PreferencesDto{Bedrooms=2,Bathrooms=1,Floors=1,ArchitecturalStyle="Modern"} };
-            _mockDesignOptionsService.Setup(x=>x.ValidateFinalSelectionAsync(request,It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new DesignOptionsValidationResult{IsValid=true});
-            _mockDesignOptionsService.Setup(x=>x.ValidateSpecificPlanAsync(plan,request,It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new DesignOptionsValidationResult{IsValid=true});
-            string? body=null;
-            _mockHttpMessageHandler.Protected().Setup<Task<HttpResponseMessage>>("SendAsync",ItExpr.IsAny<HttpRequestMessage>(),ItExpr.IsAny<CancellationToken>())
-                .Callback<HttpRequestMessage,CancellationToken>((message,_)=>body=message.Content!.ReadAsStringAsync().GetAwaiter().GetResult())
+            var request = new AiGenerationRequest
+            {
+                BasePreDesignedPlanId = plan.Id,
+                PlanSelectionMode = "reference",
+                LandSizePerches = 10,
+                ManualTerrainType = "flat",
+                Preferences = new PreferencesDto { Bedrooms = 2, Bathrooms = 1, Floors = 1, ArchitecturalStyle = "Modern" }
+            };
+            _mockDesignOptionsService.Setup(x => x.ValidateFinalSelectionAsync(request, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new DesignOptionsValidationResult { IsValid = true });
+            _mockDesignOptionsService.Setup(x => x.ValidateSpecificPlanAsync(plan, request, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new DesignOptionsValidationResult { IsValid = true });
+            string? body = null;
+            _mockHttpMessageHandler.Protected().Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .Callback<HttpRequestMessage, CancellationToken>((message, _) => body = message.Content!.ReadAsStringAsync().GetAwaiter().GetResult())
                 .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK));
-            var resultRaw = await _controller.Generate(request,CancellationToken.None);
-Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(((Microsoft.AspNetCore.Mvc.ObjectResult)resultRaw).Value));
-var result = Assert.IsType<OkObjectResult>(resultRaw);
+            var resultRaw = await _controller.Generate(request, CancellationToken.None);
+            Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(((Microsoft.AspNetCore.Mvc.ObjectResult)resultRaw).Value));
+            var result = Assert.IsType<OkObjectResult>(resultRaw);
             Assert.Equal(StatusCodes.Status200OK, result.StatusCode);
-            Assert.Contains("SELECTED-AI",body);
+            Assert.Contains("SELECTED-AI", body);
             using var payload = JsonDocument.Parse(body!);
             Assert.Equal(plan.DesignCode, payload.RootElement.GetProperty("preferred_plan_code").GetString());
             _mockDesignOptionsService.Verify(x => x.ValidateSpecificPlanAsync(plan, request, It.IsAny<CancellationToken>()), Times.Once);
             var workflow = await _dbContext.WorkflowStates.SingleAsync();
             Assert.Equal("running", workflow.Status);
             Assert.Equal(workflow.Id, JsonSerializer.SerializeToElement(result.Value).GetProperty("WorkflowId").GetGuid());
-            Assert.Equal(plan.Id,(await _dbContext.LandSubmissions.SingleAsync()).BasePreDesignedPlanId);
+            Assert.Equal(plan.Id, (await _dbContext.LandSubmissions.SingleAsync()).BasePreDesignedPlanId);
             Assert.Empty(_dbContext.HouseDesigns);
         }
 
@@ -218,7 +255,7 @@ var result = Assert.IsType<OkObjectResult>(resultRaw);
                 .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK));
 
             var result = await _controller.Generate(request, CancellationToken.None);
-            
+
             Assert.IsType<OkObjectResult>(result);
             var submission = await _dbContext.LandSubmissions.SingleAsync();
             Assert.Equal(_clientId, submission.ClientId);
@@ -238,7 +275,7 @@ var result = Assert.IsType<OkObjectResult>(resultRaw);
                 .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK));
 
             var result = await _controller.Generate(request, CancellationToken.None);
-            
+
             Assert.IsType<OkObjectResult>(result);
             var submission = await _dbContext.LandSubmissions.SingleAsync();
             Assert.Equal(_clientId, submission.ClientId);
@@ -254,8 +291,8 @@ var result = Assert.IsType<OkObjectResult>(resultRaw);
 
             // Simulate missing authenticated user
             var currentUser = new Mock<ICurrentUserContextService>();
-            currentUser.Setup(x => x.GetAsync(It.IsAny<HttpContext>())).ReturnsAsync((CurrentUserContext)null);
-            
+            currentUser.Setup(x => x.GetAsync(It.IsAny<HttpContext>())).ReturnsAsync((CurrentUserContext?)null);
+
             var localController = new AiGenerationController(_dbContext, new Mock<IHttpClientFactory>().Object, _mockDesignOptionsService.Object, currentUser.Object)
             {
                 ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
@@ -266,7 +303,7 @@ var result = Assert.IsType<OkObjectResult>(resultRaw);
                 .ReturnsAsync(new DesignOptionsValidationResult { IsValid = true });
 
             var result = await localController.Generate(request, CancellationToken.None);
-            
+
             var unauthorizedResult = Assert.IsType<UnauthorizedObjectResult>(result);
             Assert.Empty(_dbContext.LandSubmissions);
         }

@@ -3,23 +3,22 @@ from __future__ import annotations
 
 import json
 import logging
+from collections.abc import Iterable
 from dataclasses import dataclass
 from functools import cached_property, lru_cache
 from pathlib import Path
-from typing import Iterable, Optional
 
-from app.design.architectural_quality import validate_architectural_quality
 from app.design.adjacency import exterior_segments, graph_for
+from app.design.architectural_quality import validate_architectural_quality
 from app.design.diversity import geometry_fingerprint
 from app.design.models import Requirements
 from app.design.plan_adapter import transform_design
-from app.design.plot_constraints import PlotConstraints
 from app.design.plan_suitability import accessibility_details, suitability_breakdown
+from app.design.plot_constraints import PlotConstraints
 from app.design.quality_metrics import calculate_quality_metrics
 from app.design.room_counts import count_bathrooms
 from app.design.room_rules import room_kind
 from app.schemas.design_result import DesignResult
-
 
 CATALOG_MIN_SIZE = 20
 logger = logging.getLogger(__name__)
@@ -35,9 +34,9 @@ class BasePlanRecord:
     floors: int
     topology_family: str
     minimum_land_perches: float
-    maximum_land_perches: Optional[float]
-    minimum_plot_width_ft: Optional[float]
-    minimum_plot_length_ft: Optional[float]
+    maximum_land_perches: float | None
+    minimum_plot_width_ft: float | None
+    minimum_plot_length_ft: float | None
     supported_plot_shapes: list[str]
     supported_terrains: list[str]
     supported_styles: list[str]
@@ -55,7 +54,7 @@ class BasePlanRecord:
         return DesignResult.model_validate_json(self.layout_json)
 
     @cached_property
-    def primary_entrance_wall(self) -> Optional[str]:
+    def primary_entrance_wall(self) -> str | None:
         return self.design.entrances[0].wall if self.design.entrances else None
 
     @cached_property
@@ -297,7 +296,7 @@ def compatibility_rejection_reasons(plan: BasePlanRecord, req: Requirements,
         reasons.append('footprint_width')
     if max_y - min_y > plot.buildable_length + 0.001:
         reasons.append('footprint_length')
-        
+
     # Hard capability requirements: if the user explicitly selected these, the plan MUST support them.
     # Note: Soft suitability preferences (like space_priority or style) only affect ranking score, not filtering.
     required_capabilities = {
@@ -346,7 +345,7 @@ def rank_base_plans(plans: Iterable[BasePlanRecord], req: Requirements, plot: Pl
 
 
 def deduplicate_base_plans(plans: Iterable[BasePlanRecord],
-                           excluded_fingerprint: Optional[str] = None) -> list[BasePlanRecord]:
+                           excluded_fingerprint: str | None = None) -> list[BasePlanRecord]:
     """Keep the first (highest-ranked) representative of each geometry."""
     seen = {excluded_fingerprint} if excluded_fingerprint else set()
     unique = []

@@ -22,6 +22,7 @@ namespace HousePlanner.API.DTOs
         public bool IsActive { get; set; }
         public DateTimeOffset CreatedAt { get; set; }
         public string? UpdatedByUserId { get; set; }
+        public string? UpdatedByName { get; set; }
         public DateTimeOffset? ObservedAt { get; set; }
         public DateTimeOffset? EffectiveAt { get; set; }
         public string? SourceUrl { get; set; }
@@ -61,6 +62,7 @@ namespace HousePlanner.API.DTOs
         public decimal PreviousValue { get; set; }
         public decimal NewValue { get; set; }
         public string? ChangedByUserId { get; set; }
+        public string? ChangedByName { get; set; }
         public DateTimeOffset ChangedAt { get; set; }
         public string? Reason { get; set; }
     }

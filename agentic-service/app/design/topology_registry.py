@@ -1,5 +1,6 @@
 """Topology rules contain no finished room coordinates."""
 from dataclasses import asdict, dataclass
+
 from app.design.models import Requirements
 from app.design.plot_constraints import PlotConstraints
 

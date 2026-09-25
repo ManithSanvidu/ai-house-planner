@@ -174,7 +174,8 @@ namespace HousePlanner.API.Controllers
             var project = await _workflowService.SearchProjectByIdAsync(projectId);
             if (project == null) return NotFound("Project not found.");
 
-            return Ok(new {
+            return Ok(new
+            {
                 project.Id,
                 project.Status,
                 project.CreatedAt,
@@ -231,8 +232,13 @@ namespace HousePlanner.API.Controllers
                 .Where(r => r.ConstructorId == user.Id.Value && r.Status == "Pending")
                 .Include(r => r.Customer).Include(r => r.HouseDesign)
                 .OrderByDescending(r => r.CreatedAt)
-                .Select(r => new {
-                    r.Id, r.ProjectId, r.HouseDesignId, r.Status, requestedAt = r.CreatedAt,
+                .Select(r => new
+                {
+                    r.Id,
+                    r.ProjectId,
+                    r.HouseDesignId,
+                    r.Status,
+                    requestedAt = r.CreatedAt,
                     customerName = r.Customer != null ? r.Customer.FullName : "Unknown",
                     designVersion = r.HouseDesign != null ? (int?)r.HouseDesign.Version : null,
                     area = r.HouseDesign != null ? r.HouseDesign.TotalBuiltUpAreaSqft : 0m,
@@ -240,23 +246,49 @@ namespace HousePlanner.API.Controllers
                     layoutJson = r.HouseDesign != null ? r.HouseDesign.LayoutJson : null,
                     cost = r.HouseDesign == null ? null : r.HouseDesign.CostEstimates
                         .OrderByDescending(c => c.CreatedAt)
-                        .Select(c => new { c.MaterialCostLkr, c.LabourCostLkr, c.TotalCostLkr, c.BudgetDeltaPercent,
-                            c.PricingSnapshotJson, c.BreakdownJson, c.FormulaVersion, c.AppliedAreaSqft, c.TerrainType, c.CreatedAt })
+                        .Select(c => new
+                        {
+                            c.MaterialCostLkr,
+                            c.LabourCostLkr,
+                            c.TotalCostLkr,
+                            c.BudgetDeltaPercent,
+                            c.PricingSnapshotJson,
+                            c.BreakdownJson,
+                            c.FormulaVersion,
+                            c.AppliedAreaSqft,
+                            c.TerrainType,
+                            c.CreatedAt
+                        })
                         .FirstOrDefault(),
                     r.DeclineReason
                 })
                 .ToListAsync();
 
-            return Ok(raw.Select(r => new {
-                r.Id, r.ProjectId, r.HouseDesignId, r.Status, r.requestedAt,
-                r.customerName, r.designVersion, r.area, r.floorCount,
-                cost = r.cost == null ? null : CostBreakdownBuilder.ToSummary(new CostEstimate {
-                    MaterialCostLkr = r.cost.MaterialCostLkr, LabourCostLkr = r.cost.LabourCostLkr,
-                    TotalCostLkr = r.cost.TotalCostLkr, BudgetDeltaPercent = r.cost.BudgetDeltaPercent,
-                    PricingSnapshotJson = r.cost.PricingSnapshotJson, BreakdownJson = r.cost.BreakdownJson,
-                    FormulaVersion = r.cost.FormulaVersion, AppliedAreaSqft = r.cost.AppliedAreaSqft,
-                    TerrainType = r.cost.TerrainType, CreatedAt = r.cost.CreatedAt
-                }), r.DeclineReason,
+            return Ok(raw.Select(r => new
+            {
+                r.Id,
+                r.ProjectId,
+                r.HouseDesignId,
+                r.Status,
+                r.requestedAt,
+                r.customerName,
+                r.designVersion,
+                r.area,
+                r.floorCount,
+                cost = r.cost == null ? null : CostBreakdownBuilder.ToSummary(new CostEstimate
+                {
+                    MaterialCostLkr = r.cost.MaterialCostLkr,
+                    LabourCostLkr = r.cost.LabourCostLkr,
+                    TotalCostLkr = r.cost.TotalCostLkr,
+                    BudgetDeltaPercent = r.cost.BudgetDeltaPercent,
+                    PricingSnapshotJson = r.cost.PricingSnapshotJson,
+                    BreakdownJson = r.cost.BreakdownJson,
+                    FormulaVersion = r.cost.FormulaVersion,
+                    AppliedAreaSqft = r.cost.AppliedAreaSqft,
+                    TerrainType = r.cost.TerrainType,
+                    CreatedAt = r.cost.CreatedAt
+                }),
+                r.DeclineReason,
                 title = DesignTitle(r.layoutJson, r.designVersion ?? 0),
                 bedrooms = CountRooms(r.layoutJson, "bedroom"),
                 bathrooms = CountRooms(r.layoutJson, "bathroom")
@@ -350,9 +382,12 @@ namespace HousePlanner.API.Controllers
 
             var competing = await _db.ConstructorProjectRequests.Where(r => r.ProjectId == request.ProjectId && r.Id != request.Id && r.Status == "Pending").ToListAsync();
             foreach (var other in competing) { other.Status = "Cancelled"; other.UpdatedAt = DateTimeOffset.UtcNow; }
-            try {
+            try
+            {
                 await _db.SaveChangesAsync();
-            } catch (Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException ex) {
+            }
+            catch (Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException ex)
+            {
                 var entry = ex.Entries.FirstOrDefault();
                 throw new Exception($"Failed on {entry?.Entity.GetType().Name}. State: {entry?.State}", ex);
             }

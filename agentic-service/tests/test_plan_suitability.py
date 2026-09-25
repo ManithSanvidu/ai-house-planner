@@ -2,11 +2,13 @@
 from dataclasses import replace
 
 from app.design.base_plan_library import (
-    filter_compatible_base_plans, load_base_plan_catalog, rank_base_plans,
+    filter_compatible_base_plans,
+    load_base_plan_catalog,
+    rank_base_plans,
 )
 from app.design.plan_suitability import SUITABILITY_WEIGHTS, suitability_breakdown
-from app.tools.layout_generation_tool import _candidate_pool, prepare_inputs
 from app.tools import layout_generation_tool as generation
+from app.tools.layout_generation_tool import _candidate_pool, prepare_inputs
 
 
 def ranked(land, preferences, dimensions):
@@ -137,41 +139,37 @@ def test_narrow_plot_rejects_balanced_only_plans_if_footprint_does_not_fit():
 
 def test_total_plot_dims_pass_but_footprint_violates_buildable_envelope(monkeypatch):
     # D. Minimum total plot dims pass but footprint violates setback-adjusted buildable envelope -> rejected by geometry validation
-    from app.design.plan_adapter import PlanAdapter
-    from app.tools.geometry_validator import validate_geometry
-    from app.tools.layout_generation_tool import _fallback_decision
     def test_total_plot_dims_pass_but_footprint_violates_buildable_envelope(monkeypatch):
         # D. Minimum total plot dims pass but footprint violates setback-adjusted buildable envelope -> rejected by filter
-        from app.design.plan_adapter import PlanAdapter
-        from app.tools.geometry_validator import validate_geometry
-        from app.tools.layout_generation_tool import _fallback_decision
-        from app.design.base_plan_library import filter_compatible_base_plans_with_diagnostics
-    
+        from app.design.base_plan_library import (
+            filter_compatible_base_plans_with_diagnostics,
+        )
+
         # 20 perches, wide and shallow. Total length 49ft (passes catalog minimums).
         # We use custom huge setbacks (front=20, rear=15) so buildable depth is only 14ft, causing footprint failure.
         req, plot = prepare_inputs(20, 'flat', {'bedrooms': 3, 'bathrooms': 1, 'floors': 1}, {'plot_width_ft': 110, 'plot_length_ft': 49})
         plot.setbacks.front = 20
         plot.setbacks.rear = 15
         candidates, diagnostics = filter_compatible_base_plans_with_diagnostics(req, plot)
-    
+
         # The filter should reject plans because their footprint exceeds the buildable length
         # We expect 'footprint_length' to be in the diagnostics for rejected plans
         assert 'footprint_length' in diagnostics
-        
+
         # Verify that no COMPACT_RECTANGLE plan makes it through
         assert not any(p for p in candidates if p.topology_family == 'COMPACT_RECTANGLE')
 
 def test_missing_dimensions_uses_balanced_conceptual_shape():
     # E. Missing physical dimensions + BALANCED conceptual shape -> deterministic estimated dimensions
-    req, plot = prepare_inputs(10, 'flat', {'bedrooms': 3, 'bathrooms': 1, 'floors': 1}, {})
+    _req, plot = prepare_inputs(10, 'flat', {'bedrooms': 3, 'bathrooms': 1, 'floors': 1}, {})
     assert plot.dimension_source == 'area_estimated'
     # Aspect ratio should be 1.25
     aspect = max(plot.plot_width_ft, plot.plot_length_ft) / min(plot.plot_width_ft, plot.plot_length_ft)
     assert abs(aspect - 1.25) < 0.01
-    
+
 def test_same_input_produces_same_estimated_dimensions():
     # F. Same input produces same estimated dimensions
-    req1, plot1 = prepare_inputs(10, 'flat', {'bedrooms': 3, 'bathrooms': 1, 'floors': 1}, {})
-    req2, plot2 = prepare_inputs(10, 'flat', {'bedrooms': 3, 'bathrooms': 1, 'floors': 1}, {})
+    _req1, plot1 = prepare_inputs(10, 'flat', {'bedrooms': 3, 'bathrooms': 1, 'floors': 1}, {})
+    _req2, plot2 = prepare_inputs(10, 'flat', {'bedrooms': 3, 'bathrooms': 1, 'floors': 1}, {})
     assert plot1.plot_width_ft == plot2.plot_width_ft
     assert plot1.plot_length_ft == plot2.plot_length_ft

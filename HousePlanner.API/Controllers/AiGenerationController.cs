@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using HousePlanner.API.Data;
 using HousePlanner.API.Entities;
 using System.Text;
@@ -47,7 +47,8 @@ namespace HousePlanner.API.Controllers
             var validation = await _designOptionsService.ValidateFinalSelectionAsync(request, cancellationToken);
             if (!validation.IsValid)
             {
-                return BadRequest(new {
+                return BadRequest(new
+                {
                     code = validation.ErrorCode,
                     message = validation.Message,
                     conflicts = validation.Conflicts,
@@ -75,7 +76,8 @@ namespace HousePlanner.API.Controllers
                     var specificValidation = await _designOptionsService.ValidateSpecificPlanAsync(basePlan, request, cancellationToken);
                     if (!specificValidation.IsValid)
                     {
-                        return BadRequest(new {
+                        return BadRequest(new
+                        {
                             code = specificValidation.ErrorCode,
                             message = specificValidation.Message,
                             conflicts = specificValidation.Conflicts,
@@ -121,24 +123,31 @@ namespace HousePlanner.API.Controllers
                     var root = document.RootElement;
                     var design = new HouseDesign
                     {
-                        WorkflowStateId = workflowState.Id, Version = 1, FloorCount = basePlan.FloorCount,
+                        WorkflowStateId = workflowState.Id,
+                        Version = 1,
+                        FloorCount = basePlan.FloorCount,
                         TotalBuiltUpAreaSqft = basePlan.TotalBuiltUpAreaSqft,
                         FoundationType = root.TryGetProperty("foundation_type", out var foundation) ? foundation.GetString() ?? "conceptual" : "conceptual",
                         TemplateId = root.TryGetProperty("template_id", out var template) ? template.GetString() : null,
-                        TerrainType = basePlan.SuitableTerrain, LayoutJson = basePlan.LayoutJson, IsCurrent = true,
-                        DesignSource = "pre_designed", BasePreDesignedPlanId = basePlan.Id, CreatedAt = DateTimeOffset.UtcNow
+                        TerrainType = basePlan.SuitableTerrain,
+                        LayoutJson = basePlan.LayoutJson,
+                        IsCurrent = true,
+                        DesignSource = "pre_designed",
+                        BasePreDesignedPlanId = basePlan.Id,
+                        CreatedAt = DateTimeOffset.UtcNow
                     };
                     foreach (var room in root.GetProperty("rooms").EnumerateArray())
                     {
                         var width = room.GetProperty("width").GetDecimal(); var length = room.GetProperty("length").GetDecimal();
-                        design.Rooms.Add(new Room { RoomType=room.GetProperty("room_type").GetString()??"unknown", Name=room.TryGetProperty("name",out var n)?n.GetString():null, FloorNumber=room.GetProperty("floor").GetInt32(), X=room.GetProperty("x").GetDecimal(), Y=room.GetProperty("y").GetDecimal(), Width=width, Length=length, AreaSqft=Math.Round(width*length,2), WallHeight=room.TryGetProperty("wall_height",out var wh)?wh.GetDecimal():9 });
+                        design.Rooms.Add(new Room { RoomType = room.GetProperty("room_type").GetString() ?? "unknown", Name = room.TryGetProperty("name", out var n) ? n.GetString() : null, FloorNumber = room.GetProperty("floor").GetInt32(), X = room.GetProperty("x").GetDecimal(), Y = room.GetProperty("y").GetDecimal(), Width = width, Length = length, AreaSqft = Math.Round(width * length, 2), WallHeight = room.TryGetProperty("wall_height", out var wh) ? wh.GetDecimal() : 9 });
                     }
                     workflowState.Status = "design_generated";
                     workflowState.ConstructionPlan = "{\"project_summary\":{\"estimated_duration_days\":180},\"phases\":[{\"id\":1,\"name\":\"Site Preparation\",\"start_day\":1,\"end_day\":14,\"duration_days\":14},{\"id\":2,\"name\":\"Foundation\",\"start_day\":15,\"end_day\":35,\"duration_days\":20},{\"id\":3,\"name\":\"Framing\",\"start_day\":36,\"end_day\":65,\"duration_days\":30},{\"id\":4,\"name\":\"Roofing & Siding\",\"start_day\":66,\"end_day\":90,\"duration_days\":25},{\"id\":5,\"name\":\"Interior Finishes\",\"start_day\":91,\"end_day\":180,\"duration_days\":90}]}";
                     _context.HouseDesigns.Add(design);
                     await _context.SaveChangesAsync();
 
-                    var directPayload = new {
+                    var directPayload = new
+                    {
                         workflow_id = workflowState.Id,
                         submission_id = submission.Id,
                         budget_lkr = request.BudgetLkr,
@@ -160,7 +169,8 @@ namespace HousePlanner.API.Controllers
                     return Ok(new { Message = "Pre-designed plan selected successfully", WorkflowId = workflowState.Id });
                 }
 
-                payload = new {
+                payload = new
+                {
                     workflow_id = workflowState.Id,
                     submission_id = submission.Id,
                     budget_lkr = request.BudgetLkr,
@@ -181,7 +191,8 @@ namespace HousePlanner.API.Controllers
                 return StatusCode(500, new { Message = "Database error while saving the submission.", Details = ex.InnerException?.Message ?? ex.Message });
             }
 
-            var options = new JsonSerializerOptions {
+            var options = new JsonSerializerOptions
+            {
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
                 DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
             };

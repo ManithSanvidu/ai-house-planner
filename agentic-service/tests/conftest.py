@@ -3,7 +3,6 @@ import os
 
 import pytest
 
-
 os.environ.setdefault("INTERNAL_API_KEY", "test-only-internal-api-key")
 
 

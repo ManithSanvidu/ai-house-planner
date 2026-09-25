@@ -9,6 +9,34 @@ namespace HousePlanner.API.Tests.Services;
 public sealed class PricingLifecycleTests
 {
     [Fact]
+    public async Task GetAll_ResolvesUpdaterNameFromSupabaseIdentity()
+    {
+        await using var db = CreateContext();
+        var authId = Guid.NewGuid().ToString();
+        var user = new User
+        {
+            Id = Guid.NewGuid(),
+            Email = "constructor@example.com",
+            SupabaseUid = authId,
+            FullName = "Nimal Perera",
+            RoleId = 1,
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow
+        };
+        var item = Material("Structural Materials", 4000m);
+        item.UpdatedByUserId = authId;
+        db.Users.Add(user);
+        db.PricingItems.Add(item);
+        await db.SaveChangesAsync();
+        var service = new PricingService(db, TimeProvider.System);
+
+        var result = Assert.Single(await service.GetAllPricingAsync());
+
+        Assert.Equal(authId, result.UpdatedByUserId);
+        Assert.Equal("Nimal Perera", result.UpdatedByName);
+    }
+
+    [Fact]
     public async Task Update_CreatesHistoryWithActorAndReason()
     {
         await using var db = CreateContext();
@@ -138,17 +166,33 @@ public sealed class PricingLifecycleTests
 
     private static PricingData Material(string name, decimal value, string region = "Sri Lanka") => new()
     {
-        ItemName = name, Category = "material", Unit = "per_sqft", UnitCostLkr = value,
-        DisplayGroup = "Structural", Region = region, QualityLevel = "Standard", IsActive = true,
-        Provider = "Manual", TerrainMultiplier = Multipliers(), CreatedAt = DateTimeOffset.UtcNow,
+        ItemName = name,
+        Category = "material",
+        Unit = "per_sqft",
+        UnitCostLkr = value,
+        DisplayGroup = "Structural",
+        Region = region,
+        QualityLevel = "Standard",
+        IsActive = true,
+        Provider = "Manual",
+        TerrainMultiplier = Multipliers(),
+        CreatedAt = DateTimeOffset.UtcNow,
         UpdatedAt = DateTimeOffset.UtcNow
     };
 
     private static PricingData Labour(decimal value) => new()
     {
-        ItemName = "Construction Labour", Category = "labour", Unit = "factor", UnitCostLkr = value,
-        DisplayGroup = "Labour", Region = "Sri Lanka", QualityLevel = "Standard", IsActive = true,
-        Provider = "Manual", TerrainMultiplier = Multipliers(), CreatedAt = DateTimeOffset.UtcNow,
+        ItemName = "Construction Labour",
+        Category = "labour",
+        Unit = "factor",
+        UnitCostLkr = value,
+        DisplayGroup = "Labour",
+        Region = "Sri Lanka",
+        QualityLevel = "Standard",
+        IsActive = true,
+        Provider = "Manual",
+        TerrainMultiplier = Multipliers(),
+        CreatedAt = DateTimeOffset.UtcNow,
         UpdatedAt = DateTimeOffset.UtcNow
     };
 

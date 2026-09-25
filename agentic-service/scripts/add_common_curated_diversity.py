@@ -6,7 +6,11 @@ import json
 from app.design.diversity import geometry_fingerprint
 from app.schemas.design_result import DesignResult
 from scripts.add_curated_diversity import (
-    SEED_PATH, build_design, seed_entry, two_floor_variants, validate_curated,
+    SEED_PATH,
+    build_design,
+    seed_entry,
+    two_floor_variants,
+    validate_curated,
 )
 
 PREFIX = "HP-CURATED-COMMON-"

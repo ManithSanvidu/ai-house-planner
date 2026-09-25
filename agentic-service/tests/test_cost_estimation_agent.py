@@ -10,7 +10,6 @@ Test naming convention:
 import inspect
 import json
 import uuid
-from typing import List
 from unittest.mock import patch
 
 import pytest
@@ -20,9 +19,9 @@ from app.agents.cost_estimation_agent import (
     _persist_cost_estimate,
     cost_estimation_node,
 )
-from app.schemas.cost_result import CostResult
 from app.agents.validation_agent import validation_node
-from app.schemas.pricing_data import PricingItem, TerrainMultiplier
+from app.schemas.cost_result import CostResult
+from app.schemas.pricing_data import PricingItem
 from app.schemas.workflow_state import CoordinatorInput, WorkflowState
 from app.workflows.house_planning_graph import route_after_cost_estimation
 
@@ -61,7 +60,7 @@ LABOUR_ITEM = PricingItem.model_validate(
     }
 )
 
-STANDARD_PRICING: List[PricingItem] = [MATERIAL_ITEM, LABOUR_ITEM]
+STANDARD_PRICING: list[PricingItem] = [MATERIAL_ITEM, LABOUR_ITEM]
 
 # ---------------------------------------------------------------------------
 # Helper — build a minimal valid WorkflowState

@@ -58,7 +58,13 @@ namespace HousePlanner.API.Tests.Controllers
             var workflowId = Guid.NewGuid(); var design = Design(workflowId, 1, true);
             var projectId = Guid.NewGuid();
             _dbContext.WorkflowStates.Add(new WorkflowState { Id = workflowId, LandSubmissionId = _clientId, Status = "approved", ApprovalStatus = "approved", PreferredHouseDesignId = design.Id, HouseDesigns = [design] });
-            _dbContext.Projects.Add(new Project { Id = projectId, WorkflowStateId = workflowId, HouseDesignId = design.Id, ContractorId = Guid.NewGuid(), Status = "Cancelled",
+            _dbContext.Projects.Add(new Project
+            {
+                Id = projectId,
+                WorkflowStateId = workflowId,
+                HouseDesignId = design.Id,
+                ContractorId = Guid.NewGuid(),
+                Status = "Cancelled",
                 ConstructionPhases = [new ConstructionPhase { Id = Guid.NewGuid(), PhaseName = "Phase 1" }]
             });
             await _dbContext.SaveChangesAsync();

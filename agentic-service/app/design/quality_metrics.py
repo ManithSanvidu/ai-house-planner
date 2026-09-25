@@ -4,10 +4,10 @@ from math import hypot
 from typing import Any
 
 from app.design.adjacency import exterior_segments, graph_for
+from app.design.quality_config import QUALITY
 from app.design.room_rules import CIRCULATION_TYPES, room_kind
 from app.schemas.design_result import DesignResult, RoomLayout
 
-from app.design.quality_config import QUALITY
 CIRCULATION_GOOD_RATIO = QUALITY.circulation_excellent
 CIRCULATION_ACCEPTABLE_RATIO = QUALITY.circulation_acceptable
 CIRCULATION_VERY_POOR_RATIO = QUALITY.circulation_reject

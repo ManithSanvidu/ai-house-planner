@@ -18,12 +18,15 @@ No database access, no hardcoded rates, no fallback prices.
 """
 import logging
 from datetime import datetime, timezone
-from typing import List
 
 import requests
 
 from app.config import ASPNET_API_URL, INTERNAL_API_KEY
-from app.cost.calculator import FORMULA_VERSION, CostCalculationError, calculate_cost_lines
+from app.cost.calculator import (
+    FORMULA_VERSION,
+    CostCalculationError,
+    calculate_cost_lines,
+)
 from app.schemas.cost_result import CostResult
 from app.schemas.pricing_data import PricingItem
 from app.schemas.workflow_state import ExecutionLogEntry, WorkflowState
@@ -189,7 +192,7 @@ def _run_estimation(state: WorkflowState) -> CostResult:
             "design_result contains no rooms: cannot calculate material cost without room geometry."
         )
 
-    room_areas: List[float] = []
+    room_areas: list[float] = []
     for idx, room in enumerate(rooms_raw):
         area = _extract_room_area(room, idx)
         room_areas.append(area)
@@ -213,7 +216,7 @@ def _run_estimation(state: WorkflowState) -> CostResult:
     # ------------------------------------------------------------------
     pricing_region, quality_level = _resolve_pricing_context(state)
     try:
-        pricing_items: List[PricingItem] = pricing_lookup_tool(
+        pricing_items: list[PricingItem] = pricing_lookup_tool(
             region=pricing_region,
             quality_level=quality_level,
         )
@@ -376,7 +379,7 @@ def _resolve_terrain(state: WorkflowState) -> str:
 # ---------------------------------------------------------------------------
 
 
-def _resolve_labour_factor(pricing_items: List[PricingItem]) -> float:
+def _resolve_labour_factor(pricing_items: list[PricingItem]) -> float:
     """
     Find exactly one labour pricing item whose unit is 'factor' or 'ratio'.
 
@@ -448,7 +451,7 @@ def _terrain_multiplier_value(item: PricingItem, terrain_type: str) -> float:
 
 
 def _get_terrain_multiplier_for_items(
-    material_items: List[PricingItem], terrain_type: str
+    material_items: list[PricingItem], terrain_type: str
 ) -> float:
     """
     Not used in the summation loop (each item has its own multiplier),

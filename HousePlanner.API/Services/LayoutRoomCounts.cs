@@ -116,7 +116,7 @@ public static class LayoutRoomCounts
         foreach (var room in rooms.EnumerateArray())
         {
             if (room.ValueKind != JsonValueKind.Object) continue;
-            
+
             int floor = 0;
             if (room.TryGetProperty("floor", out var fProp) && fProp.ValueKind == JsonValueKind.Number)
                 floor = fProp.GetInt32();
@@ -126,7 +126,7 @@ public static class LayoutRoomCounts
             if (floor != 1) continue;
 
             string roomType = room.TryGetProperty("room_type", out var tProp) ? tProp.GetString() ?? "" : "";
-            
+
             if (roomType.Contains("bedroom")) hasBedroom = true;
             if (roomType.Contains("bathroom")) hasBathroom = true;
 

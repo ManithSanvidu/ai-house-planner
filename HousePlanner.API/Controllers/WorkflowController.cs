@@ -101,15 +101,15 @@ public class WorkflowController : ControllerBase
                                 .Select(c => new
                                 {
                                     c.MaterialCostLkr,
-                                     c.LabourCostLkr,
-                                     c.TotalCostLkr,
-                                     c.BudgetDeltaPercent,
-                                     c.PricingSnapshotJson,
-                                     c.BreakdownJson,
-                                     c.FormulaVersion,
-                                     c.AppliedAreaSqft,
-                                     c.TerrainType,
-                                     c.CreatedAt
+                                    c.LabourCostLkr,
+                                    c.TotalCostLkr,
+                                    c.BudgetDeltaPercent,
+                                    c.PricingSnapshotJson,
+                                    c.BreakdownJson,
+                                    c.FormulaVersion,
+                                    c.AppliedAreaSqft,
+                                    c.TerrainType,
+                                    c.CreatedAt
                                 })
                                 .FirstOrDefault()
                         })
@@ -176,20 +176,20 @@ public class WorkflowController : ControllerBase
 
                 if (workflow.LatestDesign.LatestCost is not null)
                 {
-                     var latest = workflow.LatestDesign.LatestCost;
-                     costDto = CostBreakdownBuilder.ToSummary(new CostEstimate
-                     {
-                         MaterialCostLkr = latest.MaterialCostLkr,
-                         LabourCostLkr = latest.LabourCostLkr,
-                         TotalCostLkr = latest.TotalCostLkr,
-                         BudgetDeltaPercent = latest.BudgetDeltaPercent,
-                         PricingSnapshotJson = latest.PricingSnapshotJson,
-                         BreakdownJson = latest.BreakdownJson,
-                         FormulaVersion = latest.FormulaVersion,
-                         AppliedAreaSqft = latest.AppliedAreaSqft,
-                         TerrainType = latest.TerrainType,
-                         CreatedAt = latest.CreatedAt
-                     }, workflow.LatestDesign.TerrainType);
+                    var latest = workflow.LatestDesign.LatestCost;
+                    costDto = CostBreakdownBuilder.ToSummary(new CostEstimate
+                    {
+                        MaterialCostLkr = latest.MaterialCostLkr,
+                        LabourCostLkr = latest.LabourCostLkr,
+                        TotalCostLkr = latest.TotalCostLkr,
+                        BudgetDeltaPercent = latest.BudgetDeltaPercent,
+                        PricingSnapshotJson = latest.PricingSnapshotJson,
+                        BreakdownJson = latest.BreakdownJson,
+                        FormulaVersion = latest.FormulaVersion,
+                        AppliedAreaSqft = latest.AppliedAreaSqft,
+                        TerrainType = latest.TerrainType,
+                        CreatedAt = latest.CreatedAt
+                    }, workflow.LatestDesign.TerrainType);
                 }
             }
 
@@ -219,11 +219,11 @@ public class WorkflowController : ControllerBase
                 FailureReason: workflow.FailureReason,
                 PreferredHouseDesignId: workflow.PreferredHouseDesignId,
                 ArchitectReviewStatus: designDto is null ? null : await _context.ValidationRequests.AsNoTracking()
-                    .Where(r=>r.WorkflowStateId==workflow.Id && r.HouseDesignId==designDto.DesignId)
-                    .OrderByDescending(r=>r.CreatedAt).Select(r=>r.Status).FirstOrDefaultAsync(),
+                    .Where(r => r.WorkflowStateId == workflow.Id && r.HouseDesignId == designDto.DesignId)
+                    .OrderByDescending(r => r.CreatedAt).Select(r => r.Status).FirstOrDefaultAsync(),
                 ArchitectFeedback: designDto is null ? null : await _context.ValidationRequests.AsNoTracking()
-                    .Where(r=>r.WorkflowStateId==workflow.Id && r.HouseDesignId==designDto.DesignId)
-                    .OrderByDescending(r=>r.CreatedAt).Select(r=>r.ArchitectReview).FirstOrDefaultAsync()
+                    .Where(r => r.WorkflowStateId == workflow.Id && r.HouseDesignId == designDto.DesignId)
+                    .OrderByDescending(r => r.CreatedAt).Select(r => r.ArchitectReview).FirstOrDefaultAsync()
             );
 
             return Ok(responseDto);
@@ -322,9 +322,9 @@ public class WorkflowController : ControllerBase
             .Include(w => w.HouseDesigns).ThenInclude(d => d.Rooms)
             .FirstOrDefaultAsync(w => w.Id == id && w.LandSubmission.ClientId == user.Id.Value);
         if (workflow is null) return NotFound(new { message = $"Workflow {id} not found." });
-        var review = await _context.ValidationRequests.AsNoTracking().Where(r=>r.WorkflowStateId==id)
-            .OrderByDescending(r=>r.CreatedAt).Select(r=>new {r.Status,r.ArchitectReview}).FirstOrDefaultAsync();
-        var approvedDesignId = await _context.ValidationRequests.AsNoTracking().Where(r=>r.WorkflowStateId==id && r.Status=="Approved").Select(r=>r.HouseDesignId).FirstOrDefaultAsync();
+        var review = await _context.ValidationRequests.AsNoTracking().Where(r => r.WorkflowStateId == id)
+            .OrderByDescending(r => r.CreatedAt).Select(r => new { r.Status, r.ArchitectReview }).FirstOrDefaultAsync();
+        var approvedDesignId = await _context.ValidationRequests.AsNoTracking().Where(r => r.WorkflowStateId == id && r.Status == "Approved").Select(r => r.HouseDesignId).FirstOrDefaultAsync();
         return Ok(ToHistory(workflow, includeArchived, null, review?.Status, review?.ArchitectReview, approvedDesignId));
     }
 
@@ -342,9 +342,9 @@ public class WorkflowController : ControllerBase
             .ToListAsync();
         var workflowIds = workflows.Select(w => w.Id).ToList();
         var projects = await _context.Projects.AsNoTracking().Where(p => workflowIds.Contains(p.WorkflowStateId)).ToDictionaryAsync(p => p.WorkflowStateId, p => p.Id);
-        var reviews = await _context.ValidationRequests.AsNoTracking().Where(r=>workflowIds.Contains(r.WorkflowStateId))
-            .OrderByDescending(r=>r.CreatedAt).ToListAsync();
-        return Ok(workflows.Select(w => {var review=reviews.FirstOrDefault(r=>r.WorkflowStateId==w.Id);var approved=reviews.FirstOrDefault(r=>r.WorkflowStateId==w.Id&&r.Status=="Approved")?.HouseDesignId;return ToHistory(w, false, projects.TryGetValue(w.Id, out var pid) ? pid : null,review?.Status,review?.ArchitectReview,approved);}).Where(w => w.Designs.Count > 0));
+        var reviews = await _context.ValidationRequests.AsNoTracking().Where(r => workflowIds.Contains(r.WorkflowStateId))
+            .OrderByDescending(r => r.CreatedAt).ToListAsync();
+        return Ok(workflows.Select(w => { var review = reviews.FirstOrDefault(r => r.WorkflowStateId == w.Id); var approved = reviews.FirstOrDefault(r => r.WorkflowStateId == w.Id && r.Status == "Approved")?.HouseDesignId; return ToHistory(w, false, projects.TryGetValue(w.Id, out var pid) ? pid : null, review?.Status, review?.ArchitectReview, approved); }).Where(w => w.Designs.Count > 0));
     }
 
     [HttpPost("{id:guid}/designs/{designId:guid}/select")]
@@ -481,8 +481,10 @@ public class WorkflowController : ControllerBase
         if (alreadyReviewed) return Conflict(new { message = "Select a new design version before submitting another review." });
         _context.ValidationRequests.Add(new HousePlanner.API.Entities.ValidationRequest
         {
-            WorkflowStateId = id, HouseDesignId = selected.Id,
-            ClientId = workflow.LandSubmission.ClientId, Status = "Pending"
+            WorkflowStateId = id,
+            HouseDesignId = selected.Id,
+            ClientId = workflow.LandSubmission.ClientId,
+            Status = "Pending"
         });
         workflow.Status = "awaiting_architect_review";
         workflow.ApprovalStatus = "awaiting_architect_review";
@@ -491,7 +493,7 @@ public class WorkflowController : ControllerBase
         return Ok(new { workflowId = id, status = workflow.Status });
     }
 
-    private static WorkflowDesignHistoryDto ToHistory(HousePlanner.API.Entities.WorkflowState workflow, bool includeArchived = true, Guid? projectId = null, string? reviewStatus=null, string? architectFeedback=null, Guid? approvedDesignId=null) =>
+    private static WorkflowDesignHistoryDto ToHistory(HousePlanner.API.Entities.WorkflowState workflow, bool includeArchived = true, Guid? projectId = null, string? reviewStatus = null, string? architectFeedback = null, Guid? approvedDesignId = null) =>
         new(workflow.Id, workflow.Status, workflow.PreferredHouseDesignId, workflow.CreatedAt,
             workflow.HouseDesigns.Where(d => includeArchived || !d.IsArchived).OrderByDescending(d => d.Version).Select(d =>
             {
@@ -515,7 +517,7 @@ public class WorkflowController : ControllerBase
                     Number(root, "design_score"),
                     d.Rooms.Select(r => new DesignPreviewRoomDto(r.RoomType, r.FloorNumber, r.X, r.Y, r.Width, r.Length)).ToList(),
                     d.CreatedAt);
-            }).ToList(),projectId,reviewStatus,architectFeedback);
+            }).ToList(), projectId, reviewStatus, architectFeedback);
 
     [HttpPost("{id}/approve")]
     [Authorize(Roles = "Customer,Architect,Admin")]
@@ -616,12 +618,19 @@ public class WorkflowController : ControllerBase
         {
             var mappings = new Dictionary<string, string>
             {
-                ["bedrooms"] = "bedrooms", ["bathrooms"] = "bathrooms", ["floors"] = "floors",
-                ["architectural_style"] = "style", ["space_priority"] = "space_priority",
-                ["open_plan"] = "open_plan", ["master_ensuite"] = "attached_bathroom",
-                ["separate_dining"] = "dining_required", ["home_office"] = "home_office",
-                ["balcony"] = "balcony", ["veranda"] = "veranda",
-                ["utility_room"] = "utility_room", ["parking_required"] = "parking",
+                ["bedrooms"] = "bedrooms",
+                ["bathrooms"] = "bathrooms",
+                ["floors"] = "floors",
+                ["architectural_style"] = "style",
+                ["space_priority"] = "space_priority",
+                ["open_plan"] = "open_plan",
+                ["master_ensuite"] = "attached_bathroom",
+                ["separate_dining"] = "dining_required",
+                ["home_office"] = "home_office",
+                ["balcony"] = "balcony",
+                ["veranda"] = "veranda",
+                ["utility_room"] = "utility_room",
+                ["parking_required"] = "parking",
                 ["accessibility"] = "accessibility"
             };
             foreach (var mapping in mappings)

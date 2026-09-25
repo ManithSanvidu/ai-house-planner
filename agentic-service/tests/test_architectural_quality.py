@@ -1,8 +1,8 @@
-import pytest
 from app.design.architectural_quality import validate_architectural_quality
 from app.design.models import Requirements
 from app.design.plot_constraints import PlotConstraints
-from app.schemas.design_result import DesignResult, RoomLayout, Opening, Entrance
+from app.schemas.design_result import DesignResult, Entrance, RoomLayout
+
 
 def test_bad_plan_regression_is_rejected():
     # Construct a layout that mimics the "screenshot-style failure"
@@ -11,7 +11,7 @@ def test_bad_plan_regression_is_rejected():
     # - bathrooms pushed to the far end
     # - living room and kitchen disconnected from the rest of the house
     # - fake L-shape
-    
+
     rooms = [
         RoomLayout(room_id="living", room_type="living_room", floor=1, x=0, y=0, width=15, length=15),
         RoomLayout(room_id="dining", room_type="dining", floor=1, x=15, y=0, width=15, length=15),
@@ -26,7 +26,7 @@ def test_bad_plan_regression_is_rejected():
         RoomLayout(room_id="bath_1", room_type="bathroom_1", floor=1, x=4, y=60, width=12, length=8),
         RoomLayout(room_id="bath_2", room_type="bathroom_2", floor=1, x=4, y=68, width=12, length=7),
     ]
-    
+
     connections = [
         {"from_room": "living", "to_room": "dining", "kind": "open"},
         {"from_room": "dining", "to_room": "kitchen", "kind": "open"},
@@ -37,7 +37,7 @@ def test_bad_plan_regression_is_rejected():
         {"from_room": "hallway_1", "to_room": "bath_1", "kind": "door"},
         {"from_room": "hallway_1", "to_room": "bath_2", "kind": "door"},
     ]
-    
+
     design = DesignResult(
         design_id="test_bad_plan",
         floor_count=1,
@@ -51,7 +51,7 @@ def test_bad_plan_regression_is_rejected():
         connections=connections,
         entrances=[Entrance(room_id="living", wall="south", offset=7.5)]
     )
-    
+
     req = Requirements(bedrooms=3, bathrooms=2, floors=1, style="Modern Minimalist")
     plot = PlotConstraints.model_validate({
         'land_size_perches': 20,
@@ -60,8 +60,8 @@ def test_bad_plan_regression_is_rejected():
         'road_side': 'south',
         'terrain_type': 'flat'
     })
-    
+
     quality = validate_architectural_quality(design, req=req, plot=plot)
-    
+
     assert not quality.passed, "Bad plan should be rejected!"
     assert any("hallway" in f.lower() or "circulation" in f.lower() for f in quality.failures), "Should be rejected due to circulation/hallways"

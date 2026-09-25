@@ -62,7 +62,7 @@ public class InternalWorkflowControllerTests
 
         // Assert
         Assert.IsType<OkObjectResult>(result);
-        
+
         var dbWorkflow = await _dbContext.WorkflowStates.FindAsync(workflowId);
         Assert.Equal("hillside", dbWorkflow!.TerrainType);
         Assert.Equal("moderate", dbWorkflow.SlopeEstimate);
@@ -148,7 +148,7 @@ public class InternalWorkflowControllerTests
             Assert.Equal("HP-TEST", persisted.RootElement.GetProperty("candidate_summary")
                 .GetProperty("selected_plan_code").GetString());
         }
-        
+
         Assert.Single(newDbDesign.Rooms);
         var room = newDbDesign.Rooms.First();
         Assert.Equal("kitchen", room.RoomType);
@@ -227,9 +227,9 @@ public class InternalWorkflowControllerTests
             TotalCostLkr = 650000m,
             BudgetDeltaPercent = null,
             PricingSnapshot = PricingSnapshot(),
-                Breakdown = Breakdown(),
-                AppliedAreaSqft = 1000m,
-                TerrainType = "flat"
+            Breakdown = Breakdown(),
+            AppliedAreaSqft = 1000m,
+            TerrainType = "flat"
         };
 
         // Act
@@ -266,9 +266,9 @@ public class InternalWorkflowControllerTests
             TotalCostLkr = 1300m,
             BudgetDeltaPercent = 13m,
             PricingSnapshot = PricingSnapshot(),
-                Breakdown = Breakdown(),
-                AppliedAreaSqft = 1000m,
-                TerrainType = "flat"
+            Breakdown = Breakdown(),
+            AppliedAreaSqft = 1000m,
+            TerrainType = "flat"
         };
 
         var result = await _controller.SaveCostEstimate(nonExistentWorkflowId, request);
@@ -312,9 +312,9 @@ public class InternalWorkflowControllerTests
             TotalCostLkr = 1300m,
             BudgetDeltaPercent = 13m,
             PricingSnapshot = PricingSnapshot(),
-                Breakdown = Breakdown(),
-                AppliedAreaSqft = 1000m,
-                TerrainType = "flat"
+            Breakdown = Breakdown(),
+            AppliedAreaSqft = 1000m,
+            TerrainType = "flat"
         };
 
         // Act
@@ -341,9 +341,9 @@ public class InternalWorkflowControllerTests
             TotalCostLkr = total,
             BudgetDeltaPercent = budgetDelta,
             PricingSnapshot = PricingSnapshot(),
-                Breakdown = Breakdown(),
-                AppliedAreaSqft = 1000m,
-                TerrainType = "flat"
+            Breakdown = Breakdown(),
+            AppliedAreaSqft = 1000m,
+            TerrainType = "flat"
         };
 
         var result = await _controller.SaveCostEstimate(workflowId, request);
@@ -363,9 +363,9 @@ public class InternalWorkflowControllerTests
             TotalCostLkr = 2000m, // Inconsistent: 1000 + 300 != 2000
             BudgetDeltaPercent = 20m,
             PricingSnapshot = PricingSnapshot(),
-                Breakdown = Breakdown(),
-                AppliedAreaSqft = 1000m,
-                TerrainType = "flat"
+            Breakdown = Breakdown(),
+            AppliedAreaSqft = 1000m,
+            TerrainType = "flat"
         };
 
         var result = await _controller.SaveCostEstimate(workflowId, request);
@@ -410,9 +410,9 @@ public class InternalWorkflowControllerTests
             TotalCostLkr = 520000m,
             BudgetDeltaPercent = 10.4m,
             PricingSnapshot = PricingSnapshot(),
-                Breakdown = Breakdown(),
-                AppliedAreaSqft = 1000m,
-                TerrainType = "flat"
+            Breakdown = Breakdown(),
+            AppliedAreaSqft = 1000m,
+            TerrainType = "flat"
         };
 
         var retryRequest = new SaveCostEstimateRequestDto
@@ -422,9 +422,9 @@ public class InternalWorkflowControllerTests
             TotalCostLkr = 585000m,
             BudgetDeltaPercent = 11.7m,
             PricingSnapshot = PricingSnapshot(),
-                Breakdown = Breakdown(),
-                AppliedAreaSqft = 1000m,
-                TerrainType = "flat"
+            Breakdown = Breakdown(),
+            AppliedAreaSqft = 1000m,
+            TerrainType = "flat"
         };
 
         // Act: Submit twice for the same workflow/design

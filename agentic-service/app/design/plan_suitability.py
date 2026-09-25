@@ -65,7 +65,7 @@ def _topology_fit(family: str, req: Requirements, plot: PlotConstraints) -> floa
     return score
 
 
-def _space_priority_fit(plan: 'BasePlanRecord', req: Requirements) -> float:
+def _space_priority_fit(plan: BasePlanRecord, req: Requirements) -> float:
     family = plan.topology_family
     compactness = min(1.0, plan.architectural_metrics.get('compactness_score', 0) / 100)
     if req.space_priority == 'outdoor_garden' or req.garden_priority:
@@ -93,7 +93,7 @@ def accessibility_details(design: DesignResult) -> tuple[bool, float]:
     return capable, circulation if capable else 0.0
 
 
-def suitability_breakdown(plan: 'BasePlanRecord', req: Requirements,
+def suitability_breakdown(plan: BasePlanRecord, req: Requirements,
                           plot: PlotConstraints) -> dict:
     shape = _shape_token(plot)
     shape_fit = 1.0 if shape in plan.supported_plot_shapes else .35

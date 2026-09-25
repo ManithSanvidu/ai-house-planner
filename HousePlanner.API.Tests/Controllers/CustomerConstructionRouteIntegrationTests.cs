@@ -20,22 +20,22 @@ public class CustomerConstructionRouteIntegrationTests : IClassFixture<CustomerC
     public async Task ApprovedDesignsRoute_IsConfiguredCorrectly_AndNot404()
     {
         var client = _factory.CreateClient();
-        
+
         // The endpoint we are testing
         var response = await client.GetAsync("/api/v1/customer/construction/approved-designs");
-        
+
         // We expect either 200 OK (if auth was bypassed/mocked) or 401 Unauthorized, but DEFINITELY NOT 404 Not Found.
         Assert.NotEqual(HttpStatusCode.NotFound, response.StatusCode);
     }
-    
+
     [Fact]
     public async Task ConstructorsRoute_IsConfiguredCorrectly_AndNot404()
     {
         var client = _factory.CreateClient();
-        
+
         // The endpoint we are testing
         var response = await client.GetAsync("/api/v1/customer/construction/constructors");
-        
+
         Assert.NotEqual(HttpStatusCode.NotFound, response.StatusCode);
     }
 }

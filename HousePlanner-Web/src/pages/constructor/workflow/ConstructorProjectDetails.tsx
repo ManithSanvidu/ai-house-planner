@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { constructorWorkflowService, dailyConstructionLogService } from '../../../services/constructorWorkflowService';
 import type { ConstructorWorkflowProject, DailyConstructionLogDto, ConstructionPhase } from '../../../services/constructorWorkflowService';
@@ -27,7 +27,7 @@ export const ConstructorProjectDetails: React.FC = () => {
   const [editPhaseDuration, setEditPhaseDuration] = useState<number>(0);
   const [savingPhase, setSavingPhase] = useState(false);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!projectId) return;
     try {
       const p = await constructorWorkflowService.getProjectDetails(projectId);
@@ -42,11 +42,11 @@ export const ConstructorProjectDetails: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [projectId]);
 
   useEffect(() => {
     loadData();
-  }, [projectId]);
+  }, [loadData]);
 
   const handleDelete = async (logId: string) => {
     if (!projectId) return;
@@ -163,7 +163,7 @@ export const ConstructorProjectDetails: React.FC = () => {
                           toast.success('Phase schedule updated');
                           setEditingPhaseId(null);
                           loadData();
-                        } catch (e) {
+                        } catch {
                           toast.error('Failed to update phase schedule');
                         } finally {
                           setSavingPhase(false);

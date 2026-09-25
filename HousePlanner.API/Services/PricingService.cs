@@ -25,7 +25,8 @@ public class PricingService : IPricingService
             .ThenBy(item => item.Region)
             .ThenBy(item => item.QualityLevel)
             .ToListAsync();
-        return items.Select(MapToDto);
+        var userNames = await LoadUserNamesAsync(items.Select(item => item.UpdatedByUserId));
+        return items.Select(item => MapToDto(item, GetUserName(userNames, item.UpdatedByUserId)));
     }
 
     public async Task<IEnumerable<PricingDto>> GetActivePricingAsync(string? region, string? qualityLevel)
@@ -50,13 +51,14 @@ public class PricingService : IPricingService
             .ThenBy(item => item.ItemName)
             .ToList();
 
-        return selected.Select(MapToDto);
+        var userNames = await LoadUserNamesAsync(selected.Select(item => item.UpdatedByUserId));
+        return selected.Select(item => MapToDto(item, GetUserName(userNames, item.UpdatedByUserId)));
     }
 
     public async Task<PricingDto?> GetPricingByIdAsync(int id)
     {
         var item = await _context.PricingItems.AsNoTracking().FirstOrDefaultAsync(item => item.Id == id);
-        return item is null ? null : MapToDto(item);
+        return item is null ? null : MapToDto(item, await GetUserNameAsync(item.UpdatedByUserId));
     }
 
     public async Task<PricingDto> CreatePricingAsync(CreatePricingDto createDto, string? updatedByUserId = null)
@@ -141,7 +143,7 @@ public class PricingService : IPricingService
         _context.PricingItems.Add(item);
         await _context.SaveChangesAsync();
 
-        return MapToDto(item);
+        return MapToDto(item, await GetUserNameAsync(item.UpdatedByUserId));
     }
 
     public async Task<PricingDto?> UpdatePricingAsync(int id, UpdatePricingDto updateDto, string? updatedByUserId = null)
@@ -176,14 +178,14 @@ public class PricingService : IPricingService
         item.UpdatedAt = now;
         item.UpdatedByUserId = NormalizeUserId(updatedByUserId);
         await _context.SaveChangesAsync();
-        return MapToDto(item);
+        return MapToDto(item, await GetUserNameAsync(item.UpdatedByUserId));
     }
 
     public async Task<PricingDto?> DeactivatePricingAsync(int id, string? reason, string? updatedByUserId = null)
     {
         var item = await _context.PricingItems.FindAsync(id);
         if (item is null) return null;
-        if (!item.IsActive) return MapToDto(item);
+        if (!item.IsActive) return MapToDto(item, await GetUserNameAsync(item.UpdatedByUserId));
 
         var now = _timeProvider.GetUtcNow();
         item.IsActive = false;
@@ -199,24 +201,30 @@ public class PricingService : IPricingService
             Reason = string.IsNullOrWhiteSpace(reason) ? "Pricing record deactivated." : $"Deactivated: {reason.Trim()}"
         });
         await _context.SaveChangesAsync();
-        return MapToDto(item);
+        return MapToDto(item, await GetUserNameAsync(item.UpdatedByUserId));
     }
 
-    public async Task<IReadOnlyList<PricingHistoryDto>> GetPricingHistoryAsync(int id) =>
-        await _context.PricingHistory.AsNoTracking()
+    public async Task<IReadOnlyList<PricingHistoryDto>> GetPricingHistoryAsync(int id)
+    {
+        var historyItems = await _context.PricingHistory.AsNoTracking()
             .Where(history => history.PricingDataId == id)
             .OrderByDescending(history => history.ChangedAt)
-            .Select(history => new PricingHistoryDto
+            .ToListAsync();
+        var userNames = await LoadUserNamesAsync(historyItems.Select(history => history.ChangedByUserId));
+
+        return historyItems.Select(history => new PricingHistoryDto
             {
                 Id = history.Id,
                 PricingDataId = history.PricingDataId,
                 PreviousValue = history.PreviousValue,
                 NewValue = history.NewValue,
                 ChangedByUserId = history.ChangedByUserId,
+                ChangedByName = GetUserName(userNames, history.ChangedByUserId),
                 ChangedAt = history.ChangedAt,
                 Reason = history.Reason
             })
-            .ToListAsync();
+            .ToList();
+    }
 
     private static void ValidatePrice(string category, decimal value)
     {
@@ -254,7 +262,53 @@ public class PricingService : IPricingService
     private static string? NormalizeReason(string? reason) =>
         string.IsNullOrWhiteSpace(reason) ? null : reason.Trim()[..Math.Min(reason.Trim().Length, 500)];
 
-    private static PricingDto MapToDto(PricingData entity) => new()
+    private async Task<string?> GetUserNameAsync(string? userId)
+    {
+        var userNames = await LoadUserNamesAsync([userId]);
+        return GetUserName(userNames, userId);
+    }
+
+    private async Task<IReadOnlyDictionary<string, string>> LoadUserNamesAsync(IEnumerable<string?> userIds)
+    {
+        var ids = userIds
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Select(id => id!.Trim())
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+
+        if (ids.Count == 0)
+            return new Dictionary<string, string>(StringComparer.Ordinal);
+
+        var databaseIds = ids
+            .Select(id => Guid.TryParse(id, out var parsed) ? parsed : (Guid?)null)
+            .Where(id => id.HasValue)
+            .Select(id => id!.Value)
+            .ToList();
+
+        var users = await _context.Users.AsNoTracking()
+            .Where(user =>
+                (user.SupabaseUid != null && ids.Contains(user.SupabaseUid)) ||
+                databaseIds.Contains(user.Id))
+            .Select(user => new { user.Id, user.SupabaseUid, user.FullName })
+            .ToListAsync();
+
+        var result = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var user in users)
+        {
+            result[user.Id.ToString()] = user.FullName;
+            if (!string.IsNullOrWhiteSpace(user.SupabaseUid))
+                result[user.SupabaseUid] = user.FullName;
+        }
+
+        return result;
+    }
+
+    private static string? GetUserName(IReadOnlyDictionary<string, string> userNames, string? userId) =>
+        !string.IsNullOrWhiteSpace(userId) && userNames.TryGetValue(userId.Trim(), out var name)
+            ? name
+            : null;
+
+    private static PricingDto MapToDto(PricingData entity, string? updatedByName = null) => new()
     {
         Id = entity.Id,
         ItemName = entity.ItemName,
@@ -279,6 +333,7 @@ public class PricingService : IPricingService
         IsActive = entity.IsActive,
         CreatedAt = entity.CreatedAt,
         UpdatedByUserId = entity.UpdatedByUserId,
+        UpdatedByName = updatedByName,
         ObservedAt = entity.ObservedAt,
         EffectiveAt = entity.EffectiveAt,
         SourceUrl = entity.SourceUrl,

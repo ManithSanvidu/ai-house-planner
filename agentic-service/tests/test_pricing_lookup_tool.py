@@ -1,8 +1,9 @@
 import pytest
-import responses
 import requests
-from app.tools.pricing_lookup_tool import pricing_lookup_tool, PricingLookupError
+import responses
+
 from app.config import ASPNET_API_URL, INTERNAL_API_KEY
+from app.tools.pricing_lookup_tool import PricingLookupError, pricing_lookup_tool
 
 
 @responses.activate

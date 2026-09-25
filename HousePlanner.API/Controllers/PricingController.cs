@@ -115,9 +115,9 @@ namespace HousePlanner.API.Controllers
                 return BadRequest("UnitCostLkr must be greater than zero.");
             }
 
-            if (updateDto.TerrainMultiplier == null || 
-                updateDto.TerrainMultiplier.Flat <= 0 || 
-                updateDto.TerrainMultiplier.Hillside <= 0 || 
+            if (updateDto.TerrainMultiplier == null ||
+                updateDto.TerrainMultiplier.Flat <= 0 ||
+                updateDto.TerrainMultiplier.Hillside <= 0 ||
                 updateDto.TerrainMultiplier.Coastal <= 0)
             {
                 return BadRequest("TerrainMultiplier values must be provided and greater than zero.");

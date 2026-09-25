@@ -1,4 +1,4 @@
-from typing import Iterable
+from collections.abc import Iterable
 
 from app.schemas.cost_result import CostBreakdownLine
 from app.schemas.pricing_data import PricingItem

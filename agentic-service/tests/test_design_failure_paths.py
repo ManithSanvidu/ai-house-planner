@@ -1,14 +1,17 @@
 import json
+from contextlib import suppress
 from unittest.mock import MagicMock, patch
+
 import pytest
+
+from app.agents.design_agent import _safe_failure_reason, design_node
 from app.design.architectural_quality import validate_architectural_quality
-from app.design.models import Connection, Entrance
-from app.schemas.design_result import RoomLayout, Connection, DesignResult
 from app.design.base_plan_library import BasePlanRecord
-from app.tools.layout_generation_tool import generate_layout
 from app.design.candidate_generator import GenerationFailure
+from app.design.models import Connection, Entrance
+from app.schemas.design_result import DesignResult, RoomLayout
 from app.schemas.workflow_state import CoordinatorInput, WorkflowState
-from app.agents.design_agent import design_node, _safe_failure_reason
+from app.tools.layout_generation_tool import generate_layout
 from app.workflows.house_planning_graph import app_graph
 
 
@@ -66,14 +69,14 @@ def test_complete_optional_context_reaches_design_prompt():
         supported_terrains=['flat'], supported_styles=['Modern Minimalist'], capabilities={}, architectural_metrics={},
         layout_json=DesignResult(floor_count=1, foundation_type='slab').model_dump_json()
     )
-    with patch('app.tools.layout_generation_tool.filter_compatible_base_plans', return_value=[dummy_plan]):
-        with patch('app.tools.layout_generation_tool.get_available_design_provider', return_value=mock_provider):
-            with patch('app.design.plan_adapter.PlanAdapter.adapt') as mock_adapt:
-                mock_adapt.return_value = MagicMock(template_id='HP-TEST', template_family='COMPACT_RECTANGLE', rooms=[])
-                try:
-                    result = generate_layout(15, 'flat', preferences, plot_constraints=plot)
-                except Exception:
-                    pass # the generation might fail due to dummy plan, we just care that it reached the prompt
+    with (
+        patch('app.tools.layout_generation_tool.filter_compatible_base_plans', return_value=[dummy_plan]),
+        patch('app.tools.layout_generation_tool.get_available_design_provider', return_value=mock_provider),
+        patch('app.design.plan_adapter.PlanAdapter.adapt') as mock_adapt,
+    ):
+        mock_adapt.return_value = MagicMock(template_id='HP-TEST', template_family='COMPACT_RECTANGLE', rooms=[])
+        with suppress(GenerationFailure, ValueError):
+            generate_layout(15, 'flat', preferences, plot_constraints=plot)
 
     sent = json.loads(mock_provider.generate_json.call_args_list[0].args[1])
     assert 'budget_lkr' not in sent['normalized_input']

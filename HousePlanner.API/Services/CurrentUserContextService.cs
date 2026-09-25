@@ -27,9 +27,9 @@ public class CurrentUserContextService : ICurrentUserContextService
 
         var user = await _db.Users.AsNoTracking().Include(x => x.Role)
             .FirstOrDefaultAsync(x => x.SupabaseUid == uid);
-        
+
         if (user is null) return null;
-        
+
         return new CurrentUserContext(user.Id, user.Email, user.Role?.Name ?? "Customer");
     }
 }

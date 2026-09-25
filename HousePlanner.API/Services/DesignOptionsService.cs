@@ -42,10 +42,10 @@ public class DesignOptionsService : IDesignOptionsService
 
         if (request.Floors.HasValue)
             plans = plans.Where(p => p.FloorCount == request.Floors.Value).ToList();
-        
+
         if (request.Bedrooms.HasValue)
             plans = plans.Where(p => p.Bedrooms == request.Bedrooms.Value).ToList();
-        
+
         if (request.Bathrooms.HasValue)
             plans = plans.Where(p => p.Bathrooms == request.Bathrooms.Value).ToList();
 
@@ -99,7 +99,7 @@ public class DesignOptionsService : IDesignOptionsService
     {
         bool available = plans.Any(predicate);
         return new FeatureAvailabilityDto(
-            available, 
+            available,
             available ? null : "No validated design is available for this configuration."
         );
     }
@@ -109,8 +109,10 @@ public class DesignOptionsService : IDesignOptionsService
         if (request.Preferences?.Floors == 1 && request.Preferences.Balcony == true)
             return new DesignOptionsValidationResult
             {
-                IsValid = false, ErrorCode = "UNSUPPORTED_DESIGN_CONFIGURATION",
-                Message = "Balconies require a validated multi-floor design.", Conflicts = ["balcony"],
+                IsValid = false,
+                ErrorCode = "UNSUPPORTED_DESIGN_CONFIGURATION",
+                Message = "Balconies require a validated multi-floor design.",
+                Conflicts = ["balcony"],
                 Suggestions = [new SuggestionDto("balcony", false, "Continue without balcony")]
             };
         IQueryable<PreDesignedHousePlan> BuildQuery(string? skipConstraint = null)
@@ -126,7 +128,7 @@ public class DesignOptionsService : IDesignOptionsService
                     query = query.Where(p => p.Bathrooms == request.Preferences.Bathrooms.Value);
                 if (!string.IsNullOrEmpty(request.Preferences.ArchitecturalStyle) && skipConstraint != "style")
                     query = query.Where(p => p.Style == request.Preferences.ArchitecturalStyle);
-                
+
                 if (request.Preferences.OpenPlan == true && skipConstraint != "openPlan") query = query.Where(p => p.HasOpenPlan);
                 if (request.Preferences.MasterEnsuite == true && skipConstraint != "masterEnsuite") query = query.Where(p => p.HasMasterEnsuite);
                 if (request.Preferences.SeparateDining == true && skipConstraint != "separateDining") query = query.Where(p => p.HasSeparateDining);
@@ -232,7 +234,12 @@ public class DesignOptionsService : IDesignOptionsService
         }
         return Task.FromResult(conflicts.Count == 0
             ? new DesignOptionsValidationResult { IsValid = true }
-            : new DesignOptionsValidationResult { IsValid = false, ErrorCode = "SELECTED_PLAN_INCOMPATIBLE",
-                Message = "This plan cannot be used with your current project requirements.", Conflicts = conflicts });
+            : new DesignOptionsValidationResult
+            {
+                IsValid = false,
+                ErrorCode = "SELECTED_PLAN_INCOMPATIBLE",
+                Message = "This plan cannot be used with your current project requirements.",
+                Conflicts = conflicts
+            });
     }
 }

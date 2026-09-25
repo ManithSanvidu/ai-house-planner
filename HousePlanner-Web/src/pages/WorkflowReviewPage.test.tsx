@@ -5,7 +5,7 @@ import { WorkflowReviewPage } from './WorkflowReviewPage';
 import { workflowService } from '../services/workflowService';
 
 vi.mock('../services/workflowService', () => ({
-  workflowService: { getWorkflowStatus: vi.fn(), approveWorkflow: vi.fn() },
+  workflowService: { getWorkflowStatus: vi.fn(), regenerateDesign: vi.fn() },
 }));
 vi.mock('../services/validationRequestService', () => ({
   validationRequestService: { create: vi.fn() },
@@ -40,17 +40,17 @@ describe('WorkflowReviewPage revision refresh', () => {
     vi.mocked(workflowService.getWorkflowStatus)
       .mockResolvedValueOnce(status(1))
       .mockResolvedValue(status(2));
-    vi.mocked(workflowService.approveWorkflow).mockResolvedValue({});
+    vi.mocked(workflowService.regenerateDesign).mockResolvedValue({});
 
     render(<MemoryRouter initialEntries={['/dashboard/workflows/workflow-1']}>
       <Routes><Route path="/dashboard/workflows/:id" element={<WorkflowReviewPage />} /></Routes>
     </MemoryRouter>);
 
     expect(await screen.findByText('viewer:design-1')).toBeDefined();
-    fireEvent.click(screen.getByRole('button', { name: 'Generate Another' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Generate Another Design' }));
 
-    await waitFor(() => expect(workflowService.approveWorkflow)
-      .toHaveBeenCalledWith('workflow-1', 'request_revision', 'Generate Another'));
+    await waitFor(() => expect(workflowService.regenerateDesign)
+      .toHaveBeenCalledWith('workflow-1', 'design-1'));
     expect(await screen.findByText('viewer:design-2')).toBeDefined();
     expect(screen.getByText('Compact Rectangle')).toBeDefined();
     expect(screen.getByText('Architectural quality score: 91')).toBeDefined();

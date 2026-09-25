@@ -27,7 +27,7 @@ namespace HousePlanner.API.Entities
 
         [Required]
         public int RoleId { get; set; }
-        
+
         [ForeignKey("RoleId")]
         public virtual Role Role { get; set; } = null!;
 

@@ -48,6 +48,7 @@ const mockItems: PricingItem[] = [
     isActive: true,
     createdAt: '2026-09-01T10:00:00Z',
     updatedByUserId: 'constructor-1',
+    updatedByName: 'Nimal Perera',
     updatedAt: '2026-09-20T10:00:00Z',
   },
   {
@@ -69,6 +70,7 @@ const mockItems: PricingItem[] = [
     isActive: true,
     createdAt: '2026-09-01T10:00:00Z',
     updatedByUserId: 'constructor-1',
+    updatedByName: 'Nimal Perera',
     updatedAt: '2026-09-20T10:00:00Z',
   },
 ];
@@ -88,6 +90,13 @@ test('1. renders empty state when no pricing items exist', async () => {
 
   expect(await screen.findByText('No pricing items are configured yet.')).toBeTruthy();
   expect(screen.getAllByRole('button', { name: /add pricing item/i }).length).toBeGreaterThanOrEqual(1);
+});
+
+test('shows the updater name instead of the stored user ID', async () => {
+  render(<PricingManagementPage />);
+
+  expect(await screen.findAllByText('Nimal Perera')).toHaveLength(2);
+  expect(screen.queryByText('constructor-1')).toBeNull();
 });
 
 test('2. "Add Pricing Item" button opens create modal', async () => {
@@ -284,6 +293,7 @@ test('12. constructor can display pricing history', async () => {
   mockGetHistory.mockResolvedValue([{
     id: 'history-1', pricingDataId: 1, previousValue: 8000, newValue: 8500,
     changedByUserId: 'constructor-1', changedAt: '2026-09-20T10:00:00Z', reason: 'Supplier update',
+    changedByName: 'Nimal Perera',
   }]);
   render(<PricingManagementPage />);
   await screen.findByText('Foundation & Substructure Materials');
@@ -292,4 +302,5 @@ test('12. constructor can display pricing history', async () => {
 
   expect(await screen.findByText('8,000 → 8,500')).toBeTruthy();
   expect(screen.getByText('Supplier update')).toBeTruthy();
+  expect(screen.getByText('Updated by: Nimal Perera')).toBeTruthy();
 });

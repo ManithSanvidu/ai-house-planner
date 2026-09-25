@@ -39,18 +39,29 @@ public sealed class CustomerOwnershipTests
     {
         var submission = new LandSubmission
         {
-            Id = Guid.NewGuid(), ClientId = owner, LandSizePerches = 12,
-            PreferredBedrooms = 3, PreferredFloors = 1
+            Id = Guid.NewGuid(),
+            ClientId = owner,
+            LandSizePerches = 12,
+            PreferredBedrooms = 3,
+            PreferredFloors = 1
         };
         var workflow = new WorkflowState
         {
-            Id = Guid.NewGuid(), LandSubmissionId = submission.Id, LandSubmission = submission,
-            Status = "design_generated", ApprovalStatus = "client_review"
+            Id = Guid.NewGuid(),
+            LandSubmissionId = submission.Id,
+            LandSubmission = submission,
+            Status = "design_generated",
+            ApprovalStatus = "client_review"
         };
         workflow.HouseDesigns.Add(new HouseDesign
         {
-            Id = Guid.NewGuid(), WorkflowStateId = workflow.Id, Version = 1, IsCurrent = true,
-            FloorCount = 1, TotalBuiltUpAreaSqft = 800, FoundationType = "slab",
+            Id = Guid.NewGuid(),
+            WorkflowStateId = workflow.Id,
+            Version = 1,
+            IsCurrent = true,
+            FloorCount = 1,
+            TotalBuiltUpAreaSqft = 800,
+            FoundationType = "slab",
             LayoutJson = "{\"rooms\":[]}"
         });
         return workflow;
@@ -129,7 +140,7 @@ public sealed class CustomerOwnershipTests
         current.Setup(x => x.GetAsync(It.IsAny<HttpContext>()))
             .ReturnsAsync(new CurrentUserContext(_customerA, "a@example.com", "Customer"));
         var controller = new ValidationRequestController(_db, current.Object)
-            { ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() } };
+        { ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() } };
         Assert.IsType<NotFoundObjectResult>(await controller.CreateValidationRequest(
             new CreateValidationRequestDto { WorkflowStateId = _workflowB.Id }));
     }

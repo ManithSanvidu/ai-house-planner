@@ -8,7 +8,7 @@ Protected by X-Internal-API-Key header.
 Does not access PostgreSQL directly or invent fallback prices.
 """
 import logging
-from typing import List, Optional
+
 import requests
 from pydantic import ValidationError
 
@@ -20,16 +20,15 @@ logger = logging.getLogger(__name__)
 
 class PricingLookupError(Exception):
     """Raised when pricing lookup fails due to network, auth, parsing, or empty data."""
-    pass
 
 
 def pricing_lookup_tool(
-    api_url: Optional[str] = None,
-    api_key: Optional[str] = None,
+    api_url: str | None = None,
+    api_key: str | None = None,
     timeout: int = 10,
-    region: Optional[str] = None,
-    quality_level: Optional[str] = None,
-) -> List[PricingItem]:
+    region: str | None = None,
+    quality_level: str | None = None,
+) -> list[PricingItem]:
     """
     Fetch current pricing catalog from ASP.NET backend.
 

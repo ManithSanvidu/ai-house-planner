@@ -209,7 +209,8 @@ public partial class ConstructorWorkflowControllerTests
         _db.ConstructorProjectRequests.Add(request);
         await _db.SaveChangesAsync();
 
-        try {
+        try
+        {
             var result = await _controller.AcceptRequest(request.Id);
             Assert.IsType<OkObjectResult>(result);
 
@@ -217,7 +218,9 @@ public partial class ConstructorWorkflowControllerTests
             Assert.Equal(2, updatedProject.ConstructionPhases.Count);
             Assert.Equal(35, updatedProject.AiEstimatedTotalDurationDays);
             Assert.Equal(35, updatedProject.PlannedTotalDurationDays);
-        } catch (Exception ex) {
+        }
+        catch (Exception ex)
+        {
             Assert.Fail(ex.ToString());
         }
     }

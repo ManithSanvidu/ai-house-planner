@@ -1,5 +1,6 @@
 import json
 
+
 def room_overlaps(a, b):
     overlap_x = max(0, min(a['x'] + a['width'], b['x'] + b['width']) - max(a['x'], b['x']))
     overlap_y = max(0, min(a['y'] + a.get('length', 0), b['y'] + b.get('length', 0)) - max(a['y'], b['y']))
@@ -27,26 +28,26 @@ for p in plans:
     if code in design_codes:
         duplicates += 1
     design_codes.add(code)
-    
+
     beds = p['bedrooms']
     baths = p['bathrooms']
     floors = p['floors']
     rooms = p['layout']['rooms']
-    
+
     # Check bedroom counts
     bed_count = sum(1 for r in rooms if 'bedroom' in r['room_type'])
     if bed_count != beds:
         invalid_bedroom_counts += 1
-        
+
     bath_count = sum(1 for r in rooms if 'bathroom' in r['room_type'])
     if bath_count < baths:
         invalid_bathroom_counts += 1
-        
+
     # Check floor counts
     floor_count = max([r['floor'] for r in rooms]) if rooms else 0
     if floor_count != floors:
         invalid_floor_counts += 1
-        
+
     # Check missing stairs for multi-floor
     if floors > 1:
         staircases = [r for r in rooms if r['room_type'] == 'staircase']
@@ -57,18 +58,17 @@ for p in plans:
             for s in staircases[1:]:
                 if s['x'] != first_stair['x'] or s['y'] != first_stair['y'] or s['width'] != first_stair['width'] or s['length'] != first_stair['length']:
                     stair_misaligned += 1
-            
+
     # Check hallway widths (min 3.5)
     for r in rooms:
         if r['room_type'] == 'hallway' and r['width'] < 3.5:
             hallway_issues += 1
-            
+
     # Check overlaps
     for i, a in enumerate(rooms):
         for b in rooms[i+1:]:
-            if a['floor'] == b['floor']:
-                if room_overlaps(a, b):
-                    overlaps += 1
+            if a['floor'] == b['floor'] and room_overlaps(a, b):
+                overlaps += 1
 
     # check fingerprints
     fp = "-".join(f"{r['room_type']}:{r['x']}:{r['y']}:{r['width']}:{r.get('length', 0)}" for r in sorted(rooms, key=lambda x: x['room_id']))

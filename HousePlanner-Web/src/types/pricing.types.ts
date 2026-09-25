@@ -26,6 +26,7 @@ export interface PricingItem {
   isActive: boolean;
   createdAt: string;
   updatedByUserId?: string | null;
+  updatedByName?: string | null;
   updatedAt: string; // ISO-8601 DateTimeOffset
 }
 
@@ -60,6 +61,7 @@ export interface PricingHistoryItem {
   previousValue: number;
   newValue: number;
   changedByUserId?: string | null;
+  changedByName?: string | null;
   changedAt: string;
   reason?: string | null;
 }

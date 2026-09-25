@@ -1,9 +1,11 @@
 import random
 from math import sqrt
-from typing import Literal, Optional, Union
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict, Field, computed_field, model_validator
+
 from app.design.models import Direction, Terrain
-from app.tools.land_utils import perches_to_sqft, max_buildable_area
+from app.tools.land_utils import max_buildable_area, perches_to_sqft
 
 
 class Setbacks(BaseModel):
@@ -17,37 +19,37 @@ class Setbacks(BaseModel):
 class PlotConstraints(BaseModel):
     model_config = ConfigDict(allow_inf_nan=False)
     land_size_perches: float = Field(gt=0)
-    plot_width_ft: Optional[float] = Field(None, gt=0)
-    plot_length_ft: Optional[float] = Field(None, gt=0)
+    plot_width_ft: float | None = Field(None, gt=0)
+    plot_length_ft: float | None = Field(None, gt=0)
     road_side: Direction = 'south'
     north_direction: Literal['top', 'bottom', 'left', 'right', 'north', 'east', 'south', 'west'] = 'top'
-    entrance_side: Optional[Direction] = None
+    entrance_side: Direction | None = None
     terrain_type: Terrain = 'flat'
-    slope_direction: Optional[Direction] = None
+    slope_direction: Direction | None = None
     setbacks: Setbacks = Field(default_factory=Setbacks)
     setback_source: str = "conceptual_default"
     dimension_source: str = "user_supplied"
     parking_reserved: bool = False
-    design_seed: Optional[int] = None
+    design_seed: int | None = None
     notable_features: list[str] = Field(default_factory=list)
 
     @model_validator(mode='after')
     def derive_dimensions(self) -> 'PlotConstraints':
         area = perches_to_sqft(self.land_size_perches)
-        
+
         has_width = self.plot_width_ft is not None
         has_length = self.plot_length_ft is not None
 
         if not has_width and not has_length:
             self.dimension_source = "area_estimated"
             rng = random.Random(self.design_seed if self.design_seed is not None else int(self.land_size_perches * 10))
-            
+
             # Future Guided UI Plot Shape Categories:
             # - BALANCED: aspect = 1.25 (default when no shape/dims provided)
             # - NARROW_DEEP: aspect = 2.0+ (requires explicit user selection)
             # - WIDE_SHALLOW: aspect = 0.6 (requires explicit user selection)
             aspect = 1.25
-            
+
             if rng.random() > 0.5:
                 self.plot_width_ft = sqrt(area / aspect)
             else:
@@ -61,18 +63,18 @@ class PlotConstraints(BaseModel):
             self.plot_width_ft = area / self.plot_length_ft
         else:
             self.dimension_source = "user_supplied"
-            
+
         # Auto-correct perches if explicitly supplied dimensions vary wildly
         if has_width and has_length:
             dimension_area = self.plot_width_ft * self.plot_length_ft
             variance = abs(dimension_area - area) / area
             if variance > 0.30:
                 self.land_size_perches = dimension_area / perches_to_sqft(1)
-        
+
         # Avoid floating point absurdities
         self.plot_width_ft = round(self.plot_width_ft, 1)
         self.plot_length_ft = round(self.plot_length_ft, 1)
-        
+
         if self.buildable_width <= 0 or self.buildable_length <= 0:
             raise ValueError('Setbacks/reserved parking leave no buildable rectangle.')
         return self
@@ -81,13 +83,13 @@ class PlotConstraints(BaseModel):
     @property
     def aspect_ratio(self) -> float:
         return max(self.plot_width_ft or 1, self.plot_length_ft or 1) / min(self.plot_width_ft or 1, self.plot_length_ft or 1)
-        
+
     @computed_field
     @property
     def plot_class(self) -> str:
         area = perches_to_sqft(self.land_size_perches)
         aspect = self.aspect_ratio
-        
+
         if area < 3000:
             size = "SMALL"
         elif area < 6000:
@@ -96,7 +98,7 @@ class PlotConstraints(BaseModel):
             size = "LARGE"
         else:
             size = "VERY_LARGE"
-            
+
         if aspect <= 1.25:
             shape = "COMPACT"
         elif aspect <= 1.55:
@@ -105,7 +107,7 @@ class PlotConstraints(BaseModel):
             shape = "NARROW"
         else:
             shape = "VERY_NARROW"
-            
+
         return f"{size}_{shape}"
 
     @computed_field

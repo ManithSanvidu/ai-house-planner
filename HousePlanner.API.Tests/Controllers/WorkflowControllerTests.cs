@@ -39,8 +39,11 @@ public partial class WorkflowControllerTests
                 if (!submissionIds.Contains(id))
                     _dbContext.LandSubmissions.Add(new LandSubmission
                     {
-                        Id = id, ClientId = _clientId, LandSizePerches = 10,
-                        PreferredBedrooms = 3, PreferredFloors = 1
+                        Id = id,
+                        ClientId = _clientId,
+                        LandSizePerches = 10,
+                        PreferredBedrooms = 3,
+                        PreferredFloors = 1
                     });
             await _dbContext.SaveChangesAsync();
             return new CurrentUserContext(_clientId, "customer@example.com", "Customer");
@@ -168,7 +171,9 @@ public partial class WorkflowControllerTests
         var workflowId = Guid.NewGuid();
         _dbContext.WorkflowStates.Add(new WorkflowState
         {
-            Id = workflowId, LandSubmissionId = Guid.NewGuid(), Status = "design_generated",
+            Id = workflowId,
+            LandSubmissionId = Guid.NewGuid(),
+            Status = "design_generated",
             HouseDesigns = new List<HouseDesign>
             {
                 Design(workflowId, 1, false), Design(workflowId, 2, true)
@@ -191,7 +196,9 @@ public partial class WorkflowControllerTests
         var current = Design(workflowId, 2, true);
         _dbContext.WorkflowStates.Add(new WorkflowState
         {
-            Id = workflowId, LandSubmissionId = Guid.NewGuid(), Status = "design_generated",
+            Id = workflowId,
+            LandSubmissionId = Guid.NewGuid(),
+            Status = "design_generated",
             HouseDesigns = [selected, current]
         });
         await _dbContext.SaveChangesAsync();
@@ -300,30 +307,43 @@ public partial class WorkflowControllerTests
         var selected = Design(workflowId, 1, true);
         var submission = new LandSubmission
         {
-            Id = submissionId, ClientId = clientId, LandSizePerches = 10,
-            PreferredBedrooms = 3, PreferredFloors = 1, CreatedAt = DateTimeOffset.UtcNow,
+            Id = submissionId,
+            ClientId = clientId,
+            LandSizePerches = 10,
+            PreferredBedrooms = 3,
+            PreferredFloors = 1,
+            CreatedAt = DateTimeOffset.UtcNow,
             UpdatedAt = DateTimeOffset.UtcNow
         };
         _dbContext.LandSubmissions.Add(submission);
         _dbContext.WorkflowStates.Add(new WorkflowState
         {
-            Id = workflowId, LandSubmissionId = submissionId, LandSubmission = submission,
-            Status = "selected_by_client", PreferredHouseDesignId = selected.Id, HouseDesigns = [selected]
+            Id = workflowId,
+            LandSubmissionId = submissionId,
+            LandSubmission = submission,
+            Status = "selected_by_client",
+            PreferredHouseDesignId = selected.Id,
+            HouseDesigns = [selected]
         });
         await _dbContext.SaveChangesAsync();
 
         Assert.IsType<OkObjectResult>(await _controller.SubmitArchitectReview(workflowId, selected.Id));
         var persisted = await _dbContext.WorkflowStates.SingleAsync(w => w.Id == workflowId);
         Assert.Equal("awaiting_architect_review", persisted.Status);
-        var request=Assert.Single(await _dbContext.ValidationRequests.Where(r => r.WorkflowStateId == workflowId).ToListAsync());
-        Assert.Equal(selected.Id,request.HouseDesignId);
+        var request = Assert.Single(await _dbContext.ValidationRequests.Where(r => r.WorkflowStateId == workflowId).ToListAsync());
+        Assert.Equal(selected.Id, request.HouseDesignId);
         Assert.IsType<ConflictObjectResult>(await _controller.SubmitArchitectReview(workflowId, selected.Id));
     }
 
     private static HouseDesign Design(Guid workflowId, int version, bool current) => new()
     {
-        Id = Guid.NewGuid(), WorkflowStateId = workflowId, Version = version, IsCurrent = current,
-        FloorCount = 1, TotalBuiltUpAreaSqft = 700, FoundationType = "slab",
+        Id = Guid.NewGuid(),
+        WorkflowStateId = workflowId,
+        Version = version,
+        IsCurrent = current,
+        FloorCount = 1,
+        TotalBuiltUpAreaSqft = 700,
+        FoundationType = "slab",
         LayoutJson = """{"template_family":"COMPACT_RECTANGLE","geometry_fingerprint":"fp","candidate_summary":{"generation_mode":"deterministic_fallback","selected_plan_code":"BASE-1"},"rooms":[]}""",
         CreatedAt = DateTimeOffset.UtcNow.AddMinutes(version)
     };
@@ -338,8 +358,11 @@ public partial class WorkflowControllerTests
         // This creates a workflow owned by some other user (not _clientId)
         _dbContext.LandSubmissions.Add(new LandSubmission
         {
-            Id = submissionId, ClientId = Guid.NewGuid(), LandSizePerches = 10,
-            PreferredBedrooms = 3, PreferredFloors = 1
+            Id = submissionId,
+            ClientId = Guid.NewGuid(),
+            LandSizePerches = 10,
+            PreferredBedrooms = 3,
+            PreferredFloors = 1
         });
         _dbContext.WorkflowStates.Add(new WorkflowState
         {
@@ -420,8 +443,10 @@ public partial class WorkflowControllerTests
 
         var result = await _controller.RemoveDesign(workflowId, design.Id);
         var conflict = Assert.IsType<ConflictObjectResult>(result);
-        var value = conflict.Value as dynamic;
-        Assert.Equal("design_in_active_construction", (string)value.GetType().GetProperty("code").GetValue(value, null));
+        Assert.NotNull(conflict.Value);
+        var codeProperty = conflict.Value.GetType().GetProperty("code");
+        Assert.NotNull(codeProperty);
+        Assert.Equal("design_in_active_construction", codeProperty.GetValue(conflict.Value));
     }
 
     [Fact]

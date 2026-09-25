@@ -30,8 +30,11 @@ public class ProceduralContractTests
                 if (!submissionIds.Contains(id))
                     db.LandSubmissions.Add(new LandSubmission
                     {
-                        Id = id, ClientId = clientId, LandSizePerches = 10,
-                        PreferredBedrooms = 3, PreferredFloors = 1
+                        Id = id,
+                        ClientId = clientId,
+                        LandSizePerches = 10,
+                        PreferredBedrooms = 3,
+                        PreferredFloors = 1
                     });
             await db.SaveChangesAsync();
             return new CurrentUserContext(clientId, "customer@example.com", "Customer");
@@ -46,9 +49,12 @@ public class ProceduralContractTests
         using var db = Database();
         var workflowId = Guid.NewGuid();
         var roomIds = new[] { Guid.NewGuid(), Guid.NewGuid() };
-        var layout = new {
-            template_family = "DUPLEX_STACKED", design_seed = 123,
-            design_score = 87.5, ground_footprint_sqft = 500,
+        var layout = new
+        {
+            template_family = "DUPLEX_STACKED",
+            design_seed = 123,
+            design_score = 87.5,
+            ground_footprint_sqft = 500,
             connections = new[] { new { from_room = roomIds[0], to_room = roomIds[1], kind = "stair" } },
             entrances = new[] { new { room_id = roomIds[0], wall = "south", offset = 1, width = 3 } },
             plot_constraints = new { dimensions_estimated = true },
@@ -59,8 +65,11 @@ public class ProceduralContractTests
                       doors = new[] { new { wall = "east", offset = 2, width = 3 } } }
             }
         };
-        db.WorkflowStates.Add(new WorkflowState {
-            Id = workflowId, LandSubmissionId = Guid.NewGuid(), Status = "design_generated",
+        db.WorkflowStates.Add(new WorkflowState
+        {
+            Id = workflowId,
+            LandSubmissionId = Guid.NewGuid(),
+            Status = "design_generated",
             HouseDesigns = new List<HouseDesign> { new() {
                 WorkflowStateId = workflowId, FloorCount = 2, Version = 1, IsCurrent = true,
                 FoundationType = "slab", LayoutJson = JsonSerializer.Serialize(layout),
@@ -103,14 +112,24 @@ public class ProceduralContractTests
     [Fact]
     public void ExpandedIntakeSerializesPythonCompatibleFieldNames()
     {
-        var preferences = new PreferencesDto {
-            Bedrooms = 3, Bathrooms = 2, Floors = 1, OpenPlan = true,
-            MasterEnsuite = true, SeparateDining = false, UtilityRoom = true,
-            ParkingRequired = true, SpacePriority = "balanced",
+        var preferences = new PreferencesDto
+        {
+            Bedrooms = 3,
+            Bathrooms = 2,
+            Floors = 1,
+            OpenPlan = true,
+            MasterEnsuite = true,
+            SeparateDining = false,
+            UtilityRoom = true,
+            ParkingRequired = true,
+            SpacePriority = "balanced",
             CirculationPreference = "space_efficient"
         };
-        var plot = new PlotConstraintsDto {
-            road_side = "south", north_direction = "east", entrance_side = "west",
+        var plot = new PlotConstraintsDto
+        {
+            road_side = "south",
+            north_direction = "east",
+            entrance_side = "west",
             setbacks = new SetbacksDto { front = 10, rear = 6, left = 5, right = 5 }
         };
         var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };

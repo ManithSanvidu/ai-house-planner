@@ -1,6 +1,6 @@
-import pytest
-from app.tools.geometry_validator import validate_geometry, GeometryValidationResult
-from app.schemas.design_result import RoomLayout, Opening
+from app.schemas.design_result import RoomLayout
+from app.tools.geometry_validator import validate_geometry
+
 
 def test_validate_geometry_success():
     rooms = [

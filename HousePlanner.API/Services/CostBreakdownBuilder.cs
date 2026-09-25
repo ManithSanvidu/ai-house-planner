@@ -262,12 +262,12 @@ public static class CostBreakdownBuilder
     private static bool TryGetProperty(JsonElement element, out JsonElement value, params string[] names)
     {
         foreach (var property in element.EnumerateObject())
-        foreach (var name in names)
-            if (property.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
-            {
-                value = property.Value;
-                return true;
-            }
+            foreach (var name in names)
+                if (property.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
+                {
+                    value = property.Value;
+                    return true;
+                }
 
         value = default;
         return false;

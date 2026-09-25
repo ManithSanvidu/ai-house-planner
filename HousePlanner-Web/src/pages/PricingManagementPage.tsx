@@ -44,6 +44,7 @@ interface PricingItem {
   isActive: boolean;
   createdAt: string;
   updatedByUserId?: string | null;
+  updatedByName?: string | null;
   lastUpdated: string;
 }
 
@@ -110,6 +111,7 @@ function toViewModel(api: ApiPricingItem): PricingItem {
     isActive: api.isActive,
     createdAt: api.createdAt,
     updatedByUserId: api.updatedByUserId,
+    updatedByName: api.updatedByName,
     lastUpdated: api.updatedAt,
   };
 }
@@ -1268,8 +1270,8 @@ const PricingManagementPage: React.FC = () => {
                       <span className="text-xs text-slate-400 font-medium">
                         {formatDate(item.lastUpdated)}
                       </span>
-                      <p className="max-w-[140px] truncate text-[10px] text-slate-400" title={item.updatedByUserId || 'System'}>
-                        {item.updatedByUserId || 'System'}
+                      <p className="max-w-[140px] truncate text-[10px] text-slate-400" title={item.updatedByName || (item.updatedByUserId ? 'Unknown user' : 'System')}>
+                        {item.updatedByName || (item.updatedByUserId ? 'Unknown user' : 'System')}
                       </p>
                     </td>
 
@@ -1352,7 +1354,7 @@ const PricingManagementPage: React.FC = () => {
                       <time className="text-xs text-slate-400">{new Date(entry.changedAt).toLocaleString()}</time>
                     </div>
                     <p className="mt-1 text-xs text-slate-500">{entry.reason || 'No reason provided'}</p>
-                    <p className="mt-1 text-[10px] text-slate-400">Updated by: {entry.changedByUserId || 'System'}</p>
+                    <p className="mt-1 text-[10px] text-slate-400">Updated by: {entry.changedByName || (entry.changedByUserId ? 'Unknown user' : 'System')}</p>
                   </div>
                 ))}
               </div>

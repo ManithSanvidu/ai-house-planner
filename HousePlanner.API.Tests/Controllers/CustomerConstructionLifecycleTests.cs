@@ -120,8 +120,8 @@ public sealed partial class CustomerConstructionLifecycleTests
         var request = Assert.Single(_db.ConstructorProjectRequests);
         await ConstructorController(_constructorA).AcceptRequest(request.Id);
         var service = new ConstructorWorkflowService(_db);
-        await service.CreateWorkflowLogAsync(_constructorA, new ConstructorWorkflowLog { Id=Guid.NewGuid(), ProjectId=request.ProjectId, CompletedWork="Foundation work", ProgressPercentage=20 });
-        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => service.CreateWorkflowLogAsync(_constructorB, new ConstructorWorkflowLog { Id=Guid.NewGuid(), ProjectId=request.ProjectId, CompletedWork="Invalid" }));
+        await service.CreateWorkflowLogAsync(_constructorA, new ConstructorWorkflowLog { Id = Guid.NewGuid(), ProjectId = request.ProjectId, CompletedWork = "Foundation work", ProgressPercentage = 20 });
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => service.CreateWorkflowLogAsync(_constructorB, new ConstructorWorkflowLog { Id = Guid.NewGuid(), ProjectId = request.ProjectId, CompletedWork = "Invalid" }));
     }
 
     [Fact]
@@ -154,8 +154,8 @@ public sealed partial class CustomerConstructionLifecycleTests
         var request = Assert.Single(_db.ConstructorProjectRequests);
         await ConstructorController(_constructorA).AcceptRequest(request.Id);
         var service = new ConstructorWorkflowService(_db);
-        await service.CreateWorkflowLogAsync(_constructorA, new ConstructorWorkflowLog { Id=Guid.NewGuid(), ProjectId=request.ProjectId, CompletedWork="A", Date=DateTimeOffset.UtcNow });
-        await service.CreateWorkflowLogAsync(_constructorA, new ConstructorWorkflowLog { Id=Guid.NewGuid(), ProjectId=request.ProjectId, CompletedWork="B", Date=DateTimeOffset.UtcNow });
+        await service.CreateWorkflowLogAsync(_constructorA, new ConstructorWorkflowLog { Id = Guid.NewGuid(), ProjectId = request.ProjectId, CompletedWork = "A", Date = DateTimeOffset.UtcNow });
+        await service.CreateWorkflowLogAsync(_constructorA, new ConstructorWorkflowLog { Id = Guid.NewGuid(), ProjectId = request.ProjectId, CompletedWork = "B", Date = DateTimeOffset.UtcNow });
         Assert.IsType<OkObjectResult>(await CustomerController(_customerA).Project(request.ProjectId));
         Assert.IsType<NotFoundResult>(await CustomerController(_customerB).Project(request.ProjectId));
     }
@@ -230,8 +230,10 @@ public sealed partial class CustomerConstructionLifecycleTests
         var overviewResult = await CustomerController(_customerA).GetConstruction();
         var okResult = Assert.IsType<OkObjectResult>(overviewResult);
 
-        var val = okResult.Value as dynamic;
-        var activeProjects = val.GetType().GetProperty("activeProjects").GetValue(val, null) as IEnumerable<object>;
+        Assert.NotNull(okResult.Value);
+        var property = okResult.Value.GetType().GetProperty("activeProjects");
+        Assert.NotNull(property);
+        var activeProjects = Assert.IsAssignableFrom<IEnumerable<object>>(property.GetValue(okResult.Value));
         Assert.Empty(activeProjects);
     }
 
@@ -263,8 +265,8 @@ public sealed partial class CustomerConstructionLifecycleTests
         await CustomerController(_customerA).CancelProject(project.Id, default);
 
         var service = new ConstructorWorkflowService(_db);
-        await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            service.CreateWorkflowLogAsync(_constructorA, new ConstructorWorkflowLog { Id=Guid.NewGuid(), ProjectId=project.Id, CompletedWork="A" }));
+        await Assert.ThrowsAsync<HousePlanner.API.Exceptions.ProjectCancelledException>(() =>
+            service.CreateWorkflowLogAsync(_constructorA, new ConstructorWorkflowLog { Id = Guid.NewGuid(), ProjectId = project.Id, CompletedWork = "A" }));
     }
 
     [Fact]
@@ -293,14 +295,14 @@ public sealed partial class CustomerConstructionLifecycleTests
                 new(_constructorB, "Builder B", "b@example.com", "Constructor", "Active")
             });
         return new CustomerConstructionController(_db, current.Object, new ConstructorWorkflowService(_db), staffMock.Object)
-            { ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() } };
+        { ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() } };
     }
     private ConstructorWorkflowController ConstructorController(Guid id)
     {
         var current = Current(id, "Constructor");
         var logServiceMock = new Mock<IDailyConstructionLogService>();
         return new ConstructorWorkflowController(new ConstructorWorkflowService(_db), current.Object, _db, logServiceMock.Object)
-            { ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() } };
+        { ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() } };
     }
     private static Mock<ICurrentUserContextService> Current(Guid id, string role)
     {
@@ -308,15 +310,15 @@ public sealed partial class CustomerConstructionLifecycleTests
         current.Setup(x => x.GetAsync(It.IsAny<HttpContext>())).ReturnsAsync(new CurrentUserContext(id, "x@example.com", role));
         return current;
     }
-    private static User User(Guid id, string name, Role role) => new() { Id=id, Email=$"{id}@example.com", FullName=name, Role=role, RoleId=role.Id };
+    private static User User(Guid id, string name, Role role) => new() { Id = id, Email = $"{id}@example.com", FullName = name, Role = role, RoleId = role.Id };
     private HouseDesign AddApprovedWorkflow(Guid owner, bool approved)
     {
-        var land = new LandSubmission { Id=Guid.NewGuid(), ClientId=owner, LandSizePerches=10, PreferredBedrooms=3, PreferredFloors=1 };
-        var workflow = new WorkflowState { Id=Guid.NewGuid(), LandSubmission=land, LandSubmissionId=land.Id, Status=approved?"approved":"design_generated", ApprovalStatus=approved?"approved":"not_requested" };
-        var design = new HouseDesign { Id=Guid.NewGuid(), WorkflowState=workflow, WorkflowStateId=workflow.Id, Version=1, FloorCount=1, TotalBuiltUpAreaSqft=900, FoundationType="slab", LayoutJson="{\"rooms\":[]}" };
-        workflow.HouseDesigns.Add(design); workflow.PreferredHouseDesignId=design.Id;
+        var land = new LandSubmission { Id = Guid.NewGuid(), ClientId = owner, LandSizePerches = 10, PreferredBedrooms = 3, PreferredFloors = 1 };
+        var workflow = new WorkflowState { Id = Guid.NewGuid(), LandSubmission = land, LandSubmissionId = land.Id, Status = approved ? "approved" : "design_generated", ApprovalStatus = approved ? "approved" : "not_requested" };
+        var design = new HouseDesign { Id = Guid.NewGuid(), WorkflowState = workflow, WorkflowStateId = workflow.Id, Version = 1, FloorCount = 1, TotalBuiltUpAreaSqft = 900, FoundationType = "slab", LayoutJson = "{\"rooms\":[]}" };
+        workflow.HouseDesigns.Add(design); workflow.PreferredHouseDesignId = design.Id;
         _db.Add(workflow);
-        if (approved) _db.Add(new ValidationRequest { Id=Guid.NewGuid(), WorkflowState=workflow, WorkflowStateId=workflow.Id, HouseDesign=design, HouseDesignId=design.Id, ClientId=owner, Status="Approved" });
+        if (approved) _db.Add(new ValidationRequest { Id = Guid.NewGuid(), WorkflowState = workflow, WorkflowStateId = workflow.Id, HouseDesign = design, HouseDesignId = design.Id, ClientId = owner, Status = "Approved" });
         return design;
     }
 }

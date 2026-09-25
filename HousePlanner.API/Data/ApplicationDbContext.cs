@@ -97,13 +97,13 @@ namespace HousePlanner.API.Data
                 entity.HasIndex(e => new { e.WorkflowStateId, e.Version })
                     .IsUnique()
                     .HasDatabaseName("UX_HouseDesigns_WorkflowState_Version");
-                try 
+                try
                 {
                     entity.Property(e => e.CreatedAt).HasDefaultValueSql("now()");
-                } 
-                catch 
-                { 
-                    // Ignore for in-memory provider 
+                }
+                catch
+                {
+                    // Ignore for in-memory provider
                 }
             });
 

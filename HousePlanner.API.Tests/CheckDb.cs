@@ -4,8 +4,10 @@ using Microsoft.EntityFrameworkCore;
 using HousePlanner.API.Data;
 using Microsoft.Extensions.DependencyInjection;
 
-public class CheckDb {
-    public static void Run() {
+public class CheckDb
+{
+    public static void Run()
+    {
         var services = new ServiceCollection();
         services.AddDbContext<ApplicationDbContext>(options => options.UseNpgsql("Host=localhost;Database=ai-house-planner;Username=postgres;Password=postgres"));
         var sp = services.BuildServiceProvider();
