@@ -458,7 +458,7 @@ const HomePage: React.FC = () => {
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
                     placeholder="Describe your dream home..."
-                    className="flex-1 bg-transparent border-none focus:ring-0 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 px-4 py-3 outline-none text-sm font-light transition-colors"
+                    className="flex-1 bg-transparent border-none focus:ring-0 text-black dark:text-white placeholder-gray-500 dark:placeholder-gray-400 px-4 py-3 outline-none text-sm font-light transition-colors"
                   />
                   <button type="button" className="p-3 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors hidden sm:block">
                     <Mic size={18} />
@@ -466,14 +466,14 @@ const HomePage: React.FC = () => {
                   <button 
                     type="submit"
                     disabled={isGenerating}
-                    className="bg-gray-900 dark:bg-white hover:bg-black dark:hover:bg-gray-200 text-white dark:text-gray-900 px-6 py-3 rounded-xl text-xs font-bold tracking-[0.1em] transition-colors disabled:opacity-70 flex items-center gap-2"
+                    className="bg-black dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-200 text-white dark:text-black px-6 py-3 rounded-xl text-xs font-bold tracking-[0.1em] transition-colors disabled:opacity-70 flex items-center gap-2"
                   >
                     {isGenerating ? 'ANALYZING' : 'GENERATE'}
                   </button>
                 </form>
                 {assistantResult && (
-                  <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm text-left border border-gray-200 dark:border-gray-700">
-                    <p className="text-gray-900 dark:text-gray-100 mb-4 whitespace-pre-wrap leading-relaxed">
+                  <div className="mt-4 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm text-left border border-gray-200 dark:border-gray-700">
+                    <p className="text-black dark:text-white mb-4 whitespace-pre-wrap leading-relaxed">
                       {assistantResult.reply || 'No response from assistant.'}
                     </p>
 
@@ -507,7 +507,7 @@ const HomePage: React.FC = () => {
                     )}
 
                     <div className="mt-4 flex justify-end">
-                      <button onClick={() => setAssistantResult(null)} className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white font-medium text-xs transition-colors">
+                      <button onClick={() => setAssistantResult(null)} className="text-gray-700 hover:text-black dark:text-gray-300 dark:hover:text-white font-medium text-xs transition-colors bg-black/5 dark:bg-white/10 px-3 py-1.5 rounded hover:bg-black/10 dark:hover:bg-white/20">
                         Clear
                       </button>
                     </div>
