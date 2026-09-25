@@ -1,5 +1,5 @@
 import React, { useRef, useState, Suspense, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Html, useGLTF } from '@react-three/drei';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
@@ -257,6 +257,7 @@ const carouselImages = [
 
 const HomePage: React.FC = () => {
   const { scrollY } = useScroll();
+  const navigate = useNavigate();
   
   // Theme Toggle with LocalStorage for persistence
   const [isDark, setIsDark] = useState(() => {
@@ -471,9 +472,45 @@ const HomePage: React.FC = () => {
                   </button>
                 </form>
                 {assistantResult && (
-                  <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg text-xs overflow-auto max-h-60 text-left border border-gray-200 dark:border-gray-700">
-                    <pre className="text-gray-800 dark:text-gray-300 whitespace-pre-wrap">{JSON.stringify(assistantResult, null, 2)}</pre>
-                    <button onClick={() => setAssistantResult(null)} className="mt-2 text-indigo-600 dark:text-indigo-400 font-bold">Clear</button>
+                  <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm text-left border border-gray-200 dark:border-gray-700">
+                    <p className="text-gray-900 dark:text-gray-100 mb-4 whitespace-pre-wrap leading-relaxed">
+                      {assistantResult.message || 'No response from assistant.'}
+                    </p>
+
+                    {assistantResult.intent === 'DESIGN_REQUEST' && assistantResult.feasibility?.can_proceed && (
+                      <div className="mt-6 p-4 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl border border-indigo-100 dark:border-indigo-800">
+                        <p className="font-semibold text-indigo-900 dark:text-indigo-200 mb-3">
+                          Your request is feasible. I can start the design setup with these requirements.
+                        </p>
+                        <button 
+                          onClick={() => navigate('/dashboard/new-project', { state: { prefill: assistantResult.requirements } })}
+                          className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-lg font-bold text-xs tracking-wider transition-colors"
+                        >
+                          Continue to Design
+                        </button>
+                      </div>
+                    )}
+
+                    {assistantResult.intent === 'DESIGN_REQUEST' && assistantResult.feasibility && !assistantResult.feasibility.can_proceed && (
+                      <div className="mt-6 p-4 bg-amber-50 dark:bg-amber-900/30 rounded-xl border border-amber-200 dark:border-amber-800">
+                        <p className="font-semibold text-amber-900 dark:text-amber-200 mb-2">
+                          Your request is not supported with the available buildable area or catalogue.
+                        </p>
+                        {assistantResult.feasibility.suggestions?.length > 0 && (
+                          <ul className="list-disc list-inside text-amber-800 dark:text-amber-300 text-xs space-y-1 mt-2">
+                            {assistantResult.feasibility.suggestions.map((s: string, i: number) => (
+                              <li key={i}>{s}</li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="mt-4 flex justify-end">
+                      <button onClick={() => setAssistantResult(null)} className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white font-medium text-xs transition-colors">
+                        Clear
+                      </button>
+                    </div>
                   </div>
                 )}
               </motion.div>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Upload, Home, Map, Layers, CheckCircle2 } from 'lucide-react';
 import { workflowService } from '../services/workflowService';
@@ -38,24 +38,34 @@ interface IntakeFormData {
 const IntakeForm: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const location = useLocation();
+  const prefill = location.state?.prefill || {};
+
   const [formData, setFormData] = useState<IntakeFormData>({
-    landSize: '',
-    landUnit: 'perches',
-    terrainType: 'flat/urban',
+    landSize: prefill.land_size ? String(prefill.land_size) : '',
+    landUnit: prefill.land_unit === 'sqft' ? 'sqft' : 'perches',
+    terrainType: prefill.terrain_type || 'flat/urban',
     photo: null,
-    bedrooms: searchParams.get('beds') || '3',
-    bathrooms: searchParams.get('baths') || '1',
-    floors: searchParams.get('floors') || '1',
-    architecturalStyle: 'Modern Minimalist',
-    plotWidth: '',
-    plotLength: '',
-    roadSide: 'south',
-    northDirection: 'north',
-    entranceSide: 'road_side',
+    bedrooms: prefill.bedrooms ? String(prefill.bedrooms) : searchParams.get('beds') || '3',
+    bathrooms: prefill.bathrooms ? String(prefill.bathrooms) : searchParams.get('baths') || '1',
+    floors: prefill.floors ? String(prefill.floors) : searchParams.get('floors') || '1',
+    architecturalStyle: prefill.style || 'Modern Minimalist',
+    plotWidth: prefill.plot_width_ft ? String(prefill.plot_width_ft) : '',
+    plotLength: prefill.plot_length_ft ? String(prefill.plot_length_ft) : '',
+    roadSide: prefill.road_side || 'south',
+    northDirection: prefill.north_direction || 'north',
+    entranceSide: prefill.entrance_side || 'road_side',
     frontSetback: '', rearSetback: '', leftSetback: '', rightSetback: '',
-    openPlan: false, masterEnsuite: false, separateDining: false,
-    homeOffice: false, balcony: false, veranda: false, utilityRoom: false,
-    parkingRequired: false, accessibility: false, spacePriority: 'balanced',
+    openPlan: prefill.open_plan || false, 
+    masterEnsuite: prefill.master_ensuite || false, 
+    separateDining: prefill.separate_dining || false,
+    homeOffice: prefill.office || false, 
+    balcony: prefill.balcony || false, 
+    veranda: prefill.veranda || false, 
+    utilityRoom: prefill.utility_room || false,
+    parkingRequired: prefill.parking_spaces ? true : false, 
+    accessibility: prefill.accessible_friendly || false, 
+    spacePriority: 'balanced',
     targetCompletionDate: '',
   });
 
