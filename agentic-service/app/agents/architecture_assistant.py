@@ -38,6 +38,7 @@ class AssistantInterpretation(BaseModel):
 def interpret_user_message(message: str) -> dict:
     from app.providers.provider_factory import get_available_design_provider, get_provider
     from app.agents.feasibility_engine import check_feasibility, generate_feasibility_advice
+
     provider = get_available_design_provider() or get_provider("openai")
     
     system_prompt = """You are an AI Architecture Assistant.
@@ -71,6 +72,24 @@ Also identify 'missing_required_fields' (e.g. land_size, bedrooms) and 'user_goa
         elif intent == 'LAND_FEASIBILITY_ADVICE' and reqs:
             advice = generate_feasibility_advice(reqs)
             res['feasibility_advice'] = advice
+
+        # RAG retrieval for knowledge-based intents
+        rag_intents = {'GENERAL_ADVICE', 'CONSTRUCTION_QUESTION', 'DESIGN_REQUEST', 'LAND_FEASIBILITY_ADVICE'}
+        if intent in rag_intents:
+            try:
+                from app.knowledge.rag_pipeline import search_knowledge_as_dicts
+                knowledge = search_knowledge_as_dicts(message, top_k=3)
+                if knowledge:
+                    res['knowledge_context'] = knowledge
+                    res['response_sources'] = []
+                    if intent in ('DESIGN_REQUEST', 'LAND_FEASIBILITY_ADVICE'):
+                        res['response_sources'].append('system_feasibility')
+                    if knowledge:
+                        res['response_sources'].append('architecture_knowledge_base')
+            except Exception as rag_err:
+                # RAG failure is non-fatal — proceed without knowledge context
+                res['knowledge_context'] = []
+                res['rag_error'] = str(rag_err)
 
         return res
     except Exception as e:

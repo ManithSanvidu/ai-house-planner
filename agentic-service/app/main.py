@@ -166,3 +166,23 @@ def interpret_message(
 ):
     from app.agents.architecture_assistant import interpret_user_message
     return interpret_user_message(request.message)
+
+class KnowledgeSearchRequest(BaseModel):
+    query: str
+    top_k: int = 3
+    category: Optional[str] = None
+
+@app.post("/knowledge/seed")
+def seed_knowledge(api_key: str = Security(verify_api_key)):
+    from app.knowledge.rag_pipeline import seed_knowledge_base
+    stored, skipped = seed_knowledge_base()
+    return {"stored": stored, "skipped": skipped}
+
+@app.post("/knowledge/search")
+def search_knowledge(
+    request: KnowledgeSearchRequest,
+    api_key: str = Security(verify_api_key)
+):
+    from app.knowledge.rag_pipeline import search_knowledge_as_dicts
+    results = search_knowledge_as_dicts(request.query, request.top_k, request.category)
+    return {"results": results, "count": len(results)}
