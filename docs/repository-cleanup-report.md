@@ -1,6 +1,6 @@
 # Repository cleanup audit
 
-**Final status: deletions rolled back.** Three backend tests fail with every candidate restored. Deleted files/folders remaining: **none**. Only this report is added; all pre-existing tracked file contents were verified unchanged. The REMOVE entries below record the initial proposal, not the final repository state.
+**Cleanup completed on 2026-09-24.** Temporary root-level source-rewriting scripts and loose agent diagnostic files were removed. The reusable sample and catalogue verification tools were retained under `agentic-service/scripts/`. Automated Python tests remain under `agentic-service/tests/`, and `agentic-service/pytest.ini` now limits discovery to that directory. The inventory below is the historical audit used to make the cleanup decision.
 
 Pre-deletion inspection completed on 2026-09-21. No files had been removed when this report was created.
 

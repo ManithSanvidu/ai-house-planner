@@ -6,51 +6,33 @@ import json
 import logging
 from collections import Counter
 
-from typing import Optional, Union
-
 from app.design.architectural_quality import validate_architectural_quality
-
 from app.design.base_plan_library import (
-
     compact_plan_metadata,
     compatibility_rejection_reasons,
     deduplicate_base_plans,
-
     filter_compatible_base_plans,
-
     load_base_plan_catalog,
-
     rank_base_plans,
-
 )
-
-from app.design.candidate_generator import GenerationFailure, select_best
-
+from app.design.candidate_generator import GenerationFailure
 from app.design.diversity import geometry_fingerprint
-
 from app.design.models import Requirements
-
 from app.design.normalized_input import NormalizedDesignInput
-
 from app.design.plan_adapter import PlanAdapter
-
-from app.design.plot_constraints import PlotConstraints
 from app.design.plan_suitability import suitability_breakdown
-
-from app.design.revision import apply_supported_revision, requests_another_design, preserve_revision_preferences
-
+from app.design.plot_constraints import PlotConstraints
+from app.design.revision import (
+    apply_supported_revision,
+    preserve_revision_preferences,
+    requests_another_design,
+)
 from app.design.scoring import family_affinity
-
-from app.design.topology_registry import eligible_topologies, topology_dict
-
+from app.design.topology_registry import eligible_topologies
 from app.providers import get_available_design_provider, get_next_design_provider
-
 from app.schemas.ai_plan_decision import AIPlanDecision
-
 from app.schemas.design_result import DesignResult
-
 from app.tools.geometry_validator import validate_geometry
-
 from app.tools.land_utils import MAX_COVERAGE_RATIO, SQFT_PER_PERCH
 
 SYSTEM_PROMPT = (
@@ -72,9 +54,9 @@ def prepare_inputs(
 
     preferences: dict,
 
-    plot_constraints: Union[dict, Optional[PlotConstraints]] = None,
+    plot_constraints: dict | PlotConstraints | None = None,
 
-    design_seed: Optional[int] = None,
+    design_seed: int | None = None,
 
 ) -> tuple[Requirements, PlotConstraints]:
 
@@ -168,8 +150,8 @@ NO_DISTINCT_LAYOUT = 'No distinct compatible layout is currently available for t
 
 
 def _candidate_pool(req: Requirements, plot: PlotConstraints, previous_fingerprint=None,
-                    preferred_plan_code: Optional[str] = None,
-                    excluded_plan_code: Optional[str] = None):
+                    preferred_plan_code: str | None = None,
+                    excluded_plan_code: str | None = None):
 
     compatible = filter_compatible_base_plans(req, plot)
 
@@ -224,7 +206,7 @@ def _candidate_pool(req: Requirements, plot: PlotConstraints, previous_fingerpri
 def _build_ai_prompt(normalized: NormalizedDesignInput, plans, req: Requirements,
                      plot: PlotConstraints, previous_plan_code=None,
 
-                     previous_fingerprint=None, revision_reason: Optional[str] = None) -> str:
+                     previous_fingerprint=None, revision_reason: str | None = None) -> str:
 
     payload = {
 
@@ -311,7 +293,7 @@ def _fallback_decision(plans, req: Requirements, plot: PlotConstraints, previous
 
 def _validate_and_finalize(design: DesignResult, req: Requirements, plot: PlotConstraints,
 
-                           base_plan_code: str, provider_name: Optional[str], model_name: Optional[str],
+                           base_plan_code: str, provider_name: str | None, model_name: str | None,
 
                            ai_decision: AIPlanDecision, tried_codes: list[str], candidate_pool) -> DesignResult:
 
@@ -371,18 +353,18 @@ def generate_layout(
 
     preferences: dict,
 
-    previous_design: Optional[dict] = None,
+    previous_design: dict | None = None,
 
-    revision_reason: Optional[str] = None,
+    revision_reason: str | None = None,
 
     *,
 
-    plot_constraints: Union[dict, Optional[PlotConstraints]] = None,
+    plot_constraints: dict | PlotConstraints | None = None,
 
-    design_seed: Optional[int] = None,
-    preferred_plan_code: Optional[str] = None,
-    excluded_plan_code: Optional[str] = None,
-    excluded_fingerprint_explicit: Optional[str] = None,
+    design_seed: int | None = None,
+    preferred_plan_code: str | None = None,
+    excluded_plan_code: str | None = None,
+    excluded_fingerprint_explicit: str | None = None,
 
 ) -> DesignResult:
 
@@ -464,7 +446,7 @@ def generate_layout(
                         provider_name, model_name, decision.selected_plan_code,
                         decision.alternative_plan_codes, decision.reason_codes)
             break
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 - preserve per-candidate failure isolation
             print(f'[Design Agent] {provider_name} decision failed ({type(exc).__name__}); trying next provider.')
             provider = get_next_design_provider(provider_name or '')
             provider_name = None
@@ -529,7 +511,7 @@ def generate_layout(
             return final_design
         except GenerationFailure as exc:
             failures.extend(exc.failures or [{'plan_code': plan.plan_code, 'failures': [str(exc)]}])
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 - preserve per-candidate failure isolation
             failures.append({'plan_code': plan.plan_code, 'failures': [str(exc)]})
         return None
 
@@ -622,21 +604,21 @@ def _mock_layout(
     terrain_type: str,
     foundation_type: str,
     max_area: float,
-    template_id: Optional[str] = None,
-    template: Optional[dict] = None,
+    template_id: str | None = None,
+    template: dict | None = None,
 ) -> DesignResult:
     """Compatibility wrapper: the offline path uses the same validated base-plan engine."""
     import math
     perches = max_area / (SQFT_PER_PERCH * MAX_COVERAGE_RATIO)
     side = round(math.sqrt(perches * 272.25), 1)
-    
+
     result = generate_layout(
         land_size_perches=perches,
         terrain_type=terrain_type,
         preferences={'bedrooms': bedrooms, 'floors': floors, 'design_seed': 0},
         plot_constraints={'plot_width_ft': side, 'plot_length_ft': side}
     )
-    
+
     if template_id:
         result.template_id = template_id
     result.foundation_type = foundation_type

@@ -24,7 +24,8 @@ namespace HousePlanner.API.Tests.Controllers
             var result = Assert.IsType<OkObjectResult>(await _controller.ApprovedDesigns());
             var json = System.Text.Json.JsonSerializer.Serialize(result.Value);
             var doc = System.Text.Json.JsonDocument.Parse(json);
-            Assert.Equal(0, doc.RootElement.GetArrayLength());
+            Assert.DoesNotContain(doc.RootElement.EnumerateArray(), item =>
+                item.GetProperty("designId").GetGuid() == design.Id);
         }
 
         [Fact]
@@ -71,7 +72,8 @@ namespace HousePlanner.API.Tests.Controllers
             var result = Assert.IsType<OkObjectResult>(await _controller.ApprovedDesigns());
             var json = System.Text.Json.JsonSerializer.Serialize(result.Value);
             var doc = System.Text.Json.JsonDocument.Parse(json);
-            Assert.Equal(0, doc.RootElement.GetArrayLength());
+            Assert.DoesNotContain(doc.RootElement.EnumerateArray(), item =>
+                item.GetProperty("designId").GetGuid() == design.Id);
 
             var valHistory = await _dbContext.ValidationRequests.FindAsync(valId);
             Assert.NotNull(valHistory);

@@ -4,7 +4,6 @@ from unittest.mock import MagicMock
 
 from app.tools import layout_generation_tool as generation
 
-
 PREFERENCES = {'bedrooms': 3, 'bathrooms': 2, 'floors': 1, 'style': 'Modern Minimalist'}
 PLOT = {'plot_width_ft': 90, 'plot_length_ft': 65, 'road_side': 'south'}
 

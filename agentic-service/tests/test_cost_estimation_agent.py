@@ -10,7 +10,6 @@ Test naming convention:
 import inspect
 import json
 import uuid
-from typing import List
 from unittest.mock import patch
 
 import pytest
@@ -20,9 +19,9 @@ from app.agents.cost_estimation_agent import (
     _persist_cost_estimate,
     cost_estimation_node,
 )
-from app.schemas.cost_result import CostResult
 from app.agents.validation_agent import validation_node
-from app.schemas.pricing_data import PricingItem, TerrainMultiplier
+from app.schemas.cost_result import CostResult
+from app.schemas.pricing_data import PricingItem
 from app.schemas.workflow_state import CoordinatorInput, WorkflowState
 from app.workflows.house_planning_graph import route_after_cost_estimation
 
@@ -61,7 +60,7 @@ LABOUR_ITEM = PricingItem.model_validate(
     }
 )
 
-STANDARD_PRICING: List[PricingItem] = [MATERIAL_ITEM, LABOUR_ITEM]
+STANDARD_PRICING: list[PricingItem] = [MATERIAL_ITEM, LABOUR_ITEM]
 
 # ---------------------------------------------------------------------------
 # Helper — build a minimal valid WorkflowState
@@ -166,7 +165,9 @@ PERSIST_TARGET = "app.agents.cost_estimation_agent._persist_cost_estimate"
 @pytest.fixture(autouse=True)
 def mock_cost_persistence():
     """Keep unit tests offline while asserting persistence separately."""
-    with patch(PERSIST_TARGET) as mock_persist:
+    with patch(PERSIST_TARGET) as mock_persist, \
+         patch("app.agents.cost_estimation_agent._record_run"), \
+         patch("app.agents.cost_estimation_agent._persist_failure"):
         yield mock_persist
 
 
@@ -195,6 +196,7 @@ def test_persistence_posts_expected_contract():
         terrain_type="flat",
         room_count=2,
         total_area_sqft=420.0,
+        pricing_snapshot=[{"id": 1, "itemName": "Foundation Materials", "unitCostLkr": 3000}],
     )
 
     with (
@@ -210,6 +212,11 @@ def test_persistence_posts_expected_contract():
         "labourCostLkr": 25_200.0,
         "totalCostLkr": 109_200.0,
         "budgetDeltaPercent": 2.18,
+        "pricingSnapshot": [{"id": 1, "itemName": "Foundation Materials", "unitCostLkr": 3000}],
+        "breakdown": [],
+        "formulaVersion": "category-area-v1",
+        "appliedAreaSqft": 420.0,
+        "terrainType": "flat",
     }
 
 
@@ -356,8 +363,10 @@ def test_room_area_computed_from_dimensions_when_area_sqft_absent():
         "doors": [],
         "windows": [],
     }
+    input_state = _make_state(rooms=[room_no_area])
+    input_state.design_result.pop("total_built_up_area_sqft", None)
     with patch(PATCH_TARGET, return_value=STANDARD_PRICING):
-        state = cost_estimation_node(_make_state(rooms=[room_no_area]))
+        state = cost_estimation_node(input_state)
 
     assert state.status == "running"
     r = state.cost_result
@@ -469,18 +478,24 @@ def test_unsupported_terrain():
     _assert_failed(state)
 
 
-def test_zero_budget():
-    """budget_lkr=0 must trigger a controlled failure."""
+def test_zero_budget_still_returns_cost_without_budget_percentage():
+    """A legacy zero budget must not prevent the cost estimate."""
     with patch(PATCH_TARGET, return_value=STANDARD_PRICING):
         state = cost_estimation_node(_make_state(budget_lkr=0.0))
-    _assert_failed(state)
+    assert state.status != "failed"
+    assert state.cost_result["total_cost_lkr"] == pytest.approx(109_200.0)
+    assert state.cost_result["budget_delta_percent"] is None
 
 
-def test_missing_budget():
-    """budget_lkr=None must trigger a controlled failure."""
+def test_missing_budget_still_returns_cost_without_budget_percentage():
+    """Customer budget is optional; material, labour, and total must still be calculated."""
     with patch(PATCH_TARGET, return_value=STANDARD_PRICING):
         state = cost_estimation_node(_make_state(no_budget=True))
-    _assert_failed(state)
+    assert state.status != "failed"
+    assert state.cost_result["material_cost_lkr"] == pytest.approx(84_000.0)
+    assert state.cost_result["labour_cost_lkr"] == pytest.approx(25_200.0)
+    assert state.cost_result["total_cost_lkr"] == pytest.approx(109_200.0)
+    assert state.cost_result["budget_delta_percent"] is None
 
 
 def test_no_material_pricing():
@@ -491,6 +506,15 @@ def test_no_material_pricing():
     _assert_failed(state)
     log_text = " ".join(e.action for e in state.execution_log)
     assert "material" in log_text.lower()
+
+
+def test_no_active_labour_factor():
+    """When the active catalogue has materials but no labour factor, estimation must fail."""
+    with patch(PATCH_TARGET, return_value=[MATERIAL_ITEM]):
+        state = cost_estimation_node(_make_state())
+    _assert_failed(state)
+    log_text = " ".join(e.action for e in state.execution_log)
+    assert "labour" in log_text.lower()
 
 
 def test_ambiguous_labour_factor():
@@ -589,3 +613,14 @@ def test_pricing_obtained_via_tool():
         cost_estimation_node(_make_state())
 
     mock_tool.assert_called_once()
+
+
+def test_agent_requests_the_selected_region_and_quality_catalogue():
+    state = _make_state()
+    state.input_data.region = "Colombo"
+    state.input_data.quality_level = "Premium"
+
+    with patch(PATCH_TARGET, return_value=STANDARD_PRICING) as mock_tool:
+        cost_estimation_node(state)
+
+    mock_tool.assert_called_once_with(region="Colombo", quality_level="Premium")

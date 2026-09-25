@@ -11,6 +11,8 @@ import {
 } from 'lucide-react';
 import { constructorWorkflowService } from '../../../services/constructorWorkflowService';
 import type { ConstructorWorkflowProject } from '../../../services/constructorWorkflowService';
+import type { CostSummaryDto } from '../../../services/workflowService';
+import CostBreakdownCard from '../../../components/cost/CostBreakdownCard';
 
 interface ConstructionRequest {
   id: string;
@@ -26,6 +28,7 @@ interface ConstructionRequest {
   title: string;
   bedrooms: number;
   bathrooms: number;
+  cost: CostSummaryDto | null;
 }
 
 export const ConstructorWorkflowDashboard: React.FC = () => {
@@ -133,6 +136,9 @@ export const ConstructorWorkflowDashboard: React.FC = () => {
                       {request.area > 0 && <span>{Number(request.area).toLocaleString()} sq ft</span>}
                     </div>
                     <p className="text-xs text-gray-400 mt-2">Requested: {new Date(request.requestedAt).toLocaleDateString()}</p>
+                    <div className="mt-4 max-w-2xl">
+                      <CostBreakdownCard cost={request.cost} />
+                    </div>
                   </div>
                   <div className="flex items-start gap-2">
                     <button

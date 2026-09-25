@@ -33,19 +33,19 @@ namespace HousePlanner.API.Entities
 
         public string? Challenges { get; set; }
         public string? MaterialsUsed { get; set; }
-        
+
         public int? WorkforceCount { get; set; }
-        
+
         [StringLength(100)]
         public string? WeatherCondition { get; set; }
-        
+
         public string? SafetyIssues { get; set; }
-        
+
         [Range(0, 100)]
         public decimal? ProgressPercentage { get; set; }
-        
+
         public string? TomorrowPlan { get; set; }
-        
+
         public string? Notes { get; set; }
 
         public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;

@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Button from '../components/common/Button';
 import Card from '../components/common/Card';
+import CostBreakdownCard from '../components/cost/CostBreakdownCard';
 import {
   workflowService,
   type WorkflowStatusResponseDto
@@ -113,9 +114,6 @@ const ApprovalPage: React.FC = () => {
   const foundationType = design?.foundationType || 'Standard Footing';
   const terrainType = workflow?.terrainType || design?.terrainType || 'Flat';
 
-  const totalCostLkr = workflow?.cost?.totalCostLkr ?? (workflow?.cost as any)?.estimated_total_lkr;
-  const formattedCost = totalCostLkr ? `LKR ${Number(totalCostLkr).toLocaleString()}` : 'Calculated in Cost Phase';
-
   return (
     <div className="min-h-[calc(100vh-65px)] bg-gray-50 flex flex-col items-center py-12 px-6">
       <motion.div
@@ -222,15 +220,9 @@ const ApprovalPage: React.FC = () => {
         {/* Dynamic Workflow & Plan Information */}
         <Card title="Workflow & Plan Summary" subtitle="Review the proposed architecture and budget before deciding.">
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-zinc-50 p-4 rounded-lg border border-zinc-100">
-                <p className="text-xs text-zinc-500 uppercase font-bold tracking-wider mb-1">Architecture Style</p>
-                <p className="text-sm font-medium text-zinc-900">{design?.templateFamily || 'Modern Custom Design'}</p>
-              </div>
-              <div className="bg-zinc-50 p-4 rounded-lg border border-zinc-100">
-                <p className="text-xs text-zinc-500 uppercase font-bold tracking-wider mb-1">Estimated Cost</p>
-                <p className="text-sm font-medium text-zinc-900">{formattedCost}</p>
-              </div>
+            <div className="bg-zinc-50 p-4 rounded-lg border border-zinc-100">
+              <p className="text-xs text-zinc-500 uppercase font-bold tracking-wider mb-1">Architecture Style</p>
+              <p className="text-sm font-medium text-zinc-900">{design?.templateFamily || 'Modern Custom Design'}</p>
             </div>
             <div className="bg-zinc-50 p-4 rounded-lg border border-zinc-100">
               <p className="text-xs text-zinc-500 uppercase font-bold tracking-wider mb-2">Design Details</p>
@@ -243,6 +235,8 @@ const ApprovalPage: React.FC = () => {
             </div>
           </div>
         </Card>
+
+        <CostBreakdownCard cost={workflow?.cost ?? null} />
 
         {/* Approval Actions */}
         <Card title="Approval Actions" subtitle="Submit an authorized decision on this house planning proposal.">

@@ -5,29 +5,52 @@ using Microsoft.OpenApi.Models;
 using Microsoft.EntityFrameworkCore;
 using HousePlanner.API.Data;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.DataProtection;
 using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Load .env variables
-Env.Load();
-
-// Retrieve connection string
-var connectionString = Environment.GetEnvironmentVariable("DATABASE_CONNECTION_STRING")
-    ?? builder.Configuration.GetConnectionString("DefaultConnection");
-
-if (string.IsNullOrWhiteSpace(connectionString))
+var isTesting = builder.Environment.IsEnvironment("Testing");
+if (isTesting)
 {
-    throw new InvalidOperationException(
-        "DATABASE_CONNECTION_STRING environment variable is missing or empty.");
+    builder.Logging.ClearProviders();
+    builder.Logging.AddConsole();
+    builder.Services.AddDataProtection().UseEphemeralDataProtectionProvider();
 }
 
-Console.WriteLine("[Database Configuration] Connection string loaded successfully.");
+// Load .env variables (Important to do this early)
+if (!isTesting)
+    Env.Load();
 
-// PostgreSQL DbContext
+// Safely retrieve the connection string (Prioritize .env over appsettings.json)
+var defaultConnection = Environment.GetEnvironmentVariable("DATABASE_CONNECTION_STRING")
+    ?? builder.Configuration.GetConnectionString("DefaultConnection");
+
+if (string.IsNullOrWhiteSpace(defaultConnection))
+{
+    if (!isTesting)
+        throw new InvalidOperationException(
+            "DATABASE_CONNECTION_STRING environment variable or ConnectionStrings:DefaultConnection must be configured.");
+    defaultConnection = "Host=localhost;Database=houseplanner_tests;Username=test;Password=test";
+}
+
+if (!isTesting)
+    Console.WriteLine("[Database Configuration] Connection string loaded successfully.");
+
+var internalApiKey = builder.Configuration["AgenticService:InternalApiKey"]
+    ?? Environment.GetEnvironmentVariable("AGENTIC_INTERNAL_API_KEY");
+if (string.IsNullOrWhiteSpace(internalApiKey))
+{
+    if (!isTesting)
+        throw new InvalidOperationException(
+            "AgenticService:InternalApiKey must be configured through user secrets or environment variables.");
+    internalApiKey = "integration-test-only-key";
+}
+
+// Add PostgreSQL DbContext
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(
-        connectionString,
+        defaultConnection,
         npgsql =>
         {
             npgsql.EnableRetryOnFailure(
@@ -153,6 +176,7 @@ builder.Services.AddSwaggerGen(c =>
             "Core backend Web API for AI home design and cost planning."
     });
 
+    // Add Bearer token authorize options to Swagger UI for verification testing
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Description =
@@ -192,11 +216,13 @@ builder.Services.AddScoped<IPreDesignedPlanLayoutValidator, PreDesignedPlanLayou
 builder.Services.AddScoped<PreDesignedPlanSeeder>();
 builder.Services.AddScoped<IWorkflowService, WorkflowService>();
 builder.Services.AddScoped<IDesignOptionsService, DesignOptionsService>();
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddScoped<PricingDataSeeder>();
 builder.Services.AddScoped<IPricingService, PricingService>();
 builder.Services.AddScoped<IConstructorWorkflowService, ConstructorWorkflowService>();
 builder.Services.AddScoped<IDailyConstructionLogService, DailyConstructionLogService>();
 
-// Agentic Service HTTP client
+// AgenticService HTTP client — internalApiKey validated and injected at startup (never falls back to a plain default)
 builder.Services.AddHttpClient("AgenticService", client =>
 {
     client.BaseAddress = new Uri(
@@ -204,11 +230,7 @@ builder.Services.AddHttpClient("AgenticService", client =>
         ?? "http://localhost:8001");
 
     client.Timeout = TimeSpan.FromSeconds(35);
-
-    client.DefaultRequestHeaders.Add(
-        "X-Internal-API-Key",
-        builder.Configuration["AgenticService:InternalApiKey"]
-        ?? "shared-internal-secret");
+    client.DefaultRequestHeaders.Add("X-Internal-API-Key", internalApiKey);
 });
 
 // Supabase Admin API
@@ -249,7 +271,8 @@ var app = builder.Build();
 // CORS
 app.UseCors("AllowReactApp");
 
-// Database migration and seed
+// Apply checked-in migrations without deleting persisted designs. Integration tests
+// exercise routing with substituted services and do not need a database connection.
 if (!app.Environment.IsEnvironment("Testing"))
 {
     using var scope = app.Services.CreateScope();
@@ -277,14 +300,9 @@ if (!app.Environment.IsEnvironment("Testing"))
             Thread.Sleep(3000);
         }
     }
-
-    await scope.ServiceProvider
-        .GetRequiredService<ApplicationRoleSeeder>()
-        .SeedAsync();
-
-    await scope.ServiceProvider
-        .GetRequiredService<PreDesignedPlanSeeder>()
-        .SeedAsync();
+    await scope.ServiceProvider.GetRequiredService<ApplicationRoleSeeder>().SeedAsync();
+    await scope.ServiceProvider.GetRequiredService<PreDesignedPlanSeeder>().SeedAsync();
+    await scope.ServiceProvider.GetRequiredService<PricingDataSeeder>().SeedAsync();
 }
 
 // Exception handling middleware
@@ -330,14 +348,10 @@ app.UseWhen(
     {
         branch.Use(async (context, next) =>
         {
-            var expected =
-                builder.Configuration["AgenticService:InternalApiKey"]
-                ?? "shared-internal-secret";
-
             if (!context.Request.Headers.TryGetValue(
                     "X-Internal-API-Key",
                     out var actual)
-                || actual != expected)
+                || actual != internalApiKey)
             {
                 context.Response.StatusCode =
                     StatusCodes.Status403Forbidden;

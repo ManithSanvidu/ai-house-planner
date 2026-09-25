@@ -22,9 +22,9 @@ public class AuthController(ISupabaseUserSyncService users) : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<UserInfoResponseDto>> CreateSession(CancellationToken cancellationToken)
     {
-            var supabaseUser = ExtractSupabaseIdentity();
-            var applicationUser = await users.SynchronizeAsync(supabaseUser, cancellationToken);
-            return Ok(ToDto(applicationUser));
+        var supabaseUser = ExtractSupabaseIdentity();
+        var applicationUser = await users.SynchronizeAsync(supabaseUser, cancellationToken);
+        return Ok(ToDto(applicationUser));
     }
 
     /// <summary>

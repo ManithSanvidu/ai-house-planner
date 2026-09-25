@@ -253,7 +253,8 @@ public class InternalWorkflowController : ControllerBase
 
     /// <summary>
     /// Persists the Cost Estimation Agent result for the current design.
-    /// Repeated callbacks update the existing estimate.
+    /// The first successful estimate is locked to the design so later pricing
+    /// changes cannot silently rewrite an estimate already under review.
     /// </summary>
     [HttpPost("{id:guid}/cost-estimate")]
     public async Task<IActionResult> SaveCostEstimate(Guid id, [FromBody] SaveCostEstimateRequestDto request)
@@ -264,8 +265,25 @@ public class InternalWorkflowController : ControllerBase
                 return BadRequest(new { message = "Request body cannot be null." });
 
             if (request.MaterialCostLkr < 0 || request.LabourCostLkr < 0 ||
-                request.TotalCostLkr < 0 || request.BudgetDeltaPercent < 0)
+                request.TotalCostLkr < 0 || request.BudgetDeltaPercent is < 0)
                 return BadRequest(new { message = "Cost values and budget delta cannot be negative." });
+
+            if (request.PricingSnapshot.ValueKind != JsonValueKind.Array ||
+                request.PricingSnapshot.GetArrayLength() == 0)
+                return BadRequest(new { message = "A non-empty pricing snapshot is required." });
+
+            if (request.Breakdown.ValueKind != JsonValueKind.Array || request.Breakdown.GetArrayLength() == 0)
+                return BadRequest(new { message = "A non-empty calculated cost breakdown is required." });
+            if (request.AppliedAreaSqft <= 0)
+                return BadRequest(new { message = "Applied area must be greater than zero." });
+            if (string.IsNullOrWhiteSpace(request.FormulaVersion) || request.FormulaVersion.Length > 50)
+                return BadRequest(new { message = "A valid formula version is required." });
+            var terrain = request.TerrainType.Trim().ToLowerInvariant();
+            if (terrain is not ("flat" or "hillside" or "coastal"))
+                return BadRequest(new { message = "Terrain type must be flat, hillside, or coastal." });
+
+            var pricingSnapshotJson = request.PricingSnapshot.GetRawText();
+            var breakdownJson = request.Breakdown.GetRawText();
 
             const decimal tolerance = 0.05m;
             if (Math.Abs(request.TotalCostLkr - (request.MaterialCostLkr + request.LabourCostLkr)) > tolerance)
@@ -286,11 +304,7 @@ public class InternalWorkflowController : ControllerBase
             CostEstimate estimate;
             if (existingEstimate is not null)
             {
-                existingEstimate.MaterialCostLkr = request.MaterialCostLkr;
-                existingEstimate.LabourCostLkr = request.LabourCostLkr;
-                existingEstimate.TotalCostLkr = request.TotalCostLkr;
-                existingEstimate.BudgetDeltaPercent = request.BudgetDeltaPercent;
-                estimate = existingEstimate;
+                return Ok(ToResponse(existingEstimate, currentDesign.Id, true));
             }
             else
             {
@@ -301,6 +315,11 @@ public class InternalWorkflowController : ControllerBase
                     LabourCostLkr = request.LabourCostLkr,
                     TotalCostLkr = request.TotalCostLkr,
                     BudgetDeltaPercent = request.BudgetDeltaPercent,
+                    PricingSnapshotJson = pricingSnapshotJson,
+                    BreakdownJson = breakdownJson,
+                    FormulaVersion = request.FormulaVersion.Trim(),
+                    AppliedAreaSqft = request.AppliedAreaSqft,
+                    TerrainType = terrain,
                     CreatedAt = DateTimeOffset.UtcNow
                 };
                 _context.CostEstimates.Add(estimate);
@@ -319,23 +338,10 @@ public class InternalWorkflowController : ControllerBase
                 if (concurrentEstimate is null)
                     throw;
 
-                concurrentEstimate.MaterialCostLkr = request.MaterialCostLkr;
-                concurrentEstimate.LabourCostLkr = request.LabourCostLkr;
-                concurrentEstimate.TotalCostLkr = request.TotalCostLkr;
-                concurrentEstimate.BudgetDeltaPercent = request.BudgetDeltaPercent;
-                await _context.SaveChangesAsync();
-                estimate = concurrentEstimate;
+                return Ok(ToResponse(concurrentEstimate, currentDesign.Id, true));
             }
 
-            return Ok(new CostEstimateResponseDto
-            {
-                CostEstimateId = estimate.Id,
-                HouseDesignId = currentDesign.Id,
-                MaterialCostLkr = estimate.MaterialCostLkr,
-                LabourCostLkr = estimate.LabourCostLkr,
-                TotalCostLkr = estimate.TotalCostLkr,
-                BudgetDeltaPercent = estimate.BudgetDeltaPercent
-            });
+            return Ok(ToResponse(estimate, currentDesign.Id, true));
         }
         catch (Exception ex)
         {
@@ -343,4 +349,52 @@ public class InternalWorkflowController : ControllerBase
             return StatusCode(StatusCodes.Status500InternalServerError, new { message = "An error occurred saving the cost estimate." });
         }
     }
+
+    [HttpPost("{id:guid}/cost-estimation-runs")]
+    public async Task<IActionResult> SaveCostEstimationRun(Guid id, [FromBody] SaveCostEstimationRunDto request)
+    {
+        var workflow = await FindWorkflowState(id);
+        if (workflow is null) return NotFound(new { message = $"Unknown workflow {id}." });
+        var status = request.Status.Trim().ToLowerInvariant();
+        if (status is not ("success" or "failed"))
+            return BadRequest(new { message = "Run status must be success or failed." });
+        if (request.CompletedAt < request.StartedAt)
+            return BadRequest(new { message = "Completed time cannot precede started time." });
+
+        var design = workflow.HouseDesigns.FirstOrDefault(d => d.IsCurrent && !d.IsArchived);
+        var run = new CostEstimationRun
+        {
+            WorkflowStateId = id,
+            HouseDesignId = design?.Id,
+            Status = status,
+            FormulaVersion = request.FormulaVersion.Trim(),
+            PricingRecordCount = Math.Max(0, request.PricingRecordCount),
+            AppliedAreaSqft = request.AppliedAreaSqft,
+            TerrainType = request.TerrainType?.Trim().ToLowerInvariant(),
+            FailureReason = request.FailureReason is { Length: > 1000 }
+                ? request.FailureReason[..1000]
+                : request.FailureReason,
+            StartedAt = request.StartedAt,
+            CompletedAt = request.CompletedAt
+        };
+        _context.CostEstimationRuns.Add(run);
+        await _context.SaveChangesAsync();
+        return Ok(new { runId = run.Id, run.Status });
+    }
+
+    private static CostEstimateResponseDto ToResponse(CostEstimate estimate, Guid designId, bool locked) => new()
+    {
+        CostEstimateId = estimate.Id,
+        HouseDesignId = designId,
+        MaterialCostLkr = estimate.MaterialCostLkr,
+        LabourCostLkr = estimate.LabourCostLkr,
+        TotalCostLkr = estimate.TotalCostLkr,
+        BudgetDeltaPercent = estimate.BudgetDeltaPercent,
+        PricingSnapshot = JsonSerializer.Deserialize<JsonElement>(estimate.PricingSnapshotJson),
+        Breakdown = JsonSerializer.Deserialize<JsonElement>(estimate.BreakdownJson),
+        FormulaVersion = estimate.FormulaVersion,
+        AppliedAreaSqft = estimate.AppliedAreaSqft,
+        TerrainType = estimate.TerrainType,
+        Locked = locked
+    };
 }

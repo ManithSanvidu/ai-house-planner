@@ -18,12 +18,12 @@ class _LoginViewState extends ConsumerState<LoginView> {
   void _handleLogin() async {
     final notifier = ref.read(authProvider.notifier);
     await notifier.login(
-      _emailController.text, 
+      _emailController.text,
       _passwordController.text
     );
-    
+
     if (!mounted) return;
-    
+
     final state = ref.read(authProvider);
     if (state.hasError && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -116,7 +116,7 @@ class _LoginViewState extends ConsumerState<LoginView> {
                     children: [
                       const Text('Password', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF334155))),
                       GestureDetector(
-                        onTap: () => context.go('/register'), 
+                        onTap: () => context.go('/register'),
                         child: const Text('Forgot password?', style: TextStyle(color: Color(0xFF2563EB), fontWeight: FontWeight.w600, fontSize: 13)),
                       ),
                     ],
@@ -137,7 +137,7 @@ class _LoginViewState extends ConsumerState<LoginView> {
                       ),
                       elevation: 0,
                     ),
-                    child: authState.isLoading 
+                    child: authState.isLoading
                       ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                       : const Row(
                           mainAxisSize: MainAxisSize.min,
@@ -168,9 +168,9 @@ class _LoginViewState extends ConsumerState<LoginView> {
                     onPressed: authState.isLoading ? null : () async {
                       final notifier = ref.read(authProvider.notifier);
                       await notifier.loginWithGoogle();
-                      
+
                       if (!context.mounted) return;
-                      
+
                       final state = ref.read(authProvider);
                       if (state.hasError && context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -193,7 +193,7 @@ class _LoginViewState extends ConsumerState<LoginView> {
                     ),
                   ),
                   const SizedBox(height: 32),
-                  
+
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [

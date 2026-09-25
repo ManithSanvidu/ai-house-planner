@@ -14,7 +14,7 @@ class RegisterView extends ConsumerStatefulWidget {
 
 class _RegisterViewState extends ConsumerState<RegisterView> {
   bool _isLoading = false;
-  
+
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -39,7 +39,7 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
     }
 
     setState(() => _isLoading = true);
-    
+
     final notifier = ref.read(authProvider.notifier);
     await notifier.register(
       _emailController.text.trim(),
@@ -48,7 +48,7 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
     );
 
     if (!mounted) return;
-    
+
     final state = ref.read(authProvider);
     if (state.hasError && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -164,7 +164,7 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
                       ),
                       elevation: 0,
                     ),
-                    child: _isLoading 
+                    child: _isLoading
                       ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                       : const Row(
                           mainAxisSize: MainAxisSize.min,
@@ -195,9 +195,9 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
                     onPressed: _isLoading ? null : () async {
                       final notifier = ref.read(authProvider.notifier);
                       await notifier.loginWithGoogle();
-                      
+
                       if (!context.mounted) return;
-                      
+
                       final state = ref.read(authProvider);
                       if (state.hasError && context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -220,7 +220,7 @@ class _RegisterViewState extends ConsumerState<RegisterView> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  
+
                   const Text(
                     'Architect and Constructor accounts are created by the\nHousePlanner administrator.',
                     textAlign: TextAlign.center,

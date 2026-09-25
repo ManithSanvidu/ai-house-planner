@@ -1,15 +1,16 @@
-from fastapi import FastAPI, HTTPException, Security, BackgroundTasks
+import secrets
+from typing import Any
+from uuid import UUID
+
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Security
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import APIKeyHeader
-from pydantic import BaseModel 
-from uuid import UUID
-from typing import Optional, Dict, Any
-import secrets
+from pydantic import BaseModel
 
-from app.schemas.workflow_state import WorkflowState, CoordinatorInput
-from app.design.revision import preserve_revision_preferences
-from app.workflows.house_planning_graph import app_graph
 from app.config import INTERNAL_API_KEY
+from app.design.revision import preserve_revision_preferences
+from app.schemas.workflow_state import CoordinatorInput, WorkflowState
+from app.workflows.house_planning_graph import app_graph, pre_designed_graph
 
 app = FastAPI(title="Agentic AI Service - House Planner")
 
@@ -34,33 +35,43 @@ class StartWorkflowRequest(BaseModel):
     workflow_id: UUID
     submission_id: UUID
     land_size_perches: float
-    budget_lkr: Optional[float] = None
-    manual_terrain_type: Optional[str] = None
-    preferences: Dict[str, Any]
-    plot_constraints: Optional[Dict[str, Any]] = None
-    design_seed: Optional[int] = None
-    preferred_plan_code: Optional[str] = None
+    budget_lkr: float | None = None
+    manual_terrain_type: str | None = None
+    preferences: dict[str, Any]
+    plot_constraints: dict[str, Any] | None = None
+    design_seed: int | None = None
+    preferred_plan_code: str | None = None
+    region: str | None = None
+    quality_level: str | None = None
+
+class StartFromDesignRequest(StartWorkflowRequest):
+    design_result: dict[str, Any]
+    terrain_result: dict[str, Any]
 
 class ResumeWorkflowRequest(BaseModel):
     workflow_id: UUID
     resume_from: str
     user_revision_prompt: str
     land_size_perches: float
-    budget_lkr: Optional[float] = None
-    manual_terrain_type: Optional[str] = None
-    preferences: Dict[str, Any]
-    terrain_result: Optional[Dict[str, Any]] = None
-    previous_design: Optional[Dict[str, Any]] = None
-    plot_constraints: Optional[Dict[str, Any]] = None
-    design_seed: Optional[int] = None
+    budget_lkr: float | None = None
+    manual_terrain_type: str | None = None
+    preferences: dict[str, Any]
+    terrain_result: dict[str, Any] | None = None
+    previous_design: dict[str, Any] | None = None
+    plot_constraints: dict[str, Any] | None = None
+    design_seed: int | None = None
     regeneration: bool = False
-    previous_base_plan_code: Optional[str] = None
-    previous_design_fingerprint: Optional[str] = None
+    previous_base_plan_code: str | None = None
+    previous_design_fingerprint: str | None = None
 
 def execute_workflow(initial_state:WorkflowState):
     """Background task to run the LangGraph workflow"""
     print(f"Starting workflow execution for {initial_state.workflow_id}")
     app_graph.invoke(initial_state)
+
+def execute_pre_designed_workflow(initial_state: WorkflowState):
+    print(f"Starting pre-designed cost workflow for {initial_state.workflow_id}")
+    pre_designed_graph.invoke(initial_state)
 
 @app.post("/workflows/start")
 def start_workflow(
@@ -85,6 +96,23 @@ def start_workflow(
         "message":"Workflow started successfully",
         "workflow_id":str(request.workflow_id)
     }
+
+@app.post("/workflows/start-from-design")
+def start_from_design(
+    request: StartFromDesignRequest,
+    background_tasks: BackgroundTasks,
+    api_key: str = Security(verify_api_key),
+):
+    state = WorkflowState(
+        workflow_id=request.workflow_id,
+        status="design_generated",
+        current_agent="cost_estimation",
+        input_data=CoordinatorInput(**request.model_dump(exclude={"design_result", "terrain_result"})),
+        design_result=request.design_result,
+        terrain_result=request.terrain_result,
+    )
+    background_tasks.add_task(execute_pre_designed_workflow, state)
+    return {"message": "Pre-designed cost workflow started", "workflow_id": str(request.workflow_id)}
 
 @app.post("/workflows/resume")
 def resume_workflow(
@@ -122,7 +150,7 @@ def resume_workflow(
         user_revision_prompt=request.user_revision_prompt,
         approval_status="revision_requested",
     )
-    
+
     background_tasks.add_task(execute_workflow, state)
     return {"message": "Workflow resumed successfully", "workflow_id": str(request.workflow_id)}
 

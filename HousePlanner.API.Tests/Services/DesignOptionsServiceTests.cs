@@ -21,15 +21,33 @@ public class DesignOptionsServiceTests
     private async Task SeedData(ApplicationDbContext context)
     {
         context.PreDesignedHousePlans.AddRange(
-            new PreDesignedHousePlan { 
-                Name = "Plan 1", Slug = "p1", DesignCode = "P1", Style = "Modern",
-                MinimumLandSizePerches = 6, Bedrooms = 2, Bathrooms = 1, FloorCount = 1,
-                HasBalcony = false, HasOpenPlan = true, IsActive = true
+            new PreDesignedHousePlan
+            {
+                Name = "Plan 1",
+                Slug = "p1",
+                DesignCode = "P1",
+                Style = "Modern",
+                MinimumLandSizePerches = 6,
+                Bedrooms = 2,
+                Bathrooms = 1,
+                FloorCount = 1,
+                HasBalcony = false,
+                HasOpenPlan = true,
+                IsActive = true
             },
-            new PreDesignedHousePlan { 
-                Name = "Plan 2", Slug = "p2", DesignCode = "P2", Style = "Modern",
-                MinimumLandSizePerches = 15, Bedrooms = 4, Bathrooms = 3, FloorCount = 2,
-                HasBalcony = true, HasOpenPlan = true, IsActive = true
+            new PreDesignedHousePlan
+            {
+                Name = "Plan 2",
+                Slug = "p2",
+                DesignCode = "P2",
+                Style = "Modern",
+                MinimumLandSizePerches = 15,
+                Bedrooms = 4,
+                Bathrooms = 3,
+                FloorCount = 2,
+                HasBalcony = true,
+                HasOpenPlan = true,
+                IsActive = true
             }
         );
         await context.SaveChangesAsync();
@@ -44,7 +62,7 @@ public class DesignOptionsServiceTests
 
         // Neither plan has ParkingSpaces > 0
         var result = await service.GetAvailableOptionsAsync(new DesignOptionsRequestDto());
-        
+
         Assert.False(result.Features["parking"].Available);
         Assert.NotNull(result.Features["parking"].Reason);
         Assert.True(result.Features["open_plan"].Available);
@@ -59,7 +77,7 @@ public class DesignOptionsServiceTests
 
         // For land 5-8 perches (max 8), only Plan 1 (min 6) matches. Plan 2 (min 15) is filtered out.
         var result = await service.GetAvailableOptionsAsync(new DesignOptionsRequestDto { LandRangeId = "LAND_5_8" });
-        
+
         Assert.Single(result.Bedrooms);
         Assert.Equal(2, result.Bedrooms[0]);
     }
@@ -153,7 +171,7 @@ public class DesignOptionsServiceTests
     public async Task ValidateFinalSelection_ConflictingSelection_GeneratesSuggestions()
     {
         var context = GetDbContext();
-        await SeedData(context); 
+        await SeedData(context);
         var service = new DesignOptionsService(context);
 
         var req = new AiGenerationRequest
@@ -179,8 +197,11 @@ public class DesignOptionsServiceTests
     {
         var context = GetDbContext(); await SeedData(context);
         var selected = await context.PreDesignedHousePlans.SingleAsync(x => x.DesignCode == "P1");
-        var request = new AiGenerationRequest { LandSizePerches = 20,
-            Preferences = new PreferencesDto { Bedrooms = 4, Bathrooms = 3, Floors = 2, Balcony = true } };
+        var request = new AiGenerationRequest
+        {
+            LandSizePerches = 20,
+            Preferences = new PreferencesDto { Bedrooms = 4, Bathrooms = 3, Floors = 2, Balcony = true }
+        };
         var result = await new DesignOptionsService(context).ValidateSpecificPlanAsync(selected, request);
         Assert.False(result.IsValid);
         Assert.Equal("SELECTED_PLAN_INCOMPATIBLE", result.ErrorCode);

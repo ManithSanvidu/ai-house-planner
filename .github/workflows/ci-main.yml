@@ -23,6 +23,10 @@ jobs:
           cache-dependency-path: ./HousePlanner-Web/package-lock.json
       - name: Install dependencies
         run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
       - name: Build
         run: npm run build
 
@@ -42,6 +46,14 @@ jobs:
         run: dotnet restore
       - name: Build
         run: dotnet build --no-restore --configuration Release
+      - name: Verify formatting
+        run: dotnet format ../HousePlanner.slnx --verify-no-changes --no-restore --verbosity minimal
+      - name: Audit NuGet dependencies
+        shell: bash
+        run: |
+          report="$(dotnet list package --vulnerable --include-transitive)"
+          echo "$report"
+          if echo "$report" | grep -q "has the following vulnerable packages"; then exit 1; fi
       - name: Test
         run: dotnet test --no-build --verbosity normal --configuration Release
         working-directory: ./HousePlanner.API.Tests
@@ -57,12 +69,17 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.9'
+          python-version: '3.11'
           cache: 'pip'
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          python -m pip install ruff pip-audit
+      - name: Lint
+        run: python -m ruff check app tests scripts
+      - name: Audit dependencies
+        run: python -m pip_audit -r requirements.txt
       - name: Run Tests
         run: |
           python -m pytest tests/

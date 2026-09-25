@@ -20,7 +20,7 @@ public sealed class SupabaseUserSyncServiceTests
     {
         await using var db = Database();
         var service = new SupabaseUserSyncService(db);
-        
+
         await Assert.ThrowsAsync<UserNotRegisteredException>(() =>
             service.SynchronizeAsync(new UserInfoResponseDto { Uid = "supabase-123", Email = "customer@example.com" }));
     }
@@ -87,9 +87,14 @@ public sealed class SupabaseUserSyncServiceTests
         db.Roles.Add(existingRole);
         db.Users.Add(new User
         {
-            Id = Guid.NewGuid(), SupabaseUid = "uid-existing", Email = "arch@example.com",
-            FullName = "Existing Architect", RoleId = 3, Role = existingRole,
-            CreatedAt = DateTimeOffset.UtcNow, UpdatedAt = DateTimeOffset.UtcNow
+            Id = Guid.NewGuid(),
+            SupabaseUid = "uid-existing",
+            Email = "arch@example.com",
+            FullName = "Existing Architect",
+            RoleId = 3,
+            Role = existingRole,
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow
         });
         await db.SaveChangesAsync();
 

@@ -22,12 +22,12 @@ namespace HousePlanner.API.Controllers
             try
             {
                 var canConnect = await _context.Database.CanConnectAsync();
-                
+
                 if (canConnect)
                 {
                     return Ok(new { status = "Healthy", message = "Successfully connected to the database." });
                 }
-                
+
                 return StatusCode(500, new { status = "Unhealthy", message = "Failed to connect to the database." });
             }
             catch (System.Exception ex)

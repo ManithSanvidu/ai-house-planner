@@ -4,12 +4,13 @@ Gemini receives the original free text in production. These deterministic
 adjustments keep the demo fallback useful without pretending to understand
 arbitrary architectural instructions.
 """
-from typing import Any, Optional
+from typing import Any
+
 from app.design.models import Requirements
 from app.design.room_counts import count_bathrooms
 
 
-def preserve_revision_preferences(preferences: dict, previous_design: Optional[dict]) -> dict:
+def preserve_revision_preferences(preferences: dict, previous_design: dict | None) -> dict:
     """Explicit request values override saved requirements, then room counts."""
     previous = previous_design or {}
     summary = previous.get('candidate_summary') or {}
@@ -27,7 +28,7 @@ def preserve_revision_preferences(preferences: dict, previous_design: Optional[d
     return preserved
 
 
-def apply_supported_revision(preferences: dict[str, Any], prompt: Optional[str]) -> tuple[dict[str, Any], list[str]]:
+def apply_supported_revision(preferences: dict[str, Any], prompt: str | None) -> tuple[dict[str, Any], list[str]]:
     updated = dict(preferences)
     if not prompt:
         return updated, []
@@ -54,7 +55,7 @@ def apply_supported_revision(preferences: dict[str, Any], prompt: Optional[str])
     return updated, applied
 
 
-def requests_another_design(prompt: Optional[str]) -> bool:
+def requests_another_design(prompt: str | None) -> bool:
     if not prompt:
         return False
     text = prompt.lower()

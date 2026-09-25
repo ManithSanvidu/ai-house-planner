@@ -8,15 +8,25 @@ Why deterministic validation instead of relying on the LLM:
 
 All checks are rule-based — no AI involved.
 """
-from typing import List, Optional, Union
 from math import isfinite
-from app.design.plot_constraints import PlotConstraints
-from app.design.adjacency import shared_wall, exterior_segments, graph_for, reachable, road_access_clear
-from app.design.room_rules import rule_for, room_kind, CIRCULATION_TYPES, MIN_COMPACTNESS
-from app.schemas.design_result import DesignResult
-from app.schemas.design_result import RoomLayout
-from app.tools.land_utils import max_buildable_area
+
+from app.design.adjacency import (
+    exterior_segments,
+    graph_for,
+    reachable,
+    road_access_clear,
+    shared_wall,
+)
 from app.design.geometry_engine import TERRAIN_FOUNDATION_MAP
+from app.design.plot_constraints import PlotConstraints
+from app.design.room_rules import (
+    CIRCULATION_TYPES,
+    MIN_COMPACTNESS,
+    room_kind,
+    rule_for,
+)
+from app.schemas.design_result import DesignResult, RoomLayout
+from app.tools.land_utils import max_buildable_area
 
 
 class GeometryValidationResult:
@@ -24,8 +34,8 @@ class GeometryValidationResult:
 
     def __init__(self):
         self.passed = True
-        self.failures: List[str] = []
-        self.failed_rules: List[str] = []
+        self.failures: list[str] = []
+        self.failed_rules: list[str] = []
 
     def fail(self, rule: str, message: str):
         self.passed = False
@@ -41,13 +51,13 @@ class GeometryValidationResult:
 
 
 def validate_geometry(
-    rooms: List[RoomLayout],
+    rooms: list[RoomLayout],
     expected_bedrooms: int,
     expected_floors: int,
     land_size_perches: float,
     *,
-    plot: Optional[PlotConstraints] = None,
-    design: Optional[DesignResult] = None,
+    plot: PlotConstraints | None = None,
+    design: DesignResult | None = None,
 ) -> GeometryValidationResult:
     """
     Run all geometry checks on a generated design.
@@ -91,7 +101,7 @@ def validate_geometry(
             )
 
     # 3. Overlap detection (per floor)
-    floors = set(r.floor for r in rooms)
+    floors = {r.floor for r in rooms}
     for floor_num in floors:
         floor_rooms = [r for r in rooms if r.floor == floor_num]
         for i, a in enumerate(floor_rooms):
@@ -150,13 +160,13 @@ def validate_geometry(
         _validate_vertical_alignment(result, rooms)
     return result
 
-def _validate_vertical_alignment(result: GeometryValidationResult, rooms: List[RoomLayout]) -> None:
+def _validate_vertical_alignment(result: GeometryValidationResult, rooms: list[RoomLayout]) -> None:
     # Build Floor 1 structural footprint polygons (bounding boxes of enclosed rooms)
     floor1_rooms = [r for r in rooms if r.floor == 1 and room_kind(r.room_type) not in ('balcony', 'veranda')]
-    
+
     # Check if upper floor rooms are supported by Floor 1
     # Simple bounding box containment: all enclosed rooms on Floor 2 must fall within the union of Floor 1 bounds.
-    # For a perfect check, we verify if every corner of an upper room falls inside at least one Floor 1 room, 
+    # For a perfect check, we verify if every corner of an upper room falls inside at least one Floor 1 room,
     # but since rooms are contiguous banks, we can check if the upper room is fully contained in the Floor 1 bounding box union.
     # Better: check if the upper room's area is fully covered by Floor 1 rooms.
     for r2 in rooms:
@@ -166,7 +176,7 @@ def _validate_vertical_alignment(result: GeometryValidationResult, rooms: List[R
             # Does r2 completely overlap with the union of floor1_rooms?
             # A simple safe check: r2 must be fully inside at least one r1, OR fully inside the overall Floor 1 bounding box if Floor 1 is a simple rectangle.
             # Since topologies are L-shape, T-shape, etc., we can do a point-in-polygon or rectangle intersection check.
-            
+
             # Simple approximation: find all overlapping Floor 1 rooms. Sum their intersection area with r2.
             # If intersection area == r2 area, it's fully supported.
             supported_area = 0.0
@@ -175,10 +185,10 @@ def _validate_vertical_alignment(result: GeometryValidationResult, rooms: List[R
                 ix_max = min(r2.x + r2.width, r1.x + r1.width)
                 iy_min = max(r2.y, r1.y)
                 iy_max = min(r2.y + r2.length, r1.y + r1.length)
-                
+
                 if ix_max > ix_min and iy_max > iy_min:
                     supported_area += (ix_max - ix_min) * (iy_max - iy_min)
-                    
+
             r2_area = r2.width * r2.length
             if supported_area < r2_area - 0.1:  # Allow small floating point tolerance
                 result.fail("unsupported_upper_room", f"Upper room '{r2.room_type}' is not fully supported by the ground floor footprint.")
@@ -190,7 +200,7 @@ def _validate_vertical_alignment(result: GeometryValidationResult, rooms: List[R
             if r.floor not in stair_cores:
                 stair_cores[r.floor] = []
             stair_cores[r.floor].append(r)
-            
+
     if stair_cores and 1 in stair_cores:
         for s1 in stair_cores[1]:
             for floor in range(2, max(stair_cores.keys()) + 1):
@@ -201,9 +211,9 @@ def _validate_vertical_alignment(result: GeometryValidationResult, rooms: List[R
                         result.fail("stair_shaft_mismatch", f"Staircase on floor 1 does not perfectly align with a staircase on floor {floor}.")
 
 
-def _validate_spatial_rules(result: GeometryValidationResult, rooms: List[RoomLayout],
-                            expected_floors: int, plot: Optional[PlotConstraints],
-                            design: Optional[DesignResult]) -> None:
+def _validate_spatial_rules(result: GeometryValidationResult, rooms: list[RoomLayout],
+                            expected_floors: int, plot: PlotConstraints | None,
+                            design: DesignResult | None) -> None:
     if len({r.room_id for r in rooms}) != len(rooms):
         result.fail('duplicate_room_id', 'Room IDs must be unique across all floors.')
     if {r.floor for r in rooms} != set(range(1, expected_floors+1)):
@@ -363,7 +373,4 @@ def _rooms_overlap(a: RoomLayout, b: RoomLayout) -> bool:
     # No overlap if separated along X or Y
     if a_right <= b.x + epsilon or b_right <= a.x + epsilon:
         return False
-    if a_top <= b.y + epsilon or b_top <= a.y + epsilon:
-        return False
-
-    return True
+    return not (a_top <= b.y + epsilon or b_top <= a.y + epsilon)

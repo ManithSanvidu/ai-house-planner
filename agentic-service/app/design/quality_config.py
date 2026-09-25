@@ -1,6 +1,7 @@
 """Single source of conceptual architectural limits (not building regulations)."""
 from dataclasses import dataclass
 
+
 @dataclass(frozen=True)
 class QualityConfig:
     circulation_excellent: float = .08
@@ -21,6 +22,6 @@ class QualityConfig:
     hard_failure_score_cap: float = 59
 
 QUALITY = QualityConfig()
-WEIGHTS = dict(circulation_efficiency=.20, compactness=.10, public_zone_quality=.14,
-               private_zone_quality=.12, wet_core_quality=.08, entrance_quality=.10,
-               privacy=.08, topology_fidelity=.10, preference_match=.08)
+WEIGHTS = {"circulation_efficiency": .20, "compactness": .10, "public_zone_quality": .14,
+               "private_zone_quality": .12, "wet_core_quality": .08, "entrance_quality": .10,
+               "privacy": .08, "topology_fidelity": .10, "preference_match": .08}

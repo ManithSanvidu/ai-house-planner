@@ -1,4 +1,3 @@
-from typing import Optional, Union
 """
 Vision classification tool for land terrain analysis.
 
@@ -8,8 +7,9 @@ structured terrain classification. Falls back safely on failure.
 System prompt enforces JSON-only output with controlled enum values.
 """
 import json
-from app.schemas.terrain_result import TerrainResult
+
 from app.config import OPENAI_API_KEY
+from app.schemas.terrain_result import TerrainResult
 
 # The strict system prompt — forces JSON-only output with controlled values
 LAND_ANALYSIS_SYSTEM_PROMPT = """You are the Land Analysis Agent in an AI-assisted home design planning system.
@@ -60,7 +60,7 @@ def vision_classify_tool(photo_url: str) -> TerrainResult:
         if terrain:
             return terrain
         return _safe_fallback("vision_parse_failed")
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 - external vision SDK exceptions are provider-specific
         print(f"[Vision Tool] Vision API error: {e}")
         return _safe_fallback(f"api_error: {str(e)[:100]}")
 
@@ -96,9 +96,8 @@ def _call_groq_vision(photo_url: str, prompt: str) -> str:
     return "{}"
 
 
-from typing import Optional
 
-def _parse_terrain_result(text: str) -> Optional[TerrainResult]:
+def _parse_terrain_result(text: str) -> TerrainResult | None:
     """
     Parse raw LLM text into a validated TerrainResult.
     Handles common issues like markdown code blocks around JSON.

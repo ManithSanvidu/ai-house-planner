@@ -16,6 +16,8 @@ public partial class ConstructorWorkflowControllerTests
     private readonly ApplicationDbContext _db;
     private readonly Mock<ICurrentUserContextService> _mockUser;
     private readonly ConstructorWorkflowController _controller;
+    private readonly Guid _constructorId = Guid.NewGuid();
+    private ApplicationDbContext _dbContext => _db;
 
     public ConstructorWorkflowControllerTests()
     {
@@ -28,6 +30,7 @@ public partial class ConstructorWorkflowControllerTests
         var mockLogService = new Mock<IDailyConstructionLogService>();
         var service = new ConstructorWorkflowService(_db);
         _controller = new ConstructorWorkflowController(service, _mockUser.Object, _db, mockLogService.Object);
+        SetUser(_constructorId, "Constructor");
     }
 
     private void SetUser(Guid id, string role)
@@ -47,25 +50,25 @@ public partial class ConstructorWorkflowControllerTests
 
         var project = new Project { Id = Guid.NewGuid(), WorkflowStateId = workflow.Id, ContractorId = constructorId, Status = "active", CreatedAt = DateTimeOffset.UtcNow, UpdatedAt = DateTimeOffset.UtcNow };
         project.ConstructionPhases.Add(new ConstructionPhase { Id = Guid.NewGuid(), ProjectId = project.Id, PhaseName = "Foundation", SequenceOrder = 1, Status = "pending", PlannedDurationDays = 14 });
-        
+
         _db.Projects.Add(project);
         await _db.SaveChangesAsync();
 
         var result = await _controller.GetProjects();
 
         var okResult = Assert.IsType<OkObjectResult>(result);
-        
+
         // Ensure it doesn't throw a JSON cycle exception when serialized
         var json = JsonSerializer.Serialize(okResult.Value);
-        
+
         Assert.DoesNotContain("\"Project\":", json, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("\"project\":", json, StringComparison.OrdinalIgnoreCase);
-        
+
         using var doc = JsonDocument.Parse(json);
         var array = doc.RootElement;
         Assert.Equal(JsonValueKind.Array, array.ValueKind);
         Assert.Equal(1, array.GetArrayLength());
-        
+
         var firstProject = array[0];
         Assert.Equal(project.Id, firstProject.GetProperty("Id").GetGuid());
         Assert.True(firstProject.TryGetProperty("ConstructionPhases", out var phases));
@@ -77,13 +80,13 @@ public partial class ConstructorWorkflowControllerTests
     {
         var constructorA = Guid.NewGuid();
         var constructorB = Guid.NewGuid();
-        
+
         var workflow = new WorkflowState { Id = Guid.NewGuid(), Status = "running", ApprovalStatus = "not_requested", CreatedAt = DateTimeOffset.UtcNow, UpdatedAt = DateTimeOffset.UtcNow };
         _db.WorkflowStates.Add(workflow);
 
         var projectA = new Project { Id = Guid.NewGuid(), WorkflowStateId = workflow.Id, ContractorId = constructorA, Status = "active", CreatedAt = DateTimeOffset.UtcNow, UpdatedAt = DateTimeOffset.UtcNow };
         var projectB = new Project { Id = Guid.NewGuid(), WorkflowStateId = workflow.Id, ContractorId = constructorB, Status = "active", CreatedAt = DateTimeOffset.UtcNow, UpdatedAt = DateTimeOffset.UtcNow };
-        
+
         _db.Projects.AddRange(projectA, projectB);
         await _db.SaveChangesAsync();
 
@@ -108,7 +111,7 @@ public partial class ConstructorWorkflowControllerTests
 
         var result = await _controller.GetProjects();
         var okResult = Assert.IsType<OkObjectResult>(result);
-        
+
         var json = JsonSerializer.Serialize(okResult.Value);
         using var doc = JsonDocument.Parse(json);
         Assert.Equal(JsonValueKind.Array, doc.RootElement.ValueKind);
@@ -122,7 +125,7 @@ public partial class ConstructorWorkflowControllerTests
         SetUser(constructorId, "Constructor");
 
         var mockLogService = new Mock<IDailyConstructionLogService>();
-        var events = new List<HousePlanner.API.DTOs.CalendarEventDto> 
+        var events = new List<HousePlanner.API.DTOs.CalendarEventDto>
         {
             new HousePlanner.API.DTOs.CalendarEventDto(Guid.NewGuid(), DateOnly.FromDateTime(DateTime.UtcNow), "Test", "daily_log", "normal", null, projectId, null, null)
         };
@@ -131,7 +134,7 @@ public partial class ConstructorWorkflowControllerTests
 
         var controller = new ConstructorWorkflowController(new ConstructorWorkflowService(_db), _mockUser.Object, _db, mockLogService.Object);
         var result = await controller.GetProjectCalendar(projectId, CancellationToken.None);
-        
+
         var ok = Assert.IsType<OkObjectResult>(result);
         var returnedEvents = Assert.IsAssignableFrom<IEnumerable<HousePlanner.API.DTOs.CalendarEventDto>>(ok.Value);
         Assert.Single(returnedEvents);
@@ -150,7 +153,7 @@ public partial class ConstructorWorkflowControllerTests
 
         var controller = new ConstructorWorkflowController(new ConstructorWorkflowService(_db), _mockUser.Object, _db, mockLogService.Object);
         var result = await controller.GetProjectCalendar(projectId, CancellationToken.None);
-        
+
         var ok = Assert.IsType<OkObjectResult>(result);
         var returnedEvents = Assert.IsAssignableFrom<IEnumerable<HousePlanner.API.DTOs.CalendarEventDto>>(ok.Value);
         Assert.Empty(returnedEvents);
@@ -169,7 +172,7 @@ public partial class ConstructorWorkflowControllerTests
 
         var controller = new ConstructorWorkflowController(new ConstructorWorkflowService(_db), _mockUser.Object, _db, mockLogService.Object);
         var result = await controller.GetProjectCalendar(projectId, CancellationToken.None);
-        
+
         Assert.IsType<NotFoundResult>(result);
     }
 
@@ -183,11 +186,11 @@ public partial class ConstructorWorkflowControllerTests
         _db.Users.Add(new User { Id = constructorId, Email = "c@test.com", RoleId = 1, FullName = "Constructor" });
         _db.Users.Add(new User { Id = customerId, Email = "u@test.com", RoleId = 1, FullName = "Customer" });
 
-        var workflow = new WorkflowState 
-        { 
-            Id = Guid.NewGuid(), 
-            Status = "running", 
-            ApprovalStatus = "not_requested", 
+        var workflow = new WorkflowState
+        {
+            Id = Guid.NewGuid(),
+            Status = "running",
+            ApprovalStatus = "not_requested",
             ConstructionPlan = "{\"project_summary\":{\"estimated_duration_days\":35},\"phases\":[{\"id\":1,\"name\":\"Site Prep\",\"duration_days\":15},{\"id\":2,\"name\":\"Foundation\",\"duration_days\":20}]}"
         };
         _db.WorkflowStates.Add(workflow);
@@ -206,7 +209,8 @@ public partial class ConstructorWorkflowControllerTests
         _db.ConstructorProjectRequests.Add(request);
         await _db.SaveChangesAsync();
 
-        try {
+        try
+        {
             var result = await _controller.AcceptRequest(request.Id);
             Assert.IsType<OkObjectResult>(result);
 
@@ -214,7 +218,9 @@ public partial class ConstructorWorkflowControllerTests
             Assert.Equal(2, updatedProject.ConstructionPhases.Count);
             Assert.Equal(35, updatedProject.AiEstimatedTotalDurationDays);
             Assert.Equal(35, updatedProject.PlannedTotalDurationDays);
-        } catch (Exception ex) {
+        }
+        catch (Exception ex)
+        {
             Assert.Fail(ex.ToString());
         }
     }
@@ -229,10 +235,10 @@ public partial class ConstructorWorkflowControllerTests
         _db.Users.Add(new User { Id = constructorId, Email = "c@test.com", RoleId = 1, FullName = "Constructor" });
         _db.Users.Add(new User { Id = customerId, Email = "u@test.com", RoleId = 1, FullName = "Customer" });
 
-        var workflow = new WorkflowState 
-        { 
-            Id = Guid.NewGuid(), 
-            Status = "running", 
+        var workflow = new WorkflowState
+        {
+            Id = Guid.NewGuid(),
+            Status = "running",
             ConstructionPlan = "{\"project_summary\":{\"estimated_duration_days\":10},\"phases\":[{\"id\":1,\"name\":\"Site Prep\",\"duration_days\":10}]}"
         };
         _db.WorkflowStates.Add(workflow);

@@ -1,6 +1,7 @@
 import pytest
+
 from app.design.models import Requirements
-from app.design.plot_constraints import PlotConstraints, Setbacks
+from app.design.plot_constraints import PlotConstraints
 from app.design.spatial_program import build_program
 from app.design.topology_registry import eligible_topologies
 

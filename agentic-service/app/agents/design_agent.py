@@ -5,15 +5,17 @@ Generates validated procedural house layouts and
 submits them to ASP.NET Core for persistence. Supports both initial
 generation and revision after validation failure.
 """
+from datetime import datetime, timezone
+
 import requests
-from app.schemas.workflow_state import WorkflowState, ExecutionLogEntry
-from app.tools.layout_generation_tool import generate_layout, prepare_inputs
+
+from app.config import ASPNET_API_URL, INTERNAL_API_KEY
+from app.design.architectural_quality import validate_architectural_quality
 from app.design.candidate_generator import GenerationFailure
 from app.design.revision import preserve_revision_preferences
-from app.design.architectural_quality import validate_architectural_quality
+from app.schemas.workflow_state import ExecutionLogEntry, WorkflowState
 from app.tools.geometry_validator import validate_geometry
-from app.config import ASPNET_API_URL, INTERNAL_API_KEY
-from datetime import datetime, timezone
+from app.tools.layout_generation_tool import generate_layout, prepare_inputs
 
 
 def design_node(state: WorkflowState) -> WorkflowState:
@@ -144,7 +146,7 @@ def _submit_design(state: WorkflowState) -> str:
             error_msg = f"api_failed: {response.status_code} - {response.text}"
             print(f"[Design Agent] API submission failed: {error_msg}")
             return error_msg
-    except Exception as e:
+    except requests.RequestException as e:
         print(f"[Design Agent] Could not reach ASP.NET: {e}")
         return "api_call_skipped_local_dev"
 
@@ -173,7 +175,7 @@ def _safe_failure_reason(state: WorkflowState) -> str:
         messages.extend(item.get('failures', [])[:2])
     if not messages:
         messages = validation.get('failures', ['Design generation failed.'])
-        
+
     if messages:
         first = str(messages[0]).strip()
         if first.startswith('{"code":'):
@@ -181,9 +183,9 @@ def _safe_failure_reason(state: WorkflowState) -> str:
             try:
                 data = json.loads(first)
                 # If we exhausted the pool, there are no more alternatives.
-                data['hasAlternatives'] = False 
+                data['hasAlternatives'] = False
                 return json.dumps(data)
-            except:
+            except json.JSONDecodeError:
                 return first
 
     return ' '.join(str(message) for message in messages)[:1000]

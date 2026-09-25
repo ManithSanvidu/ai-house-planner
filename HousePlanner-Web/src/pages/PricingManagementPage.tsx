@@ -6,7 +6,6 @@ import {
   Save,
   Tag,
   Box,
-  Layers,
   PackageCheck,
   AlertCircle,
   TrendingUp,
@@ -14,31 +13,39 @@ import {
   DollarSign,
   RefreshCw,
   Loader2,
-  Lock,
+  Plus,
+  Users,
+  Building2,
+  Info,
+  Archive,
+  History,
 } from 'lucide-react';
 import pricingService from '../services/pricingService';
-import type { PricingItem as ApiPricingItem } from '../types/pricing.types';
+import type { PricingHistoryItem, PricingItem as ApiPricingItem } from '../types/pricing.types';
 
 // ─────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────
 
-
-/**
- * Internal view-model used by this page.
- * Maps from the backend shape (ApiPricingItem) to the flat structure
- * the table and modal expect.
- */
 interface PricingItem {
-  id: number;           // backend: id (number)
-  name: string;         // backend: itemName
-  category: string;     // backend: category (string, not union – categories come from DB)
+  id: number;
+  name: string;
+  category: string; // machine category: "material" | "labour"
+  displayGroup: string; // human grouping: "Foundation", "Structural", etc.
   unit: string;
-  unitCost: number;     // backend: unitCostLkr
-  flatMultiplier: number;      // backend: terrainMultiplier.flat
-  hillsideMultiplier: number;  // backend: terrainMultiplier.hillside
-  coastalMultiplier: number;   // backend: terrainMultiplier.coastal
-  lastUpdated: string;  // backend: updatedAt (ISO-8601)
+  unitCost: number;
+  flatMultiplier: number;
+  hillsideMultiplier: number;
+  coastalMultiplier: number;
+  provider?: string | null;
+  sourceReference?: string | null;
+  region: string;
+  qualityLevel: 'Basic' | 'Standard' | 'Premium' | 'Luxury';
+  isActive: boolean;
+  createdAt: string;
+  updatedByUserId?: string | null;
+  updatedByName?: string | null;
+  lastUpdated: string;
 }
 
 interface EditFormState {
@@ -46,14 +53,41 @@ interface EditFormState {
   flatMultiplier: string;
   hillsideMultiplier: string;
   coastalMultiplier: string;
+  reason: string;
+}
+
+interface CreateFormState {
+  itemName: string;
+  category: 'material' | 'labour';
+  displayGroup: string;
+  unitCost: string;
+  flatMultiplier: string;
+  hillsideMultiplier: string;
+  coastalMultiplier: string;
+  sourceReference: string;
+  region: string;
+  qualityLevel: 'Basic' | 'Standard' | 'Premium' | 'Luxury';
 }
 
 interface ValidationErrors {
+  itemName?: string;
+  category?: string;
+  displayGroup?: string;
   unitCost?: string;
   flatMultiplier?: string;
   hillsideMultiplier?: string;
   coastalMultiplier?: string;
 }
+
+const DISPLAY_GROUPS = [
+  'Foundation',
+  'Structural',
+  'Roofing',
+  'Finishing',
+  'MEP',
+  'Labour',
+  'General',
+] as const;
 
 // ─────────────────────────────────────────────
 // Adapter: backend → view-model
@@ -63,12 +97,21 @@ function toViewModel(api: ApiPricingItem): PricingItem {
   return {
     id: api.id,
     name: api.itemName,
-    category: api.category,
+    category: api.category.toLowerCase(),
+    displayGroup: api.displayGroup || (api.category.toLowerCase() === 'labour' ? 'Labour' : 'General'),
     unit: api.unit,
     unitCost: api.unitCostLkr,
     flatMultiplier: api.terrainMultiplier.flat,
     hillsideMultiplier: api.terrainMultiplier.hillside,
     coastalMultiplier: api.terrainMultiplier.coastal,
+    provider: api.provider,
+    sourceReference: api.sourceReference,
+    region: api.region,
+    qualityLevel: api.qualityLevel,
+    isActive: api.isActive,
+    createdAt: api.createdAt,
+    updatedByUserId: api.updatedByUserId,
+    updatedByName: api.updatedByName,
     lastUpdated: api.updatedAt,
   };
 }
@@ -77,21 +120,25 @@ function toViewModel(api: ApiPricingItem): PricingItem {
 // Helpers
 // ─────────────────────────────────────────────
 
-const CATEGORY_COLORS: Record<string, string> = {
+const GROUP_COLORS: Record<string, string> = {
+  Foundation: 'bg-stone-50 text-stone-700 ring-1 ring-stone-200',
   Structural: 'bg-blue-50 text-blue-700 ring-1 ring-blue-100',
+  Roofing: 'bg-orange-50 text-orange-700 ring-1 ring-orange-100',
   Finishing: 'bg-violet-50 text-violet-700 ring-1 ring-violet-100',
-  Labour: 'bg-amber-50 text-amber-700 ring-1 ring-amber-100',
   MEP: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100',
-  Landscaping: 'bg-teal-50 text-teal-700 ring-1 ring-teal-100',
+  Labour: 'bg-amber-50 text-amber-700 ring-1 ring-amber-100',
+  General: 'bg-slate-50 text-slate-600 ring-1 ring-slate-200',
 };
 
-/** Returns a colour class for any category string, with a neutral fallback. */
-function getCategoryColor(category: string): string {
-  return CATEGORY_COLORS[category] ?? 'bg-slate-50 text-slate-600 ring-1 ring-slate-200';
+function getGroupColor(group: string): string {
+  return GROUP_COLORS[group] ?? 'bg-slate-50 text-slate-600 ring-1 ring-slate-200';
 }
 
-function formatCurrency(value: number): string {
-  return `LKR ${value.toLocaleString('en-LK')}`;
+function formatRateOrFactor(item: PricingItem): string {
+  if (item.category === 'labour') {
+    return `${item.unitCost} × material cost (${(item.unitCost * 100).toFixed(0)}%)`;
+  }
+  return `LKR ${item.unitCost.toLocaleString('en-LK')} / sqft`;
 }
 
 function formatDate(iso: string): string {
@@ -116,6 +163,21 @@ function parsePositiveFloat(value: string): number | null {
 
 function validateEditForm(form: EditFormState): ValidationErrors {
   const errors: ValidationErrors = {};
+  if (parsePositiveFloat(form.unitCost) === null)
+    errors.unitCost = 'Must be a positive number.';
+  if (parsePositiveFloat(form.flatMultiplier) === null)
+    errors.flatMultiplier = 'Must be a positive number.';
+  if (parsePositiveFloat(form.hillsideMultiplier) === null)
+    errors.hillsideMultiplier = 'Must be a positive number.';
+  if (parsePositiveFloat(form.coastalMultiplier) === null)
+    errors.coastalMultiplier = 'Must be a positive number.';
+  return errors;
+}
+
+function validateCreateForm(form: CreateFormState): ValidationErrors {
+  const errors: ValidationErrors = {};
+  if (!form.itemName.trim())
+    errors.itemName = 'Item name is required.';
   if (parsePositiveFloat(form.unitCost) === null)
     errors.unitCost = 'Must be a positive number.';
   if (parsePositiveFloat(form.flatMultiplier) === null)
@@ -176,17 +238,365 @@ const MultiplierBadge: React.FC<MultiplierBadgeProps> = ({ value }) => {
 };
 
 // ─────────────────────────────────────────────
+// CreateModal sub-component
+// ─────────────────────────────────────────────
+
+interface CreateModalProps {
+  onClose: () => void;
+  onCreateSuccess: (created: PricingItem) => void;
+}
+
+const CreateModal: React.FC<CreateModalProps> = ({ onClose, onCreateSuccess }) => {
+  const [form, setForm] = useState<CreateFormState>({
+    itemName: '',
+    category: 'material',
+    displayGroup: 'Structural',
+    unitCost: '',
+    flatMultiplier: '1.00',
+    hillsideMultiplier: '1.25',
+    coastalMultiplier: '1.35',
+    sourceReference: '',
+    region: 'Sri Lanka',
+    qualityLevel: 'Standard',
+  });
+  const [errors, setErrors] = useState<ValidationErrors>({});
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const handleCategoryChange = (category: 'material' | 'labour') => {
+    setForm((prev) => ({
+      ...prev,
+      category,
+      displayGroup: category === 'labour' ? 'Labour' : prev.displayGroup === 'Labour' ? 'Structural' : prev.displayGroup,
+      flatMultiplier: category === 'labour' ? '1.00' : prev.flatMultiplier,
+      hillsideMultiplier: category === 'labour' ? '1.00' : prev.hillsideMultiplier,
+      coastalMultiplier: category === 'labour' ? '1.00' : prev.coastalMultiplier,
+    }));
+    setSubmitError(null);
+  };
+
+  const handleChange = (field: keyof CreateFormState) => (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    setForm((prev) => ({ ...prev, [field]: e.target.value }));
+    setErrors((prev) => ({ ...prev, [field]: undefined }));
+    setSubmitError(null);
+  };
+
+  const handleSave = async () => {
+    const validationErrors = validateCreateForm(form);
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+
+    setSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      const created = await pricingService.create({
+        itemName: form.itemName.trim(),
+        category: form.category,
+        displayGroup: form.displayGroup.trim(),
+        unitCostLkr: parseFloat(form.unitCost),
+        terrainMultiplier: {
+          flat: parseFloat(form.flatMultiplier),
+          hillside: parseFloat(form.hillsideMultiplier),
+          coastal: parseFloat(form.coastalMultiplier),
+        },
+        sourceReference: form.sourceReference.trim() || undefined,
+        region: form.region.trim() || 'Sri Lanka',
+        qualityLevel: form.qualityLevel,
+      });
+      onCreateSuccess(toViewModel(created));
+    } catch (err: unknown) {
+      const resp = (err as { response?: { data?: any; status?: number } })?.response;
+      const message = typeof resp?.data === 'string' ? resp.data : resp?.data?.message || 'Failed to create pricing item.';
+      setSubmitError(message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="relative bg-white rounded-3xl border border-slate-100 custom-shadow-lg w-full max-w-lg mx-4 overflow-hidden max-h-[90vh] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Modal Header */}
+        <div className="px-8 pt-8 pb-5 border-b border-slate-100 flex-shrink-0">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-[10px] font-bold tracking-[0.18em] text-indigo-500 uppercase mb-1">
+                New Price Entry
+              </p>
+              <h2 className="text-xl font-bold text-slate-900 leading-snug">Add Pricing Item</h2>
+              <p className="text-xs text-slate-400 mt-1">
+                Define an agent-compatible rate for the AI Cost Estimator.
+              </p>
+            </div>
+            <button
+              onClick={onClose}
+              className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-colors"
+              aria-label="Close modal"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+
+        {/* Modal Error Banner */}
+        {submitError && (
+          <div className="mx-8 mt-4 flex items-start gap-2 rounded-xl bg-red-50 border border-red-100 px-4 py-3 flex-shrink-0">
+            <AlertCircle size={14} className="mt-0.5 flex-shrink-0 text-red-500" />
+            <p className="text-xs text-red-600 leading-relaxed">{submitError}</p>
+          </div>
+        )}
+
+        {/* Modal Body */}
+        <div className="px-8 py-5 space-y-4 overflow-y-auto">
+          {/* Category Selector */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+              Category (Machine Contract)
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => handleCategoryChange('material')}
+                className={`py-2 px-3 rounded-xl text-xs font-semibold border text-center transition-all ${
+                  form.category === 'material'
+                    ? 'border-indigo-600 bg-indigo-50/70 text-indigo-700 ring-2 ring-indigo-500/20'
+                    : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-white'
+                }`}
+              >
+                Material (per_sqft)
+              </button>
+              <button
+                type="button"
+                onClick={() => handleCategoryChange('labour')}
+                className={`py-2 px-3 rounded-xl text-xs font-semibold border text-center transition-all ${
+                  form.category === 'labour'
+                    ? 'border-amber-600 bg-amber-50/70 text-amber-700 ring-2 ring-amber-500/20'
+                    : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-white'
+                }`}
+              >
+                Labour (factor)
+              </button>
+            </div>
+          </div>
+
+          {/* Unit Note */}
+          <div className="flex items-center gap-2 rounded-xl bg-slate-50 border border-slate-200/80 px-3.5 py-2.5">
+            <Info size={14} className="text-slate-400 flex-shrink-0" />
+            <p className="text-xs text-slate-600">
+              {form.category === 'material' ? (
+                <>
+                  <span className="font-semibold text-slate-800">Unit: LKR per sqft</span> (canonical backend value: <code className="text-indigo-600 font-mono">per_sqft</code>)
+                </>
+              ) : (
+                <>
+                  <span className="font-semibold text-slate-800">Unit: Labour factor</span> (canonical backend value: <code className="text-amber-600 font-mono">factor</code>)
+                </>
+              )}
+            </p>
+          </div>
+
+          {/* Item Name */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1" htmlFor="create-itemName">
+              Item Name
+            </label>
+            <input
+              id="create-itemName"
+              type="text"
+              placeholder={form.category === 'material' ? 'e.g. Substructure Materials' : 'e.g. Standard Construction Labour'}
+              value={form.itemName}
+              onChange={handleChange('itemName')}
+              disabled={submitting}
+              className={`w-full bg-slate-50 border rounded-xl px-4 py-2 text-sm text-slate-900 placeholder-slate-400 outline-none transition-all focus:bg-white focus:ring-2 focus:ring-indigo-400/40 ${
+                errors.itemName ? 'border-red-300 ring-1 ring-red-200' : 'border-slate-200 focus:border-indigo-300'
+              }`}
+            />
+            {errors.itemName && (
+              <p className="mt-1 text-[11px] text-red-500 font-medium">{errors.itemName}</p>
+            )}
+          </div>
+
+          {/* Display Group */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1" htmlFor="create-displayGroup">
+              Display Group (UI Grouping)
+            </label>
+            <select
+              id="create-displayGroup"
+              value={form.displayGroup}
+              onChange={handleChange('displayGroup')}
+              disabled={submitting}
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-sm text-slate-900 outline-none transition-all focus:bg-white focus:border-indigo-300 focus:ring-2 focus:ring-indigo-400/40"
+            >
+              {DISPLAY_GROUPS.map((g) => (
+                <option key={g} value={g}>
+                  {g}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Unit Cost / Labour Factor */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1" htmlFor="create-unitCost">
+              {form.category === 'material' ? 'Unit Cost (LKR / sqft)' : 'Labour Rate Factor'}
+            </label>
+            <input
+              id="create-unitCost"
+              type="number"
+              step={form.category === 'material' ? '1' : '0.01'}
+              min="0"
+              placeholder={form.category === 'material' ? 'e.g. 12000' : 'e.g. 0.35'}
+              value={form.unitCost}
+              onChange={handleChange('unitCost')}
+              disabled={submitting}
+              className={`w-full bg-slate-50 border rounded-xl px-4 py-2 text-sm text-slate-900 placeholder-slate-400 outline-none transition-all focus:bg-white focus:ring-2 focus:ring-indigo-400/40 ${
+                errors.unitCost ? 'border-red-300 ring-1 ring-red-200' : 'border-slate-200 focus:border-indigo-300'
+              }`}
+            />
+            <p className="mt-1 text-[11px] text-slate-400">
+              {form.category === 'material'
+                ? 'Base cost in LKR per square foot on standard flat terrain.'
+                : 'Example: 0.35 means labour is calculated as 35% of material cost.'}
+            </p>
+            {errors.unitCost && (
+              <p className="mt-1 text-[11px] text-red-500 font-medium">{errors.unitCost}</p>
+            )}
+          </div>
+
+          {/* Terrain Multipliers */}
+          <div className="pt-1">
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+              Terrain Multipliers
+            </label>
+            <div className="grid grid-cols-3 gap-2.5">
+              <div>
+                <label htmlFor="create-flatMultiplier" className="block text-[11px] text-slate-500 mb-1 font-medium">Flat</label>
+                <input
+                  id="create-flatMultiplier"
+                  type="number"
+                  step="0.05"
+                  min="0.1"
+                  value={form.flatMultiplier}
+                  onChange={handleChange('flatMultiplier')}
+                  disabled={submitting}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900 outline-none focus:bg-white focus:border-indigo-300"
+                />
+              </div>
+              <div>
+                <label htmlFor="create-hillsideMultiplier" className="block text-[11px] text-slate-500 mb-1 font-medium">Hillside</label>
+                <input
+                  id="create-hillsideMultiplier"
+                  type="number"
+                  step="0.05"
+                  min="0.1"
+                  value={form.hillsideMultiplier}
+                  onChange={handleChange('hillsideMultiplier')}
+                  disabled={submitting}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900 outline-none focus:bg-white focus:border-indigo-300"
+                />
+              </div>
+              <div>
+                <label htmlFor="create-coastalMultiplier" className="block text-[11px] text-slate-500 mb-1 font-medium">Coastal</label>
+                <input
+                  id="create-coastalMultiplier"
+                  type="number"
+                  step="0.05"
+                  min="0.1"
+                  value={form.coastalMultiplier}
+                  onChange={handleChange('coastalMultiplier')}
+                  disabled={submitting}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900 outline-none focus:bg-white focus:border-indigo-300"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1" htmlFor="create-region">Region</label>
+              <input
+                id="create-region"
+                type="text"
+                value={form.region}
+                onChange={handleChange('region')}
+                disabled={submitting}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 outline-none focus:bg-white focus:border-indigo-300"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1" htmlFor="create-qualityLevel">Quality Level</label>
+              <select
+                id="create-qualityLevel"
+                value={form.qualityLevel}
+                onChange={handleChange('qualityLevel')}
+                disabled={submitting}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 outline-none focus:bg-white focus:border-indigo-300"
+              >
+                {['Basic', 'Standard', 'Premium', 'Luxury'].map((level) => <option key={level} value={level}>{level}</option>)}
+              </select>
+            </div>
+          </div>
+
+          {/* Source Reference */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1" htmlFor="create-sourceReference">
+              Source Reference (Optional)
+            </label>
+            <input
+              id="create-sourceReference"
+              type="text"
+              placeholder="e.g. Q3 2026 contractor estimate / supplier catalog"
+              value={form.sourceReference}
+              onChange={handleChange('sourceReference')}
+              disabled={submitting}
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 placeholder-slate-400 outline-none focus:bg-white focus:border-indigo-300"
+            />
+          </div>
+        </div>
+
+        {/* Modal Footer */}
+        <div className="px-8 py-5 border-t border-slate-100 flex items-center justify-end gap-3 flex-shrink-0 bg-slate-50/50">
+          <button
+            onClick={onClose}
+            disabled={submitting}
+            className="px-5 py-2.5 rounded-xl text-sm font-medium text-slate-600 border border-slate-200 bg-white hover:bg-slate-50 transition-colors disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            id="modal-create-btn"
+            onClick={handleSave}
+            disabled={submitting}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white transition-all custom-shadow-sm disabled:opacity-60"
+          >
+            {submitting ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+            {submitting ? 'Creating…' : 'Create Item'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────
 // EditModal sub-component
 // ─────────────────────────────────────────────
 
 interface EditModalProps {
   item: PricingItem;
   onClose: () => void;
-  /**
-   * Called only when the PUT /pricing/{id} backend call succeeds.
-   * While shared auth is not yet wired, this will show a 401 error
-   * without updating local state (no fake save).
-   */
   onSaveSuccess: (updated: PricingItem) => void;
 }
 
@@ -196,6 +606,7 @@ const EditModal: React.FC<EditModalProps> = ({ item, onClose, onSaveSuccess }) =
     flatMultiplier: String(item.flatMultiplier),
     hillsideMultiplier: String(item.hillsideMultiplier),
     coastalMultiplier: String(item.coastalMultiplier),
+    reason: '',
   });
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [saving, setSaving] = useState(false);
@@ -218,14 +629,6 @@ const EditModal: React.FC<EditModalProps> = ({ item, onClose, onSaveSuccess }) =
     setSaveError(null);
 
     try {
-      /**
-       * PUT /pricing/{id}
-       * ⚠ INTEGRATION DEPENDENCY: Requires [Authorize(Roles = "Contractor")].
-       * The shared ASP.NET JWT authentication scheme (Member 1) is not yet
-       * implemented end-to-end. This call will return 401 until the token
-       * exchange is complete. The backend [Authorize] attribute is intentionally
-       * preserved — do not remove it.
-       */
       const updated = await pricingService.update(item.id, {
         unitCostLkr: parseFloat(form.unitCost),
         terrainMultiplier: {
@@ -233,44 +636,19 @@ const EditModal: React.FC<EditModalProps> = ({ item, onClose, onSaveSuccess }) =
           hillside: parseFloat(form.hillsideMultiplier),
           coastal: parseFloat(form.coastalMultiplier),
         },
+        reason: form.reason.trim() || undefined,
       });
       onSaveSuccess(toViewModel(updated));
     } catch (err: unknown) {
-      const status = (err as { response?: { status?: number } })?.response?.status;
-      if (status === 401 || status === 403) {
-        setSaveError(
-          'Save requires Contractor authentication. The shared JWT auth scheme has not yet been implemented by Member 1 — this endpoint will unlock once it is complete.'
-        );
-      } else {
-        setSaveError('Failed to save changes. Please try again.');
-      }
+      const resp = (err as { response?: { data?: any; status?: number } })?.response;
+      const message = typeof resp?.data === 'string' ? resp.data : resp?.data?.message || 'Failed to save changes. Please try again.';
+      setSaveError(message);
     } finally {
       setSaving(false);
     }
   };
 
-  const fields: { key: keyof EditFormState; label: string; help: string }[] = [
-    {
-      key: 'unitCost',
-      label: 'Unit Cost (LKR)',
-      help: 'Base cost per unit on flat terrain.',
-    },
-    {
-      key: 'flatMultiplier',
-      label: 'Flat Terrain Multiplier',
-      help: 'Applied on standard flat-land projects. Usually 1.00.',
-    },
-    {
-      key: 'hillsideMultiplier',
-      label: 'Hillside Multiplier',
-      help: 'Accounts for slope access, extra labour and material transport.',
-    },
-    {
-      key: 'coastalMultiplier',
-      label: 'Coastal Multiplier',
-      help: 'Factors in corrosion-resistant materials and coastal logistics.',
-    },
-  ];
+  const isLabour = item.category === 'labour';
 
   return (
     <div
@@ -290,10 +668,15 @@ const EditModal: React.FC<EditModalProps> = ({ item, onClose, onSaveSuccess }) =
               </p>
               <h2 className="text-xl font-bold text-slate-900 leading-snug">{item.name}</h2>
               <div className="flex items-center gap-2 mt-2">
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${getCategoryColor(item.category)}`}>
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
+                  isLabour ? 'bg-amber-50 text-amber-700 ring-1 ring-amber-200' : 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200'
+                }`}>
                   {item.category}
                 </span>
-                <span className="text-xs text-slate-400">per {item.unit}</span>
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium ${getGroupColor(item.displayGroup)}`}>
+                  {item.displayGroup}
+                </span>
+                <span className="text-xs text-slate-400">({item.unit})</span>
               </div>
             </div>
             <button
@@ -306,57 +689,103 @@ const EditModal: React.FC<EditModalProps> = ({ item, onClose, onSaveSuccess }) =
           </div>
         </div>
 
-        {/* Auth dependency notice */}
-        <div className="mx-8 mt-5 flex items-start gap-2.5 rounded-xl bg-amber-50 border border-amber-100 px-4 py-3">
-          <Lock size={13} className="mt-0.5 flex-shrink-0 text-amber-500" />
-          <p className="text-[11px] text-amber-700 leading-relaxed">
-            <span className="font-semibold">Integration dependency:</span> Saving requires
-            Contractor JWT authentication (Member 1). Save will return 401 until the shared
-            auth scheme is complete.
-          </p>
-        </div>
-
         {/* Save error banner */}
         {saveError && (
-          <div className="mx-8 mt-3 flex items-start gap-2 rounded-xl bg-red-50 border border-red-100 px-4 py-3">
+          <div className="mx-8 mt-4 flex items-start gap-2 rounded-xl bg-red-50 border border-red-100 px-4 py-3">
             <AlertCircle size={13} className="mt-0.5 flex-shrink-0 text-red-500" />
             <p className="text-[11px] text-red-600 leading-relaxed">{saveError}</p>
           </div>
         )}
 
         {/* Modal Body */}
-        <div className="px-8 py-6 space-y-5">
-          {fields.map(({ key, label, help }) => (
-            <div key={key}>
-              <label
-                className="block text-xs font-semibold text-slate-700 mb-1.5"
-                htmlFor={`modal-${key}`}
-              >
-                {label}
-              </label>
-              <input
-                id={`modal-${key}`}
-                type="number"
-                step="0.01"
-                min="0"
-                value={form[key]}
-                onChange={handleChange(key)}
-                disabled={saving}
-                className={`w-full bg-slate-50 border rounded-xl px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 outline-none transition-all focus:bg-white focus:ring-2 focus:ring-indigo-400/40 disabled:opacity-60 ${
-                  errors[key]
-                    ? 'border-red-300 ring-1 ring-red-200'
-                    : 'border-slate-200 focus:border-indigo-300'
-                }`}
-              />
-              {errors[key] ? (
-                <p className="mt-1 flex items-center gap-1 text-[11px] text-red-500 font-medium">
-                  <AlertCircle size={11} /> {errors[key]}
-                </p>
-              ) : (
-                <p className="mt-1 text-[11px] text-slate-400">{help}</p>
-              )}
+        <div className="px-8 py-6 space-y-4">
+          <div>
+            <label
+              className="block text-xs font-semibold text-slate-700 mb-1.5"
+              htmlFor="modal-unitCost"
+            >
+              {isLabour ? 'Labour Rate Factor' : 'Unit Cost (LKR / sqft)'}
+            </label>
+            <input
+              id="modal-unitCost"
+              type="number"
+              step={isLabour ? '0.01' : '1'}
+              min="0"
+              value={form.unitCost}
+              onChange={handleChange('unitCost')}
+              disabled={saving}
+              className={`w-full bg-slate-50 border rounded-xl px-4 py-2.5 text-sm text-slate-900 outline-none transition-all focus:bg-white focus:ring-2 focus:ring-indigo-400/40 ${
+                errors.unitCost ? 'border-red-300 ring-1 ring-red-200' : 'border-slate-200 focus:border-indigo-300'
+              }`}
+            />
+            <p className="mt-1 text-[11px] text-slate-400">
+              {isLabour
+                ? 'Example: 0.35 means labour is calculated as 35% of material cost.'
+                : 'Base cost in LKR per square foot on standard flat terrain.'}
+            </p>
+            {errors.unitCost && (
+              <p className="mt-1 text-[11px] text-red-500 font-medium">{errors.unitCost}</p>
+            )}
+          </div>
+
+          <div className="pt-2">
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+              Terrain Multipliers
+            </label>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <span className="block text-[11px] text-slate-500 mb-1 font-medium">Flat Multiplier</span>
+                <input
+                  id="modal-flatMultiplier"
+                  type="number"
+                  step="0.05"
+                  min="0.1"
+                  value={form.flatMultiplier}
+                  onChange={handleChange('flatMultiplier')}
+                  disabled={saving}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 outline-none focus:bg-white focus:border-indigo-300"
+                />
+              </div>
+              <div>
+                <span className="block text-[11px] text-slate-500 mb-1 font-medium">Hillside Multiplier</span>
+                <input
+                  id="modal-hillsideMultiplier"
+                  type="number"
+                  step="0.05"
+                  min="0.1"
+                  value={form.hillsideMultiplier}
+                  onChange={handleChange('hillsideMultiplier')}
+                  disabled={saving}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 outline-none focus:bg-white focus:border-indigo-300"
+                />
+              </div>
+              <div>
+                <span className="block text-[11px] text-slate-500 mb-1 font-medium">Coastal Multiplier</span>
+                <input
+                  id="modal-coastalMultiplier"
+                  type="number"
+                  step="0.05"
+                  min="0.1"
+                  value={form.coastalMultiplier}
+                  onChange={handleChange('coastalMultiplier')}
+                  disabled={saving}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 outline-none focus:bg-white focus:border-indigo-300"
+                />
+              </div>
             </div>
-          ))}
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1" htmlFor="modal-reason">Reason for change</label>
+            <input
+              id="modal-reason"
+              type="text"
+              value={form.reason}
+              onChange={handleChange('reason')}
+              disabled={saving}
+              placeholder="e.g. September contractor rate review"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 outline-none focus:bg-white focus:border-indigo-300"
+            />
+          </div>
         </div>
 
         {/* Modal Footer */}
@@ -389,14 +818,18 @@ const EditModal: React.FC<EditModalProps> = ({ item, onClose, onSaveSuccess }) =
 
 const TABLE_COLUMNS = [
   'Item Name',
+  'Group',
+  'Region / Quality',
   'Category',
+  'Status',
   'Unit',
-  'Unit Cost (LKR)',
+  'Rate / Factor',
   'Flat x',
   'Hillside x',
   'Coastal x',
+  'Created',
   'Last Updated',
-  '',
+  'Actions',
 ];
 
 const PricingManagementPage: React.FC = () => {
@@ -407,9 +840,14 @@ const PricingManagementPage: React.FC = () => {
 
   // ── UI state ──
   const [search, setSearch] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [selectedCategory, setSelectedCategory] = useState<'All' | 'material' | 'labour'>('All');
   const [editingItem, setEditingItem] = useState<PricingItem | null>(null);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [bannerMessage, setBannerMessage] = useState<string | null>(null);
   const [savedItemId, setSavedItemId] = useState<number | null>(null);
+  const [historyItem, setHistoryItem] = useState<PricingItem | null>(null);
+  const [history, setHistory] = useState<PricingHistoryItem[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   // ── Fetch on mount ──
   const fetchPricing = async () => {
@@ -429,20 +867,16 @@ const PricingManagementPage: React.FC = () => {
     fetchPricing();
   }, []);
 
-  // ── Derived data ──
-  // Build category pill list dynamically from what the API returned.
-  const categories = useMemo(() => {
-    const unique = [...new Set(items.map((i) => i.category))].sort();
-    return ['All', ...unique];
-  }, [items]);
-
   const filteredItems = useMemo(() => {
     const q = search.toLowerCase().trim();
     return items.filter((item) => {
       const matchSearch =
         !q ||
         item.name.toLowerCase().includes(q) ||
+        item.displayGroup.toLowerCase().includes(q) ||
         item.category.toLowerCase().includes(q) ||
+        item.region.toLowerCase().includes(q) ||
+        item.qualityLevel.toLowerCase().includes(q) ||
         item.unit.toLowerCase().includes(q);
       const matchCategory =
         selectedCategory === 'All' || item.category === selectedCategory;
@@ -450,8 +884,12 @@ const PricingManagementPage: React.FC = () => {
     });
   }, [items, search, selectedCategory]);
 
-  const uniqueCategories = useMemo(
-    () => [...new Set(items.map((i) => i.category))].length,
+  const materialCount = useMemo(
+    () => items.filter((i) => i.isActive && i.category === 'material').length,
+    [items]
+  );
+  const labourCount = useMemo(
+    () => items.filter((i) => i.isActive && i.category === 'labour').length,
     [items]
   );
 
@@ -460,21 +898,53 @@ const PricingManagementPage: React.FC = () => {
     setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
     setSavedItemId(updated.id);
     setEditingItem(null);
-    setTimeout(() => setSavedItemId(null), 2500);
+    setBannerMessage(`Updated rate for "${updated.name}"`);
+    setTimeout(() => {
+      setSavedItemId(null);
+      setBannerMessage(null);
+    }, 3000);
+  };
+
+  const handleCreateSuccess = (created: PricingItem) => {
+    setItems((prev) => [created, ...prev]);
+    setSavedItemId(created.id);
+    setIsCreateOpen(false);
+    setBannerMessage(`Added new pricing item "${created.name}"`);
+    setTimeout(() => {
+      setSavedItemId(null);
+      setBannerMessage(null);
+    }, 3000);
+  };
+
+  const handleDeactivate = async (item: PricingItem) => {
+    if (!window.confirm(`Deactivate ${item.name}? Existing estimates will remain unchanged.`)) return;
+    try {
+      const updated = toViewModel(await pricingService.deactivate(item.id, 'Archived from Constructor Pricing Management'));
+      setItems((prev) => prev.map((current) => current.id === updated.id ? updated : current));
+      setBannerMessage(`Deactivated pricing item "${updated.name}"`);
+    } catch {
+      setFetchError(`Could not deactivate "${item.name}".`);
+    }
+  };
+
+  const handleShowHistory = async (item: PricingItem) => {
+    setHistoryItem(item);
+    setHistoryLoading(true);
+    try { setHistory(await pricingService.getHistory(item.id)); }
+    catch { setHistory([]); }
+    finally { setHistoryLoading(false); }
   };
 
   // ── Loading state ──
   if (loading) {
     return (
       <div className="space-y-8">
-        {/* Header skeleton */}
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
           <div>
             <p className="text-[10px] font-bold tracking-[0.2em] text-indigo-500 uppercase mb-2">Cost Estimator</p>
             <h1 className="text-3xl font-bold text-slate-900 tracking-tight mb-2">Pricing Management</h1>
             <p className="text-sm text-slate-400 font-light max-w-lg leading-relaxed">
-              Manage the base unit costs and terrain multipliers used by the HousePlanner AI cost
-              estimation system.
+              Manage base unit costs and terrain multipliers used by the AI Cost Estimation Agent.
             </p>
           </div>
           <div className="flex-shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 text-xs font-semibold">
@@ -482,7 +952,6 @@ const PricingManagementPage: React.FC = () => {
             <span>LKR Pricing Table</span>
           </div>
         </div>
-        {/* Loading indicator */}
         <div className="bg-white rounded-2xl border border-slate-100 custom-shadow-sm flex flex-col items-center justify-center py-24 gap-4">
           <Loader2 size={32} className="animate-spin text-indigo-400" />
           <p className="text-sm font-medium text-slate-500">Loading pricing data…</p>
@@ -534,35 +1003,55 @@ const PricingManagementPage: React.FC = () => {
             Pricing Management
           </h1>
           <p className="text-sm text-slate-400 font-light max-w-lg leading-relaxed">
-            Manage the base unit costs and terrain multipliers used by the HousePlanner AI cost
-            estimation system. Changes here are reflected in all future project cost calculations.
+            Manage base unit costs and terrain multipliers used by the AI Cost Estimation Agent.
+            Changes here directly govern all automated project cost calculations.
           </p>
         </div>
-        <div className="flex-shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 text-xs font-semibold">
-          <DollarSign size={14} />
-          <span>LKR Pricing Table</span>
+        <div className="flex items-center gap-3">
+          <button
+            id="add-pricing-btn"
+            onClick={() => setIsCreateOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-sm transition-all"
+          >
+            <Plus size={15} />
+            <span>Add Pricing Item</span>
+          </button>
         </div>
       </div>
 
+      {/* ── Notification Banner ── */}
+      {bannerMessage && (
+        <div className="rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-xs font-semibold text-emerald-800 flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+          {bannerMessage}
+        </div>
+      )}
+
       {/* ── Summary Cards ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <SummaryCard
           icon={<PackageCheck size={18} />}
-          label="Pricing Items"
+          label="Total Items"
           value={String(items.length)}
-          sub="Across all categories"
+          sub="Configured in catalog"
         />
         <SummaryCard
-          icon={<Layers size={18} />}
-          label="Categories"
-          value={String(uniqueCategories)}
-          sub="Structural, Labour, MEP…"
+          icon={<Building2 size={18} />}
+          label="Material Items"
+          value={String(materialCount)}
+          sub="Rate per sq ft"
+        />
+        <SummaryCard
+          icon={<Users size={18} />}
+          label="Labour Factor"
+          value={labourCount > 0 ? `${items.find((i) => i.isActive && i.category === 'labour')?.unitCost ?? 0}×` : 'None'}
+          sub={labourCount === 1 ? '1 active factor' : labourCount === 0 ? 'Missing labour rate' : 'Multiple rates (Ambiguous)'}
         />
         <SummaryCard
           icon={<CalendarDays size={18} />}
           label="Last Updated"
           value={getLatestUpdate(items)}
-          sub="Most recent price change"
+          sub="Most recent change"
         />
       </div>
 
@@ -579,7 +1068,7 @@ const PricingManagementPage: React.FC = () => {
             <input
               id="pricing-search"
               type="text"
-              placeholder="Search items, categories…"
+              placeholder="Search items, groups…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-9 pr-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:border-indigo-300 focus:ring-2 focus:ring-indigo-400/30 transition-all"
@@ -595,27 +1084,44 @@ const PricingManagementPage: React.FC = () => {
             )}
           </div>
 
-          {/* Category pill filters — built from live API data */}
+          {/* Machine Category filter buttons */}
           <div className="flex items-center gap-1.5 flex-wrap">
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                  selectedCategory === cat
-                    ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'bg-slate-50 text-slate-500 border border-slate-200 hover:bg-slate-100 hover:text-slate-700'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
+            <button
+              onClick={() => setSelectedCategory('All')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                selectedCategory === 'All'
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : 'bg-slate-50 text-slate-500 border border-slate-200 hover:bg-slate-100 hover:text-slate-700'
+              }`}
+            >
+              All Items ({items.length})
+            </button>
+            <button
+              onClick={() => setSelectedCategory('material')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                selectedCategory === 'material'
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : 'bg-slate-50 text-slate-500 border border-slate-200 hover:bg-slate-100 hover:text-slate-700'
+              }`}
+            >
+              Materials ({materialCount})
+            </button>
+            <button
+              onClick={() => setSelectedCategory('labour')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                selectedCategory === 'labour'
+                  ? 'bg-amber-600 text-white shadow-sm'
+                  : 'bg-slate-50 text-slate-500 border border-slate-200 hover:bg-slate-100 hover:text-slate-700'
+              }`}
+            >
+              Labour ({labourCount})
+            </button>
           </div>
         </div>
 
         {/* Table */}
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[960px]">
+          <table className="w-full min-w-[1380px]">
             <thead>
               <tr className="border-b border-slate-100">
                 {TABLE_COLUMNS.map((col, i) => (
@@ -633,27 +1139,36 @@ const PricingManagementPage: React.FC = () => {
 
             <tbody className="divide-y divide-slate-50">
               {items.length === 0 ? (
-                /* Empty state — API returned zero rows */
+                /* Empty state */
                 <tr>
                   <td colSpan={TABLE_COLUMNS.length} className="px-6 py-16 text-center">
                     <div className="flex flex-col items-center gap-3 text-slate-400">
                       <div className="w-12 h-12 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center">
                         <Box size={20} className="text-slate-300" />
                       </div>
-                      <p className="text-sm font-medium text-slate-500">No pricing items in the database</p>
-                      <p className="text-xs text-slate-400">Add seed data to the backend to populate this table.</p>
+                      <p className="text-sm font-medium text-slate-600">No pricing items are configured yet.</p>
+                      <p className="text-xs text-slate-400 max-w-sm">
+                        Add material rates per sq ft and a labour factor to enable the AI Cost Estimation Agent.
+                      </p>
+                      <button
+                        onClick={() => setIsCreateOpen(true)}
+                        className="inline-flex items-center gap-1.5 mt-2 px-4 py-2 rounded-xl text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm transition-colors"
+                      >
+                        <Plus size={14} />
+                        Add Pricing Item
+                      </button>
                     </div>
                   </td>
                 </tr>
               ) : filteredItems.length === 0 ? (
-                /* Empty state — filters produced no results */
+                /* Empty search results */
                 <tr>
                   <td colSpan={TABLE_COLUMNS.length} className="px-6 py-16 text-center">
                     <div className="flex flex-col items-center gap-3 text-slate-400">
                       <div className="w-12 h-12 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center">
                         <Box size={20} className="text-slate-300" />
                       </div>
-                      <p className="text-sm font-medium text-slate-500">No pricing items found</p>
+                      <p className="text-sm font-medium text-slate-500">No matching pricing items found</p>
                       <p className="text-xs text-slate-400">Try adjusting your search or category filter.</p>
                       <button
                         onClick={() => { setSearch(''); setSelectedCategory('All'); }}
@@ -678,9 +1193,14 @@ const PricingManagementPage: React.FC = () => {
                         <div className="w-7 h-7 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center flex-shrink-0">
                           <Tag size={13} className="text-slate-400" />
                         </div>
-                        <span className="text-sm font-semibold text-slate-800 group-hover:text-slate-950 transition-colors">
-                          {item.name}
-                        </span>
+                        <div>
+                          <span className="text-sm font-semibold text-slate-800 group-hover:text-slate-950 transition-colors">
+                            {item.name}
+                          </span>
+                          {item.sourceReference && (
+                            <p className="text-[11px] text-slate-400 font-light truncate max-w-xs">{item.sourceReference}</p>
+                          )}
+                        </div>
                         {savedItemId === item.id && (
                           <span className="ml-1 inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded-full">
                             Saved
@@ -689,24 +1209,46 @@ const PricingManagementPage: React.FC = () => {
                       </div>
                     </td>
 
-                    {/* Category */}
+                    {/* Group */}
                     <td className="px-4 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${getCategoryColor(item.category)}`}>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium ${getGroupColor(item.displayGroup)}`}>
+                        {item.displayGroup}
+                      </span>
+                    </td>
+
+                    <td className="px-4 py-4">
+                      <p className="text-xs font-semibold text-slate-700">{item.region}</p>
+                      <p className="text-[11px] text-slate-400">{item.qualityLevel}</p>
+                    </td>
+
+                    {/* Machine Category */}
+                    <td className="px-4 py-4">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
+                        item.category === 'labour'
+                          ? 'bg-amber-50 text-amber-700 ring-1 ring-amber-200'
+                          : 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200'
+                      }`}>
                         {item.category}
                       </span>
                     </td>
 
-                    {/* Unit */}
                     <td className="px-4 py-4">
-                      <span className="text-xs text-slate-500 font-medium bg-slate-100 px-2 py-0.5 rounded-md">
+                      <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold ring-1 ${item.isActive ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : 'bg-slate-100 text-slate-500 ring-slate-200'}`}>
+                        {item.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+
+                    {/* Canonical Unit */}
+                    <td className="px-4 py-4">
+                      <span className="text-xs text-slate-500 font-mono font-medium bg-slate-100 px-2 py-0.5 rounded-md">
                         {item.unit}
                       </span>
                     </td>
 
-                    {/* Unit Cost */}
+                    {/* Rate / Factor */}
                     <td className="px-4 py-4">
-                      <span className="text-sm font-bold text-slate-900">
-                        {formatCurrency(item.unitCost)}
+                      <span className={`text-sm font-bold ${item.category === 'labour' ? 'text-amber-700 font-mono' : 'text-slate-900'}`}>
+                        {formatRateOrFactor(item)}
                       </span>
                     </td>
 
@@ -719,23 +1261,35 @@ const PricingManagementPage: React.FC = () => {
                     {/* Coastal Multiplier */}
                     <td className="px-4 py-4"><MultiplierBadge value={item.coastalMultiplier} /></td>
 
+                    <td className="px-4 py-4">
+                      <span className="text-xs text-slate-400 font-medium">{formatDate(item.createdAt)}</span>
+                    </td>
+
                     {/* Last Updated */}
                     <td className="px-4 py-4">
                       <span className="text-xs text-slate-400 font-medium">
                         {formatDate(item.lastUpdated)}
                       </span>
+                      <p className="max-w-[140px] truncate text-[10px] text-slate-400" title={item.updatedByName || (item.updatedByUserId ? 'Unknown user' : 'System')}>
+                        {item.updatedByName || (item.updatedByUserId ? 'Unknown user' : 'System')}
+                      </p>
                     </td>
 
                     {/* Edit Action */}
                     <td className="px-4 pr-6 py-4 text-right">
-                      <button
-                        onClick={() => setEditingItem(item)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-500 border border-slate-200 bg-white hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 transition-all opacity-0 group-hover:opacity-100"
-                        aria-label={`Edit ${item.name}`}
-                      >
-                        <Pencil size={11} />
-                        Edit
-                      </button>
+                      <div className="flex justify-end gap-1.5">
+                        <button onClick={() => void handleShowHistory(item)} className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1.5 text-xs font-semibold text-slate-500 hover:text-indigo-600" aria-label={`History for ${item.name}`}>
+                          <History size={11} /> History
+                        </button>
+                        {item.isActive && <>
+                          <button onClick={() => setEditingItem(item)} className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1.5 text-xs font-semibold text-slate-500 hover:text-indigo-600" aria-label={`Edit ${item.name}`}>
+                            <Pencil size={11} /> Edit
+                          </button>
+                          <button onClick={() => void handleDeactivate(item)} className="inline-flex items-center gap-1 rounded-lg border border-rose-200 px-2 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50" aria-label={`Deactivate ${item.name}`}>
+                            <Archive size={11} /> Deactivate
+                          </button>
+                        </>}
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -756,11 +1310,19 @@ const PricingManagementPage: React.FC = () => {
             </p>
             <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
               <TrendingUp size={12} />
-              <span>All prices in Sri Lankan Rupees (LKR)</span>
+              <span>Material rates in LKR / sqft · Labour rates as dimensionless factors</span>
             </div>
           </div>
         )}
       </div>
+
+      {/* ── Create Modal ── */}
+      {isCreateOpen && (
+        <CreateModal
+          onClose={() => setIsCreateOpen(false)}
+          onCreateSuccess={handleCreateSuccess}
+        />
+      )}
 
       {/* ── Edit Modal ── */}
       {editingItem && (
@@ -769,6 +1331,36 @@ const PricingManagementPage: React.FC = () => {
           onClose={() => setEditingItem(null)}
           onSaveSuccess={handleSaveSuccess}
         />
+      )}
+
+      {historyItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 p-4 backdrop-blur-sm" onClick={() => setHistoryItem(null)}>
+          <div className="w-full max-w-xl rounded-2xl border border-slate-200 bg-white p-6 shadow-xl" onClick={(event) => event.stopPropagation()}>
+            <div className="mb-5 flex items-start justify-between gap-4">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-500">Pricing history</p>
+                <h2 className="mt-1 text-xl font-bold text-slate-900">{historyItem.name}</h2>
+              </div>
+              <button onClick={() => setHistoryItem(null)} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100" aria-label="Close pricing history"><X size={16} /></button>
+            </div>
+            {historyLoading ? <p className="py-8 text-center text-sm text-slate-500">Loading history…</p> : history.length === 0 ? (
+              <p className="rounded-xl border border-slate-200 bg-slate-50 p-5 text-sm text-slate-500">No pricing changes recorded yet.</p>
+            ) : (
+              <div className="max-h-96 space-y-3 overflow-y-auto">
+                {history.map((entry) => (
+                  <div key={entry.id} className="rounded-xl border border-slate-200 p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="font-semibold text-slate-900">{entry.previousValue.toLocaleString()} → {entry.newValue.toLocaleString()}</p>
+                      <time className="text-xs text-slate-400">{new Date(entry.changedAt).toLocaleString()}</time>
+                    </div>
+                    <p className="mt-1 text-xs text-slate-500">{entry.reason || 'No reason provided'}</p>
+                    <p className="mt-1 text-[10px] text-slate-400">Updated by: {entry.changedByName || (entry.changedByUserId ? 'Unknown user' : 'System')}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

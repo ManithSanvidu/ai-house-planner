@@ -1,5 +1,6 @@
+
 from pydantic import BaseModel, ConfigDict
-from typing import Optional
+
 
 class NormalizedDesignInput(BaseModel):
     model_config = ConfigDict(extra='forbid')
@@ -30,7 +31,7 @@ class NormalizedDesignInput(BaseModel):
     utility_room: bool
     parking_required: bool
     accessibility: bool
-    design_seed: Optional[int]
+    design_seed: int | None
 
     @classmethod
     def from_inputs(cls, req, plot):
