@@ -320,8 +320,8 @@ const HomePage: React.FC = () => {
           
           <div className="hidden lg:flex items-center gap-10 text-[11px] font-semibold tracking-[0.15em] text-gray-500 dark:text-gray-400">
             <Link to="/" className="text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors">HOME</Link>
-            <Link to="/dashboard/new-project" className="hover:text-gray-900 dark:hover:text-white transition-colors">AI DESIGN</Link>
-            <Link to="/dashboard" className="hover:text-gray-900 dark:hover:text-white transition-colors">MY PLANS</Link>
+            <Link to="/features" className="hover:text-gray-900 dark:hover:text-white transition-colors">FEATURES</Link>
+            <Link to="/gallery" className="hover:text-gray-900 dark:hover:text-white transition-colors">GALLERY</Link>
           </div>
 
           <div className="flex items-center gap-4 sm:gap-6">
@@ -356,8 +356,8 @@ const HomePage: React.FC = () => {
             className="fixed inset-0 z-40 bg-white/95 dark:bg-gray-950/95 backdrop-blur-xl flex flex-col items-center justify-center gap-8 lg:hidden"
           >
             <Link to="/" onClick={() => setIsMobileMenuOpen(false)} className="text-2xl font-semibold tracking-widest text-gray-900 dark:text-white">HOME</Link>
-            <Link to="/dashboard/new-project" onClick={() => setIsMobileMenuOpen(false)} className="text-2xl font-semibold tracking-widest text-gray-900 dark:text-white">AI DESIGN</Link>
-            <Link to="/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="text-2xl font-semibold tracking-widest text-gray-900 dark:text-white">MY PLANS</Link>
+            <Link to="/features" onClick={() => setIsMobileMenuOpen(false)} className="text-2xl font-semibold tracking-widest text-gray-900 dark:text-white">FEATURES</Link>
+            <Link to="/gallery" onClick={() => setIsMobileMenuOpen(false)} className="text-2xl font-semibold tracking-widest text-gray-900 dark:text-white">GALLERY</Link>
             <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} className="text-2xl font-semibold tracking-widest text-gray-500">SIGN IN</Link>
             <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} className="mt-8 bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-8 py-4 text-sm font-bold tracking-[0.15em]">
               START DESIGNING

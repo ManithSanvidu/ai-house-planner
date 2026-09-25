@@ -17,6 +17,7 @@ class WorkflowStatusView extends ConsumerStatefulWidget {
 class _WorkflowStatusViewState extends ConsumerState<WorkflowStatusView> {
   int _selectedTab = 0; // 0 = Floor Plan, 1 = Construction Plan
   int _selectedFloor = 1;
+  bool _actionLoading = false;
 
   @override
   Widget build(BuildContext context) {
@@ -175,7 +176,7 @@ class _WorkflowStatusViewState extends ConsumerState<WorkflowStatusView> {
             );
           }
 
-          final isCompleted = data.status == 'completed' || data.status == 'awaiting_approval' || data.status == 'design_generated';
+          final isCompleted = data.status == 'completed' || data.status == 'awaiting_approval' || data.status == 'design_generated' || data.status == 'awaiting_architect_review';
           if (!isCompleted) {
             return Center(
               child: Column(
@@ -262,57 +263,97 @@ class _WorkflowStatusViewState extends ConsumerState<WorkflowStatusView> {
               ),
 
               // Bottom Sticky Action Bar
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: const BoxDecoration(
-                  color: AppTokens.bg,
-                  border: Border(top: BorderSide(color: AppTokens.line)),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    ElevatedButton(
-                      onPressed: () {},
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTokens.emerald,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTokens.radiusButton)),
-                        minimumSize: const Size(double.infinity, 0),
-                        elevation: 0,
-                      ),
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.check, size: 18),
-                          SizedBox(width: 8),
-                          Text('Approve Design', style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold)),
-                        ],
-                      ),
+              if (data.status == 'awaiting_architect_review')
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: const BoxDecoration(
+                    color: AppTokens.bg,
+                    border: Border(top: BorderSide(color: AppTokens.line)),
+                  ),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    decoration: BoxDecoration(
+                      color: AppTokens.emeraldSoft,
+                      borderRadius: BorderRadius.circular(AppTokens.radiusButton),
+                      border: Border.all(color: AppTokens.emerald.withValues(alpha: 0.3)),
                     ),
-                    const SizedBox(height: 12),
-                    OutlinedButton(
-                      onPressed: () {},
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppTokens.ink,
-                        backgroundColor: Colors.white,
-                        side: const BorderSide(color: AppTokens.line, width: 1.4),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTokens.radiusButton)),
-                        minimumSize: const Size(double.infinity, 0),
-                      ),
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.refresh, size: 18),
-                          SizedBox(width: 8),
-                          Text('Request Revision', style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold)),
-                        ],
-                      ),
+                    child: const Center(
+                      child: Text('Request sent to architecture successfully', style: TextStyle(color: AppTokens.emerald, fontWeight: FontWeight.bold)),
                     ),
-                  ],
+                  ),
+                )
+              else
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: const BoxDecoration(
+                    color: AppTokens.bg,
+                    border: Border(top: BorderSide(color: AppTokens.line)),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ElevatedButton(
+                        onPressed: _actionLoading ? null : () async {
+                          setState(() => _actionLoading = true);
+                          try {
+                            await ref.read(workflowProvider(widget.workflowId).notifier).submitArchitectReview(design['designId']);
+                            // Success message handled by UI state change now
+                          } catch (e) {
+                            if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: AppTokens.red));
+                          } finally {
+                            if (mounted) setState(() => _actionLoading = false);
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTokens.emerald,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTokens.radiusButton)),
+                          minimumSize: const Size(double.infinity, 0),
+                          elevation: 0,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            if (_actionLoading) const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) else const Icon(Icons.send, size: 18),
+                            const SizedBox(width: 8),
+                            Text(_actionLoading ? 'Sending...' : 'Send Architecture Request', style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      OutlinedButton(
+                        onPressed: _actionLoading ? null : () async {
+                          setState(() => _actionLoading = true);
+                          try {
+                            await ref.read(workflowProvider(widget.workflowId).notifier).regenerateDesign(design['designId']);
+                            if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Regenerating design...')));
+                          } catch (e) {
+                            if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: AppTokens.red));
+                          } finally {
+                            if (mounted) setState(() => _actionLoading = false);
+                          }
+                        },
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppTokens.ink,
+                          backgroundColor: Colors.white,
+                          side: const BorderSide(color: AppTokens.line, width: 1.4),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTokens.radiusButton)),
+                          minimumSize: const Size(double.infinity, 0),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            if (_actionLoading) const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: AppTokens.ink, strokeWidth: 2)) else const Icon(Icons.refresh, size: 18),
+                            const SizedBox(width: 8),
+                            Text(_actionLoading ? 'Generating...' : 'Generate Another Design', style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
             ],
           );
         },
