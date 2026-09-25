@@ -146,7 +146,7 @@ def _submit_design(state: WorkflowState) -> str:
             error_msg = f"api_failed: {response.status_code} - {response.text}"
             print(f"[Design Agent] API submission failed: {error_msg}")
             return error_msg
-    except requests.RequestException as e:
+    except Exception as e:
         print(f"[Design Agent] Could not reach ASP.NET: {e}")
         return "api_call_skipped_local_dev"
 
@@ -175,7 +175,7 @@ def _safe_failure_reason(state: WorkflowState) -> str:
         messages.extend(item.get('failures', [])[:2])
     if not messages:
         messages = validation.get('failures', ['Design generation failed.'])
-
+        
     if messages:
         first = str(messages[0]).strip()
         if first.startswith('{"code":'):
@@ -183,9 +183,9 @@ def _safe_failure_reason(state: WorkflowState) -> str:
             try:
                 data = json.loads(first)
                 # If we exhausted the pool, there are no more alternatives.
-                data['hasAlternatives'] = False
+                data['hasAlternatives'] = False 
                 return json.dumps(data)
-            except json.JSONDecodeError:
+            except Exception:
                 return first
 
     return ' '.join(str(message) for message in messages)[:1000]
