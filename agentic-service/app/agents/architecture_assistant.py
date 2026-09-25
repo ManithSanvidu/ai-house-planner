@@ -91,6 +91,38 @@ Also identify 'missing_required_fields' (e.g. land_size, bedrooms) and 'user_goa
                 res['knowledge_context'] = []
                 res['rag_error'] = str(rag_err)
 
+        # Generate final response using context
+        if intent != 'UNKNOWN':
+            class FinalResponse(BaseModel):
+                message: str = Field(description="The final response to the user incorporating context")
+            
+            final_system_prompt = """You are an AI Architecture Assistant.
+Generate a helpful response to the user's message based on the provided context.
+
+RULES:
+1. For general/design/construction advice, use the RAG Knowledge Context.
+2. For design feasibility, combine the system feasibility result + RAG explanation.
+3. NEVER use RAG to override the deterministic feasibility result (e.g. if system says land is too small, agree with it).
+4. Clearly distinguish between "System Feasibility Result" and "General Architecture Guidance" in your response formatting.
+5. Do NOT claim structural or code approval. Always include a brief disclaimer that this is conceptual guidance only.
+"""
+            context_str = f"User Message: {message}\nIntent: {intent}\n"
+            if reqs and intent == 'DESIGN_REQUEST' and 'feasibility' in res:
+                context_str += f"System Feasibility Result: {res['feasibility']}\n"
+            elif reqs and intent == 'LAND_FEASIBILITY_ADVICE' and 'feasibility_advice' in res:
+                context_str += f"System Feasibility Advice: {res['feasibility_advice']}\n"
+            
+            if res.get('knowledge_context'):
+                context_str += "\nRAG Knowledge Context:\n"
+                for k in res['knowledge_context']:
+                    context_str += f"- {k['title']} ({k['category']}): {k['content']}\n"
+                    
+            try:
+                final_res = provider.generate_json(final_system_prompt, context_str, FinalResponse)
+                res['message'] = final_res.get('message', res['message'])
+            except Exception as e:
+                pass # Fallback to original message if second pass fails
+
         return res
     except Exception as e:
         return {
