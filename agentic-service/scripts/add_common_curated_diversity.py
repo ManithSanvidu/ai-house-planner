@@ -1,5 +1,5 @@
-"""Add a focused second set of hand-authored common-configuration plans."""
 from __future__ import annotations
+"""Add a focused second set of hand-authored common-configuration plans."""
 
 import json
 

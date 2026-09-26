@@ -3,6 +3,7 @@ import Card from '../common/Card';
 
 interface CostBreakdownCardProps {
   cost: CostSummaryDto | null;
+  hideTitle?: boolean;
 }
 
 const formatLkr = (value: number) => `LKR ${value.toLocaleString()}`;
@@ -15,10 +16,10 @@ const hasValidCostSummary = (cost: CostSummaryDto | null): cost is CostSummaryDt
   && Number.isFinite(cost.labourCostLkr)
   && Number.isFinite(cost.totalCostLkr);
 
-export const CostBreakdownCard = ({ cost }: CostBreakdownCardProps) => {
+export const CostBreakdownCard = ({ cost, hideTitle }: CostBreakdownCardProps) => {
   if (!hasValidCostSummary(cost)) {
     return (
-      <Card title="Cost Estimate" subtitle="Current construction cost breakdown for this design.">
+      <Card title={hideTitle ? undefined : "Cost Estimate"} subtitle={hideTitle ? undefined : "Current construction cost breakdown for this design."}>
         <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-5 py-8 text-center">
           <p className="text-sm text-zinc-600">Cost estimate is not available yet.</p>
         </div>
@@ -63,7 +64,7 @@ export const CostBreakdownCard = ({ cost }: CostBreakdownCardProps) => {
   };
 
   return (
-    <Card title="Cost Estimate" subtitle="Current construction cost breakdown for this design.">
+    <Card title={hideTitle ? undefined : "Cost Estimate"} subtitle={hideTitle ? undefined : "Current construction cost breakdown for this design."}>
       <div className="space-y-6">
         <div className="flex flex-wrap gap-x-6 gap-y-2 rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-xs text-zinc-600">
           {cost.formulaVersion && <span>Method: <strong>{cost.formulaVersion}</strong></span>}

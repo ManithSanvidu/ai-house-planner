@@ -1,4 +1,4 @@
-﻿import axios from 'axios';
+import axios from 'axios';
 import { supabase } from '../lib/supabase';
 import type { CostSummaryDto } from './workflowService';
 
@@ -133,6 +133,11 @@ export const constructorWorkflowService = {
         return response.data;
     },
 
+    getConstructorRequest: async (requestId: string) => {
+        const response = await axios.get(`${API_URL}/requests/${requestId}`, { headers: await getAuthHeaders() });
+        return response.data;
+    },
+
     acceptRequest: async (requestId: string) => {
         const response = await axios.post(`${API_URL}/requests/${requestId}/accept`, {}, { headers: await getAuthHeaders() });
         return response.data;
@@ -155,6 +160,11 @@ export const constructorWorkflowService = {
 
     updatePhaseSchedule: async (projectId: string, phaseId: string, plannedDurationDays: number): Promise<ConstructionPhase> => {
         const response = await axios.put(`${API_URL}/projects/${projectId}/phases/${phaseId}/schedule`, { plannedDurationDays }, { headers: await getAuthHeaders() });
+        return response.data;
+    },
+
+    updatePhaseStatus: async (projectId: string, phaseId: string, status: string): Promise<ConstructionPhase> => {
+        const response = await axios.patch(`${API_URL}/projects/${projectId}/phases/${phaseId}/status`, { status }, { headers: await getAuthHeaders() });
         return response.data;
     }
 };

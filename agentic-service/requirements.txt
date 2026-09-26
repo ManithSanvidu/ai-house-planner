@@ -36,6 +36,7 @@ pydantic
 pydantic_core
 Pygments
 pytest
+psycopg2-binary
 python-dotenv
 PyYAML
 requests

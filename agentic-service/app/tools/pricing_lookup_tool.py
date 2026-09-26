@@ -1,3 +1,4 @@
+from typing import Optional, Union
 """
 Pricing lookup tool for Cost Estimation Agent (Component C).
 
@@ -23,11 +24,11 @@ class PricingLookupError(Exception):
 
 
 def pricing_lookup_tool(
-    api_url: str | None = None,
-    api_key: str | None = None,
+    api_url: Optional[str] = None,
+    api_key: Optional[str] = None,
     timeout: int = 10,
-    region: str | None = None,
-    quality_level: str | None = None,
+    region: Optional[str] = None,
+    quality_level: Optional[str] = None,
 ) -> list[PricingItem]:
     """
     Fetch current pricing catalog from ASP.NET backend.

@@ -196,6 +196,8 @@ export const workflowService = {
     });
     return response.data;
   },
+  checkCompatibility: async (payload: any) =>
+    (await apiClient.post('/design-compatibility/options', payload)).data,
   getMyDesigns: async (): Promise<WorkflowDesignHistoryDto[]> =>
     (await apiClient.get<WorkflowDesignHistoryDto[]>('/workflows/designs')).data,
   getDesigns: async (id: string): Promise<WorkflowDesignHistoryDto> =>

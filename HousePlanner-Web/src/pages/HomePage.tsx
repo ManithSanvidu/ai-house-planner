@@ -1,11 +1,11 @@
 import React, { useRef, useState, Suspense, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Html, useGLTF } from '@react-three/drei';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
-import { Mic, ArrowRight, Sparkles, Box, Moon, Sun, ChevronRight, ChevronLeft, Menu, X } from 'lucide-react';
+import { ArrowRight, Sparkles, Box, Moon, Sun, Menu, X, MessageSquare, Map, ClipboardCheck, Home, PenTool, HardHat, CheckCircle2, ShieldCheck, Activity } from 'lucide-react';
 import * as THREE from 'three';
-
+import apiClient from '../services/apiClient';
 // ---------------------------------------------------------
 // 3D Components
 // ---------------------------------------------------------
@@ -249,14 +249,10 @@ const HouseScene = ({ isDark }: { isDark: boolean }) => {
 // Page Component
 // ---------------------------------------------------------
 
-const carouselImages = [
-  "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?q=80&w=1000&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1600566752355-35792bedcfea?q=80&w=1000&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1556912173-3bb406ef7e77?q=80&w=1000&auto=format&fit=crop"
-];
 
 const HomePage: React.FC = () => {
   const { scrollY } = useScroll();
+  const navigate = useNavigate();
   
   // Theme Toggle with LocalStorage for persistence
   const [isDark, setIsDark] = useState(() => {
@@ -284,21 +280,52 @@ const HomePage: React.FC = () => {
   const heroOpacity = useTransform(scrollY, [0, 300], [1, 0]);
   const heroY = useTransform(scrollY, [0, 300], [0, -50]);
 
+  type ChatMessage = {
+    role: 'user' | 'assistant';
+    content: string;
+    action?: any;
+    intent?: string;
+  };
+
   const [prompt, setPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
-  const [currentImgIndex, setCurrentImgIndex] = useState(0);
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const handleGenerate = (e: React.FormEvent) => {
+  const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!prompt) return;
     setIsGenerating(true);
-    setTimeout(() => setIsGenerating(false), 3000);
+    const currentPrompt = prompt;
+    setPrompt(''); // clear input immediately
+    
+    // Add user message to UI history
+    setChatHistory(prev => [...prev, { role: 'user', content: currentPrompt }]);
+    
+    try {
+      const historyToSend = chatHistory.map(msg => ({ role: msg.role, content: msg.content }));
+      const { data } = await apiClient.post('/assistant/interpret', { 
+        message: currentPrompt,
+        history: historyToSend 
+      });
+      if (data.reply) {
+        setChatHistory(prev => [...prev, { 
+          role: 'assistant', 
+          content: data.reply,
+          action: data.action,
+          intent: data.intent
+        }]);
+      }
+    } catch (err) {
+      console.error('Assistant error:', err);
+      setChatHistory(prev => [...prev, { role: 'assistant', content: 'Failed to interpret message.' }]);
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
-  const nextImg = () => setCurrentImgIndex((prev) => (prev + 1) % carouselImages.length);
-  const prevImg = () => setCurrentImgIndex((prev) => (prev - 1 + carouselImages.length) % carouselImages.length);
-
+  
   return (
     <div className={`font-sans selection:bg-gray-900 dark:selection:bg-white selection:text-white dark:selection:text-gray-900 min-h-screen relative overflow-x-hidden bg-[#fcfcfd] dark:bg-gray-950 transition-colors duration-300`}>
       
@@ -392,275 +419,207 @@ const HomePage: React.FC = () => {
           style={{ opacity: heroOpacity, y: heroY }}
           className="relative z-10 w-full max-w-[1600px] mx-auto px-6 sm:px-8 pointer-events-none flex flex-col justify-center h-full order-1 lg:order-none mt-10 lg:mt-0"
         >
-          <div className="w-full lg:max-w-[45%] pointer-events-auto">
+          <div className="w-full lg:max-w-[45%] pointer-events-auto bg-[#fcfcfd]/70 dark:bg-gray-950/70 lg:bg-transparent lg:dark:bg-transparent backdrop-blur-md lg:backdrop-blur-none p-6 lg:p-0 rounded-3xl lg:rounded-none">
             <div className="inline-block mb-6">
               <p className="text-[10px] font-bold tracking-[0.2em] text-gray-500 dark:text-gray-400 flex items-center gap-2">
                 <span className="w-8 h-[1px] bg-gray-300 dark:bg-gray-700 transition-colors"></span>
-                AI-POWERED ARCHITECTURE
+                AI-ASSISTED HOME PLANNING
               </p>
             </div>
             
-            <h1 className="text-4xl sm:text-5xl lg:text-[5rem] font-medium text-gray-900 dark:text-white tracking-tight leading-[1.1] lg:leading-[1.05] mb-6 font-serif transition-colors">
-              Design the Home<br/>
+            <h1 className="text-4xl sm:text-5xl lg:text-[4.2rem] font-medium text-gray-900 dark:text-white tracking-tight leading-[1.1] lg:leading-[1.05] mb-6 font-serif transition-colors">
+              Design Smarter.<br/>
               <span className="relative inline-block text-gray-800 dark:text-gray-300 transition-colors">
-                You Imagine.
+                Build with Confidence.
               </span>
             </h1>
             
             <p className="text-base sm:text-lg text-gray-500 dark:text-gray-400 mb-10 leading-relaxed font-light lg:pr-10 transition-colors">
-              Turn your ideas into intelligent architecture, immersive 3D spaces, and build-ready plans.
+              HomePlannerAI helps you validate land and home requirements, explore suitable design options, collaborate with architects, and move into construction planning.
             </p>
             
-            <div className="flex flex-col sm:flex-row gap-4 mb-12">
-              <Link to="/login" className="bg-gray-900 dark:bg-white hover:bg-black dark:hover:bg-gray-200 text-white dark:text-gray-900 px-8 py-4 text-xs font-bold tracking-[0.15em] transition-all flex items-center justify-center gap-3 w-max">
+            <div className="flex flex-col sm:flex-row gap-4 mb-4">
+              <Link to="/login" className="bg-gray-900 dark:bg-white hover:bg-black dark:hover:bg-gray-200 text-white dark:text-gray-900 px-8 py-4 text-xs font-bold tracking-[0.15em] transition-all flex items-center justify-center gap-3 w-max rounded-xl lg:rounded-none">
                 START DESIGNING <ArrowRight size={16} />
               </Link>
+              <button onClick={() => setIsChatOpen(true)} className="bg-transparent border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-900 dark:text-white px-8 py-4 text-xs font-bold tracking-[0.15em] transition-all flex items-center justify-center gap-3 w-max rounded-xl lg:rounded-none">
+                ASK AI ARCHITECT <MessageSquare size={16} />
+              </button>
             </div>
-
-            {/* AI Prompt Bar embedded below text */}
-            <div className="w-full max-w-xl">
-              <motion.div 
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.5, duration: 0.8 }}
-                className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border border-gray-200 dark:border-gray-800 p-2 rounded-2xl shadow-xl flex flex-col relative overflow-hidden transition-colors"
-              >
-                {/* Scanning animation overlay */}
-                <AnimatePresence>
-                  {isGenerating && (
-                    <motion.div 
-                      initial={{ left: '-100%' }}
-                      animate={{ left: '200%' }}
-                      transition={{ duration: 1.5, ease: "linear", repeat: Infinity }}
-                      className="absolute top-0 bottom-0 w-1/2 bg-gradient-to-r from-transparent via-blue-400/20 dark:via-blue-500/20 to-transparent z-0 pointer-events-none skew-x-12"
-                    />
-                  )}
-                </AnimatePresence>
-
-                <div className="flex items-center gap-2 px-4 pt-2 pb-1 relative z-10">
-                  <Sparkles size={12} className="text-yellow-600" />
-                  <span className="text-[9px] font-bold tracking-[0.2em] text-gray-500 dark:text-gray-400">AI ARCHITECT</span>
-                </div>
-                
-                <form onSubmit={handleGenerate} className="flex items-center gap-2 relative z-10">
-                  <input
-                    type="text"
-                    value={prompt}
-                    onChange={(e) => setPrompt(e.target.value)}
-                    placeholder="Describe your dream home..."
-                    className="flex-1 bg-transparent border-none focus:ring-0 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 px-4 py-3 outline-none text-sm font-light transition-colors"
-                  />
-                  <button type="button" className="p-3 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors hidden sm:block">
-                    <Mic size={18} />
-                  </button>
-                  <button 
-                    type="submit"
-                    disabled={isGenerating}
-                    className="bg-gray-900 dark:bg-white hover:bg-black dark:hover:bg-gray-200 text-white dark:text-gray-900 px-6 py-3 rounded-xl text-xs font-bold tracking-[0.1em] transition-colors disabled:opacity-70 flex items-center gap-2"
-                  >
-                    {isGenerating ? 'ANALYZING' : 'GENERATE'}
-                  </button>
-                </form>
-              </motion.div>
-            </div>
+            <p className="text-xs text-gray-400 dark:text-gray-500 lg:max-w-sm ml-2">
+              Ask about land size, bedroom count, layout suitability, and planning ideas.
+            </p>
           </div>
         </motion.div>
-
       </section>
 
-      {/* 8. SMALL SECOND SECTION */}
-      <section className="py-32 bg-white dark:bg-gray-900 relative z-10 transition-colors duration-300">
+      {/* SECTION 2 - AI ARCHITECT ASSISTANT */}
+      <section className="py-24 bg-white dark:bg-gray-900 relative z-10 transition-colors duration-300 border-t border-gray-100 dark:border-gray-800">
+        <div className="max-w-[1400px] mx-auto px-6 grid lg:grid-cols-2 gap-16 items-center">
+          <div>
+            <p className="text-[10px] font-bold tracking-[0.2em] text-blue-600 dark:text-blue-400 mb-4 transition-colors">AI ARCHITECT ASSISTANT</p>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-medium text-gray-900 dark:text-white tracking-tight font-serif mb-6 transition-colors">
+              Talk to the AI Architect Before You Design
+            </h2>
+            <p className="text-base sm:text-lg text-gray-500 dark:text-gray-400 mb-8 leading-relaxed font-light transition-colors">
+              Ask planning questions about land size, room counts, layout ideas, or construction-related decisions before starting a full design workflow.
+            </p>
+            <button onClick={() => setIsChatOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 text-xs font-bold tracking-[0.15em] transition-all flex items-center justify-center gap-3 w-max rounded-xl shadow-lg shadow-blue-900/20">
+              OPEN AI ARCHITECT <MessageSquare size={16} />
+            </button>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div onClick={() => { setPrompt("I have 25 perch land. How many bedrooms are suitable?"); setIsChatOpen(true); }} className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-2xl border border-gray-100 dark:border-gray-800 cursor-pointer hover:border-blue-300 dark:hover:border-blue-800 transition-colors group">
+              <MessageSquare className="text-gray-400 mb-4 group-hover:text-blue-500 transition-colors" size={20} />
+              <p className="text-sm text-gray-700 dark:text-gray-300 font-medium">"I have 25 perch land. How many bedrooms are suitable?"</p>
+            </div>
+            <div onClick={() => { setPrompt("Is 2 bedrooms and 12 bathrooms realistic?"); setIsChatOpen(true); }} className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-2xl border border-gray-100 dark:border-gray-800 cursor-pointer hover:border-blue-300 dark:hover:border-blue-800 transition-colors group">
+              <MessageSquare className="text-gray-400 mb-4 group-hover:text-blue-500 transition-colors" size={20} />
+              <p className="text-sm text-gray-700 dark:text-gray-300 font-medium">"Is 2 bedrooms and 12 bathrooms realistic?"</p>
+            </div>
+            <div onClick={() => { setPrompt("What house layout fits a narrow plot?"); setIsChatOpen(true); }} className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-2xl border border-gray-100 dark:border-gray-800 cursor-pointer hover:border-blue-300 dark:hover:border-blue-800 transition-colors group">
+              <MessageSquare className="text-gray-400 mb-4 group-hover:text-blue-500 transition-colors" size={20} />
+              <p className="text-sm text-gray-700 dark:text-gray-300 font-medium">"What house layout fits a narrow plot?"</p>
+            </div>
+            <div onClick={() => { setPrompt("Can I build a 2-floor home on this site?"); setIsChatOpen(true); }} className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-2xl border border-gray-100 dark:border-gray-800 cursor-pointer hover:border-blue-300 dark:hover:border-blue-800 transition-colors group">
+              <MessageSquare className="text-gray-400 mb-4 group-hover:text-blue-500 transition-colors" size={20} />
+              <p className="text-sm text-gray-700 dark:text-gray-300 font-medium">"Can I build a 2-floor home on this site?"</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION 3 - CAPABILITIES GRID */}
+      <section className="py-24 bg-[#fcfcfd] dark:bg-gray-950 relative z-10 transition-colors duration-300 border-t border-gray-100 dark:border-gray-800">
         <div className="max-w-[1400px] mx-auto px-6">
-          <div className="mb-20">
-            <p className="text-[10px] font-bold tracking-[0.2em] text-gray-500 dark:text-gray-400 mb-4 transition-colors">FROM IDEA TO ARCHITECTURE</p>
-            <h2 className="text-4xl lg:text-5xl font-medium text-gray-900 dark:text-white tracking-tight max-w-2xl font-serif transition-colors">
-              One intelligent platform for imagining, designing and visualizing your future home.
+          <div className="mb-16 text-center">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-medium text-gray-900 dark:text-white tracking-tight font-serif transition-colors">
+              What HomePlannerAI Helps You Do
             </h2>
           </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-8 rounded-3xl hover:border-blue-500/50 dark:hover:border-blue-500/50 transition-colors group">
+              <Map className="text-blue-600 dark:text-blue-400 mb-6 group-hover:scale-110 transition-transform" size={32} />
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">Land Analysis</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">Capture site dimensions, land size, and planning context to understand what is realistically possible.</p>
+            </div>
+            
+            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-8 rounded-3xl hover:border-indigo-500/50 dark:hover:border-indigo-500/50 transition-colors group">
+              <ClipboardCheck className="text-indigo-600 dark:text-indigo-400 mb-6 group-hover:scale-110 transition-transform" size={32} />
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">Requirement Validation</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">Check whether requested bedrooms, bathrooms, floors, and features are suitable for the land.</p>
+            </div>
+            
+            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-8 rounded-3xl hover:border-purple-500/50 dark:hover:border-purple-500/50 transition-colors group">
+              <Home className="text-purple-600 dark:text-purple-400 mb-6 group-hover:scale-110 transition-transform" size={32} />
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">AI-Assisted Design</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">Explore home design options that align with validated land and requirement inputs.</p>
+            </div>
+            
+            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-8 rounded-3xl hover:border-amber-500/50 dark:hover:border-amber-500/50 transition-colors group">
+              <PenTool className="text-amber-600 dark:text-amber-400 mb-6 group-hover:scale-110 transition-transform" size={32} />
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">Architect Review</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">Send selected designs for review and track approval status through the workflow.</p>
+            </div>
+            
+            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-8 rounded-3xl hover:border-rose-500/50 dark:hover:border-rose-500/50 transition-colors group">
+              <HardHat className="text-rose-600 dark:text-rose-400 mb-6 group-hover:scale-110 transition-transform" size={32} />
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">Constructor Workflow</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">Request construction support and manage project progress after approval.</p>
+            </div>
+            
+            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-8 rounded-3xl hover:border-emerald-500/50 dark:hover:border-emerald-500/50 transition-colors group">
+              <Activity className="text-emerald-600 dark:text-emerald-400 mb-6 group-hover:scale-110 transition-transform" size={32} />
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">Progress Tracking</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">Follow phases, daily logs, and schedule updates during construction.</p>
+            </div>
+          </div>
+        </div>
+      </section>
 
-          <div className="grid md:grid-cols-3 gap-12">
+      {/* SECTION 4 - HOW IT WORKS */}
+      <section className="py-24 bg-white dark:bg-gray-900 relative z-10 transition-colors duration-300">
+        <div className="max-w-[1400px] mx-auto px-6">
+          <div className="mb-16 text-center">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-medium text-gray-900 dark:text-white tracking-tight font-serif transition-colors">
+              How It Works
+            </h2>
+          </div>
+          
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 relative">
+            <div className="hidden lg:block absolute top-12 left-[10%] right-[10%] h-[1px] bg-gray-200 dark:bg-gray-800 z-0"></div>
+            
             {[
-              { 
-                num: '01', 
-                title: 'DESCRIBE', 
-                desc: 'Tell AI what your dream home should look like using natural language or reference images.',
-                img: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=800&auto=format&fit=crop'
-              },
-              { 
-                num: '02', 
-                title: 'DESIGN', 
-                desc: 'AI generates an intelligent architectural concept, calculating structural logic and cost.',
-                img: 'https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?q=80&w=800&auto=format&fit=crop'
-              },
-              { 
-                num: '03', 
-                title: 'VISUALIZE', 
-                desc: 'Explore your home in immersive 3D, adjusting materials, layouts, and lighting instantly.',
-                img: 'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?q=80&w=800&auto=format&fit=crop'
-              }
+              { num: '01', title: 'Enter Land Details', desc: 'Provide land size, dimensions, and site context.' },
+              { num: '02', title: 'Add House Requirements', desc: 'Tell us the bedrooms, bathrooms, floors, and features you want.' },
+              { num: '03', title: 'Validate Feasibility', desc: 'The system checks whether the request is suitable.' },
+              { num: '04', title: 'Explore Design Options', desc: 'View AI-assisted design options matched to your needs.' },
+              { num: '05', title: 'Get Architect Approval', desc: 'Send a chosen design for architect review.' },
+              { num: '06', title: 'Start Construction Tracking', desc: 'Move into construction requests, phases, and daily tracking.' }
             ].map((step, i) => (
-              <div key={i} className="group cursor-pointer">
-                <div className="h-48 bg-gray-100 dark:bg-gray-800 mb-8 overflow-hidden relative rounded-xl shadow-sm transition-colors">
-                  <img src={step.img} alt={step.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+              <div key={i} className="relative z-10 flex flex-col items-center text-center">
+                <div className="w-24 h-24 bg-[#fcfcfd] dark:bg-gray-950 border-4 border-white dark:border-gray-900 rounded-full flex items-center justify-center shadow-lg mb-6 text-gray-300 dark:text-gray-700 text-3xl font-bold font-serif">
+                  {step.num}
                 </div>
-                <div className="flex items-baseline gap-4 mb-3">
-                  <span className="text-xs font-mono text-gray-400 dark:text-gray-500 transition-colors">{step.num} —</span>
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-white tracking-wide transition-colors">{step.title}</h3>
-                </div>
-                <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed font-light transition-colors">{step.desc}</p>
+                <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-3 tracking-wide">{step.title}</h4>
+                <p className="text-xs text-gray-500 dark:text-gray-400 max-w-[150px] leading-relaxed">{step.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* NEW SECTION 1: Beautiful Rooms & Floor Plans */}
-      <section className="py-32 bg-white dark:bg-gray-900 relative z-10 border-t border-gray-100 dark:border-gray-800 transition-colors duration-300">
-        <div className="max-w-[1400px] mx-auto px-6 grid lg:grid-cols-2 gap-16 items-center">
-          {/* Left: Tall Image Carousel */}
-          <div className="relative h-[400px] lg:h-[600px] rounded-3xl overflow-hidden group">
-            <AnimatePresence initial={false}>
-              <motion.img 
-                key={currentImgIndex}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.5 }}
-                src={carouselImages[currentImgIndex]} 
-                alt="Beautiful Bathroom" 
-                className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
-              />
-            </AnimatePresence>
-            {/* Overlay UI */}
-            <div className="absolute bottom-6 left-6 flex items-center gap-2 text-white/80 z-10">
-              <Box size={16} />
-              <span className="text-xs font-medium tracking-wide">Created in Home Planner</span>
-            </div>
-            <div className="absolute bottom-6 right-6 flex items-center gap-3 z-10">
-              <button onClick={prevImg} className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white hover:bg-black/60 transition-colors">
-                <ChevronLeft size={20} />
-              </button>
-              <button onClick={nextImg} className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white hover:bg-black/60 transition-colors">
-                <ChevronRight size={20} />
-              </button>
-            </div>
-          </div>
-
-          {/* Right: Content blocks */}
-          <div className="flex flex-col gap-16">
-            <div className="grid sm:grid-cols-2 gap-8 items-center">
-              <div>
-                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4 leading-tight transition-colors">Beautiful Rooms —<br/>No Experience Needed</h3>
-                <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed transition-colors">Create detailed layouts, arrange furniture freely, and see exactly how your space will look before making changes in real life.</p>
-              </div>
-              <div className="bg-gray-100 dark:bg-gray-800 rounded-2xl h-48 overflow-hidden transition-colors">
-                <img src="https://images.unsplash.com/photo-1600607686527-6fb886090705?q=80&w=600&auto=format&fit=crop" alt="3D Floor Plan" className="w-full h-full object-cover mix-blend-multiply dark:mix-blend-normal opacity-90" />
-              </div>
-            </div>
-
-            <div className="grid sm:grid-cols-2 gap-8 items-center">
-              <div>
-                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4 leading-tight transition-colors">See Your Floor Plan<br/>Come to Life in 3D</h3>
-                <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed transition-colors">Upload a photo or blueprint, and let AI instantly analyze and convert it into an editable 3D floor plan.</p>
-              </div>
-              <div className="bg-gray-100 dark:bg-gray-800 rounded-2xl h-48 overflow-hidden p-6 flex items-center justify-center transition-colors">
-                {/* Simulated 2D Blueprint */}
-                <div className="w-full h-full border-2 border-gray-800 dark:border-gray-400 rounded relative bg-white dark:bg-gray-700 transition-colors">
-                   <div className="absolute top-1/2 left-0 w-full h-[2px] bg-gray-800 dark:bg-gray-400 transition-colors"></div>
-                   <div className="absolute top-0 left-1/3 w-[2px] h-full bg-gray-800 dark:bg-gray-400 transition-colors"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* NEW SECTION 2: Design with precision */}
-      <section className="py-24 bg-[#fcfcfd] dark:bg-gray-950 relative z-10 transition-colors duration-300">
-        <div className="max-w-[1400px] mx-auto px-6">
-          <div className="bg-white dark:bg-gray-900 rounded-[2.5rem] p-10 lg:p-16 border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
-            <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-3 transition-colors">Design your room with precision</h2>
-            <p className="text-gray-500 dark:text-gray-400 mb-10 transition-colors">Not just ideas — real projects built in Home Planner. Move, customize, and recreate every detail in your own 3D design.</p>
-            
-            {/* Categories */}
-            <div className="flex flex-wrap items-center gap-3 mb-10">
-              <button className="px-6 py-2.5 bg-black dark:bg-white text-white dark:text-gray-900 rounded-full text-sm font-semibold transition-colors">Living Room</button>
-              <button className="px-6 py-2.5 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full text-sm font-semibold transition-colors">Bedroom</button>
-              <button className="px-6 py-2.5 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full text-sm font-semibold transition-colors">Kitchen</button>
-              <button className="px-6 py-2.5 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full text-sm font-semibold transition-colors">Bathroom</button>
-              <button className="px-6 py-2.5 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full text-sm font-semibold transition-colors">Outdoor Space</button>
-              <button className="px-6 py-2.5 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full text-sm font-semibold transition-colors">20+ Other Rooms</button>
-            </div>
-
-            <div className="grid lg:grid-cols-3 gap-8">
-              {/* Left Large Image */}
-              <div className="lg:col-span-2 relative rounded-3xl overflow-hidden h-[300px] sm:h-[400px] lg:h-[500px]">
-                <img src="https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?q=80&w=1200&auto=format&fit=crop" alt="Living Room" className="w-full h-full object-cover" />
-                {/* Interactive Tags */}
-                <div className="absolute top-1/3 left-1/3 w-8 h-8 bg-black/50 backdrop-blur-md rounded-full flex items-center justify-center border border-white/30 cursor-pointer animate-pulse hover:scale-125 transition-transform">
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                </div>
-                <div className="absolute bottom-1/4 right-1/4 w-8 h-8 bg-black/50 backdrop-blur-md rounded-full flex items-center justify-center border border-white/30 cursor-pointer animate-pulse hover:scale-125 transition-transform">
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                </div>
-                <div className="absolute bottom-6 left-6 flex items-center gap-2 text-white/80">
-                  <Box size={16} />
-                  <span className="text-xs font-medium tracking-wide">Created in Home Planner</span>
-                </div>
-              </div>
-
-              {/* Right Products */}
-              <div className="flex flex-col justify-between h-[auto] lg:h-[500px] gap-6 lg:gap-0 mt-6 lg:mt-0">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <div className="bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-4 aspect-square flex items-center justify-center mb-3 transition-colors">
-                      <div className="w-20 h-20 bg-gray-200 dark:bg-gray-700 rounded-full transition-colors"></div>
-                    </div>
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white transition-colors">Mirror Silver</p>
-                  </div>
-                  <div>
-                    <div className="bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-4 aspect-square flex items-center justify-center mb-3 transition-colors">
-                      <div className="w-24 h-12 bg-gray-300 dark:bg-gray-600 rounded transition-colors"></div>
-                    </div>
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white transition-colors">Sofa SKEJBY</p>
-                  </div>
-                  <div>
-                    <div className="bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-4 aspect-square flex items-center justify-center mb-3 transition-colors">
-                      <div className="w-8 h-16 bg-green-800 rounded-t-full rounded-b-md"></div>
-                    </div>
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white transition-colors">Ficus Benjamina</p>
-                  </div>
-                  <div>
-                    <div className="bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-4 aspect-square flex items-center justify-center mb-3 transition-colors">
-                      <div className="w-16 h-8 bg-amber-700 rounded-full"></div>
-                    </div>
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white transition-colors">Molly Coffee Table</p>
-                  </div>
-                </div>
-                
-                <button className="w-full py-4 bg-black dark:bg-white hover:bg-gray-900 dark:hover:bg-gray-200 text-white dark:text-gray-900 rounded-xl font-bold transition-colors">
-                  Try it for free
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 9. FINAL CTA */}
-      <section className="py-32 bg-gray-900 text-white relative overflow-hidden">
-        <div className="absolute inset-0 opacity-5 pointer-events-none" style={{ backgroundImage: 'linear-gradient(#ffffff 1px, transparent 1px), linear-gradient(90deg, #ffffff 1px, transparent 1px)', backgroundSize: '50px 50px' }}></div>
-        
-        <div className="max-w-[1400px] mx-auto px-6 relative z-10 text-center flex flex-col items-center">
-          <h2 className="text-5xl lg:text-7xl font-medium tracking-tight mb-6 font-serif">
-            Your Dream Home<br/>Starts With an Idea.
+      {/* SECTION 5 - VALIDATION / TRUST */}
+      <section className="py-24 bg-gray-50 dark:bg-gray-800/50 relative z-10 transition-colors duration-300">
+        <div className="max-w-[1000px] mx-auto px-6 text-center">
+          <h2 className="text-3xl lg:text-4xl font-medium text-gray-900 dark:text-white tracking-tight font-serif mb-6 transition-colors">
+            AI Guidance with Smart Validation
           </h2>
-          <p className="text-xl text-gray-400 font-light mb-12">
-            Let AI turn that idea into architecture.
+          <p className="text-lg text-gray-600 dark:text-gray-400 mb-12 leading-relaxed max-w-3xl mx-auto transition-colors">
+            HomePlannerAI does not generate blindly. It helps assess whether a request is suitable for the land and planning context before moving users into design workflows.
           </p>
-          <Link to="/login" className="bg-white hover:bg-gray-100 text-gray-900 px-10 py-5 text-xs font-bold tracking-[0.15em] transition-all flex items-center justify-center gap-3 w-max">
-            CREATE YOUR HOME <ArrowRight size={16} />
-          </Link>
+          
+          <div className="flex flex-col sm:flex-row justify-center gap-6 sm:gap-12 mb-16">
+            <div className="flex items-center justify-center gap-3 text-gray-900 dark:text-white font-medium bg-white dark:bg-gray-900 px-6 py-3 rounded-full border border-gray-200 dark:border-gray-800 shadow-sm">
+              <ShieldCheck className="text-blue-500" size={20} />
+              <span className="text-sm">Feasibility-aware guidance</span>
+            </div>
+            <div className="flex items-center justify-center gap-3 text-gray-900 dark:text-white font-medium bg-white dark:bg-gray-900 px-6 py-3 rounded-full border border-gray-200 dark:border-gray-800 shadow-sm">
+              <CheckCircle2 className="text-indigo-500" size={20} />
+              <span className="text-sm">Requirement sanity checks</span>
+            </div>
+            <div className="flex items-center justify-center gap-3 text-gray-900 dark:text-white font-medium bg-white dark:bg-gray-900 px-6 py-3 rounded-full border border-gray-200 dark:border-gray-800 shadow-sm">
+              <PenTool className="text-amber-500" size={20} />
+              <span className="text-sm">Architect review support</span>
+            </div>
+          </div>
+          
+          <p className="text-xs text-gray-400 dark:text-gray-500 max-w-2xl mx-auto italic transition-colors">
+            HomePlannerAI supports conceptual planning and workflow management. Final architectural, structural, and regulatory decisions must be confirmed by qualified professionals.
+          </p>
+        </div>
+      </section>
+
+      {/* SECTION 6 - CTA */}
+      <section className="py-32 bg-gray-900 text-white relative overflow-hidden">
+        <div className="absolute inset-0 opacity-10 pointer-events-none bg-[url('https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=2000&auto=format&fit=crop')] bg-cover bg-center mix-blend-overlay"></div>
+        <div className="max-w-[1400px] mx-auto px-6 relative z-10 text-center flex flex-col items-center">
+          <h2 className="text-4xl lg:text-6xl font-medium tracking-tight mb-12 font-serif">
+            Ready to start planning your home?
+          </h2>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <Link to="/login" className="bg-white hover:bg-gray-100 text-gray-900 px-10 py-5 text-xs font-bold tracking-[0.15em] transition-all flex items-center justify-center gap-3 w-max">
+              START NEW PROJECT <ArrowRight size={16} />
+            </Link>
+            <Link to="/gallery" className="bg-transparent border border-gray-600 hover:border-white text-white px-10 py-5 text-xs font-bold tracking-[0.15em] transition-all flex items-center justify-center gap-3 w-max">
+              BROWSE PLANS
+            </Link>
+            <button onClick={() => setIsChatOpen(true)} className="bg-transparent border border-gray-600 hover:border-white text-white px-10 py-5 text-xs font-bold tracking-[0.15em] transition-all flex items-center justify-center gap-3 w-max">
+              ASK AI ARCHITECT <MessageSquare size={16} />
+            </button>
+          </div>
         </div>
       </section>
 
@@ -710,7 +669,7 @@ const HomePage: React.FC = () => {
           </div>
           
           <div className="pt-8 border-t border-gray-100 dark:border-gray-800 flex flex-col md:flex-row items-center justify-between gap-4 transition-colors">
-            <p className="text-xs text-gray-400">© 2026 HomePlanner AI. All rights reserved.</p>
+            <p className="text-xs text-gray-400">© 2026 HomePlanner AI. Developed by Team Slytherin with ❤️.</p>
             <div className="flex items-center gap-4 text-gray-400">
               <a href="#" className="hover:text-gray-900 dark:hover:text-white transition-colors"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg></a>
               <a href="#" className="hover:text-gray-900 dark:hover:text-white transition-colors"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"></path></svg></a>
@@ -720,6 +679,137 @@ const HomePage: React.FC = () => {
         </div>
       </footer>
       
+      {/* FLOATING CHAT WIDGET */}
+      <AnimatePresence>
+        {isChatOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            transition={{ duration: 0.2 }}
+            className="fixed bottom-6 right-6 z-50 w-[420px] max-w-[calc(100vw-2rem)] bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border border-gray-200 dark:border-gray-800 rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 bg-gray-50/80 dark:bg-gray-800/80 border-b border-gray-100 dark:border-gray-800">
+              <div className="flex items-center gap-2">
+                <Sparkles size={14} className="text-yellow-600" />
+                <span className="text-[10px] font-bold tracking-[0.2em] text-gray-700 dark:text-gray-300">AI ARCHITECT</span>
+              </div>
+              <div className="flex items-center gap-4">
+                {chatHistory.length > 0 && (
+                  <button type="button" onClick={() => setChatHistory([])} className="text-[10px] uppercase font-bold tracking-wider text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
+                    Clear
+                  </button>
+                )}
+                <button type="button" onClick={() => setIsChatOpen(false)} className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors">
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+
+            {/* Chat History Area */}
+            <div className="px-5 py-4 h-[400px] overflow-y-auto flex flex-col gap-4 scrollbar-thin relative">
+              <AnimatePresence>
+                {isGenerating && (
+                  <motion.div 
+                    initial={{ left: '-100%' }}
+                    animate={{ left: '200%' }}
+                    transition={{ duration: 1.5, ease: "linear", repeat: Infinity }}
+                    className="absolute top-0 bottom-0 w-1/2 bg-gradient-to-r from-transparent via-blue-400/10 dark:via-blue-500/10 to-transparent z-0 pointer-events-none skew-x-12"
+                  />
+                )}
+              </AnimatePresence>
+
+              {chatHistory.length === 0 ? (
+                <div className="flex-1 flex flex-col items-center justify-center text-center opacity-70 my-8 relative z-10">
+                  <MessageSquare size={32} className="mb-3 text-gray-400" />
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Describe your dream home or ask any architectural question to get started.</p>
+                </div>
+              ) : (
+                chatHistory.map((msg, idx) => (
+                  <div key={idx} className={`flex flex-col relative z-10 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                    <div className={`px-4 py-3 rounded-2xl max-w-[90%] text-sm shadow-sm ${msg.role === 'user' ? 'bg-black dark:bg-white text-white dark:text-black rounded-br-sm' : 'bg-gray-100 dark:bg-gray-800 text-black dark:text-white rounded-bl-sm border border-gray-200 dark:border-gray-700'}`}>
+                      <p className="whitespace-pre-wrap leading-relaxed">
+                        {msg.content}
+                      </p>
+                    </div>
+                    
+                    {/* Render actions if assistant message */}
+                    {msg.role === 'assistant' && msg.action && (
+                      <div className="mt-3 w-full pl-2">
+                        {msg.action.type === 'CONTINUE_TO_DESIGN' && (
+                          <div className="p-4 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl border border-indigo-100 dark:border-indigo-800 max-w-[90%]">
+                            <p className="font-semibold text-indigo-900 dark:text-indigo-200 mb-3 text-sm">
+                              Your request is feasible. I can start the design setup with these requirements.
+                            </p>
+                            <button 
+                              onClick={() => navigate('/dashboard/new-project', { state: { prefill: msg.action.payload.requirements } })}
+                              className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-lg font-bold text-xs tracking-wider transition-colors shadow-sm"
+                            >
+                              Continue to Design
+                            </button>
+                          </div>
+                        )}
+
+                        {msg.intent === 'DESIGN_REQUEST' && msg.action.type === 'NONE' && msg.action.payload?.feasibility && !msg.action.payload.feasibility.can_proceed && (
+                          <div className="p-4 bg-amber-50 dark:bg-amber-900/30 rounded-xl border border-amber-200 dark:border-amber-800 max-w-[90%]">
+                            <p className="font-semibold text-amber-900 dark:text-amber-200 mb-2 text-sm">
+                              Your request is not supported with the available buildable area or catalogue.
+                            </p>
+                            {msg.action.payload.feasibility.suggestions?.length > 0 && (
+                              <ul className="list-disc list-inside text-amber-800 dark:text-amber-300 text-xs space-y-1.5 mt-2">
+                                {msg.action.payload.feasibility.suggestions.map((s: string, i: number) => (
+                                  <li key={i}>{s}</li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Input Form */}
+            <form onSubmit={handleGenerate} className="flex items-center gap-2 p-3 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 relative z-10">
+              <input
+                type="text"
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                placeholder="Message AI Architect..."
+                className="flex-1 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-black dark:focus:ring-white focus:border-transparent text-black dark:text-white placeholder-gray-500 dark:placeholder-gray-400 px-4 py-3 outline-none text-sm transition-all"
+              />
+              <button 
+                type="submit"
+                disabled={isGenerating || !prompt}
+                className="bg-black dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-200 text-white dark:text-black w-12 h-12 flex-shrink-0 rounded-xl flex items-center justify-center transition-colors disabled:opacity-50 shadow-sm"
+              >
+                {isGenerating ? <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div> : <ArrowRight size={18} />}
+              </button>
+            </form>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* FLOATING ACTION BUTTON (FAB) when chat is closed */}
+      <AnimatePresence>
+        {!isChatOpen && (
+          <motion.button
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            exit={{ scale: 0 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setIsChatOpen(true)}
+            className="fixed bottom-6 right-6 z-50 w-16 h-16 bg-black dark:bg-white text-white dark:text-black rounded-full shadow-2xl flex items-center justify-center"
+          >
+            <MessageSquare size={24} />
+          </motion.button>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 };
