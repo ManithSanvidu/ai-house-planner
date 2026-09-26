@@ -3,16 +3,19 @@ Semantic requirement validation for Architecture Assistant.
 Checks logic and sanity of requested design features BEFORE spatial feasibility.
 """
 from dataclasses import dataclass, field
-from typing import Dict, Any, List
+from typing import Any
 
-from app.agents.feasibility_engine import _load_catalogue, SUPPORTED_BEDROOMS, SUPPORTED_BATHROOMS, SUPPORTED_FLOORS, CAPABILITY_MAP
+from app.agents.feasibility_engine import (
+    _load_catalogue,
+)
+
 
 @dataclass
 class SanityValidationResult:
     status: str  # 'VALID', 'NEEDS_CONFIRMATION', 'INVALID'
-    reason_codes: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
-    suggestions: List[str] = field(default_factory=list)
+    reason_codes: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+    suggestions: list[str] = field(default_factory=list)
     
     def to_dict(self):
         return {
@@ -22,7 +25,7 @@ class SanityValidationResult:
             "suggestions": self.suggestions
         }
 
-def validate_requirements_sanity(reqs: Dict[str, Any]) -> SanityValidationResult:
+def validate_requirements_sanity(reqs: dict[str, Any]) -> SanityValidationResult:
     reason_codes = []
     warnings = []
     suggestions = []
@@ -67,11 +70,7 @@ def validate_requirements_sanity(reqs: Dict[str, Any]) -> SanityValidationResult
     max_cat_baths = max((p.bathrooms for p in catalogue), default=10)
     max_cat_floors = max((p.floors for p in catalogue), default=5)
     
-    if bedrooms is not None and bedrooms > max_cat_beds * 2: # Extreme outlier compared to catalogue
-         # Let's say if it's way above the catalogue max, we just reject it. 
-         # The prompt says "values above configured system/catalogue maximums"
-         # "Do not hardcode arbitrary maximums if the catalogue can provide them."
-         if bedrooms > max_cat_beds:
+    if bedrooms is not None and bedrooms > max_cat_beds * 2 and bedrooms > max_cat_beds:
              reason_codes.append('UNSUPPORTED_BEDROOM_COUNT')
              suggestions.append(f'The catalogue supports a maximum of {max_cat_beds} bedrooms.')
              status = 'INVALID'
@@ -146,9 +145,7 @@ def validate_requirements_sanity(reqs: Dict[str, Any]) -> SanityValidationResult
     # Wait, the prompt says "accessible_friendly but no supported ground-floor bedroom/bathroom arrangement"
     # Actually, in feasibility_engine.py it says "Accessibility layout requires a ground-floor bedroom and bathroom."
     # If the user asks for 0 bedrooms but accessible_friendly, it fails.
-    if reqs.get('accessible_friendly'):
-        # Check if catalogue has ANY accessible friendly plan that matches the floor count?
-        if floors is not None and floors > 1:
+    if reqs.get('accessible_friendly') and floors is not None and floors > 1:
              # Just check if we have any accessible plans with floors > 1
              has_acc_multi = any(p.floors == floors and p.capabilities.get('accessibility') for p in catalogue)
              if not has_acc_multi:
@@ -161,9 +158,7 @@ def validate_requirements_sanity(reqs: Dict[str, Any]) -> SanityValidationResult
     # "If exact combination has no compatible plans: return: NO_COMPATIBLE_BASE_PLAN with nearest supported alternatives.
     # Example: Requested: 2 bedrooms 12 bathrooms. Nearest: 2 beds / 1 bath"
     # We did this in TASK 3 for bathrooms/bedrooms. But what about general capability?
-    if status != 'INVALID':
-        # Let's check if the raw bedrooms/bathrooms/floors combo exists in the catalogue
-        if bedrooms is not None and bathrooms is not None and floors is not None:
+    if status != 'INVALID' and bedrooms is not None and bathrooms is not None and floors is not None:
              match = any(p.bedrooms == bedrooms and p.bathrooms == bathrooms and p.floors == floors for p in catalogue)
              if not match:
                  reason_codes.append('NO_COMPATIBLE_BASE_PLAN')

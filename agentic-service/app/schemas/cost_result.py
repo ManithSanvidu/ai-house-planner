@@ -1,4 +1,3 @@
-from typing import Optional, Union
 """
 Structured result schema for the Cost Estimation Agent (Component C).
 
@@ -21,9 +20,9 @@ class CostBreakdownLine(BaseModel):
     terrain_multiplier: float
     amount_lkr: float
     share_percent: float = 0
-    provider: Optional[str] = None
-    source_reference: Optional[str] = None
-    pricing_updated_at: Optional[str] = None
+    provider: str | None = None
+    source_reference: str | None = None
+    pricing_updated_at: str | None = None
 
 
 class CostResult(BaseModel):
@@ -47,7 +46,7 @@ class CostResult(BaseModel):
         ...,
         description="material_cost_lkr + labour_cost_lkr.",
     )
-    budget_delta_percent: Optional[float] = Field(
+    budget_delta_percent: float | None = Field(
         None,
         description="(total_cost_lkr / budget_lkr) × 100 when a positive budget is supplied; otherwise null.",
     )

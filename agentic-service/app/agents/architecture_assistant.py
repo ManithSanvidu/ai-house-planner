@@ -1,38 +1,39 @@
-from typing import Optional, List
-from pydantic import BaseModel, Field, ConfigDict
+
+from pydantic import BaseModel, ConfigDict, Field
+
 
 class Requirements(BaseModel):
     model_config = ConfigDict(extra='forbid')
-    land_size: Optional[float]
-    land_unit: Optional[str]
-    plot_width_ft: Optional[float]
-    plot_length_ft: Optional[float]
-    bedrooms: Optional[int]
-    bathrooms: Optional[int]
-    floors: Optional[int]
-    style: Optional[str]
-    parking_spaces: Optional[int]
-    open_plan: Optional[bool]
-    master_ensuite: Optional[bool]
-    separate_dining: Optional[bool]
-    office: Optional[bool]
-    balcony: Optional[bool]
-    veranda: Optional[bool]
-    utility_room: Optional[bool]
-    accessible_friendly: Optional[bool]
-    terrain_type: Optional[str]
-    road_side: Optional[str]
-    north_direction: Optional[str]
-    entrance_side: Optional[str]
+    land_size: float | None
+    land_unit: str | None
+    plot_width_ft: float | None
+    plot_length_ft: float | None
+    bedrooms: int | None
+    bathrooms: int | None
+    floors: int | None
+    style: str | None
+    parking_spaces: int | None
+    open_plan: bool | None
+    master_ensuite: bool | None
+    separate_dining: bool | None
+    office: bool | None
+    balcony: bool | None
+    veranda: bool | None
+    utility_room: bool | None
+    accessible_friendly: bool | None
+    terrain_type: str | None
+    road_side: str | None
+    north_direction: str | None
+    entrance_side: str | None
 
 class AssistantInterpretation(BaseModel):
     model_config = ConfigDict(extra='forbid')
     intent: str = Field(description="One of: GENERAL_ADVICE, LAND_FEASIBILITY_ADVICE, DESIGN_REQUEST, PROJECT_QUESTION, CONSTRUCTION_QUESTION, UNKNOWN")
     confidence: float = Field(description="Confidence score between 0.0 and 1.0")
-    requirements: Optional[Requirements] = Field(description="Extracted requirements for DESIGN_REQUEST and LAND_FEASIBILITY_ADVICE")
-    missing_required_fields: List[str] = Field(description="Missing required fields for the intent")
-    assumptions: List[str] = Field(description="Assumptions made by the AI")
-    user_goal: Optional[str] = Field(description="The user's inferred goal")
+    requirements: Requirements | None = Field(description="Extracted requirements for DESIGN_REQUEST and LAND_FEASIBILITY_ADVICE")
+    missing_required_fields: list[str] = Field(description="Missing required fields for the intent")
+    assumptions: list[str] = Field(description="Assumptions made by the AI")
+    user_goal: str | None = Field(description="The user's inferred goal")
 
 def get_current_user_project_context():
     # Stub for getting project context
@@ -55,9 +56,15 @@ class AgentResponse(BaseModel):
     intent: str
     action: AssistantAction
 
-def interpret_user_message(message: str, history: Optional[List[dict]] = None) -> dict:
-    from app.providers.provider_factory import get_available_design_provider, get_provider
-    from app.agents.feasibility_engine import check_feasibility, generate_feasibility_advice
+def interpret_user_message(message: str, history: list[dict] | None = None) -> dict:
+    from app.agents.feasibility_engine import (
+        check_feasibility,
+        generate_feasibility_advice,
+    )
+    from app.providers.provider_factory import (
+        get_available_design_provider,
+        get_provider,
+    )
     
     provider = get_available_design_provider() or get_provider("openai")
     
@@ -112,7 +119,9 @@ Pay attention to the previous conversation history if provided, as the user migh
                 
         elif intent == 'DESIGN_REQUEST':
             if reqs:
-                from app.agents.requirement_validator import validate_requirements_sanity
+                from app.agents.requirement_validator import (
+                    validate_requirements_sanity,
+                )
                 sanity = validate_requirements_sanity(reqs)
                 
                 if sanity.status == 'INVALID':
@@ -181,7 +190,7 @@ RULES:
         }
     except Exception as e:
         return {
-            "reply": f"Failed to process request: {str(e)}",
+            "reply": f"Failed to process request: {e!s}",
             "intent": "UNKNOWN",
             "action": {
                 "type": "NONE",

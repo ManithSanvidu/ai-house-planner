@@ -1,4 +1,4 @@
-from typing import Optional, Union
+
 """
 Validation / Safety Agent (Component D — Stage 1)
 =================================================
@@ -48,7 +48,7 @@ TERRAIN_FOUNDATION_COMPATIBILITY_MAP: dict[str, list[str]] = {
 }
 
 
-def _normalize_string(val: Optional[str]) -> str:
+def _normalize_string(val: str | None) -> str:
     if not val:
         return ""
     return val.strip().lower().replace("-", "_").replace(" ", "_")
@@ -58,8 +58,8 @@ def _normalize_string(val: Optional[str]) -> str:
 # Rule 1: Building / Land Ground Coverage
 # ---------------------------------------------------------------------------
 def validate_coverage(
-    land_size_perches: Optional[float],
-    ground_coverage_sqft: Optional[float],
+    land_size_perches: float | None,
+    ground_coverage_sqft: float | None,
     max_coverage_ratio: float = DEFAULT_MAX_COVERAGE_RATIO,
 ) -> RuleValidationResult:
     rule_name = "coverage"
@@ -123,9 +123,9 @@ def validate_coverage(
 # Rule 2: Terrain & Foundation Compatibility
 # ---------------------------------------------------------------------------
 def validate_terrain_foundation(
-    terrain_type: Optional[str],
-    slope_estimate: Optional[str],
-    foundation_type: Optional[str],
+    terrain_type: str | None,
+    slope_estimate: str | None,
+    foundation_type: str | None,
 ) -> RuleValidationResult:
     rule_name = "terrain_foundation"
 
@@ -189,8 +189,8 @@ def validate_terrain_foundation(
 # Rule 3: Budget Tolerance
 # ---------------------------------------------------------------------------
 def validate_budget(
-    budget_lkr: Optional[float],
-    estimated_cost_lkr: Optional[float],
+    budget_lkr: float | None,
+    estimated_cost_lkr: float | None,
     tolerance_ratio: float = DEFAULT_BUDGET_TOLERANCE_RATIO,
 ) -> RuleValidationResult:
     rule_name = "budget"
@@ -259,10 +259,10 @@ def validate_budget(
 # Rule 4: Client Requirement Match
 # ---------------------------------------------------------------------------
 def validate_preferences(
-    requested_bedrooms: Optional[int],
-    actual_bedrooms: Optional[int],
-    requested_floors: Optional[int],
-    actual_floors: Optional[int],
+    requested_bedrooms: int | None,
+    actual_bedrooms: int | None,
+    requested_floors: int | None,
+    actual_floors: int | None,
 ) -> RuleValidationResult:
     rule_name = "preferences"
     failures: list[str] = []
@@ -435,7 +435,7 @@ def extract_validation_input_from_state(state: Any) -> HousePlanValidationInput:
 # Core Public Validation Function & Agent Interface
 # ---------------------------------------------------------------------------
 def validate_house_plan(
-    data: Union[HousePlanValidationInput, Any],
+    data: HousePlanValidationInput | Any,
     max_coverage_ratio: float = DEFAULT_MAX_COVERAGE_RATIO,
     budget_tolerance_ratio: float = DEFAULT_BUDGET_TOLERANCE_RATIO,
 ) -> ValidationResult:
@@ -493,7 +493,7 @@ class ValidationAgent:
         self.max_coverage_ratio = max_coverage_ratio
         self.budget_tolerance_ratio = budget_tolerance_ratio
 
-    def validate(self, data: Union[HousePlanValidationInput, Any]) -> ValidationResult:
+    def validate(self, data: HousePlanValidationInput | Any) -> ValidationResult:
         return validate_house_plan(
             data=data,
             max_coverage_ratio=self.max_coverage_ratio,

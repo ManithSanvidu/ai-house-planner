@@ -1,6 +1,6 @@
-import pytest
-from app.agents.requirement_validator import validate_requirements_sanity
 from app.agents.feasibility_engine import check_feasibility
+from app.agents.requirement_validator import validate_requirements_sanity
+
 
 def test_2Bedrooms12Bathrooms_IsRejectedOrUnsupported():
     reqs = {'bedrooms': 2, 'bathrooms': 12, 'floors': 1}

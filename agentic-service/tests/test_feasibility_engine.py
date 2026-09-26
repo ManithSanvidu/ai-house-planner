@@ -3,18 +3,17 @@ Tests for the deterministic feasibility engine.
 """
 from __future__ import annotations
 
-import sys
-import os
 import json
+import os
+import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from app.agents.feasibility_engine import (
-    normalize_land,
+    SQFT_PER_PERCH,
     check_feasibility,
     generate_feasibility_advice,
-    find_compatible_plans,
-    SQFT_PER_PERCH,
+    normalize_land,
 )
 
 

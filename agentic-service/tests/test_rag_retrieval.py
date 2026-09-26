@@ -3,16 +3,19 @@ Tests for RAG knowledge retrieval.
 """
 from __future__ import annotations
 
-import sys
-import os
 import json
+import os
+import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from app.knowledge.rag_pipeline import search_architecture_knowledge, search_knowledge_as_dicts
-import app.knowledge.rag_pipeline
-
 import pytest
+
+import app.knowledge.rag_pipeline
+from app.knowledge.rag_pipeline import (
+    search_architecture_knowledge,
+    search_knowledge_as_dicts,
+)
 
 _last_query = ""
 
@@ -29,7 +32,6 @@ def mock_dependencies(monkeypatch):
         def execute(self, *args, **kwargs):
             pass
         def fetchall(self):
-            global _last_query
             if "chocolate cake" in _last_query.lower():
                 return [('Cake', 'Recipe', 'cooking', 'Source', 0.2)]
             elif "ventilate" in _last_query.lower():
