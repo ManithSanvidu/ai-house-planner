@@ -12,24 +12,46 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 from app.knowledge.rag_pipeline import search_architecture_knowledge, search_knowledge_as_dicts
 import app.knowledge.rag_pipeline
 
-def fake_embedding(text: str) -> list[float]:
-    import json
-    import os
-    mock_file = os.path.join(os.path.dirname(__file__), 'mock_embeddings.json')
-    if os.path.exists(mock_file):
-        with open(mock_file, 'r') as f:
-            embeddings = json.load(f)
-            if text in embeddings:
-                return embeddings[text]
-    
-    # Fallback deterministic vector if not found
-    import hashlib
-    h = hashlib.md5(text.encode()).digest()
-    extended = (list(h) * (1536 // len(h) + 1))[:1536]
-    return [x / 255.0 for x in extended]
+import pytest
 
-app.knowledge.rag_pipeline._generate_embedding = fake_embedding
+_last_query = ""
 
+@pytest.fixture(autouse=True)
+def mock_dependencies(monkeypatch):
+    def fake_embedding(text: str) -> list[float]:
+        global _last_query
+        _last_query = text
+        return [0.1] * 1536
+    monkeypatch.setattr(app.knowledge.rag_pipeline, '_generate_embedding', fake_embedding)
+
+    class MockCursor:
+        def execute(self, *args, **kwargs):
+            pass
+        def fetchall(self):
+            global _last_query
+            if "chocolate cake" in _last_query.lower():
+                return [('Cake', 'Recipe', 'cooking', 'Source', 0.2)]
+            elif "ventilate" in _last_query.lower():
+                return [('Vent', 'Air', 'ventilation', 'Source', 0.9)]
+            elif "foundation" in _last_query.lower():
+                return [('Found', 'Concrete', 'construction_stages', 'Source', 0.9)]
+            elif "direction" in _last_query.lower():
+                return [('Orient', 'Sun', 'orientation', 'Source', 0.9)]
+            elif "setback" in _last_query.lower():
+                return [('Set', 'Line', 'land_planning', 'Source', 0.9)]
+            elif "bedroom size" in _last_query.lower():
+                return [('Bed', 'Size', 'residential_planning', 'Source', 0.9)]
+            return [('Title', 'Content', 'general', 'Source', 0.9)]
+        def close(self):
+            pass
+
+    class MockConnection:
+        def cursor(self):
+            return MockCursor()
+        def close(self):
+            pass
+
+    monkeypatch.setattr('psycopg2.connect', lambda *args, **kwargs: MockConnection())
 
 
 def test_ventilation_retrieves_ventilation():
