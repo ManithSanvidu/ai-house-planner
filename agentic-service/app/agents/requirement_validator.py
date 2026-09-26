@@ -98,29 +98,20 @@ def validate_requirements_sanity(reqs: Dict[str, Any]) -> SanityValidationResult
         has_exact_match = any(p.bedrooms == bedrooms and p.bathrooms == bathrooms for p in catalogue)
         
         if not has_exact_match:
-            # Let's check ratio
-            ratio = bathrooms / bedrooms
-            if ratio > 2.5 or ratio < 0.2:
-                # Extreme
-                reason_codes.append('UNSUPPORTED_BEDROOM_BATHROOM_COMBINATION')
-                suggestions.append('Please check your bedroom and bathroom counts.')
-                status = 'INVALID'
-                
-                # Find nearest supported
-                closest_plans = sorted(catalogue, key=lambda p: abs(p.bedrooms - bedrooms) + abs(p.bathrooms - bathrooms))
-                if closest_plans:
-                    closest = closest_plans[0]
-                    suggestions.append(f'Nearest supported combination is {closest.bedrooms} bedrooms and {closest.bathrooms} bathrooms.')
-            elif ratio > 1.5:
-                # Unusual
-                if status != 'INVALID':
-                    status = 'NEEDS_CONFIRMATION'
-                reason_codes.append('UNUSUAL_BEDROOM_BATHROOM_RATIO')
-                warnings.append(f'You requested {bedrooms} bedrooms and {bathrooms} bathrooms. Is that intentional?')
+            reason_codes.append('UNSUPPORTED_BEDROOM_BATHROOM_COMBINATION')
+            suggestions.append('Please check your bedroom and bathroom counts.')
+            status = 'INVALID'
+            
+            # Find nearest supported
+            closest_plans = sorted(catalogue, key=lambda p: abs(p.bedrooms - bedrooms) + abs(p.bathrooms - bathrooms))
+            if closest_plans:
+                closest = closest_plans[0]
+                suggestions.append(f'Nearest supported combination is {closest.bedrooms} bedrooms and {closest.bathrooms} bathrooms.')
         else:
             # Even if exact match exists, if it's very unusual we might want to ask confirmation
             # The prompt says "If catalogue or rules allow it but it is unusual: requires_confirmation = true"
-            if bathrooms > bedrooms + 1:
+            ratio = bathrooms / bedrooms
+            if bathrooms > bedrooms + 1 or ratio < 0.5:
                 if status != 'INVALID':
                     status = 'NEEDS_CONFIRMATION'
                 reason_codes.append('UNUSUAL_BEDROOM_BATHROOM_RATIO')
