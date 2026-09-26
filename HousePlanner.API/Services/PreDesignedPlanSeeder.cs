@@ -100,6 +100,14 @@ public sealed class PreDesignedPlanSeeder(
             entity.UpdatedAt = DateTimeOffset.UtcNow;
         }
 
+        var seedCodes = plans.Select(p => p.designCode).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var toRemove = existingPlans.Values.Where(p => !seedCodes.Contains(p.DesignCode)).ToList();
+        if (toRemove.Count > 0)
+        {
+            logger.LogInformation("Removing {Count} stale pre-designed plans from database", toRemove.Count);
+            db.PreDesignedHousePlans.RemoveRange(toRemove);
+        }
+
         await db.SaveChangesAsync(cancellationToken);
         logger.LogInformation("Pre-designed plan catalog ready with {Count} entries",
             await db.PreDesignedHousePlans.CountAsync(cancellationToken));
