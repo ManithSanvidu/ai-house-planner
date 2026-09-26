@@ -56,7 +56,7 @@ def test_seed_export_rejects_surplus_bathrooms(configured, floors):
 
 
 def test_seed_export_accepts_matching_bathrooms(two_bath_plan):
-    valid, reason = exporter.validate_plan(two_bath_plan, 'hillside')
+    valid, reason = exporter.validate_plan(two_bath_plan, 'flat')
     assert valid, reason
 
 
