@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Box, ArrowRight, Sparkles, Cpu, Calculator, HardHat, Menu, X, Sun, Moon } from 'lucide-react';
+import { Box, ArrowRight, Sparkles, Cpu, HardHat, Menu, X, Sun, Moon, Map, ClipboardCheck, ShieldCheck, PenTool, Calendar, CheckCircle2 } from 'lucide-react';
 
 const FeaturesPage: React.FC = () => {
   const [isDark, setIsDark] = useState(() => {
@@ -80,88 +80,194 @@ const FeaturesPage: React.FC = () => {
         <div className="max-w-[1400px] mx-auto text-center">
           <p className="text-[10px] font-bold tracking-[0.2em] text-gray-500 dark:text-gray-400 mb-6 uppercase">Platform Capabilities</p>
           <h1 className="text-4xl sm:text-6xl font-medium text-gray-900 dark:text-white tracking-tight mb-8 font-serif">
-            How HomePlanner AI Works
+            From Land to Construction
           </h1>
           <p className="text-lg text-gray-500 dark:text-gray-400 max-w-2xl mx-auto font-light leading-relaxed">
-            From initial conception to construction management, discover how our intelligent platform streamlines every phase of your project.
+            HomePlannerAI helps you turn land details and home requirements into a validated conceptual design, architect review workflow, and construction planning experience.
           </p>
         </div>
       </section>
 
-      {/* FEATURES LIST */}
-      <section className="py-20 relative z-10">
-        <div className="max-w-[1200px] mx-auto px-6 flex flex-col gap-32">
-          
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="order-2 md:order-1">
-              <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center mb-6 text-blue-600 dark:text-blue-400">
-                <Cpu size={24} />
+      {/* CAPABILITY CARDS */}
+      <section className="py-12 relative z-10">
+        <div className="max-w-[1400px] mx-auto px-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-8 rounded-3xl group hover:border-blue-500/50 transition-colors">
+              <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 rounded-2xl flex items-center justify-center mb-6 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform">
+                <Map size={24} />
               </div>
-              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">AI Floor Plan Generation</h2>
-              <p className="text-gray-500 dark:text-gray-400 leading-relaxed mb-6">
-                Describe your ideal layout, and our architectural AI instantly generates accurate, mathematically sound floor plans. It respects standard building codes, optimizes space, and provides a structural foundation that architects can immediately work with.
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">Land Analysis</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 leading-relaxed">
+                Capture land size, dimensions, terrain, road orientation, setbacks, and other site details to understand the usable building envelope.
               </p>
-              <ul className="space-y-3 text-gray-900 dark:text-gray-300 font-medium text-sm">
-                <li className="flex items-center gap-3"><div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div> Text-to-Floorplan generation</li>
-                <li className="flex items-center gap-3"><div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div> Automated space optimization</li>
-                <li className="flex items-center gap-3"><div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div> Instantly converts to 3D models</li>
+              <ul className="space-y-2 text-xs font-semibold text-gray-600 dark:text-gray-300">
+                <li className="flex items-center gap-2"><CheckCircle2 size={14} className="text-blue-500" /> Plot dimensions</li>
+                <li className="flex items-center gap-2"><CheckCircle2 size={14} className="text-blue-500" /> Terrain context</li>
+                <li className="flex items-center gap-2"><CheckCircle2 size={14} className="text-blue-500" /> Buildable area</li>
+                <li className="flex items-center gap-2"><CheckCircle2 size={14} className="text-blue-500" /> Site constraints</li>
               </ul>
             </motion.div>
-            <div className="order-1 md:order-2 h-[400px] bg-gray-100 dark:bg-gray-800 rounded-3xl overflow-hidden shadow-xl">
-              <img src="https://images.unsplash.com/photo-1600607686527-6fb886090705?q=80&w=800&auto=format&fit=crop" alt="Floor plan" className="w-full h-full object-cover" />
-            </div>
-          </div>
 
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div className="h-[400px] bg-gray-100 dark:bg-gray-800 rounded-3xl overflow-hidden shadow-xl">
-              <img src="https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?q=80&w=800&auto=format&fit=crop" alt="Cost calculation" className="w-full h-full object-cover" />
-            </div>
-            <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
-              <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/30 rounded-2xl flex items-center justify-center mb-6 text-emerald-600 dark:text-emerald-400">
-                <Calculator size={24} />
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ delay: 0.1 }} className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-8 rounded-3xl group hover:border-indigo-500/50 transition-colors">
+              <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl flex items-center justify-center mb-6 text-indigo-600 dark:text-indigo-400 group-hover:scale-110 transition-transform">
+                <ClipboardCheck size={24} />
               </div>
-              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Real-Time Cost Estimation</h2>
-              <p className="text-gray-500 dark:text-gray-400 leading-relaxed mb-6">
-                As your design changes, so does your budget. Our intelligent pricing engine analyzes the materials, square footage, and structural complexity to provide highly accurate cost estimates instantly, keeping you in control of your finances.
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">Smart Requirement Validation</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 leading-relaxed">
+                Check whether requested bedrooms, bathrooms, floors, parking, and other features are reasonable and supported before design generation begins.
               </p>
-              <ul className="space-y-3 text-gray-900 dark:text-gray-300 font-medium text-sm">
-                <li className="flex items-center gap-3"><div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div> Dynamic material pricing</li>
-                <li className="flex items-center gap-3"><div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div> Labor cost integration</li>
-                <li className="flex items-center gap-3"><div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div> Exportable budget reports</li>
+              <ul className="space-y-2 text-xs font-semibold text-gray-600 dark:text-gray-300">
+                <li className="flex items-center gap-2"><CheckCircle2 size={14} className="text-indigo-500" /> Requirement sanity checks</li>
+                <li className="flex items-center gap-2"><CheckCircle2 size={14} className="text-indigo-500" /> Land-size feasibility</li>
+                <li className="flex items-center gap-2"><CheckCircle2 size={14} className="text-indigo-500" /> Feature compatibility</li>
+                <li className="flex items-center gap-2"><CheckCircle2 size={14} className="text-indigo-500" /> Clear validation feedback</li>
               </ul>
             </motion.div>
-          </div>
 
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="order-2 md:order-1">
-              <div className="w-12 h-12 bg-amber-100 dark:bg-amber-900/30 rounded-2xl flex items-center justify-center mb-6 text-amber-600 dark:text-amber-400">
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ delay: 0.2 }} className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-8 rounded-3xl group hover:border-purple-500/50 transition-colors">
+              <div className="w-12 h-12 bg-purple-50 dark:bg-purple-900/20 rounded-2xl flex items-center justify-center mb-6 text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform">
+                <Sparkles size={24} />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">AI-Assisted House Design</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 leading-relaxed">
+                AI helps select and adapt compatible validated base plans based on your land and home requirements.
+              </p>
+              <ul className="space-y-2 text-xs font-semibold text-gray-600 dark:text-gray-300">
+                <li className="flex items-center gap-2"><CheckCircle2 size={14} className="text-purple-500" /> Compatible plan matching</li>
+                <li className="flex items-center gap-2"><CheckCircle2 size={14} className="text-purple-500" /> AI plan selection</li>
+                <li className="flex items-center gap-2"><CheckCircle2 size={14} className="text-purple-500" /> Safe layout adaptation</li>
+                <li className="flex items-center gap-2"><CheckCircle2 size={14} className="text-purple-500" /> Multiple design options</li>
+              </ul>
+            </motion.div>
+
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ delay: 0.3 }} className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-8 rounded-3xl group hover:border-emerald-500/50 transition-colors">
+              <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl flex items-center justify-center mb-6 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform">
+                <ShieldCheck size={24} />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">Plan Quality Validation</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 leading-relaxed">
+                Generated concepts are checked for geometry, circulation, zoning, room connectivity, stair alignment, and other planning-quality rules.
+              </p>
+              <ul className="space-y-2 text-xs font-semibold text-gray-600 dark:text-gray-300">
+                <li className="flex items-center gap-2"><CheckCircle2 size={14} className="text-emerald-500" /> Geometry validation</li>
+                <li className="flex items-center gap-2"><CheckCircle2 size={14} className="text-emerald-500" /> Circulation checks</li>
+                <li className="flex items-center gap-2"><CheckCircle2 size={14} className="text-emerald-500" /> Room adjacency</li>
+                <li className="flex items-center gap-2"><CheckCircle2 size={14} className="text-emerald-500" /> Multi-floor consistency</li>
+              </ul>
+            </motion.div>
+
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ delay: 0.4 }} className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-8 rounded-3xl group hover:border-amber-500/50 transition-colors">
+              <div className="w-12 h-12 bg-amber-50 dark:bg-amber-900/20 rounded-2xl flex items-center justify-center mb-6 text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform">
+                <PenTool size={24} />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">Architect Review</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 leading-relaxed">
+                Send a selected design for architect review and keep approval history connected to the project.
+              </p>
+              <ul className="space-y-2 text-xs font-semibold text-gray-600 dark:text-gray-300">
+                <li className="flex items-center gap-2"><CheckCircle2 size={14} className="text-amber-500" /> Design review workflow</li>
+                <li className="flex items-center gap-2"><CheckCircle2 size={14} className="text-amber-500" /> Approval status</li>
+                <li className="flex items-center gap-2"><CheckCircle2 size={14} className="text-amber-500" /> Revision support</li>
+                <li className="flex items-center gap-2"><CheckCircle2 size={14} className="text-amber-500" /> Version history</li>
+              </ul>
+            </motion.div>
+
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ delay: 0.5 }} className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-8 rounded-3xl group hover:border-rose-500/50 transition-colors">
+              <div className="w-12 h-12 bg-rose-50 dark:bg-rose-900/20 rounded-2xl flex items-center justify-center mb-6 text-rose-600 dark:text-rose-400 group-hover:scale-110 transition-transform">
                 <HardHat size={24} />
               </div>
-              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Daily Construction Logs</h2>
-              <p className="text-gray-500 dark:text-gray-400 leading-relaxed mb-6">
-                A seamless handover to the build team. Contractors use our integrated management dashboard to post daily progress photos, log materials used, and track timeline milestones. Clients watch their AI dream turn into reality, step-by-step.
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">Construction Tracking</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 leading-relaxed">
+                Once a design is approved, request a constructor and manage the project through schedules, phases, daily logs, and calendar progress.
               </p>
-              <ul className="space-y-3 text-gray-900 dark:text-gray-300 font-medium text-sm">
-                <li className="flex items-center gap-3"><div className="w-1.5 h-1.5 bg-amber-500 rounded-full"></div> Client-Contractor transparency</li>
-                <li className="flex items-center gap-3"><div className="w-1.5 h-1.5 bg-amber-500 rounded-full"></div> Photo progress tracking</li>
-                <li className="flex items-center gap-3"><div className="w-1.5 h-1.5 bg-amber-500 rounded-full"></div> Milestone approvals</li>
+              <ul className="space-y-2 text-xs font-semibold text-gray-600 dark:text-gray-300">
+                <li className="flex items-center gap-2"><CheckCircle2 size={14} className="text-rose-500" /> Constructor requests</li>
+                <li className="flex items-center gap-2"><CheckCircle2 size={14} className="text-rose-500" /> Phase schedule</li>
+                <li className="flex items-center gap-2"><CheckCircle2 size={14} className="text-rose-500" /> Daily site logs</li>
+                <li className="flex items-center gap-2"><CheckCircle2 size={14} className="text-rose-500" /> Progress calendar</li>
               </ul>
             </motion.div>
-            <div className="order-1 md:order-2 h-[400px] bg-gray-100 dark:bg-gray-800 rounded-3xl overflow-hidden shadow-xl">
-              <img src="https://images.unsplash.com/photo-1503387762-592deb58ef4e?q=80&w=800&auto=format&fit=crop" alt="Construction" className="w-full h-full object-cover" />
+
+          </div>
+        </div>
+      </section>
+
+      {/* HOW IT WORKS */}
+      <section className="py-24 relative z-10">
+        <div className="max-w-[1400px] mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-serif text-gray-900 dark:text-white">How the workflow works</h2>
+          </div>
+          
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 lg:gap-4 relative">
+            {/* Timeline connection line (desktop only) */}
+            <div className="hidden lg:block absolute top-12 left-[10%] right-[10%] h-0.5 bg-gray-200 dark:bg-gray-800 z-0"></div>
+            
+            {[
+              { num: "01", title: "Enter Land Details", icon: <Map size={20} /> },
+              { num: "02", title: "Add House Requirements", icon: <ClipboardCheck size={20} /> },
+              { num: "03", title: "Validate Feasibility", icon: <ShieldCheck size={20} /> },
+              { num: "04", title: "Generate Design Options", icon: <Cpu size={20} /> },
+              { num: "05", title: "Send to Architect", icon: <PenTool size={20} /> },
+              { num: "06", title: "Start Construction Tracking", icon: <HardHat size={20} /> },
+            ].map((step, i) => (
+              <div key={i} className="relative z-10 flex flex-col items-center text-center group">
+                <div className="w-24 h-24 bg-white dark:bg-gray-900 border-4 border-[#fcfcfd] dark:border-gray-950 rounded-full flex items-center justify-center shadow-lg mb-4 text-gray-400 group-hover:text-blue-500 group-hover:border-blue-50 transition-colors">
+                  {step.icon}
+                </div>
+                <span className="text-[10px] font-bold tracking-[0.2em] text-blue-600 dark:text-blue-400 mb-2">STEP {step.num}</span>
+                <h4 className="text-sm font-semibold text-gray-900 dark:text-white max-w-[120px]">{step.title}</h4>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* VALIDATION / TRUST */}
+      <section className="py-24 relative z-10 bg-gray-50 dark:bg-gray-900/50">
+        <div className="max-w-[1000px] mx-auto px-6 text-center">
+          <h2 className="text-3xl md:text-4xl font-serif text-gray-900 dark:text-white mb-6">
+            AI Suggestions, Deterministic Validation
+          </h2>
+          <p className="text-lg text-gray-600 dark:text-gray-400 mb-10 leading-relaxed max-w-3xl mx-auto">
+            HomePlannerAI uses AI for intelligent plan selection and design intent, while deterministic validation checks geometry, spatial constraints, and supported planning rules before a concept is accepted.
+          </p>
+          
+          <div className="flex flex-col sm:flex-row justify-center gap-6 sm:gap-12 mb-16">
+            <div className="flex items-center justify-center gap-3 text-gray-800 dark:text-gray-200 font-medium">
+              <Cpu className="text-blue-500" size={20} />
+              <span>AI-assisted decisions</span>
+            </div>
+            <div className="flex items-center justify-center gap-3 text-gray-800 dark:text-gray-200 font-medium">
+              <ShieldCheck className="text-emerald-500" size={20} />
+              <span>Rule-based validation</span>
+            </div>
+            <div className="flex items-center justify-center gap-3 text-gray-800 dark:text-gray-200 font-medium">
+              <PenTool className="text-amber-500" size={20} />
+              <span>Human architect review</span>
             </div>
           </div>
-
+          
+          <p className="text-xs text-gray-400 dark:text-gray-500 max-w-2xl mx-auto italic">
+            HomePlannerAI provides conceptual planning assistance and does not replace licensed architectural, structural, or regulatory approval.
+          </p>
         </div>
       </section>
 
       {/* FOOTER CTA */}
-      <section className="py-24 bg-gray-900 text-white mt-20">
-        <div className="max-w-[1400px] mx-auto px-6 text-center flex flex-col items-center">
-          <h2 className="text-4xl font-medium mb-6 font-serif">Ready to experience the future of housing?</h2>
-          <Link to="/login" className="bg-white hover:bg-gray-100 text-gray-900 px-10 py-5 text-xs font-bold tracking-[0.15em] transition-all flex items-center gap-3 mt-4">
-            START DESIGNING NOW <ArrowRight size={16} />
-          </Link>
+      <section className="py-24 bg-gray-900 text-white mt-12 relative overflow-hidden">
+        <div className="absolute inset-0 opacity-10 bg-[url('https://images.unsplash.com/photo-1600607686527-6fb886090705?q=80&w=2000&auto=format&fit=crop')] bg-cover bg-center"></div>
+        <div className="max-w-[1400px] mx-auto px-6 text-center flex flex-col items-center relative z-10">
+          <h2 className="text-4xl font-medium mb-10 font-serif">Ready to plan your home?</h2>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <Link to="/login" className="bg-white hover:bg-gray-100 text-gray-900 px-10 py-5 text-xs font-bold tracking-[0.15em] transition-all flex items-center justify-center gap-3 rounded-none">
+              START NEW PROJECT <ArrowRight size={16} />
+            </Link>
+            <Link to="/gallery" className="bg-transparent border border-gray-600 hover:border-white text-white px-10 py-5 text-xs font-bold tracking-[0.15em] transition-all flex items-center justify-center rounded-none">
+              BROWSE PLANS
+            </Link>
+          </div>
         </div>
       </section>
     </div>
