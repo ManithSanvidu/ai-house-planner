@@ -23,6 +23,7 @@ def mock_dependencies(monkeypatch):
         _last_query = text
         return [0.1] * 1536
     monkeypatch.setattr(app.knowledge.rag_pipeline, '_generate_embedding', fake_embedding)
+    monkeypatch.setattr(app.knowledge.rag_pipeline, '_get_db_connection_string', lambda: "fake_dsn")
 
     class MockCursor:
         def execute(self, *args, **kwargs):
