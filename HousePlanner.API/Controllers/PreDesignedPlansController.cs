@@ -26,7 +26,6 @@ public class PreDesignedPlansController : ControllerBase
         [FromQuery] bool? parking, [FromQuery] bool? office, [FromQuery] bool? balcony,
         [FromQuery] bool? accessible, [FromQuery] string? category, [FromQuery] string? search)
     {
-        if (!await Authenticated()) return Unauthorized();
         var query = _db.PreDesignedHousePlans.AsNoTracking().Where(x => x.IsActive);
         if (bedrooms.HasValue) query = query.Where(x => x.Bedrooms == bedrooms);
         if (bathrooms.HasValue) query = query.Where(x => x.Bathrooms == bathrooms);
