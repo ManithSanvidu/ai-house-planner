@@ -55,7 +55,18 @@ def test_seed_export_rejects_surplus_bathrooms(configured, floors):
     assert reason == f'Bathroom count mismatch: configured {configured}, actual {floors}'
 
 
-def test_seed_export_accepts_matching_bathrooms(two_bath_plan):
+def test_seed_export_accepts_matching_bathrooms(two_bath_plan, monkeypatch):
+    import scripts.build_seed_catalogue
+    from app.design.plot_constraints import PlotConstraints
+    
+    # Use a large enough plot so the plan fits geometrically without a BUILDABLE_ENVELOPE_VIOLATION.
+    def mock_plot(*args, **kwargs):
+        kwargs['plot_width_ft'] = 100
+        kwargs['plot_length_ft'] = 100
+        kwargs['terrain_type'] = 'flat'
+        return PlotConstraints(*args, **kwargs)
+        
+    monkeypatch.setattr(scripts.build_seed_catalogue, 'PlotConstraints', mock_plot)
     valid, reason = exporter.validate_plan(two_bath_plan, 'flat')
     assert valid, reason
 
