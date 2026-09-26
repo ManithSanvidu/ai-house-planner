@@ -1,4 +1,3 @@
-from typing import Optional, Union
 """Shared wall intervals and traversable graphs; touching corners are not doors."""
 from collections import deque
 
@@ -10,7 +9,7 @@ EPS = 0.001
 OPPOSITE = {'north': 'south', 'south': 'north', 'east': 'west', 'west': 'east'}
 
 
-def shared_wall(a: RoomLayout, b: RoomLayout) -> tuple[str, float, Optional[float]]:
+def shared_wall(a: RoomLayout, b: RoomLayout) -> tuple[str, float, float | None]:
     if a.floor != b.floor:
         return None
     for wall, edge, other in [('east', a.x+a.width, b.x), ('west', a.x, b.x+b.width)]:
@@ -63,7 +62,7 @@ def graph_for(rooms: list[RoomLayout], connections: list[Connection]) -> dict[st
     return graph
 
 
-def reachable(graph: dict[str, set[str]], start: str, blocked: Optional[set[str]] = None) -> set[str]:
+def reachable(graph: dict[str, set[str]], start: str, blocked: set[str] | None = None) -> set[str]:
     seen, queue = set(), deque([start])
     while queue:
         key = queue.popleft()

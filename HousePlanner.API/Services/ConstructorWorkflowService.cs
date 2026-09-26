@@ -435,7 +435,7 @@ namespace HousePlanner.API.Services
             {
                 if (targetPhase.Status == "Completed")
                     throw new InvalidOperationException("Cannot transition from Completed back to Pending.");
-                
+
                 targetPhase.Status = "Pending";
             }
             else

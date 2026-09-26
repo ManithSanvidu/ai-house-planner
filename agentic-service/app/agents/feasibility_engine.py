@@ -14,9 +14,9 @@ import json
 import math
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
-from app.tools.land_utils import SQFT_PER_PERCH, perches_to_sqft, max_buildable_area
+from app.tools.land_utils import SQFT_PER_PERCH, max_buildable_area, perches_to_sqft
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -63,7 +63,7 @@ class NormalizedLand:
     plot_width_ft: float
     plot_length_ft: float
     dimension_source: str  # user_supplied | partially_derived | area_estimated
-    setbacks: Dict[str, float]
+    setbacks: dict[str, float]
     buildable_width_ft: float
     buildable_length_ft: float
     buildable_area_sqft: float
@@ -71,11 +71,11 @@ class NormalizedLand:
 
 
 def normalize_land(
-    land_size: Optional[float] = None,
-    land_unit: Optional[str] = None,
-    plot_width_ft: Optional[float] = None,
-    plot_length_ft: Optional[float] = None,
-    setbacks: Optional[Dict[str, float]] = None,
+    land_size: float | None = None,
+    land_unit: str | None = None,
+    plot_width_ft: float | None = None,
+    plot_length_ft: float | None = None,
+    setbacks: dict[str, float] | None = None,
     parking_required: bool = False,
 ) -> NormalizedLand:
     """Convert user-supplied land info into a normalized buildable envelope."""
@@ -175,15 +175,15 @@ class CataloguePlan:
     max_land_perches: float
     min_plot_width_ft: float
     min_plot_length_ft: float
-    supported_terrains: List[str]
-    supported_styles: List[str]
-    capabilities: Dict[str, bool]
+    supported_terrains: list[str]
+    supported_styles: list[str]
+    capabilities: dict[str, bool]
 
 
-_catalogue_cache: Optional[List[CataloguePlan]] = None
+_catalogue_cache: list[CataloguePlan] | None = None
 
 
-def _load_catalogue() -> List[CataloguePlan]:
+def _load_catalogue() -> list[CataloguePlan]:
     global _catalogue_cache
     if _catalogue_cache is not None:
         return _catalogue_cache
@@ -220,13 +220,13 @@ def _load_catalogue() -> List[CataloguePlan]:
 def _check_plan_compatibility(
     plan: CataloguePlan,
     land: NormalizedLand,
-    bedrooms: Optional[int],
-    bathrooms: Optional[int],
-    floors: Optional[int],
-    style: Optional[str],
-    terrain: Optional[str],
-    required_capabilities: Dict[str, bool],
-) -> List[str]:
+    bedrooms: int | None,
+    bathrooms: int | None,
+    floors: int | None,
+    style: str | None,
+    terrain: str | None,
+    required_capabilities: dict[str, bool],
+) -> list[str]:
     """Return list of rejection reason codes for a single plan."""
     reasons = []
 
@@ -243,12 +243,10 @@ def _check_plan_compatibility(
         if plan.max_land_perches and land.land_size_perches > plan.max_land_perches:
             reasons.append('LAND_TOO_LARGE')
 
-    if land.plot_width_ft > 0 and plan.min_plot_width_ft > 0:
-        if land.plot_width_ft < plan.min_plot_width_ft:
-            reasons.append('PLOT_WIDTH_INSUFFICIENT')
-    if land.plot_length_ft > 0 and plan.min_plot_length_ft > 0:
-        if land.plot_length_ft < plan.min_plot_length_ft:
-            reasons.append('PLOT_LENGTH_INSUFFICIENT')
+    if land.plot_width_ft > 0 and plan.min_plot_width_ft > 0 and land.plot_width_ft < plan.min_plot_width_ft:
+        reasons.append('PLOT_WIDTH_INSUFFICIENT')
+    if land.plot_length_ft > 0 and plan.min_plot_length_ft > 0 and land.plot_length_ft < plan.min_plot_length_ft:
+        reasons.append('PLOT_LENGTH_INSUFFICIENT')
 
     if terrain:
         terrain_lower = terrain.lower().replace('/', '').replace(' ', '_')
@@ -281,13 +279,13 @@ def _check_plan_compatibility(
 
 def find_compatible_plans(
     land: NormalizedLand,
-    bedrooms: Optional[int] = None,
-    bathrooms: Optional[int] = None,
-    floors: Optional[int] = None,
-    style: Optional[str] = None,
-    terrain: Optional[str] = None,
-    required_capabilities: Optional[Dict[str, bool]] = None,
-) -> Tuple[List[str], Dict[str, int]]:
+    bedrooms: int | None = None,
+    bathrooms: int | None = None,
+    floors: int | None = None,
+    style: str | None = None,
+    terrain: str | None = None,
+    required_capabilities: dict[str, bool] | None = None,
+) -> tuple[list[str], dict[str, int]]:
     """
     Return (compatible_plan_codes, rejection_summary).
     rejection_summary maps reason_code -> count.
@@ -295,7 +293,7 @@ def find_compatible_plans(
     catalogue = _load_catalogue()
     caps = required_capabilities or {}
     compatible = []
-    rejections: Dict[str, int] = {}
+    rejections: dict[str, int] = {}
 
     for plan in catalogue:
         reasons = _check_plan_compatibility(plan, land, bedrooms, bathrooms, floors, style, terrain, caps)
@@ -315,12 +313,12 @@ def find_compatible_plans(
 @dataclass
 class FeasibilityResult:
     can_proceed: bool
-    reason_codes: List[str] = field(default_factory=list)
+    reason_codes: list[str] = field(default_factory=list)
     compatible_plan_count: int = 0
-    compatible_plan_codes: List[str] = field(default_factory=list)
-    suggestions: List[str] = field(default_factory=list)
-    land: Optional[Dict[str, Any]] = None
-    rejection_summary: Optional[Dict[str, int]] = None
+    compatible_plan_codes: list[str] = field(default_factory=list)
+    suggestions: list[str] = field(default_factory=list)
+    land: dict[str, Any] | None = None
+    rejection_summary: dict[str, int] | None = None
 
     def to_dict(self) -> dict:
         return {
@@ -338,13 +336,13 @@ class FeasibilityResult:
 # Core feasibility check (DESIGN_REQUEST)
 # ---------------------------------------------------------------------------
 
-def check_feasibility(requirements: Dict[str, Any]) -> FeasibilityResult:
+def check_feasibility(requirements: dict[str, Any]) -> FeasibilityResult:
     """
     Given extracted requirements from the assistant, deterministically check feasibility.
     Returns a FeasibilityResult.
     """
-    reason_codes: List[str] = []
-    suggestions: List[str] = []
+    reason_codes: list[str] = []
+    suggestions: list[str] = []
 
     # Extract fields
     land_size = requirements.get('land_size')
@@ -359,7 +357,7 @@ def check_feasibility(requirements: Dict[str, Any]) -> FeasibilityResult:
     parking = requirements.get('parking_spaces')
 
     # Gather required capabilities from booleans
-    required_caps: Dict[str, bool] = {}
+    required_caps: dict[str, bool] = {}
     for key in CAPABILITY_MAP:
         val = requirements.get(key)
         if val is True:
@@ -405,20 +403,17 @@ def check_feasibility(requirements: Dict[str, Any]) -> FeasibilityResult:
         suggestions.append(f'Buildable length is only {land.buildable_length_ft} ft after setbacks. Minimum is {MIN_BUILDABLE_DIMENSION_FT} ft.')
 
     # Task 3: Check basic feasibility
-    if bedrooms is not None:
-        if bedrooms not in SUPPORTED_BEDROOMS:
-            reason_codes.append('BEDROOM_COUNT_UNSUPPORTED')
-            suggestions.append(f'This system supports {SUPPORTED_BEDROOMS.start}–{SUPPORTED_BEDROOMS.stop - 1} bedrooms. You requested {bedrooms}.')
+    if bedrooms is not None and bedrooms not in SUPPORTED_BEDROOMS:
+        reason_codes.append('BEDROOM_COUNT_UNSUPPORTED')
+        suggestions.append(f'This system supports {SUPPORTED_BEDROOMS.start}–{SUPPORTED_BEDROOMS.stop - 1} bedrooms. You requested {bedrooms}.')
 
-    if bathrooms is not None:
-        if bathrooms not in SUPPORTED_BATHROOMS:
-            reason_codes.append('BATHROOM_COUNT_UNSUPPORTED')
-            suggestions.append(f'This system supports {SUPPORTED_BATHROOMS.start}–{SUPPORTED_BATHROOMS.stop - 1} bathrooms. You requested {bathrooms}.')
+    if bathrooms is not None and bathrooms not in SUPPORTED_BATHROOMS:
+        reason_codes.append('BATHROOM_COUNT_UNSUPPORTED')
+        suggestions.append(f'This system supports {SUPPORTED_BATHROOMS.start}–{SUPPORTED_BATHROOMS.stop - 1} bathrooms. You requested {bathrooms}.')
 
-    if floors is not None:
-        if floors not in SUPPORTED_FLOORS:
-            reason_codes.append('FLOOR_COUNT_UNSUPPORTED')
-            suggestions.append(f'This system supports {SUPPORTED_FLOORS.start}–{SUPPORTED_FLOORS.stop - 1} floors. You requested {floors}.')
+    if floors is not None and floors not in SUPPORTED_FLOORS:
+        reason_codes.append('FLOOR_COUNT_UNSUPPORTED')
+        suggestions.append(f'This system supports {SUPPORTED_FLOORS.start}–{SUPPORTED_FLOORS.stop - 1} floors. You requested {floors}.')
 
     # Footprint check
     if bedrooms and land.buildable_area_sqft > 0:
@@ -508,7 +503,7 @@ def check_feasibility(requirements: Dict[str, Any]) -> FeasibilityResult:
 # Advice mode (LAND_FEASIBILITY_ADVICE)
 # ---------------------------------------------------------------------------
 
-def generate_feasibility_advice(requirements: Dict[str, Any]) -> Dict[str, Any]:
+def generate_feasibility_advice(requirements: dict[str, Any]) -> dict[str, Any]:
     """
     For LAND_FEASIBILITY_ADVICE intent: given land info, return practical ranges
     based on actual catalogue coverage. Does NOT give one fake exact answer.
@@ -551,7 +546,7 @@ def generate_feasibility_advice(requirements: Dict[str, Any]) -> Dict[str, Any]:
         }
 
     # Group by floor count
-    floor_options: Dict[int, Dict[str, Any]] = {}
+    floor_options: dict[int, dict[str, Any]] = {}
     for f in sorted(set(p.floors for p in land_compatible)):
         plans_for_floor = [p for p in land_compatible if p.floors == f]
         bed_range = sorted(set(p.bedrooms for p in plans_for_floor))

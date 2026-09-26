@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 """Deterministic, configurable suitability scoring for validated base plans."""
 
 from typing import TYPE_CHECKING

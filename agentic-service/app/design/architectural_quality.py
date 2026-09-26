@@ -1,5 +1,6 @@
 """Deterministic residential quality gate, independent of geometry certification."""
 
+import itertools
 import logging
 from dataclasses import asdict, dataclass
 from heapq import heappop, heappush
@@ -85,8 +86,8 @@ def _topology_geometry(design):
     density = sum(room.width * room.length for room in rooms) / max(width * height, 0.01)
     useful = [room for room in rooms if room_kind(room.room_type) in PUBLIC | {'bedroom', 'home_office', 'family_lounge'}]
     corridor_only = [room for room in rooms if room_kind(room.room_type) in CIRCULATION_TYPES]
-    cross_sections_x = all(any(room.x < (a + b) / 2 < room.x + room.width for room in useful) for a, b in zip(xs, xs[1:]))
-    cross_sections_y = all(any(room.y < (a + b) / 2 < room.y + room.length for room in useful) for a, b in zip(ys, ys[1:]))
+    cross_sections_x = all(any(room.x < (a + b) / 2 < room.x + room.width for room in useful) for a, b in itertools.pairwise(xs))
+    cross_sections_y = all(any(room.y < (a + b) / 2 < room.y + room.length for room in useful) for a, b in itertools.pairwise(ys))
     meaningful = cross_sections_x and cross_sections_y
     broad_wings = all(min(xs[i] - xs[0], xs[-1] - xs[i], ys[j] - ys[0], ys[-1] - ys[j]) >= 8 for i, j in concave)
     family = design.template_family or ''

@@ -562,7 +562,7 @@ public partial class ConstructorWorkflowControllerTests
         var json = JsonSerializer.Serialize(okResult.Value);
         Assert.Contains(reqA.Id.ToString(), json);
         Assert.DoesNotContain(reqB.Id.ToString(), json);
-    
+
 
         [Fact]
         public async Task ConstructorCanSetPhasePendingToInProgress()
@@ -588,7 +588,7 @@ public partial class ConstructorWorkflowControllerTests
         public async Task CompletedPhaseCannotReturnToPending()
         {
             var project = SetupProjectWithPhase("Completed");
-            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => 
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
                 _workflowService.UpdatePhaseStatusAsync(project.Id, project.ConstructionPhases.First().Id, project.ContractorId!.Value, "Pending"));
             Assert.Contains("Cannot transition from Completed back to Pending", ex.Message);
         }
@@ -623,8 +623,8 @@ public partial class ConstructorWorkflowControllerTests
             var project = SetupProjectWithPhase("Pending");
             project.Status = "Cancelled";
             _context.SaveChanges();
-            
-            await Assert.ThrowsAsync<HousePlanner.API.Exceptions.ProjectCancelledException>(() => 
+
+            await Assert.ThrowsAsync<HousePlanner.API.Exceptions.ProjectCancelledException>(() =>
                 _workflowService.UpdatePhaseStatusAsync(project.Id, project.ConstructionPhases.First().Id, project.ContractorId!.Value, "InProgress"));
         }
 
@@ -634,8 +634,8 @@ public partial class ConstructorWorkflowControllerTests
             var project = SetupProjectWithPhase("Pending");
             project.Status = "Completed";
             _context.SaveChanges();
-            
-            await Assert.ThrowsAsync<InvalidOperationException>(() => 
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() =>
                 _workflowService.UpdatePhaseStatusAsync(project.Id, project.ConstructionPhases.First().Id, project.ContractorId!.Value, "InProgress"));
         }
 
@@ -647,9 +647,9 @@ public partial class ConstructorWorkflowControllerTests
             _context.ConstructionPhases.Add(phase2);
             _context.SaveChanges();
 
-            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => 
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
                 _workflowService.UpdatePhaseStatusAsync(project.Id, project.ConstructionPhases.First().Id, project.ContractorId!.Value, "InProgress"));
-            
+
             Assert.Contains("Complete the current phase before starting the next phase", ex.Message);
         }
 
@@ -679,9 +679,9 @@ public partial class ConstructorWorkflowControllerTests
         {
             var project = SetupProjectWithPhase("Pending", aiDuration: 10, plannedDuration: 10);
             var phase = project.ConstructionPhases.First();
-            
+
             var result = await _workflowService.UpdatePhaseScheduleAsync(project.Id, phase.Id, project.ContractorId!.Value, 15);
-            
+
             Assert.NotNull(result);
             Assert.Equal(15, result.PlannedDurationDays);
             Assert.Equal(10, result.AiEstimatedDurationDays);
@@ -694,16 +694,16 @@ public partial class ConstructorWorkflowControllerTests
             var phase2 = new ConstructionPhase { Id = Guid.NewGuid(), ProjectId = project.Id, PhaseName = "Phase 2", Status = "Pending", SequenceOrder = 2, PlannedDurationDays = 5, PlannedStartDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(10)) };
             _context.ConstructionPhases.Add(phase2);
             _context.SaveChanges();
-            
+
             var phase = project.ConstructionPhases.First();
-            
+
             var result = await _workflowService.UpdatePhaseScheduleAsync(project.Id, phase.Id, project.ContractorId!.Value, 15);
-            
+
             Assert.NotNull(result);
             // Downstream calculation verified
             var updatedProject = _context.Projects.Include(p => p.ConstructionPhases).First(p => p.Id == project.Id);
             var updatedPhase2 = updatedProject.ConstructionPhases.First(p => p.Id == phase2.Id);
-            
+
             // Phase 2 start date should be Phase 1 start date + Phase 1 duration days (approx, based on logic)
             Assert.True(updatedPhase2.PlannedStartDate > phase2.PlannedStartDate);
         }
@@ -740,5 +740,5 @@ public partial class ConstructorWorkflowControllerTests
             _context.SaveChanges();
             return project;
         }
-}
+    }
 }

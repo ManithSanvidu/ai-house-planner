@@ -1,4 +1,4 @@
-from typing import Optional
+
 from app.design.diversity import geometry_fingerprint, stable_seed
 from app.design.geometry_engine import generate_geometry
 from app.design.models import ConceptAdvice, Requirements
@@ -13,13 +13,13 @@ from app.tools.geometry_validator import validate_geometry
 class GenerationFailure(ValueError):
     """No valid candidate exists within this procedural search's supported limits."""
 
-    def __init__(self, message: str, failures: Optional[list[dict]] = None):
+    def __init__(self, message: str, failures: list[dict] | None = None):
         super().__init__(message)
         self.failures = failures or []
 
 
 def generate_candidates(req: Requirements, plot: PlotConstraints,
-                        advice: Optional[ConceptAdvice] = None) -> tuple[list[DesignResult], list[dict]]:
+                        advice: ConceptAdvice | None = None) -> tuple[list[DesignResult], list[dict]]:
     if plot.terrain_type == 'unknown':
         raise GenerationFailure('Terrain is unknown; provide a manual terrain classification.')
     program = build_program(req)
@@ -70,8 +70,8 @@ def generate_candidates(req: Requirements, plot: PlotConstraints,
     return valid, rejected
 
 
-def select_best(req: Requirements, plot: PlotConstraints, advice: Optional[ConceptAdvice] = None,
-                excluded_fingerprints: Optional[set[str]] = None) -> DesignResult:
+def select_best(req: Requirements, plot: PlotConstraints, advice: ConceptAdvice | None = None,
+                excluded_fingerprints: set[str] | None = None) -> DesignResult:
     candidates, rejected = generate_candidates(req, plot, advice)
     if not candidates:
         raise GenerationFailure('No valid conceptual layout fits the plot, room program and area limits.', rejected)

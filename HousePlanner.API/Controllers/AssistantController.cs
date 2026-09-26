@@ -37,7 +37,7 @@ public class AssistantController : ControllerBase
             var client = _httpClientFactory.CreateClient();
             client.DefaultRequestHeaders.Add("X-Internal-API-Key", internalApiKey);
 
-        var payload = new { message = request.Message, history = request.History };
+            var payload = new { message = request.Message, history = request.History };
             var response = await client.PostAsJsonAsync($"{agenticServiceUrl.TrimEnd('/')}/assistant/interpret", payload);
 
             if (!response.IsSuccessStatusCode)

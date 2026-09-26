@@ -33,11 +33,11 @@ public class DesignCompatibilityController : ControllerBase
     public async Task<IActionResult> GetOptions([FromBody] DesignCompatibilityRequestDto request, CancellationToken cancellationToken)
     {
         var baseReq = new DesignOptionsRequestDto();
-        
+
         if (request.LandSize.HasValue && !string.IsNullOrEmpty(request.LandUnit))
         {
             decimal perches = request.LandUnit.ToLower() == "sqft" ? request.LandSize.Value / 272.25m : request.LandSize.Value;
-            
+
             if (perches < 8) baseReq.LandRangeId = "LAND_5_8";
             else if (perches < 12) baseReq.LandRangeId = "LAND_8_12";
             else if (perches < 20) baseReq.LandRangeId = "LAND_12_20";
@@ -46,7 +46,7 @@ public class DesignCompatibilityController : ControllerBase
         }
 
         var options_land = await _designOptionsService.GetAvailableOptionsAsync(baseReq, cancellationToken);
-        
+
         var currentFloors = request.Floors.HasValue && options_land.Floors.Contains(request.Floors.Value) ? request.Floors : null;
         var req_floors = new DesignOptionsRequestDto { LandRangeId = baseReq.LandRangeId, Floors = currentFloors };
         var options_floors = await _designOptionsService.GetAvailableOptionsAsync(req_floors, cancellationToken);
@@ -57,14 +57,14 @@ public class DesignCompatibilityController : ControllerBase
 
         var currentBathrooms = request.Bathrooms.HasValue && options_bedrooms.Bathrooms.Contains(request.Bathrooms.Value) ? request.Bathrooms : null;
         var currentStyle = !string.IsNullOrEmpty(request.Style) && options_bedrooms.ArchitecturalStyles.Contains(request.Style) ? request.Style : null;
-        
-        var req_features = new DesignOptionsRequestDto 
-        { 
-            LandRangeId = baseReq.LandRangeId, 
-            Floors = currentFloors, 
-            Bedrooms = currentBedrooms, 
-            Bathrooms = currentBathrooms, 
-            ArchitecturalStyle = currentStyle 
+
+        var req_features = new DesignOptionsRequestDto
+        {
+            LandRangeId = baseReq.LandRangeId,
+            Floors = currentFloors,
+            Bedrooms = currentBedrooms,
+            Bathrooms = currentBathrooms,
+            ArchitecturalStyle = currentStyle
         };
         var options_features = await _designOptionsService.GetAvailableOptionsAsync(req_features, cancellationToken);
 

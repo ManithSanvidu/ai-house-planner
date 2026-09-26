@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 """Add the small, hand-authored diversity set to the base-plan seed file.
 
 This script is deliberately idempotent.  It replaces only plans whose codes use

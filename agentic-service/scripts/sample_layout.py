@@ -44,7 +44,7 @@ def sample_and_report(target_beds, target_floors, data):
         for fail in arch_res.failures:
             print(f" - {fail}")
 
-with open('../HousePlanner.API/Data/Seed/pre-designed-plans.json', 'r') as f:
+with open('../HousePlanner.API/Data/Seed/pre-designed-plans.json') as f:
     data = json.load(f)
 
 sample_and_report(2, 1, data)

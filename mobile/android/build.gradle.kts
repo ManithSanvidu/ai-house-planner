@@ -20,6 +20,14 @@ subprojects {
     project.layout.buildDirectory.value(newSubprojectBuildDir)
 }
 subprojects {
+    afterEvaluate {
+        project.extensions.findByType<com.android.build.gradle.BaseExtension>()?.apply {
+            ndkVersion = "25.2.9519653"
+        }
+    }
+}
+
+subprojects {
     project.evaluationDependsOn(":app")
 }
 

@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Optional, Union
+
 """Validated base-plan catalog used as the primary design knowledge source."""
 
 import json
@@ -35,9 +35,9 @@ class BasePlanRecord:
     floors: int
     topology_family: str
     minimum_land_perches: float
-    maximum_land_perches: Optional[float]
-    minimum_plot_width_ft: Optional[float]
-    minimum_plot_length_ft: Optional[float]
+    maximum_land_perches: float | None
+    minimum_plot_width_ft: float | None
+    minimum_plot_length_ft: float | None
     supported_plot_shapes: list[str]
     supported_terrains: list[str]
     supported_styles: list[str]
@@ -55,7 +55,7 @@ class BasePlanRecord:
         return DesignResult.model_validate_json(self.layout_json)
 
     @cached_property
-    def primary_entrance_wall(self) -> Optional[str]:
+    def primary_entrance_wall(self) -> str | None:
         return self.design.entrances[0].wall if self.design.entrances else None
 
     @cached_property
@@ -169,7 +169,7 @@ def _requirements_for(design: DesignResult) -> Requirements:
     })
 
 
-def _record_from_design(source: dict, design: DesignResult, suffix: str = '') -> Optional[BasePlanRecord]:
+def _record_from_design(source: dict, design: DesignResult, suffix: str = '') -> BasePlanRecord | None:
     actual_bathrooms = count_bathrooms(design.rooms)
     if source.get('bathrooms') != actual_bathrooms:
         logger.warning('Skipping catalogue plan %s: bathroom count mismatch (declared %s, actual %s).',
@@ -346,7 +346,7 @@ def rank_base_plans(plans: Iterable[BasePlanRecord], req: Requirements, plot: Pl
 
 
 def deduplicate_base_plans(plans: Iterable[BasePlanRecord],
-                           excluded_fingerprint: Optional[str] = None) -> list[BasePlanRecord]:
+                           excluded_fingerprint: str | None = None) -> list[BasePlanRecord]:
     """Keep the first (highest-ranked) representative of each geometry."""
     seen = {excluded_fingerprint} if excluded_fingerprint else set()
     unique = []

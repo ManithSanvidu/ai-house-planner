@@ -157,17 +157,17 @@ public class CustomerConstructionController : ControllerBase
         if (plan == null) return NotFound("Plan not found or not architect-validated.");
 
         var executionStrategy = _db.Database.CreateExecutionStrategy();
-        
+
         var request = new ConstructorProjectRequest();
-        
+
         await executionStrategy.ExecuteAsync(async () =>
         {
             using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
-            
+
             var landSubmission = new LandSubmission { Id = Guid.NewGuid(), ClientId = customerId.Value, BasePreDesignedPlanId = plan.Id, LandSizePerches = plan.MinimumLandSizePerches, PreferredBedrooms = plan.Bedrooms, PreferredFloors = plan.FloorCount, CreatedAt = DateTimeOffset.UtcNow, UpdatedAt = DateTimeOffset.UtcNow };
             var workflow = new WorkflowState { Id = Guid.NewGuid(), LandSubmissionId = landSubmission.Id, Status = "approved", ApprovalStatus = "approved", CreatedAt = DateTimeOffset.UtcNow, UpdatedAt = DateTimeOffset.UtcNow };
             var houseDesign = new HouseDesign { Id = Guid.NewGuid(), WorkflowStateId = workflow.Id, BasePreDesignedPlanId = plan.Id, DesignSource = "PreDesignedPlan", LayoutJson = plan.LayoutJson, FloorCount = plan.FloorCount, TotalBuiltUpAreaSqft = plan.TotalBuiltUpAreaSqft, Version = 1, IsCurrent = true };
-            
+
             _db.LandSubmissions.Add(landSubmission);
             _db.WorkflowStates.Add(workflow);
             _db.HouseDesigns.Add(houseDesign);

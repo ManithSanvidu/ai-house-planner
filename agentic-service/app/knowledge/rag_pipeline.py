@@ -10,12 +10,11 @@ Pipeline:
 from __future__ import annotations
 
 import hashlib
-import json
 import logging
 import os
 import re
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import psycopg2
 import psycopg2.extras
@@ -61,7 +60,7 @@ def _get_db_connection_string() -> str:
 
 def _dotnet_to_psycopg2(dotnet_str: str) -> str:
     """Convert .NET-style connection string to psycopg2 DSN."""
-    parts: Dict[str, str] = {}
+    parts: dict[str, str] = {}
     for segment in dotnet_str.split(';'):
         segment = segment.strip()
         if '=' in segment:
@@ -115,7 +114,7 @@ def ensure_schema():
 
 # ── Embedding Generation ────────────────────────────────────────────────────
 
-def _generate_embedding(text: str) -> List[float]:
+def _generate_embedding(text: str) -> list[float]:
     """Generate an embedding using OpenAI text-embedding-3-small."""
     if not OPENAI_API_KEY:
         raise RuntimeError("OPENAI_API_KEY is required for embedding generation.")
@@ -136,7 +135,7 @@ def _generate_embedding(text: str) -> List[float]:
     return resp.json()["data"][0]["embedding"]
 
 
-def _generate_embeddings_batch(texts: List[str]) -> List[List[float]]:
+def _generate_embeddings_batch(texts: list[str]) -> list[list[float]]:
     """Generate embeddings for a batch of texts."""
     if not OPENAI_API_KEY:
         raise RuntimeError("OPENAI_API_KEY is required for embedding generation.")
@@ -171,7 +170,7 @@ class Chunk:
     content_hash: str
 
 
-def _chunk_document(doc: Dict[str, str]) -> List[Chunk]:
+def _chunk_document(doc: dict[str, str]) -> list[Chunk]:
     """Split a document into overlapping chunks."""
     title = doc["title"]
     content = doc["content"]
@@ -207,7 +206,7 @@ def _chunk_document(doc: Dict[str, str]) -> List[Chunk]:
 
 # ── Storage ─────────────────────────────────────────────────────────────────
 
-def store_chunks(chunks: List[Chunk], embeddings: List[List[float]]):
+def store_chunks(chunks: list[Chunk], embeddings: list[list[float]]):
     """Store chunks with embeddings into pgvector."""
     dsn = _get_db_connection_string()
     conn = psycopg2.connect(dsn)
@@ -252,7 +251,7 @@ def seed_knowledge_base():
     ensure_schema()
 
     print(f"[RAG] Processing {len(KNOWLEDGE_DOCUMENTS)} documents...")
-    all_chunks: List[Chunk] = []
+    all_chunks: list[Chunk] = []
     for doc in KNOWLEDGE_DOCUMENTS:
         all_chunks.extend(_chunk_document(doc))
 
@@ -260,7 +259,7 @@ def seed_knowledge_base():
     texts = [f"{c.title}: {c.content}" for c in all_chunks]
 
     # Batch in groups of 20
-    all_embeddings: List[List[float]] = []
+    all_embeddings: list[list[float]] = []
     batch_size = 20
     for i in range(0, len(texts), batch_size):
         batch = texts[i:i + batch_size]
@@ -288,8 +287,8 @@ class RetrievedChunk:
 def search_architecture_knowledge(
     query: str,
     top_k: int = TOP_K_DEFAULT,
-    category_filter: Optional[str] = None,
-) -> List[RetrievedChunk]:
+    category_filter: str | None = None,
+) -> list[RetrievedChunk]:
     """
     Semantic search against the knowledge base.
     Returns top-k most relevant chunks above the similarity threshold.
@@ -345,8 +344,8 @@ def search_architecture_knowledge(
 def search_knowledge_as_dicts(
     query: str,
     top_k: int = TOP_K_DEFAULT,
-    category_filter: Optional[str] = None,
-) -> List[Dict[str, Any]]:
+    category_filter: str | None = None,
+) -> list[dict[str, Any]]:
     """Convenience wrapper returning dicts for API serialization."""
     results = search_architecture_knowledge(query, top_k, category_filter)
     return [

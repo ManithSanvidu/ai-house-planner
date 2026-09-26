@@ -1,4 +1,3 @@
-from typing import Optional, Union
 """
 Deterministic geometry validation for house designs.
 
@@ -57,8 +56,8 @@ def validate_geometry(
     expected_floors: int,
     land_size_perches: float,
     *,
-    plot: Optional[PlotConstraints] = None,
-    design: Optional[DesignResult] = None,
+    plot: PlotConstraints | None = None,
+    design: DesignResult | None = None,
 ) -> GeometryValidationResult:
     """
     Run all geometry checks on a generated design.
@@ -213,8 +212,8 @@ def _validate_vertical_alignment(result: GeometryValidationResult, rooms: list[R
 
 
 def _validate_spatial_rules(result: GeometryValidationResult, rooms: list[RoomLayout],
-                            expected_floors: int, plot: Optional[PlotConstraints],
-                            design: Optional[DesignResult]) -> None:
+                            expected_floors: int, plot: PlotConstraints | None,
+                            design: DesignResult | None) -> None:
     if len({r.room_id for r in rooms}) != len(rooms):
         result.fail('duplicate_room_id', 'Room IDs must be unique across all floors.')
     if {r.floor for r in rooms} != set(range(1, expected_floors+1)):
