@@ -3,9 +3,49 @@
 @import "tailwindcss";
 @custom-variant dark (&:where(.dark, .dark *));
 
+@theme {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-surface-muted: var(--surface-muted);
+
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+}
+
 :root {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  
+  --background: #fcfcfd;
+  --surface: #ffffff;
+  --surface-elevated: #f8fafc;
+  --surface-muted: #f1f5f9;
+
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+
+  --border: #e2e8f0;
+  --border-strong: #cbd5e1;
+}
+
+.dark {
+  --background: #030712;
+  --surface: #111827;
+  --surface-elevated: #1F2937;
+  --surface-muted: #374151;
+
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+
+  --border: #1e293b;
+  --border-strong: #334155;
 }
 
 body {
@@ -15,12 +55,8 @@ body {
 }
 
 html {
-  background-color: #fcfcfd;
-}
-
-html.dark {
-  background-color: #030712;
-  color: #ffffff;
+  background-color: var(--background);
+  color: var(--text-primary);
 }
 
 /* Custom premium utility styles */

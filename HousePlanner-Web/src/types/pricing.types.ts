@@ -3,31 +3,31 @@
  * Properties use camelCase as serialised by ASP.NET Core's default JSON policy.
  */
 export interface TerrainMultiplier {
-  flat: number;
-  hillside: number;
-  coastal: number;
+ flat: number;
+ hillside: number;
+ coastal: number;
 }
 
 /**
  * Matches the backend PricingData entity returned by GET /pricing.
  */
 export interface PricingItem {
-  id: number;
-  itemName: string;
-  category: string;
-  unitCostLkr: number;
-  unit: string;
-  terrainMultiplier: TerrainMultiplier;
-  displayGroup?: string | null;
-  provider?: string | null;
-  sourceReference?: string | null;
-  region: string;
-  qualityLevel: 'Basic' | 'Standard' | 'Premium' | 'Luxury';
-  isActive: boolean;
-  createdAt: string;
-  updatedByUserId?: string | null;
-  updatedByName?: string | null;
-  updatedAt: string; // ISO-8601 DateTimeOffset
+ id: number;
+ itemName: string;
+ category: string;
+ unitCostLkr: number;
+ unit: string;
+ terrainMultiplier: TerrainMultiplier;
+ displayGroup?: string | null;
+ provider?: string | null;
+ sourceReference?: string | null;
+ region: string;
+ qualityLevel: 'Basic' | 'Standard' | 'Premium' | 'Luxury';
+ isActive: boolean;
+ createdAt: string;
+ updatedByUserId?: string | null;
+ updatedByName?: string | null;
+ updatedAt: string; // ISO-8601 DateTimeOffset
 }
 
 /**
@@ -35,14 +35,14 @@ export interface PricingItem {
  * Mirrors CreatePricingDto on the backend.
  */
 export interface CreatePricingItemRequest {
-  itemName: string;
-  category: string;
-  displayGroup?: string | null;
-  unitCostLkr: number;
-  terrainMultiplier: TerrainMultiplier;
-  sourceReference?: string | null;
-  region: string;
-  qualityLevel: 'Basic' | 'Standard' | 'Premium' | 'Luxury';
+ itemName: string;
+ category: string;
+ displayGroup?: string | null;
+ unitCostLkr: number;
+ terrainMultiplier: TerrainMultiplier;
+ sourceReference?: string | null;
+ region: string;
+ qualityLevel: 'Basic' | 'Standard' | 'Premium' | 'Luxury';
 }
 
 /**
@@ -50,18 +50,18 @@ export interface CreatePricingItemRequest {
  * Mirrors UpdatePricingDto on the backend.
  */
 export interface UpdatePricingItemRequest {
-  unitCostLkr: number;
-  terrainMultiplier: TerrainMultiplier;
-  reason?: string | null;
+ unitCostLkr: number;
+ terrainMultiplier: TerrainMultiplier;
+ reason?: string | null;
 }
 
 export interface PricingHistoryItem {
-  id: string;
-  pricingDataId: number;
-  previousValue: number;
-  newValue: number;
-  changedByUserId?: string | null;
-  changedByName?: string | null;
-  changedAt: string;
-  reason?: string | null;
+ id: string;
+ pricingDataId: number;
+ previousValue: number;
+ newValue: number;
+ changedByUserId?: string | null;
+ changedByName?: string | null;
+ changedAt: string;
+ reason?: string | null;
 }

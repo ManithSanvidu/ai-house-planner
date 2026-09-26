@@ -6,8 +6,8 @@ export interface CreateStaffRequest { fullName:string; email:string; password:st
 export interface UpdateStaffRequest { fullName:string; email:string; role:StaffRole }
 
 export const staffService = {
-  list: async (role?:StaffRole) => (await apiClient.get<StaffAccount[]>('/admin/staff',{params:role?{role}:undefined})).data,
-  create: async (request:CreateStaffRequest) => (await apiClient.post<StaffAccount>('/admin/staff',request)).data,
-  update: async (id:string,request:UpdateStaffRequest) => (await apiClient.put<StaffAccount>(`/admin/staff/${id}`,request)).data,
-  setDisabled: async (id:string,disabled:boolean) => (await apiClient.patch<StaffAccount>(`/admin/staff/${id}/status`,{disabled})).data,
+ list: async (role?:StaffRole) => (await apiClient.get<StaffAccount[]>('/admin/staff',{params:role?{role}:undefined})).data,
+ create: async (request:CreateStaffRequest) => (await apiClient.post<StaffAccount>('/admin/staff',request)).data,
+ update: async (id:string,request:UpdateStaffRequest) => (await apiClient.put<StaffAccount>(`/admin/staff/${id}`,request)).data,
+ setDisabled: async (id:string,disabled:boolean) => (await apiClient.patch<StaffAccount>(`/admin/staff/${id}/status`,{disabled})).data,
 };
