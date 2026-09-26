@@ -407,6 +407,12 @@ namespace HousePlanner.API.Controllers
 
                     if (root.TryGetProperty("phases", out var phasesList))
                     {
+                        var existingPhases = await _db.ConstructionPhases.Where(cp => cp.ProjectId == request.Project.Id).ToListAsync();
+                        if (existingPhases.Any())
+                        {
+                            _db.ConstructionPhases.RemoveRange(existingPhases);
+                        }
+
                         var currentDate = DateOnly.FromDateTime(DateTime.UtcNow);
                         int order = 1;
 
@@ -471,6 +477,35 @@ namespace HousePlanner.API.Controllers
             return Ok(new { request.Id, request.Status, request.DeclineReason });
         }
 
+        [HttpPatch("projects/{projectId}/phases/{phaseId}/status")]
+        [Authorize(Roles = "Constructor")]
+        public async Task<IActionResult> UpdatePhaseStatus(Guid projectId, Guid phaseId, [FromBody] PhaseStatusUpdateDto dto)
+        {
+            var user = await _currentUserContext.GetAsync(HttpContext);
+            if (user?.Id == null) return Unauthorized();
+
+            if (string.IsNullOrWhiteSpace(dto.Status)) return BadRequest(new { message = "Status is required." });
+
+            try
+            {
+                var result = await _workflowService.UpdatePhaseStatusAsync(projectId, phaseId, user.Id.Value, dto.Status);
+                if (result == null) return NotFound(new { message = "Project or phase not found." });
+                return Ok(result);
+            }
+            catch (HousePlanner.API.Exceptions.ProjectCancelledException ex)
+            {
+                return Conflict(new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new { message = ex.Message });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         [HttpPost("projects/{projectId}/duration")]
         [Authorize(Roles = "Constructor")]
         public async Task<IActionResult> SetEstimatedDuration(Guid projectId, [FromBody] int estimatedDays)
@@ -505,4 +540,5 @@ namespace HousePlanner.API.Controllers
     }
 
     public record DeclineConstructionRequest(string? Reason);
+    public record PhaseStatusUpdateDto(string Status);
 }

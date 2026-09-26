@@ -161,6 +161,11 @@ export const constructorWorkflowService = {
     updatePhaseSchedule: async (projectId: string, phaseId: string, plannedDurationDays: number): Promise<ConstructionPhase> => {
         const response = await axios.put(`${API_URL}/projects/${projectId}/phases/${phaseId}/schedule`, { plannedDurationDays }, { headers: await getAuthHeaders() });
         return response.data;
+    },
+
+    updatePhaseStatus: async (projectId: string, phaseId: string, status: string): Promise<ConstructionPhase> => {
+        const response = await axios.patch(`${API_URL}/projects/${projectId}/phases/${phaseId}/status`, { status }, { headers: await getAuthHeaders() });
+        return response.data;
     }
 };
 

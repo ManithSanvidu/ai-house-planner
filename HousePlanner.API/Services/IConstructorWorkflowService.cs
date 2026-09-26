@@ -22,5 +22,6 @@ namespace HousePlanner.API.Services
         // Setup Duration Method
         Task<bool> SetProjectEstimatedDurationAsync(Guid projectId, Guid constructorId, int estimatedDays);
         Task<HousePlanner.API.DTOs.ConstructionPhaseDto?> UpdatePhaseScheduleAsync(Guid projectId, Guid phaseId, Guid constructorId, int plannedDurationDays);
+        Task<HousePlanner.API.DTOs.ConstructionPhaseDto?> UpdatePhaseStatusAsync(Guid projectId, Guid phaseId, Guid constructorId, string status);
     }
 }

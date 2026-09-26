@@ -389,5 +389,74 @@ namespace HousePlanner.API.Services
                 targetPhase.PlannedEndDate
             );
         }
+
+        public async Task<HousePlanner.API.DTOs.ConstructionPhaseDto?> UpdatePhaseStatusAsync(Guid projectId, Guid phaseId, Guid constructorId, string status)
+        {
+            var project = await _context.Projects
+                .Include(p => p.ConstructionPhases)
+                .FirstOrDefaultAsync(p => p.Id == projectId && p.ContractorId == constructorId);
+
+            if (project == null) return null;
+            if (project.Status.Equals("cancelled", StringComparison.OrdinalIgnoreCase))
+                throw new HousePlanner.API.Exceptions.ProjectCancelledException();
+            if (project.Status.Equals("completed", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("Cannot update phase status because the project is completed.");
+
+            var targetPhase = project.ConstructionPhases.FirstOrDefault(p => p.Id == phaseId);
+            if (targetPhase == null) return null;
+
+            if (status == "InProgress")
+            {
+                if (targetPhase.Status == "Completed")
+                    throw new InvalidOperationException("Cannot transition from Completed to In Progress.");
+
+                // Check for overlapping phases
+                var currentInProgress = project.ConstructionPhases.FirstOrDefault(p => p.Status == "InProgress" && p.Id != phaseId);
+                if (currentInProgress != null)
+                {
+                    throw new InvalidOperationException("Complete the current phase before starting the next phase.");
+                }
+
+                targetPhase.Status = "InProgress";
+                if (targetPhase.StartedAt == null)
+                {
+                    targetPhase.StartedAt = DateTimeOffset.UtcNow;
+                }
+            }
+            else if (status == "Completed")
+            {
+                targetPhase.Status = "Completed";
+                if (targetPhase.CompletedAt == null)
+                {
+                    targetPhase.CompletedAt = DateTimeOffset.UtcNow;
+                }
+            }
+            else if (status == "Pending")
+            {
+                if (targetPhase.Status == "Completed")
+                    throw new InvalidOperationException("Cannot transition from Completed back to Pending.");
+                
+                targetPhase.Status = "Pending";
+            }
+            else
+            {
+                throw new ArgumentException("Invalid status.");
+            }
+
+            await _context.SaveChangesAsync();
+
+            return new HousePlanner.API.DTOs.ConstructionPhaseDto(
+                targetPhase.Id,
+                targetPhase.PhaseName,
+                targetPhase.SequenceOrder,
+                targetPhase.Status,
+                targetPhase.StartedAt,
+                targetPhase.CompletedAt,
+                targetPhase.AiEstimatedDurationDays,
+                targetPhase.PlannedDurationDays,
+                targetPhase.PlannedStartDate,
+                targetPhase.PlannedEndDate
+            );
+        }
     }
 }
