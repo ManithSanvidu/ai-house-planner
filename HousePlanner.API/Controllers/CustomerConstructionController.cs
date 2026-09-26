@@ -156,24 +156,40 @@ public class CustomerConstructionController : ControllerBase
         var plan = await _db.PreDesignedHousePlans.FirstOrDefaultAsync(p => p.Id == dto.BasePreDesignedPlanId && p.IsActive, cancellationToken);
         if (plan == null) return NotFound("Plan not found or not architect-validated.");
 
-        var workflow = new WorkflowState { Id = Guid.NewGuid(), Status = "approved", ApprovalStatus = "approved", BasePreDesignedPlanId = plan.Id };
-        var landSubmission = new LandSubmission { Id = Guid.NewGuid(), ClientId = customerId.Value, Status = "approved", WorkflowStateId = workflow.Id, BasePreDesignedPlanId = plan.Id };
-        var houseDesign = new HouseDesign { Id = Guid.NewGuid(), WorkflowStateId = workflow.Id, BasePreDesignedPlanId = plan.Id, DesignSource = "PreDesignedPlan", LayoutJson = plan.LayoutJson, FloorCount = plan.FloorCount, TotalBuiltUpAreaSqft = plan.TotalBuiltUpAreaSqft, Version = 1, IsCurrent = true };
-        workflow.HouseDesigns.Add(houseDesign);
-        workflow.PreferredHouseDesignId = houseDesign.Id;
-        var validationRequest = new ValidationRequest { Id = Guid.NewGuid(), WorkflowStateId = workflow.Id, HouseDesignId = houseDesign.Id, ClientId = customerId.Value, Status = "Approved", DecisionAt = DateTimeOffset.UtcNow };
-        var project = NewProject(workflow.Id, houseDesign.Id);
+        var executionStrategy = _db.Database.CreateExecutionStrategy();
+        
+        var request = new ConstructorProjectRequest();
+        
+        await executionStrategy.ExecuteAsync(async () =>
+        {
+            using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
+            
+            var landSubmission = new LandSubmission { Id = Guid.NewGuid(), ClientId = customerId.Value, BasePreDesignedPlanId = plan.Id, LandSizePerches = plan.MinimumLandSizePerches, PreferredBedrooms = plan.Bedrooms, PreferredFloors = plan.FloorCount, CreatedAt = DateTimeOffset.UtcNow, UpdatedAt = DateTimeOffset.UtcNow };
+            var workflow = new WorkflowState { Id = Guid.NewGuid(), LandSubmissionId = landSubmission.Id, Status = "approved", ApprovalStatus = "approved", CreatedAt = DateTimeOffset.UtcNow, UpdatedAt = DateTimeOffset.UtcNow };
+            var houseDesign = new HouseDesign { Id = Guid.NewGuid(), WorkflowStateId = workflow.Id, BasePreDesignedPlanId = plan.Id, DesignSource = "PreDesignedPlan", LayoutJson = plan.LayoutJson, FloorCount = plan.FloorCount, TotalBuiltUpAreaSqft = plan.TotalBuiltUpAreaSqft, Version = 1, IsCurrent = true };
+            
+            _db.LandSubmissions.Add(landSubmission);
+            _db.WorkflowStates.Add(workflow);
+            _db.HouseDesigns.Add(houseDesign);
+            await _db.SaveChangesAsync(cancellationToken);
 
-        _db.WorkflowStates.Add(workflow);
-        _db.LandSubmissions.Add(landSubmission);
-        _db.HouseDesigns.Add(houseDesign);
-        _db.ValidationRequests.Add(validationRequest);
-        _db.Projects.Add(project);
+            workflow.PreferredHouseDesignId = houseDesign.Id;
+            await _db.SaveChangesAsync(cancellationToken);
 
-        var request = new ConstructorProjectRequest { Id = Guid.NewGuid(), Project = project, ProjectId = project.Id, CustomerId = customerId.Value, ConstructorId = dto.ConstructorId, HouseDesignId = houseDesign.Id, Status = "Pending" };
-        _db.ConstructorProjectRequests.Add(request);
+            var validationRequest = new ValidationRequest { Id = Guid.NewGuid(), WorkflowStateId = workflow.Id, HouseDesignId = houseDesign.Id, ClientId = customerId.Value, Status = "Approved", DecisionAt = DateTimeOffset.UtcNow };
+            var project = NewProject(workflow.Id, houseDesign.Id);
 
-        await _db.SaveChangesAsync(cancellationToken);
+            _db.ValidationRequests.Add(validationRequest);
+            _db.Projects.Add(project);
+            await _db.SaveChangesAsync(cancellationToken);
+
+            request = new ConstructorProjectRequest { Id = Guid.NewGuid(), Project = project, ProjectId = project.Id, CustomerId = customerId.Value, ConstructorId = dto.ConstructorId, HouseDesignId = houseDesign.Id, Status = "Pending" };
+            _db.ConstructorProjectRequests.Add(request);
+            await _db.SaveChangesAsync(cancellationToken);
+
+            await transaction.CommitAsync(cancellationToken);
+        });
+
         return CreatedAtAction(nameof(GetConstruction), new { }, new { request.Id, request.Status });
     }
 
