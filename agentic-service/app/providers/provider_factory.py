@@ -1,3 +1,4 @@
+from typing import Optional
 
 from app.config import DESIGN_PROVIDER_ORDER
 from app.providers.base_provider import ModelProvider
@@ -9,11 +10,11 @@ _PROVIDERS: dict[str, ModelProvider] = {
     "ollama": OllamaProvider(),
 }
 
-def get_provider(name: str) -> ModelProvider | None:
+def get_provider(name: str) -> Optional[ModelProvider]:
     """Retrieve a specific provider by name."""
     return _PROVIDERS.get(name.lower())
 
-def get_available_design_provider() -> ModelProvider | None:
+def get_available_design_provider() -> Optional[ModelProvider]:
     """
     Iterate through DESIGN_PROVIDER_ORDER.
     Return the first provider that passes its health check.
@@ -34,7 +35,7 @@ def get_available_design_provider() -> ModelProvider | None:
     return None
 
 
-def get_next_design_provider(after_provider: str) -> ModelProvider | None:
+def get_next_design_provider(after_provider: str) -> Optional[ModelProvider]:
     """Return the next healthy configured provider after a failed runtime call."""
     ordered = list(dict.fromkeys([*DESIGN_PROVIDER_ORDER, *_PROVIDERS.keys()]))
     try:

@@ -1,3 +1,4 @@
+from typing import Optional, Union
 import random
 from math import sqrt
 from typing import Literal
@@ -19,18 +20,18 @@ class Setbacks(BaseModel):
 class PlotConstraints(BaseModel):
     model_config = ConfigDict(allow_inf_nan=False)
     land_size_perches: float = Field(gt=0)
-    plot_width_ft: float | None = Field(None, gt=0)
-    plot_length_ft: float | None = Field(None, gt=0)
+    plot_width_ft: Optional[float] = Field(None, gt=0)
+    plot_length_ft: Optional[float] = Field(None, gt=0)
     road_side: Direction = 'south'
     north_direction: Literal['top', 'bottom', 'left', 'right', 'north', 'east', 'south', 'west'] = 'top'
-    entrance_side: Direction | None = None
+    entrance_side: Optional[Direction] = None
     terrain_type: Terrain = 'flat'
-    slope_direction: Direction | None = None
+    slope_direction: Optional[Direction] = None
     setbacks: Setbacks = Field(default_factory=Setbacks)
     setback_source: str = "conceptual_default"
     dimension_source: str = "user_supplied"
     parking_reserved: bool = False
-    design_seed: int | None = None
+    design_seed: Optional[int] = None
     notable_features: list[str] = Field(default_factory=list)
 
     @model_validator(mode='after')

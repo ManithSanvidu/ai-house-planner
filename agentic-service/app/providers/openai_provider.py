@@ -49,7 +49,7 @@ class OpenAIProvider(ModelProvider):
 
         payload = {
             "model": self.model_name,
-            "max_tokens": 300,  # Strategy schema is tiny, limit strictly to avoid massive token dumps
+            "max_tokens": 800,  # Strategy schema is tiny, but FinalResponse might need more space
             "temperature": 0.2,
             "response_format": {
                 "type": "json_schema",

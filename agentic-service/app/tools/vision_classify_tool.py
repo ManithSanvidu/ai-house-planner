@@ -1,3 +1,4 @@
+from typing import Optional, Union
 """
 Vision classification tool for land terrain analysis.
 
@@ -97,7 +98,7 @@ def _call_groq_vision(photo_url: str, prompt: str) -> str:
 
 
 
-def _parse_terrain_result(text: str) -> TerrainResult | None:
+def _parse_terrain_result(text: str) -> Optional[TerrainResult]:
     """
     Parse raw LLM text into a validated TerrainResult.
     Handles common issues like markdown code blocks around JSON.

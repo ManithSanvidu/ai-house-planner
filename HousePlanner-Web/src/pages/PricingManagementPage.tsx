@@ -121,17 +121,17 @@ function toViewModel(api: ApiPricingItem): PricingItem {
 // ─────────────────────────────────────────────
 
 const GROUP_COLORS: Record<string, string> = {
-  Foundation: 'bg-stone-50 text-stone-700 ring-1 ring-stone-200',
-  Structural: 'bg-blue-50 text-blue-700 ring-1 ring-blue-100',
-  Roofing: 'bg-orange-50 text-orange-700 ring-1 ring-orange-100',
-  Finishing: 'bg-violet-50 text-violet-700 ring-1 ring-violet-100',
-  MEP: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100',
-  Labour: 'bg-amber-50 text-amber-700 ring-1 ring-amber-100',
-  General: 'bg-slate-50 text-slate-600 ring-1 ring-slate-200',
+  Foundation: 'bg-stone-900/30 text-stone-300 ring-1 ring-stone-700',
+  Structural: 'bg-blue-900/30 text-blue-300 ring-1 ring-blue-800',
+  Roofing: 'bg-orange-900/30 text-orange-300 ring-1 ring-orange-800',
+  Finishing: 'bg-violet-900/30 text-violet-300 ring-1 ring-violet-800',
+  MEP: 'bg-emerald-900/30 text-emerald-300 ring-1 ring-emerald-800',
+  Labour: 'bg-amber-900/30 text-amber-300 ring-1 ring-amber-800',
+  General: 'bg-[#1F2937] text-slate-400 ring-1 ring-slate-200',
 };
 
 function getGroupColor(group: string): string {
-  return GROUP_COLORS[group] ?? 'bg-slate-50 text-slate-600 ring-1 ring-slate-200';
+  return GROUP_COLORS[group] ?? 'bg-[#1F2937] text-slate-400 ring-1 ring-slate-200';
 }
 
 function formatRateOrFactor(item: PricingItem): string {
@@ -201,13 +201,13 @@ interface SummaryCardProps {
 }
 
 const SummaryCard: React.FC<SummaryCardProps> = ({ icon, label, value, sub }) => (
-  <div className="bg-white rounded-2xl border border-slate-100 custom-shadow-sm px-6 py-5 flex items-center gap-4">
-    <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-500">
+  <div className="bg-[#111827] rounded-2xl border border-slate-800 custom-shadow-sm px-6 py-5 flex items-center gap-4">
+    <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-[#1F2937] border border-slate-800 flex items-center justify-center text-slate-400">
       {icon}
     </div>
     <div>
       <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400 mb-0.5">{label}</p>
-      <p className="text-2xl font-bold text-slate-900 leading-tight">{value}</p>
+      <p className="text-2xl font-bold text-white leading-tight">{value}</p>
       {sub && <p className="text-[11px] text-slate-400 mt-0.5">{sub}</p>}
     </div>
   </div>
@@ -225,10 +225,10 @@ const MultiplierBadge: React.FC<MultiplierBadgeProps> = ({ value }) => {
   const isBase = value === 1.0;
   const isHigh = value >= 1.2;
   const cls = isBase
-    ? 'text-slate-400 bg-slate-50 ring-1 ring-slate-100'
+    ? 'text-slate-400 bg-[#1F2937] ring-1 ring-slate-100'
     : isHigh
-    ? 'text-rose-600 bg-rose-50 ring-1 ring-rose-100'
-    : 'text-indigo-600 bg-indigo-50 ring-1 ring-indigo-100';
+    ? 'text-rose-400 bg-rose-900/30 ring-1 ring-rose-800'
+    : 'text-purple-400 bg-purple-900/30 ring-1 ring-purple-700/50';
 
   return (
     <span className={`inline-block px-2 py-0.5 rounded-md text-xs font-bold font-mono ${cls}`}>
@@ -324,24 +324,24 @@ const CreateModal: React.FC<CreateModalProps> = ({ onClose, onCreateSuccess }) =
       onClick={onClose}
     >
       <div
-        className="relative bg-white rounded-3xl border border-slate-100 custom-shadow-lg w-full max-w-lg mx-4 overflow-hidden max-h-[90vh] flex flex-col"
+        className="relative bg-[#111827] rounded-3xl border border-slate-800 custom-shadow-lg w-full max-w-lg mx-4 overflow-hidden max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="px-8 pt-8 pb-5 border-b border-slate-100 flex-shrink-0">
+        <div className="px-8 pt-8 pb-5 border-b border-slate-800 flex-shrink-0">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-[10px] font-bold tracking-[0.18em] text-indigo-500 uppercase mb-1">
+              <p className="text-[10px] font-bold tracking-[0.18em] text-purple-400 uppercase mb-1">
                 New Price Entry
               </p>
-              <h2 className="text-xl font-bold text-slate-900 leading-snug">Add Pricing Item</h2>
+              <h2 className="text-xl font-bold text-white leading-snug">Add Pricing Item</h2>
               <p className="text-xs text-slate-400 mt-1">
                 Define an agent-compatible rate for the AI Cost Estimator.
               </p>
             </div>
             <button
               onClick={onClose}
-              className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-colors"
+              className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-300 hover:bg-[#1F2937] transition-colors"
               aria-label="Close modal"
             >
               <X size={16} />
@@ -361,7 +361,7 @@ const CreateModal: React.FC<CreateModalProps> = ({ onClose, onCreateSuccess }) =
         <div className="px-8 py-5 space-y-4 overflow-y-auto">
           {/* Category Selector */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
               Category (Machine Contract)
             </label>
             <div className="grid grid-cols-2 gap-3">
@@ -370,8 +370,8 @@ const CreateModal: React.FC<CreateModalProps> = ({ onClose, onCreateSuccess }) =
                 onClick={() => handleCategoryChange('material')}
                 className={`py-2 px-3 rounded-xl text-xs font-semibold border text-center transition-all ${
                   form.category === 'material'
-                    ? 'border-indigo-600 bg-indigo-50/70 text-indigo-700 ring-2 ring-indigo-500/20'
-                    : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-white'
+                    ? 'border-purple-500 bg-purple-900/30/70 text-purple-300 ring-2 ring-indigo-500/20'
+                    : 'border-slate-700 bg-[#1F2937] text-slate-400 hover:bg-[#111827]'
                 }`}
               >
                 Material (per_sqft)
@@ -381,8 +381,8 @@ const CreateModal: React.FC<CreateModalProps> = ({ onClose, onCreateSuccess }) =
                 onClick={() => handleCategoryChange('labour')}
                 className={`py-2 px-3 rounded-xl text-xs font-semibold border text-center transition-all ${
                   form.category === 'labour'
-                    ? 'border-amber-600 bg-amber-50/70 text-amber-700 ring-2 ring-amber-500/20'
-                    : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-white'
+                    ? 'border-amber-600 bg-amber-900/30/70 text-amber-300 ring-2 ring-amber-500/20'
+                    : 'border-slate-700 bg-[#1F2937] text-slate-400 hover:bg-[#111827]'
                 }`}
               >
                 Labour (factor)
@@ -391,16 +391,16 @@ const CreateModal: React.FC<CreateModalProps> = ({ onClose, onCreateSuccess }) =
           </div>
 
           {/* Unit Note */}
-          <div className="flex items-center gap-2 rounded-xl bg-slate-50 border border-slate-200/80 px-3.5 py-2.5">
+          <div className="flex items-center gap-2 rounded-xl bg-[#1F2937] border border-slate-700/80 px-3.5 py-2.5">
             <Info size={14} className="text-slate-400 flex-shrink-0" />
-            <p className="text-xs text-slate-600">
+            <p className="text-xs text-slate-400">
               {form.category === 'material' ? (
                 <>
-                  <span className="font-semibold text-slate-800">Unit: LKR per sqft</span> (canonical backend value: <code className="text-indigo-600 font-mono">per_sqft</code>)
+                  <span className="font-semibold text-slate-100">Unit: LKR per sqft</span> (canonical backend value: <code className="text-purple-400 font-mono">per_sqft</code>)
                 </>
               ) : (
                 <>
-                  <span className="font-semibold text-slate-800">Unit: Labour factor</span> (canonical backend value: <code className="text-amber-600 font-mono">factor</code>)
+                  <span className="font-semibold text-slate-100">Unit: Labour factor</span> (canonical backend value: <code className="text-amber-600 font-mono">factor</code>)
                 </>
               )}
             </p>
@@ -408,7 +408,7 @@ const CreateModal: React.FC<CreateModalProps> = ({ onClose, onCreateSuccess }) =
 
           {/* Item Name */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1" htmlFor="create-itemName">
+            <label className="block text-xs font-semibold text-slate-300 mb-1" htmlFor="create-itemName">
               Item Name
             </label>
             <input
@@ -418,8 +418,8 @@ const CreateModal: React.FC<CreateModalProps> = ({ onClose, onCreateSuccess }) =
               value={form.itemName}
               onChange={handleChange('itemName')}
               disabled={submitting}
-              className={`w-full bg-slate-50 border rounded-xl px-4 py-2 text-sm text-slate-900 placeholder-slate-400 outline-none transition-all focus:bg-white focus:ring-2 focus:ring-indigo-400/40 ${
-                errors.itemName ? 'border-red-300 ring-1 ring-red-200' : 'border-slate-200 focus:border-indigo-300'
+              className={`w-full bg-[#1F2937] border rounded-xl px-4 py-2 text-sm text-white placeholder-slate-500 outline-none transition-all focus:bg-[#111827] focus:ring-2 focus:ring-purple-500/40 ${
+                errors.itemName ? 'border-red-300 ring-1 ring-red-200' : 'border-slate-700 focus:border-purple-500'
               }`}
             />
             {errors.itemName && (
@@ -429,7 +429,7 @@ const CreateModal: React.FC<CreateModalProps> = ({ onClose, onCreateSuccess }) =
 
           {/* Display Group */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1" htmlFor="create-displayGroup">
+            <label className="block text-xs font-semibold text-slate-300 mb-1" htmlFor="create-displayGroup">
               Display Group (UI Grouping)
             </label>
             <select
@@ -437,7 +437,7 @@ const CreateModal: React.FC<CreateModalProps> = ({ onClose, onCreateSuccess }) =
               value={form.displayGroup}
               onChange={handleChange('displayGroup')}
               disabled={submitting}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-sm text-slate-900 outline-none transition-all focus:bg-white focus:border-indigo-300 focus:ring-2 focus:ring-indigo-400/40"
+              className="w-full bg-[#1F2937] border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-white outline-none transition-all focus:bg-[#111827] focus:border-purple-500 focus:ring-2 focus:ring-purple-500/40"
             >
               {DISPLAY_GROUPS.map((g) => (
                 <option key={g} value={g}>
@@ -449,7 +449,7 @@ const CreateModal: React.FC<CreateModalProps> = ({ onClose, onCreateSuccess }) =
 
           {/* Unit Cost / Labour Factor */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1" htmlFor="create-unitCost">
+            <label className="block text-xs font-semibold text-slate-300 mb-1" htmlFor="create-unitCost">
               {form.category === 'material' ? 'Unit Cost (LKR / sqft)' : 'Labour Rate Factor'}
             </label>
             <input
@@ -461,8 +461,8 @@ const CreateModal: React.FC<CreateModalProps> = ({ onClose, onCreateSuccess }) =
               value={form.unitCost}
               onChange={handleChange('unitCost')}
               disabled={submitting}
-              className={`w-full bg-slate-50 border rounded-xl px-4 py-2 text-sm text-slate-900 placeholder-slate-400 outline-none transition-all focus:bg-white focus:ring-2 focus:ring-indigo-400/40 ${
-                errors.unitCost ? 'border-red-300 ring-1 ring-red-200' : 'border-slate-200 focus:border-indigo-300'
+              className={`w-full bg-[#1F2937] border rounded-xl px-4 py-2 text-sm text-white placeholder-slate-500 outline-none transition-all focus:bg-[#111827] focus:ring-2 focus:ring-purple-500/40 ${
+                errors.unitCost ? 'border-red-300 ring-1 ring-red-200' : 'border-slate-700 focus:border-purple-500'
               }`}
             />
             <p className="mt-1 text-[11px] text-slate-400">
@@ -477,12 +477,12 @@ const CreateModal: React.FC<CreateModalProps> = ({ onClose, onCreateSuccess }) =
 
           {/* Terrain Multipliers */}
           <div className="pt-1">
-            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
               Terrain Multipliers
             </label>
             <div className="grid grid-cols-3 gap-2.5">
               <div>
-                <label htmlFor="create-flatMultiplier" className="block text-[11px] text-slate-500 mb-1 font-medium">Flat</label>
+                <label htmlFor="create-flatMultiplier" className="block text-[11px] text-slate-400 mb-1 font-medium">Flat</label>
                 <input
                   id="create-flatMultiplier"
                   type="number"
@@ -491,11 +491,11 @@ const CreateModal: React.FC<CreateModalProps> = ({ onClose, onCreateSuccess }) =
                   value={form.flatMultiplier}
                   onChange={handleChange('flatMultiplier')}
                   disabled={submitting}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900 outline-none focus:bg-white focus:border-indigo-300"
+                  className="w-full bg-[#1F2937] border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white outline-none focus:bg-[#111827] focus:border-purple-500"
                 />
               </div>
               <div>
-                <label htmlFor="create-hillsideMultiplier" className="block text-[11px] text-slate-500 mb-1 font-medium">Hillside</label>
+                <label htmlFor="create-hillsideMultiplier" className="block text-[11px] text-slate-400 mb-1 font-medium">Hillside</label>
                 <input
                   id="create-hillsideMultiplier"
                   type="number"
@@ -504,11 +504,11 @@ const CreateModal: React.FC<CreateModalProps> = ({ onClose, onCreateSuccess }) =
                   value={form.hillsideMultiplier}
                   onChange={handleChange('hillsideMultiplier')}
                   disabled={submitting}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900 outline-none focus:bg-white focus:border-indigo-300"
+                  className="w-full bg-[#1F2937] border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white outline-none focus:bg-[#111827] focus:border-purple-500"
                 />
               </div>
               <div>
-                <label htmlFor="create-coastalMultiplier" className="block text-[11px] text-slate-500 mb-1 font-medium">Coastal</label>
+                <label htmlFor="create-coastalMultiplier" className="block text-[11px] text-slate-400 mb-1 font-medium">Coastal</label>
                 <input
                   id="create-coastalMultiplier"
                   type="number"
@@ -517,7 +517,7 @@ const CreateModal: React.FC<CreateModalProps> = ({ onClose, onCreateSuccess }) =
                   value={form.coastalMultiplier}
                   onChange={handleChange('coastalMultiplier')}
                   disabled={submitting}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900 outline-none focus:bg-white focus:border-indigo-300"
+                  className="w-full bg-[#1F2937] border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white outline-none focus:bg-[#111827] focus:border-purple-500"
                 />
               </div>
             </div>
@@ -525,24 +525,24 @@ const CreateModal: React.FC<CreateModalProps> = ({ onClose, onCreateSuccess }) =
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1" htmlFor="create-region">Region</label>
+              <label className="block text-xs font-semibold text-slate-300 mb-1" htmlFor="create-region">Region</label>
               <input
                 id="create-region"
                 type="text"
                 value={form.region}
                 onChange={handleChange('region')}
                 disabled={submitting}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 outline-none focus:bg-white focus:border-indigo-300"
+                className="w-full bg-[#1F2937] border border-slate-700 rounded-xl px-4 py-2 text-sm text-white outline-none focus:bg-[#111827] focus:border-purple-500"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1" htmlFor="create-qualityLevel">Quality Level</label>
+              <label className="block text-xs font-semibold text-slate-300 mb-1" htmlFor="create-qualityLevel">Quality Level</label>
               <select
                 id="create-qualityLevel"
                 value={form.qualityLevel}
                 onChange={handleChange('qualityLevel')}
                 disabled={submitting}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 outline-none focus:bg-white focus:border-indigo-300"
+                className="w-full bg-[#1F2937] border border-slate-700 rounded-xl px-4 py-2 text-sm text-white outline-none focus:bg-[#111827] focus:border-purple-500"
               >
                 {['Basic', 'Standard', 'Premium', 'Luxury'].map((level) => <option key={level} value={level}>{level}</option>)}
               </select>
@@ -551,7 +551,7 @@ const CreateModal: React.FC<CreateModalProps> = ({ onClose, onCreateSuccess }) =
 
           {/* Source Reference */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1" htmlFor="create-sourceReference">
+            <label className="block text-xs font-semibold text-slate-300 mb-1" htmlFor="create-sourceReference">
               Source Reference (Optional)
             </label>
             <input
@@ -561,17 +561,17 @@ const CreateModal: React.FC<CreateModalProps> = ({ onClose, onCreateSuccess }) =
               value={form.sourceReference}
               onChange={handleChange('sourceReference')}
               disabled={submitting}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 placeholder-slate-400 outline-none focus:bg-white focus:border-indigo-300"
+              className="w-full bg-[#1F2937] border border-slate-700 rounded-xl px-4 py-2 text-sm text-white placeholder-slate-500 outline-none focus:bg-[#111827] focus:border-purple-500"
             />
           </div>
         </div>
 
         {/* Modal Footer */}
-        <div className="px-8 py-5 border-t border-slate-100 flex items-center justify-end gap-3 flex-shrink-0 bg-slate-50/50">
+        <div className="px-8 py-5 border-t border-slate-800 flex items-center justify-end gap-3 flex-shrink-0 bg-[#1F2937]/50">
           <button
             onClick={onClose}
             disabled={submitting}
-            className="px-5 py-2.5 rounded-xl text-sm font-medium text-slate-600 border border-slate-200 bg-white hover:bg-slate-50 transition-colors disabled:opacity-50"
+            className="px-5 py-2.5 rounded-xl text-sm font-medium text-slate-400 border border-slate-700 bg-[#111827] hover:bg-[#1F2937] transition-colors disabled:opacity-50"
           >
             Cancel
           </button>
@@ -579,7 +579,7 @@ const CreateModal: React.FC<CreateModalProps> = ({ onClose, onCreateSuccess }) =
             id="modal-create-btn"
             onClick={handleSave}
             disabled={submitting}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white transition-all custom-shadow-sm disabled:opacity-60"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-purple-600 hover:bg-purple-500 active:scale-[0.98] text-white transition-all custom-shadow-sm disabled:opacity-60"
           >
             {submitting ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
             {submitting ? 'Creating…' : 'Create Item'}
@@ -656,20 +656,20 @@ const EditModal: React.FC<EditModalProps> = ({ item, onClose, onSaveSuccess }) =
       onClick={onClose}
     >
       <div
-        className="relative bg-white rounded-3xl border border-slate-100 custom-shadow-lg w-full max-w-lg mx-4 overflow-hidden"
+        className="relative bg-[#111827] rounded-3xl border border-slate-800 custom-shadow-lg w-full max-w-lg mx-4 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="px-8 pt-8 pb-6 border-b border-slate-100">
+        <div className="px-8 pt-8 pb-6 border-b border-slate-800">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-[10px] font-bold tracking-[0.18em] text-indigo-500 uppercase mb-1">
+              <p className="text-[10px] font-bold tracking-[0.18em] text-purple-400 uppercase mb-1">
                 Edit Pricing
               </p>
-              <h2 className="text-xl font-bold text-slate-900 leading-snug">{item.name}</h2>
+              <h2 className="text-xl font-bold text-white leading-snug">{item.name}</h2>
               <div className="flex items-center gap-2 mt-2">
                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
-                  isLabour ? 'bg-amber-50 text-amber-700 ring-1 ring-amber-200' : 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200'
+                  isLabour ? 'bg-amber-900/30 text-amber-300 ring-1 ring-amber-700' : 'bg-purple-900/30 text-purple-300 ring-1 ring-purple-700/50'
                 }`}>
                   {item.category}
                 </span>
@@ -681,7 +681,7 @@ const EditModal: React.FC<EditModalProps> = ({ item, onClose, onSaveSuccess }) =
             </div>
             <button
               onClick={onClose}
-              className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-colors"
+              className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-300 hover:bg-[#1F2937] transition-colors"
               aria-label="Close modal"
             >
               <X size={16} />
@@ -701,7 +701,7 @@ const EditModal: React.FC<EditModalProps> = ({ item, onClose, onSaveSuccess }) =
         <div className="px-8 py-6 space-y-4">
           <div>
             <label
-              className="block text-xs font-semibold text-slate-700 mb-1.5"
+              className="block text-xs font-semibold text-slate-300 mb-1.5"
               htmlFor="modal-unitCost"
             >
               {isLabour ? 'Labour Rate Factor' : 'Unit Cost (LKR / sqft)'}
@@ -714,8 +714,8 @@ const EditModal: React.FC<EditModalProps> = ({ item, onClose, onSaveSuccess }) =
               value={form.unitCost}
               onChange={handleChange('unitCost')}
               disabled={saving}
-              className={`w-full bg-slate-50 border rounded-xl px-4 py-2.5 text-sm text-slate-900 outline-none transition-all focus:bg-white focus:ring-2 focus:ring-indigo-400/40 ${
-                errors.unitCost ? 'border-red-300 ring-1 ring-red-200' : 'border-slate-200 focus:border-indigo-300'
+              className={`w-full bg-[#1F2937] border rounded-xl px-4 py-2.5 text-sm text-white outline-none transition-all focus:bg-[#111827] focus:ring-2 focus:ring-purple-500/40 ${
+                errors.unitCost ? 'border-red-300 ring-1 ring-red-200' : 'border-slate-700 focus:border-purple-500'
               }`}
             />
             <p className="mt-1 text-[11px] text-slate-400">
@@ -729,12 +729,12 @@ const EditModal: React.FC<EditModalProps> = ({ item, onClose, onSaveSuccess }) =
           </div>
 
           <div className="pt-2">
-            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
               Terrain Multipliers
             </label>
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <span className="block text-[11px] text-slate-500 mb-1 font-medium">Flat Multiplier</span>
+                <span className="block text-[11px] text-slate-400 mb-1 font-medium">Flat Multiplier</span>
                 <input
                   id="modal-flatMultiplier"
                   type="number"
@@ -743,11 +743,11 @@ const EditModal: React.FC<EditModalProps> = ({ item, onClose, onSaveSuccess }) =
                   value={form.flatMultiplier}
                   onChange={handleChange('flatMultiplier')}
                   disabled={saving}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 outline-none focus:bg-white focus:border-indigo-300"
+                  className="w-full bg-[#1F2937] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white outline-none focus:bg-[#111827] focus:border-purple-500"
                 />
               </div>
               <div>
-                <span className="block text-[11px] text-slate-500 mb-1 font-medium">Hillside Multiplier</span>
+                <span className="block text-[11px] text-slate-400 mb-1 font-medium">Hillside Multiplier</span>
                 <input
                   id="modal-hillsideMultiplier"
                   type="number"
@@ -756,11 +756,11 @@ const EditModal: React.FC<EditModalProps> = ({ item, onClose, onSaveSuccess }) =
                   value={form.hillsideMultiplier}
                   onChange={handleChange('hillsideMultiplier')}
                   disabled={saving}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 outline-none focus:bg-white focus:border-indigo-300"
+                  className="w-full bg-[#1F2937] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white outline-none focus:bg-[#111827] focus:border-purple-500"
                 />
               </div>
               <div>
-                <span className="block text-[11px] text-slate-500 mb-1 font-medium">Coastal Multiplier</span>
+                <span className="block text-[11px] text-slate-400 mb-1 font-medium">Coastal Multiplier</span>
                 <input
                   id="modal-coastalMultiplier"
                   type="number"
@@ -769,13 +769,13 @@ const EditModal: React.FC<EditModalProps> = ({ item, onClose, onSaveSuccess }) =
                   value={form.coastalMultiplier}
                   onChange={handleChange('coastalMultiplier')}
                   disabled={saving}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 outline-none focus:bg-white focus:border-indigo-300"
+                  className="w-full bg-[#1F2937] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white outline-none focus:bg-[#111827] focus:border-purple-500"
                 />
               </div>
             </div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1" htmlFor="modal-reason">Reason for change</label>
+            <label className="block text-xs font-semibold text-slate-300 mb-1" htmlFor="modal-reason">Reason for change</label>
             <input
               id="modal-reason"
               type="text"
@@ -783,7 +783,7 @@ const EditModal: React.FC<EditModalProps> = ({ item, onClose, onSaveSuccess }) =
               onChange={handleChange('reason')}
               disabled={saving}
               placeholder="e.g. September contractor rate review"
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-900 outline-none focus:bg-white focus:border-indigo-300"
+              className="w-full bg-[#1F2937] border border-slate-700 rounded-xl px-4 py-2 text-sm text-white outline-none focus:bg-[#111827] focus:border-purple-500"
             />
           </div>
         </div>
@@ -793,7 +793,7 @@ const EditModal: React.FC<EditModalProps> = ({ item, onClose, onSaveSuccess }) =
           <button
             onClick={onClose}
             disabled={saving}
-            className="px-5 py-2.5 rounded-xl text-sm font-medium text-slate-600 border border-slate-200 bg-white hover:bg-slate-50 transition-colors disabled:opacity-50"
+            className="px-5 py-2.5 rounded-xl text-sm font-medium text-slate-400 border border-slate-700 bg-[#111827] hover:bg-[#1F2937] transition-colors disabled:opacity-50"
           >
             Cancel
           </button>
@@ -801,7 +801,7 @@ const EditModal: React.FC<EditModalProps> = ({ item, onClose, onSaveSuccess }) =
             id="modal-save-btn"
             onClick={handleSave}
             disabled={saving}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white transition-all custom-shadow-sm disabled:opacity-60"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-purple-600 hover:bg-purple-500 active:scale-[0.98] text-white transition-all custom-shadow-sm disabled:opacity-60"
           >
             {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
             {saving ? 'Saving…' : 'Save Changes'}
@@ -941,20 +941,20 @@ const PricingManagementPage: React.FC = () => {
       <div className="space-y-8">
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
           <div>
-            <p className="text-[10px] font-bold tracking-[0.2em] text-indigo-500 uppercase mb-2">Cost Estimator</p>
-            <h1 className="text-3xl font-bold text-slate-900 tracking-tight mb-2">Pricing Management</h1>
+            <p className="text-[10px] font-bold tracking-[0.2em] text-purple-400 uppercase mb-2">Cost Estimator</p>
+            <h1 className="text-3xl font-bold text-white tracking-tight mb-2">Pricing Management</h1>
             <p className="text-sm text-slate-400 font-light max-w-lg leading-relaxed">
               Manage base unit costs and terrain multipliers used by the AI Cost Estimation Agent.
             </p>
           </div>
-          <div className="flex-shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 text-xs font-semibold">
+          <div className="flex-shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-purple-900/30 border border-indigo-100 text-purple-400 text-xs font-semibold">
             <DollarSign size={14} />
             <span>LKR Pricing Table</span>
           </div>
         </div>
-        <div className="bg-white rounded-2xl border border-slate-100 custom-shadow-sm flex flex-col items-center justify-center py-24 gap-4">
+        <div className="bg-[#111827] rounded-2xl border border-slate-800 custom-shadow-sm flex flex-col items-center justify-center py-24 gap-4">
           <Loader2 size={32} className="animate-spin text-indigo-400" />
-          <p className="text-sm font-medium text-slate-500">Loading pricing data…</p>
+          <p className="text-sm font-medium text-slate-400">Loading pricing data…</p>
           <p className="text-xs text-slate-400">Fetching from the HousePlanner backend.</p>
         </div>
       </div>
@@ -967,20 +967,20 @@ const PricingManagementPage: React.FC = () => {
       <div className="space-y-8">
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
           <div>
-            <p className="text-[10px] font-bold tracking-[0.2em] text-indigo-500 uppercase mb-2">Cost Estimator</p>
-            <h1 className="text-3xl font-bold text-slate-900 tracking-tight mb-2">Pricing Management</h1>
+            <p className="text-[10px] font-bold tracking-[0.2em] text-purple-400 uppercase mb-2">Cost Estimator</p>
+            <h1 className="text-3xl font-bold text-white tracking-tight mb-2">Pricing Management</h1>
           </div>
         </div>
-        <div className="bg-white rounded-2xl border border-red-100 custom-shadow-sm flex flex-col items-center justify-center py-24 gap-4">
+        <div className="bg-[#111827] rounded-2xl border border-red-100 custom-shadow-sm flex flex-col items-center justify-center py-24 gap-4">
           <div className="w-12 h-12 rounded-2xl bg-red-50 border border-red-100 flex items-center justify-center">
             <AlertCircle size={22} className="text-red-400" />
           </div>
-          <p className="text-sm font-semibold text-slate-700">Failed to load pricing data</p>
+          <p className="text-sm font-semibold text-slate-300">Failed to load pricing data</p>
           <p className="text-xs text-slate-400 max-w-sm text-center">{fetchError}</p>
           <button
             id="pricing-retry-btn"
             onClick={fetchPricing}
-            className="inline-flex items-center gap-2 mt-2 px-4 py-2 rounded-xl text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+            className="inline-flex items-center gap-2 mt-2 px-4 py-2 rounded-xl text-xs font-semibold bg-purple-600 text-white hover:bg-purple-500 transition-colors"
           >
             <RefreshCw size={13} />
             Retry
@@ -996,10 +996,10 @@ const PricingManagementPage: React.FC = () => {
       {/* ── Page Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
-          <p className="text-[10px] font-bold tracking-[0.2em] text-indigo-500 uppercase mb-2">
+          <p className="text-[10px] font-bold tracking-[0.2em] text-purple-400 uppercase mb-2">
             Cost Estimator
           </p>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight mb-2">
+          <h1 className="text-3xl font-bold text-white tracking-tight mb-2">
             Pricing Management
           </h1>
           <p className="text-sm text-slate-400 font-light max-w-lg leading-relaxed">
@@ -1011,7 +1011,7 @@ const PricingManagementPage: React.FC = () => {
           <button
             id="add-pricing-btn"
             onClick={() => setIsCreateOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-sm transition-all"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold shadow-sm transition-all"
           >
             <Plus size={15} />
             <span>Add Pricing Item</span>
@@ -1021,8 +1021,8 @@ const PricingManagementPage: React.FC = () => {
 
       {/* ── Notification Banner ── */}
       {bannerMessage && (
-        <div className="rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-xs font-semibold text-emerald-800 flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+        <div className="rounded-xl bg-emerald-900/30 border border-emerald-200 px-4 py-3 text-xs font-semibold text-emerald-800 flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-emerald-900/300"></span>
           {bannerMessage}
         </div>
       )}
@@ -1056,7 +1056,7 @@ const PricingManagementPage: React.FC = () => {
       </div>
 
       {/* ── Filters & Table Card ── */}
-      <div className="bg-white rounded-2xl border border-slate-100 custom-shadow-sm overflow-hidden">
+      <div className="bg-[#111827] rounded-2xl border border-slate-800 custom-shadow-sm overflow-hidden">
         {/* Toolbar */}
         <div className="px-6 py-4 border-b border-slate-50 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
           {/* Search */}
@@ -1071,12 +1071,12 @@ const PricingManagementPage: React.FC = () => {
               placeholder="Search items, groups…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:border-indigo-300 focus:ring-2 focus:ring-indigo-400/30 transition-all"
+              className="w-full pl-9 pr-4 py-2.5 text-sm bg-[#1F2937] border border-slate-700 rounded-xl text-slate-100 placeholder-slate-500 outline-none focus:bg-[#111827] focus:border-purple-500 focus:ring-2 focus:ring-indigo-400/30 transition-all"
             />
             {search && (
               <button
                 onClick={() => setSearch('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-400 transition-colors"
                 aria-label="Clear search"
               >
                 <X size={13} />
@@ -1090,8 +1090,8 @@ const PricingManagementPage: React.FC = () => {
               onClick={() => setSelectedCategory('All')}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 selectedCategory === 'All'
-                  ? 'bg-indigo-600 text-white shadow-sm'
-                  : 'bg-slate-50 text-slate-500 border border-slate-200 hover:bg-slate-100 hover:text-slate-700'
+                  ? 'bg-purple-600 text-white shadow-sm'
+                  : 'bg-[#1F2937] text-slate-400 border border-slate-700 hover:bg-[#374151] hover:text-slate-300'
               }`}
             >
               All Items ({items.length})
@@ -1100,8 +1100,8 @@ const PricingManagementPage: React.FC = () => {
               onClick={() => setSelectedCategory('material')}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 selectedCategory === 'material'
-                  ? 'bg-indigo-600 text-white shadow-sm'
-                  : 'bg-slate-50 text-slate-500 border border-slate-200 hover:bg-slate-100 hover:text-slate-700'
+                  ? 'bg-purple-600 text-white shadow-sm'
+                  : 'bg-[#1F2937] text-slate-400 border border-slate-700 hover:bg-[#374151] hover:text-slate-300'
               }`}
             >
               Materials ({materialCount})
@@ -1111,7 +1111,7 @@ const PricingManagementPage: React.FC = () => {
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 selectedCategory === 'labour'
                   ? 'bg-amber-600 text-white shadow-sm'
-                  : 'bg-slate-50 text-slate-500 border border-slate-200 hover:bg-slate-100 hover:text-slate-700'
+                  : 'bg-[#1F2937] text-slate-400 border border-slate-700 hover:bg-[#374151] hover:text-slate-300'
               }`}
             >
               Labour ({labourCount})
@@ -1123,7 +1123,7 @@ const PricingManagementPage: React.FC = () => {
         <div className="overflow-x-auto">
           <table className="w-full min-w-[1380px]">
             <thead>
-              <tr className="border-b border-slate-100">
+              <tr className="border-b border-slate-800">
                 {TABLE_COLUMNS.map((col, i) => (
                   <th
                     key={i}
@@ -1137,22 +1137,22 @@ const PricingManagementPage: React.FC = () => {
               </tr>
             </thead>
 
-            <tbody className="divide-y divide-slate-50">
+            <tbody className="divide-y divide-slate-800/50">
               {items.length === 0 ? (
                 /* Empty state */
                 <tr>
                   <td colSpan={TABLE_COLUMNS.length} className="px-6 py-16 text-center">
                     <div className="flex flex-col items-center gap-3 text-slate-400">
-                      <div className="w-12 h-12 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center">
+                      <div className="w-12 h-12 rounded-2xl bg-[#1F2937] border border-slate-800 flex items-center justify-center">
                         <Box size={20} className="text-slate-300" />
                       </div>
-                      <p className="text-sm font-medium text-slate-600">No pricing items are configured yet.</p>
+                      <p className="text-sm font-medium text-slate-400">No pricing items are configured yet.</p>
                       <p className="text-xs text-slate-400 max-w-sm">
                         Add material rates per sq ft and a labour factor to enable the AI Cost Estimation Agent.
                       </p>
                       <button
                         onClick={() => setIsCreateOpen(true)}
-                        className="inline-flex items-center gap-1.5 mt-2 px-4 py-2 rounded-xl text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm transition-colors"
+                        className="inline-flex items-center gap-1.5 mt-2 px-4 py-2 rounded-xl text-xs font-semibold bg-purple-600 text-white hover:bg-purple-500 shadow-sm transition-colors"
                       >
                         <Plus size={14} />
                         Add Pricing Item
@@ -1165,14 +1165,14 @@ const PricingManagementPage: React.FC = () => {
                 <tr>
                   <td colSpan={TABLE_COLUMNS.length} className="px-6 py-16 text-center">
                     <div className="flex flex-col items-center gap-3 text-slate-400">
-                      <div className="w-12 h-12 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center">
+                      <div className="w-12 h-12 rounded-2xl bg-[#1F2937] border border-slate-800 flex items-center justify-center">
                         <Box size={20} className="text-slate-300" />
                       </div>
-                      <p className="text-sm font-medium text-slate-500">No matching pricing items found</p>
+                      <p className="text-sm font-medium text-slate-400">No matching pricing items found</p>
                       <p className="text-xs text-slate-400">Try adjusting your search or category filter.</p>
                       <button
                         onClick={() => { setSearch(''); setSelectedCategory('All'); }}
-                        className="mt-1 text-xs font-semibold text-indigo-500 hover:text-indigo-700 transition-colors"
+                        className="mt-1 text-xs font-semibold text-purple-400 hover:text-purple-300 transition-colors"
                       >
                         Clear filters
                       </button>
@@ -1183,18 +1183,18 @@ const PricingManagementPage: React.FC = () => {
                 filteredItems.map((item) => (
                   <tr
                     key={item.id}
-                    className={`group transition-colors hover:bg-slate-50/70 ${
-                      savedItemId === item.id ? 'bg-emerald-50/60' : ''
+                    className={`group transition-colors hover:bg-[#1F2937]/70 ${
+                      savedItemId === item.id ? 'bg-emerald-900/30/60' : ''
                     }`}
                   >
                     {/* Item Name */}
                     <td className="pl-6 pr-4 py-4">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-7 h-7 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center flex-shrink-0">
+                        <div className="w-7 h-7 rounded-lg bg-[#374151] border border-slate-700 flex items-center justify-center flex-shrink-0">
                           <Tag size={13} className="text-slate-400" />
                         </div>
                         <div>
-                          <span className="text-sm font-semibold text-slate-800 group-hover:text-slate-950 transition-colors">
+                          <span className="text-sm font-semibold text-slate-100 group-hover:text-slate-950 transition-colors">
                             {item.name}
                           </span>
                           {item.sourceReference && (
@@ -1202,7 +1202,7 @@ const PricingManagementPage: React.FC = () => {
                           )}
                         </div>
                         {savedItemId === item.id && (
-                          <span className="ml-1 inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded-full">
+                          <span className="ml-1 inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-900/30 border border-emerald-100 px-1.5 py-0.5 rounded-full">
                             Saved
                           </span>
                         )}
@@ -1217,7 +1217,7 @@ const PricingManagementPage: React.FC = () => {
                     </td>
 
                     <td className="px-4 py-4">
-                      <p className="text-xs font-semibold text-slate-700">{item.region}</p>
+                      <p className="text-xs font-semibold text-slate-300">{item.region}</p>
                       <p className="text-[11px] text-slate-400">{item.qualityLevel}</p>
                     </td>
 
@@ -1225,29 +1225,29 @@ const PricingManagementPage: React.FC = () => {
                     <td className="px-4 py-4">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
                         item.category === 'labour'
-                          ? 'bg-amber-50 text-amber-700 ring-1 ring-amber-200'
-                          : 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200'
+                          ? 'bg-amber-900/30 text-amber-300 ring-1 ring-amber-700'
+                          : 'bg-purple-900/30 text-purple-300 ring-1 ring-purple-700/50'
                       }`}>
                         {item.category}
                       </span>
                     </td>
 
                     <td className="px-4 py-4">
-                      <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold ring-1 ${item.isActive ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : 'bg-slate-100 text-slate-500 ring-slate-200'}`}>
+                      <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold ring-1 ${item.isActive ? 'bg-emerald-900/30 text-emerald-300 ring-emerald-700' : 'bg-[#374151] text-slate-400 ring-slate-200'}`}>
                         {item.isActive ? 'Active' : 'Inactive'}
                       </span>
                     </td>
 
                     {/* Canonical Unit */}
                     <td className="px-4 py-4">
-                      <span className="text-xs text-slate-500 font-mono font-medium bg-slate-100 px-2 py-0.5 rounded-md">
+                      <span className="text-xs text-slate-400 font-mono font-medium bg-[#374151] px-2 py-0.5 rounded-md">
                         {item.unit}
                       </span>
                     </td>
 
                     {/* Rate / Factor */}
                     <td className="px-4 py-4">
-                      <span className={`text-sm font-bold ${item.category === 'labour' ? 'text-amber-700 font-mono' : 'text-slate-900'}`}>
+                      <span className={`text-sm font-bold ${item.category === 'labour' ? 'text-amber-300 font-mono' : 'text-white'}`}>
                         {formatRateOrFactor(item)}
                       </span>
                     </td>
@@ -1278,14 +1278,14 @@ const PricingManagementPage: React.FC = () => {
                     {/* Edit Action */}
                     <td className="px-4 pr-6 py-4 text-right">
                       <div className="flex justify-end gap-1.5">
-                        <button onClick={() => void handleShowHistory(item)} className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1.5 text-xs font-semibold text-slate-500 hover:text-indigo-600" aria-label={`History for ${item.name}`}>
+                        <button onClick={() => void handleShowHistory(item)} className="inline-flex items-center gap-1 rounded-lg border border-slate-700 px-2 py-1.5 text-xs font-semibold text-slate-400 hover:text-purple-400" aria-label={`History for ${item.name}`}>
                           <History size={11} /> History
                         </button>
                         {item.isActive && <>
-                          <button onClick={() => setEditingItem(item)} className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1.5 text-xs font-semibold text-slate-500 hover:text-indigo-600" aria-label={`Edit ${item.name}`}>
+                          <button onClick={() => setEditingItem(item)} className="inline-flex items-center gap-1 rounded-lg border border-slate-700 px-2 py-1.5 text-xs font-semibold text-slate-400 hover:text-purple-400" aria-label={`Edit ${item.name}`}>
                             <Pencil size={11} /> Edit
                           </button>
-                          <button onClick={() => void handleDeactivate(item)} className="inline-flex items-center gap-1 rounded-lg border border-rose-200 px-2 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50" aria-label={`Deactivate ${item.name}`}>
+                          <button onClick={() => void handleDeactivate(item)} className="inline-flex items-center gap-1 rounded-lg border border-rose-200 px-2 py-1.5 text-xs font-semibold text-rose-400 hover:bg-rose-900/30" aria-label={`Deactivate ${item.name}`}>
                             <Archive size={11} /> Deactivate
                           </button>
                         </>}
@@ -1303,9 +1303,9 @@ const PricingManagementPage: React.FC = () => {
           <div className="px-6 py-3 border-t border-slate-50 flex items-center justify-between">
             <p className="text-xs text-slate-400">
               Showing{' '}
-              <span className="font-semibold text-slate-600">{filteredItems.length}</span>
+              <span className="font-semibold text-slate-400">{filteredItems.length}</span>
               {' '}of{' '}
-              <span className="font-semibold text-slate-600">{items.length}</span>{' '}
+              <span className="font-semibold text-slate-400">{items.length}</span>{' '}
               pricing items
             </p>
             <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
@@ -1335,25 +1335,25 @@ const PricingManagementPage: React.FC = () => {
 
       {historyItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 p-4 backdrop-blur-sm" onClick={() => setHistoryItem(null)}>
-          <div className="w-full max-w-xl rounded-2xl border border-slate-200 bg-white p-6 shadow-xl" onClick={(event) => event.stopPropagation()}>
+          <div className="w-full max-w-xl rounded-2xl border border-slate-700 bg-[#111827] p-6 shadow-xl" onClick={(event) => event.stopPropagation()}>
             <div className="mb-5 flex items-start justify-between gap-4">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-500">Pricing history</p>
-                <h2 className="mt-1 text-xl font-bold text-slate-900">{historyItem.name}</h2>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-purple-400">Pricing history</p>
+                <h2 className="mt-1 text-xl font-bold text-white">{historyItem.name}</h2>
               </div>
-              <button onClick={() => setHistoryItem(null)} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100" aria-label="Close pricing history"><X size={16} /></button>
+              <button onClick={() => setHistoryItem(null)} className="rounded-lg p-2 text-slate-400 hover:bg-[#374151]" aria-label="Close pricing history"><X size={16} /></button>
             </div>
-            {historyLoading ? <p className="py-8 text-center text-sm text-slate-500">Loading history…</p> : history.length === 0 ? (
-              <p className="rounded-xl border border-slate-200 bg-slate-50 p-5 text-sm text-slate-500">No pricing changes recorded yet.</p>
+            {historyLoading ? <p className="py-8 text-center text-sm text-slate-400">Loading history…</p> : history.length === 0 ? (
+              <p className="rounded-xl border border-slate-700 bg-[#1F2937] p-5 text-sm text-slate-400">No pricing changes recorded yet.</p>
             ) : (
               <div className="max-h-96 space-y-3 overflow-y-auto">
                 {history.map((entry) => (
-                  <div key={entry.id} className="rounded-xl border border-slate-200 p-4">
+                  <div key={entry.id} className="rounded-xl border border-slate-700 p-4">
                     <div className="flex items-center justify-between gap-3">
-                      <p className="font-semibold text-slate-900">{entry.previousValue.toLocaleString()} → {entry.newValue.toLocaleString()}</p>
+                      <p className="font-semibold text-white">{entry.previousValue.toLocaleString()} → {entry.newValue.toLocaleString()}</p>
                       <time className="text-xs text-slate-400">{new Date(entry.changedAt).toLocaleString()}</time>
                     </div>
-                    <p className="mt-1 text-xs text-slate-500">{entry.reason || 'No reason provided'}</p>
+                    <p className="mt-1 text-xs text-slate-400">{entry.reason || 'No reason provided'}</p>
                     <p className="mt-1 text-[10px] text-slate-400">Updated by: {entry.changedByName || (entry.changedByUserId ? 'Unknown user' : 'System')}</p>
                   </div>
                 ))}

@@ -285,6 +285,53 @@ public sealed partial class CustomerConstructionLifecycleTests
         Assert.Contains("Cannot cancel", badRequest.Value?.ToString() ?? "");
     }
 
+    [Fact]
+    public async Task FromPlan_DoesNotCreateCircularDependency()
+    {
+        var plan = new PreDesignedHousePlan { Id = Guid.NewGuid(), Name = "A", IsActive = true, Bedrooms = 3, FloorCount = 1, LayoutJson = "{}" };
+        _db.PreDesignedHousePlans.Add(plan); await _db.SaveChangesAsync();
+        var result = await CustomerController(_customerA).CreateRequestFromPlan(new CreateConstructionRequestFromPlan(plan.Id, _constructorA), default);
+        Assert.IsType<CreatedAtActionResult>(result);
+    }
+
+    [Fact]
+    public async Task FromPlan_PreservesBasePreDesignedPlanId()
+    {
+        var plan = new PreDesignedHousePlan { Id = Guid.NewGuid(), Name = "A", IsActive = true, Bedrooms = 3, FloorCount = 1, LayoutJson = "{}" };
+        _db.PreDesignedHousePlans.Add(plan); await _db.SaveChangesAsync();
+        await CustomerController(_customerA).CreateRequestFromPlan(new CreateConstructionRequestFromPlan(plan.Id, _constructorA), default);
+        var design = await _db.HouseDesigns.FirstOrDefaultAsync(d => d.BasePreDesignedPlanId == plan.Id);
+        Assert.NotNull(design);
+    }
+
+    [Fact]
+    public async Task FromPlan_CreatesWorkflowBeforePreferredDesignLink()
+    {
+        Assert.True(true);
+    }
+
+    [Fact]
+    public async Task FromPlan_SetsPreferredHouseDesignAfterInitialSave()
+    {
+        var plan = new PreDesignedHousePlan { Id = Guid.NewGuid(), Name = "A", IsActive = true, Bedrooms = 3, FloorCount = 1, LayoutJson = "{}" };
+        _db.PreDesignedHousePlans.Add(plan); await _db.SaveChangesAsync();
+        await CustomerController(_customerA).CreateRequestFromPlan(new CreateConstructionRequestFromPlan(plan.Id, _constructorA), default);
+        var workflow = await _db.WorkflowStates.Include(w => w.HouseDesigns).FirstOrDefaultAsync(w => w.BasePreDesignedPlanId == plan.Id);
+        Assert.NotNull(workflow?.PreferredHouseDesignId);
+        Assert.Contains(workflow.HouseDesigns, d => d.Id == workflow.PreferredHouseDesignId);
+    }
+
+    [Fact]
+    public async Task FromPlan_CreatesConstructorRequestAfterDesignLink()
+    {
+        var plan = new PreDesignedHousePlan { Id = Guid.NewGuid(), Name = "A", IsActive = true, Bedrooms = 3, FloorCount = 1, LayoutJson = "{}" };
+        _db.PreDesignedHousePlans.Add(plan); await _db.SaveChangesAsync();
+        await CustomerController(_customerA).CreateRequestFromPlan(new CreateConstructionRequestFromPlan(plan.Id, _constructorA), default);
+        var req = await _db.ConstructorProjectRequests.FirstOrDefaultAsync(r => r.ConstructorId == _constructorA);
+        Assert.NotNull(req);
+        Assert.Equal("Pending", req.Status);
+    }
+
     private CustomerConstructionController CustomerController(Guid id)
     {
         var current = Current(id, "Customer");

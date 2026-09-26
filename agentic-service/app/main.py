@@ -1,3 +1,4 @@
+from typing import Optional, Union, List
 import secrets
 from typing import Any
 from uuid import UUID
@@ -35,28 +36,28 @@ class StartWorkflowRequest(BaseModel):
     workflow_id: UUID
     submission_id: UUID
     land_size_perches: float
-    budget_lkr: float | None = None
-    manual_terrain_type: str | None = None
+    budget_lkr: Optional[float] = None
+    manual_terrain_type: Optional[str] = None
     preferences: dict[str, Any]
-    plot_constraints: dict[str, Any] | None = None
-    design_seed: int | None = None
-    preferred_plan_code: str | None = None
+    plot_constraints: Optional[dict[str, Any]] = None
+    design_seed: Optional[int] = None
+    preferred_plan_code: Optional[str] = None
 
 class ResumeWorkflowRequest(BaseModel):
     workflow_id: UUID
     resume_from: str
     user_revision_prompt: str
     land_size_perches: float
-    budget_lkr: float | None = None
-    manual_terrain_type: str | None = None
+    budget_lkr: Optional[float] = None
+    manual_terrain_type: Optional[str] = None
     preferences: dict[str, Any]
-    terrain_result: dict[str, Any] | None = None
-    previous_design: dict[str, Any] | None = None
-    plot_constraints: dict[str, Any] | None = None
-    design_seed: int | None = None
+    terrain_result: Optional[dict[str, Any]] = None
+    previous_design: Optional[dict[str, Any]] = None
+    plot_constraints: Optional[dict[str, Any]] = None
+    design_seed: Optional[int] = None
     regeneration: bool = False
-    previous_base_plan_code: str | None = None
-    previous_design_fingerprint: str | None = None
+    previous_base_plan_code: Optional[str] = None
+    previous_design_fingerprint: Optional[str] = None
 
 def execute_workflow(initial_state:WorkflowState):
     """Background task to run the LangGraph workflow"""
@@ -155,3 +156,39 @@ def resume_workflow(
     background_tasks.add_task(execute_workflow, state)
     return {"message": "Workflow resumed successfully", "workflow_id": str(request.workflow_id)}
 
+class MessageEntry(BaseModel):
+    role: str
+    content: str
+
+class AssistantRequest(BaseModel):
+    message: str
+    history: Optional[List[MessageEntry]] = None
+
+@app.post("/assistant/interpret")
+def interpret_message(
+    request: AssistantRequest,
+    api_key: str = Security(verify_api_key)
+):
+    from app.agents.architecture_assistant import interpret_user_message
+    history_dicts = [m.model_dump() for m in request.history] if request.history else None
+    return interpret_user_message(request.message, history=history_dicts)
+
+class KnowledgeSearchRequest(BaseModel):
+    query: str
+    top_k: int = 3
+    category: Optional[str] = None
+
+@app.post("/knowledge/seed")
+def seed_knowledge(api_key: str = Security(verify_api_key)):
+    from app.knowledge.rag_pipeline import seed_knowledge_base
+    stored, skipped = seed_knowledge_base()
+    return {"stored": stored, "skipped": skipped}
+
+@app.post("/knowledge/search")
+def search_knowledge(
+    request: KnowledgeSearchRequest,
+    api_key: str = Security(verify_api_key)
+):
+    from app.knowledge.rag_pipeline import search_knowledge_as_dicts
+    results = search_knowledge_as_dicts(request.query, request.top_k, request.category)
+    return {"results": results, "count": len(results)}

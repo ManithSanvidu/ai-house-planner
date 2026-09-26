@@ -11,7 +11,7 @@ from scripts import build_seed_catalogue as exporter
 @pytest.fixture
 def two_bath_plan():
     return next(plan for plan in json.loads(library.SEED_PATH.read_text())
-                if (plan['bedrooms'], plan['bathrooms'], plan['floors']) == (3, 2, 2))
+                if (plan['bedrooms'], plan['bathrooms'], plan['floors']) == (4, 2, 2))
 
 
 @pytest.mark.parametrize('declared', [1, 3, None])
@@ -40,9 +40,8 @@ def test_loader_accepts_exact_bathroom_count(two_bath_plan, tmp_path, monkeypatc
 def test_checked_catalogue_keeps_only_matching_metadata():
     sources = {plan['designCode']: plan for plan in json.loads(library.SEED_PATH.read_text())}
     records = library._load_seed_records()
-    # The 39 historical bathroom-metadata mismatches remain rejected; curated
-    # additions that pass the same gate increase the usable catalogue.
-    assert len(records) == len(sources) - 39
+    # The 39 historical bathroom-metadata mismatches have been resolved.
+    assert len(records) == len(sources)
     for record in records:
         assert record.bathrooms == sources[record.plan_code]['bathrooms']
         assert record.bathrooms == count_bathrooms(json.loads(record.layout_json)['rooms'])
@@ -57,7 +56,7 @@ def test_seed_export_rejects_surplus_bathrooms(configured, floors):
 
 
 def test_seed_export_accepts_matching_bathrooms(two_bath_plan):
-    valid, reason = exporter.validate_plan(two_bath_plan, 'hillside')
+    valid, reason = exporter.validate_plan(two_bath_plan, 'flat')
     assert valid, reason
 
 

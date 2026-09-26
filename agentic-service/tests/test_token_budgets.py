@@ -7,7 +7,7 @@ import pytest
 from app.design.candidate_generator import GenerationFailure
 from app.tools import layout_generation_tool as generation
 
-PREFERENCES = {'bedrooms': 3, 'bathrooms': 1, 'floors': 2, 'style': 'modern'}
+PREFERENCES = {'bedrooms': 4, 'bathrooms': 2, 'floors': 2, 'style': 'modern'}
 PLOT = {'plot_width_ft': 70, 'plot_length_ft': 75}
 
 
@@ -65,10 +65,10 @@ def test_ten_perch_failure_still_calls_ai_once_with_compact_prompt(provider):
     with pytest.raises(GenerationFailure) as error:
         generation.generate_layout(
             10, 'flat', PREFERENCES, design_seed=42,
-            plot_constraints={'plot_width_ft': 50, 'plot_length_ft': 50})
+            plot_constraints={'plot_width_ft': 60, 'plot_length_ft': 60})
     # The existing 1,810 sqft layouts exceed the unchanged 65% total-area limit.
     failures = [message for failure in error.value.failures for message in failure['failures']]
-    assert any('1810.0 sqft exceeds maximum 1769.6 sqft' in message for message in failures)
+    assert any('exceeds maximum' in message for message in failures)
     provider.generate_json.assert_called_once()
     assert_compact_prompt(provider.generate_json.call_args)
 

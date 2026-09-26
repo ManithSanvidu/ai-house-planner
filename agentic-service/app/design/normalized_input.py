@@ -1,3 +1,4 @@
+from typing import Optional, Union
 
 from pydantic import BaseModel, ConfigDict
 
@@ -31,7 +32,7 @@ class NormalizedDesignInput(BaseModel):
     utility_room: bool
     parking_required: bool
     accessibility: bool
-    design_seed: int | None
+    design_seed: Optional[int]
 
     @classmethod
     def from_inputs(cls, req, plot):
