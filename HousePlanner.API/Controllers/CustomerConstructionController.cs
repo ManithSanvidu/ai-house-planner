@@ -67,6 +67,7 @@ public class CustomerConstructionController : ControllerBase
             return new
             {
                 designId = design.Id,
+                basePreDesignedPlanId = design.BasePreDesignedPlanId,
                 workflowId = v.WorkflowStateId,
                 version = design.Version,
                 floorCount = design.FloorCount,
@@ -142,6 +143,37 @@ public class CustomerConstructionController : ControllerBase
                 return Conflict(new { message = "A pending request already exists for this constructor." });
             throw;
         }
+        return CreatedAtAction(nameof(GetConstruction), new { }, new { request.Id, request.Status });
+    }
+
+    [HttpPost("requests/from-plan")]
+    public async Task<IActionResult> CreateRequestFromPlan([FromBody] CreateConstructionRequestFromPlan dto, CancellationToken cancellationToken)
+    {
+        var customerId = await CustomerId(); if (customerId is null) return Unauthorized();
+        var isConstructor = await _db.Users.AnyAsync(u => u.Id == dto.ConstructorId && u.Role!.Name == "Constructor", cancellationToken);
+        if (!isConstructor) return BadRequest(new { message = "The selected account is not an available constructor." });
+
+        var plan = await _db.PreDesignedHousePlans.FirstOrDefaultAsync(p => p.Id == dto.BasePreDesignedPlanId && p.IsActive, cancellationToken);
+        if (plan == null) return NotFound("Plan not found or not architect-validated.");
+
+        var workflow = new WorkflowState { Id = Guid.NewGuid(), Status = "approved", ApprovalStatus = "approved", BasePreDesignedPlanId = plan.Id };
+        var landSubmission = new LandSubmission { Id = Guid.NewGuid(), ClientId = customerId.Value, Status = "approved", WorkflowStateId = workflow.Id, BasePreDesignedPlanId = plan.Id };
+        var houseDesign = new HouseDesign { Id = Guid.NewGuid(), WorkflowStateId = workflow.Id, BasePreDesignedPlanId = plan.Id, DesignSource = "PreDesignedPlan", LayoutJson = plan.LayoutJson, FloorCount = plan.FloorCount, TotalBuiltUpAreaSqft = plan.TotalBuiltUpAreaSqft, Version = 1, IsCurrent = true };
+        workflow.HouseDesigns.Add(houseDesign);
+        workflow.PreferredHouseDesignId = houseDesign.Id;
+        var validationRequest = new ValidationRequest { Id = Guid.NewGuid(), WorkflowStateId = workflow.Id, HouseDesignId = houseDesign.Id, ClientId = customerId.Value, Status = "Approved", DecisionAt = DateTimeOffset.UtcNow };
+        var project = NewProject(workflow.Id, houseDesign.Id);
+
+        _db.WorkflowStates.Add(workflow);
+        _db.LandSubmissions.Add(landSubmission);
+        _db.HouseDesigns.Add(houseDesign);
+        _db.ValidationRequests.Add(validationRequest);
+        _db.Projects.Add(project);
+
+        var request = new ConstructorProjectRequest { Id = Guid.NewGuid(), Project = project, ProjectId = project.Id, CustomerId = customerId.Value, ConstructorId = dto.ConstructorId, HouseDesignId = houseDesign.Id, Status = "Pending" };
+        _db.ConstructorProjectRequests.Add(request);
+
+        await _db.SaveChangesAsync(cancellationToken);
         return CreatedAtAction(nameof(GetConstruction), new { }, new { request.Id, request.Status });
     }
 
@@ -290,3 +322,4 @@ public class CustomerConstructionController : ControllerBase
 }
 
 public record CreateConstructionRequest(Guid HouseDesignId, Guid ConstructorId);
+public record CreateConstructionRequestFromPlan(Guid BasePreDesignedPlanId, Guid ConstructorId);
