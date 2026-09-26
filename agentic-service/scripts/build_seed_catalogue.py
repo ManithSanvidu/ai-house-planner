@@ -147,7 +147,7 @@ def validate_plan(plan_data, terrain):
     finish_layout(design) # adds doors/connections
 
     req = Requirements(bedrooms=beds, bathrooms=plan_data['bathrooms'], floors=floors, target_budget_lkr=0)
-    plot = PlotConstraints(land_size_perches=20.0, plot_width_ft=44, plot_length_ft=123, terrain_type=terrain)
+    plot = PlotConstraints(land_size_perches=20.0, plot_width_ft=60, plot_length_ft=123, terrain_type=terrain)
 
     geom_res = validate_geometry(design.rooms, beds, floors, plot.land_size_perches, plot=plot, design=design)
     if not geom_res.passed:
