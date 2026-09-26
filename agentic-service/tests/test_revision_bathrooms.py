@@ -17,11 +17,12 @@ from app.tools import layout_generation_tool as generation
 
 @pytest.fixture
 def previous():
-    plan = next(p for p in library.load_base_plan_catalog()
-                if (p.bedrooms, p.bathrooms, p.floors) == (3, 2, 2))
+    plan = next((p for p in library.load_base_plan_catalog()
+                if (p.bedrooms, p.bathrooms, p.floors) == (3, 2, 1)), None)
+    assert plan is not None, "Expected (3, 2, 1) plan not found"
     design = DesignResult.model_validate_json(plan.layout_json)
     design.candidate_summary = {'selected_plan_code': plan.plan_code, 'normalized_input': {
-        'bedrooms': 3, 'bathrooms': 2, 'floors': 2, 'architectural_style': 'modern',
+        'bedrooms': 3, 'bathrooms': 2, 'floors': 1, 'architectural_style': 'modern',
         'space_priority': 'balanced', 'open_plan': False,
     }}
     return design.model_dump()
@@ -89,7 +90,7 @@ def test_design_agent_preserves_bathrooms_on_automatic_revision(previous, monkey
 @pytest.mark.parametrize('feedback', ['make living room bigger', 'Generate Another'])
 def test_revision_candidate_filter_does_not_broaden_to_one_bath(previous, feedback, monkeypatch):
     records = [p for p in library.load_base_plan_catalog()
-               if p.bedrooms == 3 and p.floors == 2 and p.bathrooms in (2, 3)]
+               if p.bedrooms == 3 and p.floors == 1 and p.bathrooms in (2, 3)]
     # A one-bath competitor exposes any accidental fallback to bathrooms=1.
     layout = json.loads(records[0].layout_json)
     baths = [room for room in layout['rooms'] if room['room_type'].startswith('bathroom')]
@@ -98,7 +99,7 @@ def test_revision_candidate_filter_does_not_broaden_to_one_bath(previous, feedba
     monkeypatch.setattr(library, 'load_base_plan_catalog', lambda: [one_bath, *records])
     monkeypatch.setattr(generation, 'get_available_design_provider', lambda: None)
     result = generation.generate_layout(
-        20, 'flat', {'bedrooms': 3, 'floors': 2}, previous_design=previous,
+        20, 'flat', {'bedrooms': 3, 'floors': 1}, previous_design=previous,
         revision_reason=feedback, plot_constraints={'plot_width_ft': 70, 'plot_length_ft': 75})
     assert result.candidate_summary['normalized_input']['bathrooms'] == 2
     assert 'ONE-BATH' not in result.candidate_summary['compatible_plan_codes']

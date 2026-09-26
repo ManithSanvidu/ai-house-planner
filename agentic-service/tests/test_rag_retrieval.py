@@ -10,6 +10,26 @@ import json
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from app.knowledge.rag_pipeline import search_architecture_knowledge, search_knowledge_as_dicts
+import app.knowledge.rag_pipeline
+
+def fake_embedding(text: str) -> list[float]:
+    import json
+    import os
+    mock_file = os.path.join(os.path.dirname(__file__), 'mock_embeddings.json')
+    if os.path.exists(mock_file):
+        with open(mock_file, 'r') as f:
+            embeddings = json.load(f)
+            if text in embeddings:
+                return embeddings[text]
+    
+    # Fallback deterministic vector if not found
+    import hashlib
+    h = hashlib.md5(text.encode()).digest()
+    extended = (list(h) * (1536 // len(h) + 1))[:1536]
+    return [x / 255.0 for x in extended]
+
+app.knowledge.rag_pipeline._generate_embedding = fake_embedding
+
 
 
 def test_ventilation_retrieves_ventilation():

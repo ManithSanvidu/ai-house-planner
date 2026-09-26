@@ -47,11 +47,11 @@ def test_HugeRequirementOnSmallLand_FailsSpatialValidationNotSemanticValidation(
     assert 'BUILDABLE_ENVELOPE_TOO_SMALL' in feasibility.reason_codes
 
 def test_UnusualButSupportedRatio_RequiresConfirmation():
-    # 2 beds, 4 baths, 2 floors exists in catalogue
-    reqs = {'bedrooms': 2, 'bathrooms': 4, 'floors': 2}
+    # 3 beds, 1 bath, 1 floor exists in catalogue
+    reqs = {'bedrooms': 3, 'bathrooms': 1, 'floors': 1}
     res = validate_requirements_sanity(reqs)
-    # The requirement validator checks if it's > 1.5 ratio -> NEEDS_CONFIRMATION
-    # 4/2 = 2.0 -> NEEDS_CONFIRMATION
+    # The requirement validator checks if it's < 0.5 ratio -> NEEDS_CONFIRMATION
+    # 1/3 = 0.33 -> NEEDS_CONFIRMATION
     assert res.status == 'NEEDS_CONFIRMATION'
     assert 'UNUSUAL_BEDROOM_BATHROOM_RATIO' in res.reason_codes
 

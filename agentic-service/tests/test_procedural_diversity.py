@@ -4,7 +4,7 @@ import pytest
 from app.design.diversity import geometry_fingerprint
 from app.tools import layout_generation_tool as generation
 
-PREFERENCES = {'bedrooms': 3, 'bathrooms': 1, 'floors': 2, 'style': 'modern'}
+PREFERENCES = {'bedrooms': 4, 'bathrooms': 2, 'floors': 2, 'style': 'modern'}
 PLOT = {'plot_width_ft': 70, 'plot_length_ft': 75}
 
 
