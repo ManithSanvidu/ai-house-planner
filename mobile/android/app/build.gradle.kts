@@ -7,7 +7,7 @@ plugins {
 android {
     namespace = "com.example.mobile"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    ndkVersion = "25.2.9519653"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -32,6 +32,8 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+
+    // Removed packaging { jniLibs { keepDebugSymbols... } } to prevent bloating the APK size
 }
 
 kotlin {

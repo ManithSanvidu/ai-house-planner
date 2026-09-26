@@ -6,7 +6,7 @@ def room_overlaps(a, b):
     overlap_y = max(0, min(a['y'] + a.get('length', 0), b['y'] + b.get('length', 0)) - max(a['y'], b['y']))
     return overlap_x > 0 and overlap_y > 0
 
-with open('../HousePlanner.API/Data/Seed/pre-designed-plans.json', 'r') as f:
+with open('../HousePlanner.API/Data/Seed/pre-designed-plans.json') as f:
     plans = json.load(f)
 
 print(f"Total plans: {len(plans)}")
