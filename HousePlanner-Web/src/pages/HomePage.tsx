@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Html, useGLTF } from '@react-three/drei';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
-import { Mic, ArrowRight, Sparkles, Box, Moon, Sun, ChevronRight, ChevronLeft, Menu, X, MessageSquare, Map, ClipboardCheck, Home, PenTool, HardHat, CheckCircle2, ShieldCheck, Activity } from 'lucide-react';
+import { ArrowRight, Sparkles, Box, Moon, Sun, Menu, X, MessageSquare, Map, ClipboardCheck, Home, PenTool, HardHat, CheckCircle2, ShieldCheck, Activity } from 'lucide-react';
 import * as THREE from 'three';
 import apiClient from '../services/apiClient';
 // ---------------------------------------------------------
@@ -249,11 +249,6 @@ const HouseScene = ({ isDark }: { isDark: boolean }) => {
 // Page Component
 // ---------------------------------------------------------
 
-const carouselImages = [
-  "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?q=80&w=1000&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1600566752355-35792bedcfea?q=80&w=1000&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1556912173-3bb406ef7e77?q=80&w=1000&auto=format&fit=crop"
-];
 
 const HomePage: React.FC = () => {
   const { scrollY } = useScroll();
@@ -296,7 +291,6 @@ const HomePage: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [currentImgIndex, setCurrentImgIndex] = useState(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleGenerate = async (e: React.FormEvent) => {
@@ -331,9 +325,7 @@ const HomePage: React.FC = () => {
     }
   };
 
-  const nextImg = () => setCurrentImgIndex((prev) => (prev + 1) % carouselImages.length);
-  const prevImg = () => setCurrentImgIndex((prev) => (prev - 1 + carouselImages.length) % carouselImages.length);
-
+  
   return (
     <div className={`font-sans selection:bg-gray-900 dark:selection:bg-white selection:text-white dark:selection:text-gray-900 min-h-screen relative overflow-x-hidden bg-[#fcfcfd] dark:bg-gray-950 transition-colors duration-300`}>
       

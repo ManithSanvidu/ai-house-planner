@@ -2,7 +2,6 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { beforeEach, expect, test, vi } from 'vitest';
 import HomePage from './HomePage';
-import IntakeForm from './IntakeForm';
 import apiClient from '../services/apiClient';
 
 vi.mock('../services/apiClient', () => ({

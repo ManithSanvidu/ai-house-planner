@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, Map, Layers, CheckCircle2, ChevronRight, ChevronLeft, ArrowRight, Settings, Grid, Home, FileText, Plus, Expand, Compass, LocateFixed, Navigation, Type, Check, CheckSquare, Info } from 'lucide-react';
+import { Map, CheckCircle2, ChevronRight, ChevronLeft, Home, Expand, Compass, Check, CheckSquare, Info } from 'lucide-react';
 import { workflowService } from '../services/workflowService';
 
 interface IntakeFormData {
@@ -31,8 +31,6 @@ interface IntakeFormData {
   utilityRoom: boolean;
   parkingRequired: boolean;
   accessibility: boolean;
-  spacePriority: string;
-  targetCompletionDate: string;
 }
 
 const IntakeForm: React.FC = () => {
@@ -176,11 +174,6 @@ const IntakeForm: React.FC = () => {
     if (fieldErrors[name]) setFieldErrors((prev) => ({ ...prev, [name]: '' }));
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setFormData((prev) => ({ ...prev, photo: e.target.files![0] }));
-    }
-  };
 
   const toggleFeature = (name: keyof IntakeFormData) => {
     // If unsupported, don't allow toggling on

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { FloorPlanViewer } from '../components/floorplan/FloorPlanViewer';
 import { preDesignedPlanService, type PreDesignedPlanDetail } from '../services/preDesignedPlanService';
-import { customerConstructionService, type ApprovedDesign, type ConstructorProfile } from '../services/customerConstructionService';
+import { customerConstructionService, type ConstructorProfile } from '../services/customerConstructionService';
 import { countLabel, formatArea, formatFloorName, formatTerrain, formatTopology, getCustomerPlanName, getPlanTopology } from '../utils/presentation';
 import type { CostSummaryDto } from '../services/workflowService';
 
@@ -15,7 +15,7 @@ export default function PlanDetailPage() {
   const [error, setError] = useState('');
   
   const [constructionState, setConstructionState] = useState<'LOADING' | 'NO_REQUEST' | 'PENDING' | 'ACCEPTED_OR_ACTIVE' | 'DECLINED' | 'CANCELLED'>('LOADING');
-  const [approvedDesign, setApprovedDesign] = useState<ApprovedDesign | null>(null);
+
   const [constructors, setConstructors] = useState<ConstructorProfile[]>([]);
   const [selectedConstructor, setSelectedConstructor] = useState('');
   const [showConstructorSelect, setShowConstructorSelect] = useState(false);

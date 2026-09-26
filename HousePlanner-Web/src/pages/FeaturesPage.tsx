@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Box, ArrowRight, Sparkles, Cpu, HardHat, Menu, X, Sun, Moon, Map, ClipboardCheck, ShieldCheck, PenTool, Calendar, CheckCircle2 } from 'lucide-react';
+import { Box, ArrowRight, Sparkles, Cpu, HardHat, Menu, X, Sun, Moon, Map, ClipboardCheck, ShieldCheck, PenTool, CheckCircle2 } from 'lucide-react';
 
 const FeaturesPage: React.FC = () => {
   const [isDark, setIsDark] = useState(() => {

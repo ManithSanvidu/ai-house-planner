@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { constructorWorkflowService, dailyConstructionLogService } from '../../../services/constructorWorkflowService';
 import type { ConstructorWorkflowProject, DailyConstructionLogDto, ConstructionPhase } from '../../../services/constructorWorkflowService';
 import DailyLogbookForm from './DailyLogbookForm';
-import { ArrowLeft, Plus, Calendar, Edit2, Trash2, CheckCircle, Clock, PlayCircle } from 'lucide-react';
+import { ArrowLeft, Plus, Calendar, Edit2, Trash2, CheckCircle, PlayCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import ConstructorProjectCalendar from './ConstructorProjectCalendar';

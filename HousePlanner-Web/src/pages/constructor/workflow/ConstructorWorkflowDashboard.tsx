@@ -12,7 +12,7 @@ import {
 import { constructorWorkflowService } from '../../../services/constructorWorkflowService';
 import type { ConstructorWorkflowProject } from '../../../services/constructorWorkflowService';
 import type { CostSummaryDto } from '../../../services/workflowService';
-import CostBreakdownCard from '../../../components/cost/CostBreakdownCard';
+
 
 interface ConstructionRequest {
   id: string;
@@ -41,7 +41,7 @@ export const ConstructorWorkflowDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [requests, setRequests] = useState<ConstructionRequest[]>([]);
   const [requestsError, setRequestsError] = useState('');
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
+
 
   const loadData = async () => {
     setLoading(true);
@@ -63,30 +63,7 @@ export const ConstructorWorkflowDashboard: React.FC = () => {
 
   useEffect(() => { void loadData(); }, []);
 
-  const handleAccept = async (requestId: string) => {
-    setActionLoading(requestId);
-    try {
-      await constructorWorkflowService.acceptRequest(requestId);
-      await loadData();
-    } catch (e: any) {
-      alert(e.response?.data?.message || 'Could not accept request.');
-    } finally {
-      setActionLoading(null);
-    }
-  };
 
-  const handleDecline = async (requestId: string) => {
-    const reason = window.prompt('Optional reason for declining') || undefined;
-    setActionLoading(requestId);
-    try {
-      await constructorWorkflowService.declineRequest(requestId, reason);
-      await loadData();
-    } catch (e: any) {
-      alert(e.response?.data?.message || 'Could not decline request.');
-    } finally {
-      setActionLoading(null);
-    }
-  };
 
   if (loading) {
     return (
