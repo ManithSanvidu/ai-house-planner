@@ -25,6 +25,7 @@ import ValidationRequestDetails from '../pages/architect/ValidationRequestDetail
 import ValidationRequestsPage from '../pages/architect/ValidationRequestsPage';
 import ConstructorProjectWorkflow from '../pages/constructor/workflow/ConstructorProjectWorkflow';
 import ConstructorProjectDetails from '../pages/constructor/workflow/ConstructorProjectDetails';
+import ConstructorRequestDetails from '../pages/constructor/workflow/ConstructorRequestDetails';
 import ConstructorWorkflowDashboard from '../pages/constructor/workflow/ConstructorWorkflowDashboard';
 import ProtectedRoute from './ProtectedRoute';
 
@@ -54,6 +55,7 @@ export const AppRoutes: React.FC = () => (
     <Route path="/architect/approved" element={<ProtectedRoute allowedRoles={['Architect']}><PageContainer><ApprovedRequestsPage /></PageContainer></ProtectedRoute>} />
     <Route path="/architect/requests/:id" element={<ProtectedRoute allowedRoles={['Architect']}><PageContainer><ValidationRequestDetails /></PageContainer></ProtectedRoute>} />
     <Route path="/constructor/dashboard" element={<ProtectedRoute allowedRoles={['Constructor']}><PageContainer><ConstructorWorkflowDashboard /></PageContainer></ProtectedRoute>} />
+    <Route path="/constructor/requests/:requestId" element={<ProtectedRoute allowedRoles={['Constructor']}><PageContainer><ConstructorRequestDetails /></PageContainer></ProtectedRoute>} />
     <Route path="/constructor/workflows/:id" element={<ProtectedRoute allowedRoles={['Constructor']}><PageContainer><ConstructorProjectWorkflow /></PageContainer></ProtectedRoute>} />
     <Route path="/constructor/projects/:projectId" element={<ProtectedRoute allowedRoles={['Constructor']}><PageContainer><ConstructorProjectDetails /></PageContainer></ProtectedRoute>} />
     <Route path="*" element={<Navigate to="/" replace />} />

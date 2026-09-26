@@ -1,4 +1,4 @@
-﻿import axios from 'axios';
+import axios from 'axios';
 import { supabase } from '../lib/supabase';
 import type { CostSummaryDto } from './workflowService';
 
@@ -130,6 +130,11 @@ export const constructorWorkflowService = {
 
     getConstructorRequests: async () => {
         const response = await axios.get(`${API_URL}/requests/constructor`, { headers: await getAuthHeaders() });
+        return response.data;
+    },
+
+    getConstructorRequest: async (requestId: string) => {
+        const response = await axios.get(`${API_URL}/requests/${requestId}`, { headers: await getAuthHeaders() });
         return response.data;
     },
 

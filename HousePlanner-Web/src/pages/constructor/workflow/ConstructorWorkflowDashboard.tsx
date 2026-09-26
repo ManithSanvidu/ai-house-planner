@@ -28,6 +28,11 @@ interface ConstructionRequest {
   title: string;
   bedrooms: number;
   bathrooms: number;
+  layoutJson: string | null;
+  terrainType: string | null;
+  planReference: string | null;
+  layoutType: string | null;
+  basePreDesignedPlanId: string | null;
   cost: CostSummaryDto | null;
 }
 
@@ -122,40 +127,27 @@ export const ConstructorWorkflowDashboard: React.FC = () => {
         ) : (
           <div className="space-y-3">
             {pendingRequests.map(request => (
-              <div key={request.id} className="rounded-xl border p-5">
-                <div className="flex flex-wrap justify-between gap-4">
-                  <div className="space-y-1">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">New Construction Request</p>
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">{request.title}</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">Customer: <strong>{request.customerName}</strong></p>
-                    <div className="flex flex-wrap gap-3 text-sm text-gray-500 dark:text-gray-400 mt-2">
-                      {request.designVersion != null && <span>Version {request.designVersion}</span>}
-                      <span>{request.bedrooms} Bedrooms</span>
-                      <span>{request.bathrooms} Bathrooms</span>
-                      {request.floorCount > 0 && <span>{request.floorCount} {request.floorCount === 1 ? 'Floor' : 'Floors'}</span>}
-                      {request.area > 0 && <span>{Number(request.area).toLocaleString()} sq ft</span>}
-                    </div>
-                    <p className="text-xs text-gray-400 mt-2">Requested: {new Date(request.requestedAt).toLocaleDateString()}</p>
-                    <div className="mt-4 max-w-2xl">
-                      <CostBreakdownCard cost={request.cost} />
-                    </div>
+              <div key={request.id} className="rounded-xl border p-5 flex flex-wrap justify-between items-center gap-4">
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">New Construction Request</p>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">{request.title}</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-300">Customer: <strong>{request.customerName}</strong></p>
+                  <div className="flex flex-wrap gap-3 text-sm text-gray-500 dark:text-gray-400 mt-2">
+                    {request.designVersion != null && <span>Version {request.designVersion}</span>}
+                    <span>{request.bedrooms} Bedrooms</span>
+                    <span>{request.bathrooms} Bathrooms</span>
+                    {request.floorCount > 0 && <span>{request.floorCount} {request.floorCount === 1 ? 'Floor' : 'Floors'}</span>}
+                    {request.area > 0 && <span>{Number(request.area).toLocaleString()} sq ft</span>}
                   </div>
-                  <div className="flex items-start gap-2">
-                    <button
-                      onClick={() => void handleDecline(request.id)}
-                      disabled={actionLoading === request.id}
-                      className="rounded-lg border px-4 py-2.5 text-sm font-semibold hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50"
-                    >
-                      Decline
-                    </button>
-                    <button
-                      onClick={() => void handleAccept(request.id)}
-                      disabled={actionLoading === request.id}
-                      className="rounded-lg bg-emerald-600 px-4 py-2.5 text-white text-sm font-semibold hover:bg-emerald-500 disabled:opacity-50"
-                    >
-                      {actionLoading === request.id ? 'Processing…' : 'Accept Request'}
-                    </button>
-                  </div>
+                  <p className="text-xs text-gray-400 mt-2">Requested: {new Date(request.requestedAt).toLocaleDateString()}</p>
+                </div>
+                <div>
+                  <Link
+                    to={`/constructor/requests/${request.id}`}
+                    className="flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-white text-sm font-semibold shadow-sm hover:bg-indigo-500 transition-colors"
+                  >
+                    View Request Details <ChevronRight size={16} />
+                  </Link>
                 </div>
               </div>
             ))}

@@ -374,4 +374,193 @@ public partial class ConstructorWorkflowControllerTests
         // Verified by checking the model separation (StartedAt / CompletedAt vs PlannedStartDate / PlannedEndDate)
         Assert.True(true);
     }
+
+    [Fact]
+    public async Task ConstructorPendingRequest_ReturnsHouseDesignDetails()
+    {
+        var plan = new PreDesignedHousePlan { Id = Guid.NewGuid(), Name = "Plan A", IsActive = true, Bedrooms = 3, FloorCount = 1, LayoutJson = "{\"topology\": \"test\"}" };
+        _db.PreDesignedHousePlans.Add(plan);
+        var workflow = new WorkflowState { Id = Guid.NewGuid(), Status = "approved" };
+        var design = new HouseDesign { Id = Guid.NewGuid(), WorkflowStateId = workflow.Id, BasePreDesignedPlanId = plan.Id, LayoutJson = plan.LayoutJson, TotalBuiltUpAreaSqft = 1000 };
+        var project = new Project { Id = Guid.NewGuid(), WorkflowStateId = workflow.Id, Status = "pending" };
+        var req = new ConstructorProjectRequest { Id = Guid.NewGuid(), ProjectId = project.Id, HouseDesignId = design.Id, ConstructorId = _constructorId, Status = "Pending" };
+        _db.AddRange(workflow, design, project, req);
+        await _db.SaveChangesAsync();
+
+        var result = await _controller.GetConstructorRequest(req.Id);
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        var json = JsonSerializer.Serialize(okResult.Value);
+        Assert.Contains("\"layoutType\":\"See JSON\"", json);
+    }
+
+    [Fact]
+    public async Task ConstructorPendingRequest_ReturnsFloorPlanGeometry()
+    {
+        var workflow = new WorkflowState { Id = Guid.NewGuid(), Status = "approved" };
+        var design = new HouseDesign { Id = Guid.NewGuid(), WorkflowStateId = workflow.Id, LayoutJson = "{\"rooms\": []}", TotalBuiltUpAreaSqft = 1000 };
+        var project = new Project { Id = Guid.NewGuid(), WorkflowStateId = workflow.Id, Status = "pending" };
+        var req = new ConstructorProjectRequest { Id = Guid.NewGuid(), ProjectId = project.Id, HouseDesignId = design.Id, ConstructorId = _constructorId, Status = "Pending" };
+        _db.AddRange(workflow, design, project, req);
+        await _db.SaveChangesAsync();
+
+        var result = await _controller.GetConstructorRequest(req.Id);
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        var json = JsonSerializer.Serialize(okResult.Value);
+        Assert.Contains("\"layoutJson\":\"{\\\"rooms\\\": []}\"", json);
+    }
+
+    [Fact]
+    public async Task ConstructorPendingRequest_ReturnsEstimatedCost()
+    {
+        var workflow = new WorkflowState { Id = Guid.NewGuid(), Status = "approved" };
+        var design = new HouseDesign { Id = Guid.NewGuid(), WorkflowStateId = workflow.Id, TotalBuiltUpAreaSqft = 1000 };
+        var cost = new CostEstimate { Id = Guid.NewGuid(), HouseDesignId = design.Id, TotalCostLkr = 15000000 };
+        var project = new Project { Id = Guid.NewGuid(), WorkflowStateId = workflow.Id, Status = "pending" };
+        var req = new ConstructorProjectRequest { Id = Guid.NewGuid(), ProjectId = project.Id, HouseDesignId = design.Id, ConstructorId = _constructorId, Status = "Pending" };
+        _db.AddRange(workflow, design, cost, project, req);
+        await _db.SaveChangesAsync();
+
+        var result = await _controller.GetConstructorRequest(req.Id);
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        var json = JsonSerializer.Serialize(okResult.Value);
+        Assert.Contains("\"cost\":", json);
+        Assert.Contains("15000000", json);
+    }
+
+    [Fact]
+    public async Task ConstructorCanViewOwnRequestDetails()
+    {
+        var workflow = new WorkflowState { Id = Guid.NewGuid(), Status = "approved" };
+        var design = new HouseDesign { Id = Guid.NewGuid(), WorkflowStateId = workflow.Id };
+        var project = new Project { Id = Guid.NewGuid(), WorkflowStateId = workflow.Id, Status = "pending" };
+        var req = new ConstructorProjectRequest { Id = Guid.NewGuid(), ProjectId = project.Id, HouseDesignId = design.Id, ConstructorId = _constructorId, Status = "Pending" };
+        _db.AddRange(workflow, design, project, req);
+        await _db.SaveChangesAsync();
+
+        var result = await _controller.GetConstructorRequest(req.Id);
+        Assert.IsType<OkObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task ConstructorCannotViewOtherConstructorsRequest()
+    {
+        var otherConstructorId = Guid.NewGuid();
+        var workflow = new WorkflowState { Id = Guid.NewGuid(), Status = "approved" };
+        var design = new HouseDesign { Id = Guid.NewGuid(), WorkflowStateId = workflow.Id };
+        var project = new Project { Id = Guid.NewGuid(), WorkflowStateId = workflow.Id, Status = "pending" };
+        var req = new ConstructorProjectRequest { Id = Guid.NewGuid(), ProjectId = project.Id, HouseDesignId = design.Id, ConstructorId = otherConstructorId, Status = "Pending" };
+        _db.AddRange(workflow, design, project, req);
+        await _db.SaveChangesAsync();
+
+        var result = await _controller.GetConstructorRequest(req.Id);
+        Assert.IsType<NotFoundResult>(result);
+    }
+
+    [Fact]
+    public async Task ConstructorRequests_Returns200()
+    {
+        var result = await _controller.GetConstructorRequests();
+        Assert.IsType<OkObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task ConstructorRequests_WithCustomDesign_Returns200()
+    {
+        var workflow = new WorkflowState { Id = Guid.NewGuid(), Status = "approved" };
+        var design = new HouseDesign { Id = Guid.NewGuid(), WorkflowStateId = workflow.Id, LayoutJson = "{\"topology\":\"custom\"}" };
+        var project = new Project { Id = Guid.NewGuid(), WorkflowStateId = workflow.Id, Status = "pending" };
+        var req = new ConstructorProjectRequest { Id = Guid.NewGuid(), ProjectId = project.Id, HouseDesignId = design.Id, ConstructorId = _constructorId, Status = "Pending" };
+        _db.AddRange(workflow, design, project, req);
+        await _db.SaveChangesAsync();
+
+        var result = await _controller.GetConstructorRequests();
+        Assert.IsType<OkObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task ConstructorRequests_WithPlanLibraryDesign_Returns200()
+    {
+        var plan = new PreDesignedHousePlan { Id = Guid.NewGuid(), DesignCode = "LIB-1" };
+        var workflow = new WorkflowState { Id = Guid.NewGuid(), Status = "approved" };
+        var design = new HouseDesign { Id = Guid.NewGuid(), WorkflowStateId = workflow.Id, BasePreDesignedPlanId = plan.Id };
+        var project = new Project { Id = Guid.NewGuid(), WorkflowStateId = workflow.Id, Status = "pending" };
+        var req = new ConstructorProjectRequest { Id = Guid.NewGuid(), ProjectId = project.Id, HouseDesignId = design.Id, ConstructorId = _constructorId, Status = "Pending" };
+        _db.AddRange(plan, workflow, design, project, req);
+        await _db.SaveChangesAsync();
+
+        var result = await _controller.GetConstructorRequests();
+        Assert.IsType<OkObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task ConstructorRequests_WithMissingCost_Returns200()
+    {
+        var workflow = new WorkflowState { Id = Guid.NewGuid(), Status = "approved" };
+        var design = new HouseDesign { Id = Guid.NewGuid(), WorkflowStateId = workflow.Id }; // No cost estimates
+        var project = new Project { Id = Guid.NewGuid(), WorkflowStateId = workflow.Id, Status = "pending" };
+        var req = new ConstructorProjectRequest { Id = Guid.NewGuid(), ProjectId = project.Id, HouseDesignId = design.Id, ConstructorId = _constructorId, Status = "Pending" };
+        _db.AddRange(workflow, design, project, req);
+        await _db.SaveChangesAsync();
+
+        var result = await _controller.GetConstructorRequests();
+        Assert.IsType<OkObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task ConstructorRequests_WithNullBasePreDesignedPlan_Returns200()
+    {
+        var workflow = new WorkflowState { Id = Guid.NewGuid(), Status = "approved" };
+        var design = new HouseDesign { Id = Guid.NewGuid(), WorkflowStateId = workflow.Id, BasePreDesignedPlanId = null };
+        var project = new Project { Id = Guid.NewGuid(), WorkflowStateId = workflow.Id, Status = "pending" };
+        var req = new ConstructorProjectRequest { Id = Guid.NewGuid(), ProjectId = project.Id, HouseDesignId = design.Id, ConstructorId = _constructorId, Status = "Pending" };
+        _db.AddRange(workflow, design, project, req);
+        await _db.SaveChangesAsync();
+
+        var result = await _controller.GetConstructorRequests();
+        Assert.IsType<OkObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task ConstructorRequests_WithEmptyRooms_Returns200()
+    {
+        var workflow = new WorkflowState { Id = Guid.NewGuid(), Status = "approved" };
+        var design = new HouseDesign { Id = Guid.NewGuid(), WorkflowStateId = workflow.Id, LayoutJson = "{}" };
+        var project = new Project { Id = Guid.NewGuid(), WorkflowStateId = workflow.Id, Status = "pending" };
+        var req = new ConstructorProjectRequest { Id = Guid.NewGuid(), ProjectId = project.Id, HouseDesignId = design.Id, ConstructorId = _constructorId, Status = "Pending" };
+        _db.AddRange(workflow, design, project, req);
+        await _db.SaveChangesAsync();
+
+        var result = await _controller.GetConstructorRequests();
+        Assert.IsType<OkObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task ConstructorRequests_OldRowsRemainCompatible()
+    {
+        // Missing HouseDesign entirely
+        var workflow = new WorkflowState { Id = Guid.NewGuid(), Status = "approved" };
+        var project = new Project { Id = Guid.NewGuid(), WorkflowStateId = workflow.Id, Status = "pending" };
+        var req = new ConstructorProjectRequest { Id = Guid.NewGuid(), ProjectId = project.Id, HouseDesignId = Guid.Empty, ConstructorId = _constructorId, Status = "Pending" };
+        _db.AddRange(workflow, project, req);
+        await _db.SaveChangesAsync();
+
+        var result = await _controller.GetConstructorRequests();
+        Assert.IsType<OkObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task ConstructorRequests_OnlyReturnsCurrentConstructorsRequests()
+    {
+        var otherConstructorId = Guid.NewGuid();
+        var reqA = new ConstructorProjectRequest { Id = Guid.NewGuid(), ConstructorId = _constructorId, Status = "Pending" };
+        var reqB = new ConstructorProjectRequest { Id = Guid.NewGuid(), ConstructorId = otherConstructorId, Status = "Pending" };
+        _db.AddRange(reqA, reqB);
+        await _db.SaveChangesAsync();
+
+        var result = await _controller.GetConstructorRequests();
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        var json = JsonSerializer.Serialize(okResult.Value);
+        Assert.Contains(reqA.Id.ToString(), json);
+        Assert.DoesNotContain(reqB.Id.ToString(), json);
+    }
 }
