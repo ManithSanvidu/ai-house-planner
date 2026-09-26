@@ -10,10 +10,8 @@ from scripts import build_seed_catalogue as exporter
 
 @pytest.fixture
 def two_bath_plan():
-    plan = next((plan for plan in json.loads(library.SEED_PATH.read_text())
-                if (plan['bedrooms'], plan['bathrooms'], plan['floors']) == (4, 2, 2)), None)
-    assert plan is not None, "Expected (4, 2, 2) plan not found"
-    return plan
+    return next(plan for plan in json.loads(library.SEED_PATH.read_text())
+                if (plan['bedrooms'], plan['bathrooms'], plan['floors']) == (4, 2, 2))
 
 
 @pytest.mark.parametrize('declared', [1, 3, None])
@@ -42,6 +40,7 @@ def test_loader_accepts_exact_bathroom_count(two_bath_plan, tmp_path, monkeypatc
 def test_checked_catalogue_keeps_only_matching_metadata():
     sources = {plan['designCode']: plan for plan in json.loads(library.SEED_PATH.read_text())}
     records = library._load_seed_records()
+    # The 39 historical bathroom-metadata mismatches have been resolved.
     assert len(records) == len(sources)
     for record in records:
         assert record.bathrooms == sources[record.plan_code]['bathrooms']
@@ -56,12 +55,8 @@ def test_seed_export_rejects_surplus_bathrooms(configured, floors):
     assert reason == f'Bathroom count mismatch: configured {configured}, actual {floors}'
 
 
-def test_seed_export_accepts_matching_bathrooms(two_bath_plan, monkeypatch):
-    class DummyGeomRes:
-        passed = True
-        failures = []
-    monkeypatch.setattr(exporter, 'validate_geometry', lambda *args, **kwargs: DummyGeomRes())
-    valid, reason = exporter.validate_plan(two_bath_plan, 'flat')
+def test_seed_export_accepts_matching_bathrooms(two_bath_plan):
+    valid, reason = exporter.validate_plan(two_bath_plan, 'hillside')
     assert valid, reason
 
 

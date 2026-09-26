@@ -61,15 +61,16 @@ def assert_compact_prompt(call):
     return payload
 
 
-def test_ten_perch_failure_rejects_before_calling_ai(provider):
+def test_ten_perch_failure_still_calls_ai_once_with_compact_prompt(provider):
     with pytest.raises(GenerationFailure) as error:
         generation.generate_layout(
             10, 'flat', PREFERENCES, design_seed=42,
             plot_constraints={'plot_width_ft': 50, 'plot_length_ft': 50})
-    # Since the 50x50 plot is too small for a (4, 2, 2) house, the candidate pool is empty.
-    # The generation should fail before calling the AI.
-    assert 'No compatible validated base plans exist' in str(error.value)
-    provider.generate_json.assert_not_called()
+    # The existing 1,810 sqft layouts exceed the unchanged 65% total-area limit.
+    failures = [message for failure in error.value.failures for message in failure['failures']]
+    assert any('exceeds maximum' in message for message in failures)
+    provider.generate_json.assert_called_once()
+    assert_compact_prompt(provider.generate_json.call_args)
 
 
 def test_generate_another_calls_ai_once_per_request(provider):

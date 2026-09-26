@@ -35,7 +35,7 @@ def test_different_seeds_do_not_require_different_geometry():
     fingerprints = set()
     for seed in (1, 2, 42):
         result = generation.generate_layout(
-            20, 'flat', {'bedrooms': 3, 'bathrooms': 2, 'floors': 1, 'style': 'modern'}, design_seed=seed, plot_constraints=PLOT)
+            20, 'flat', {**PREFERENCES, 'floors': 1}, design_seed=seed, plot_constraints=PLOT)
         assert result.design_seed == seed
         assert result.candidate_summary['generation_mode'] == 'deterministic_template_selection'
         assert result.candidate_status == 'VALID_HIGH_QUALITY'
