@@ -83,7 +83,7 @@ const LoginPage: React.FC = () => {
      
      <div className="text-center mb-10">
       <h1 className="text-2xl font-bold text-gray-900 dark:text-text-primary mb-2">Welcome Back</h1>
-      <p className="text-sm text-text-muted text-text-secondary">Sign in to access your HousePlanner workspace.</p>
+      <p className="text-sm text-text-secondary">Sign in to access your HousePlanner workspace.</p>
      </div>
 
      <form onSubmit={handleLogin} className="space-y-6">
@@ -135,7 +135,7 @@ const LoginPage: React.FC = () => {
        type="submit"
        onMouseEnter={() => setIsHovered(true)}
        onMouseLeave={() => setIsHovered(false)}
-       className="w-full bg-gray-900 dark:bg-surface hover:bg-black dark:hover:bg-gray-200 text-text-primary dark:text-gray-900 font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all custom-shadow-md group mt-8"
+       className="w-full bg-gray-900 dark:bg-white hover:bg-black dark:hover:bg-gray-200 text-white dark:text-gray-900 font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all custom-shadow-md group mt-8"
       >
        Sign In
        <motion.div

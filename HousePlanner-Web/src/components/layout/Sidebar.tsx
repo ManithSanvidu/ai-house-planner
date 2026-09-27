@@ -72,7 +72,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 ${
            isActive
             ? 'bg-gradient-to-r from-indigo-50 to-white dark:from-indigo-900/30 dark:to-gray-900 text-indigo-700 dark:text-indigo-400 font-semibold shadow-sm border border-indigo-100/50 dark:border-indigo-800/30'
-            : 'text-text-muted text-text-secondary hover:bg-surface-elevated/80 dark:hover:bg-gray-900/50 hover:text-zinc-900 dark:hover:text-gray-200 border border-transparent'
+            : 'text-text-secondary hover:bg-surface-elevated/80 dark:hover:bg-gray-900/50 hover:text-zinc-900 dark:hover:text-gray-200 border border-transparent'
           }`
          }
         >

@@ -109,36 +109,36 @@ export const ConstructorRequestDetails: React.FC = () => {
        <h3 className="text-sm font-semibold mb-3 dark:text-text-primary">Design Information</h3>
        <dl className="space-y-2 text-sm">
         <div className="flex justify-between">
-         <dt className="text-text-muted text-text-secondary">Bedrooms</dt>
+         <dt className="text-text-secondary">Bedrooms</dt>
          <dd className="font-medium dark:text-text-primary">{request.bedrooms}</dd>
         </div>
         <div className="flex justify-between">
-         <dt className="text-text-muted text-text-secondary">Bathrooms</dt>
+         <dt className="text-text-secondary">Bathrooms</dt>
          <dd className="font-medium dark:text-text-primary">{request.bathrooms}</dd>
         </div>
         <div className="flex justify-between">
-         <dt className="text-text-muted text-text-secondary">Floors</dt>
+         <dt className="text-text-secondary">Floors</dt>
          <dd className="font-medium dark:text-text-primary">{request.floorCount}</dd>
         </div>
         <div className="flex justify-between">
-         <dt className="text-text-muted text-text-secondary">Built-up Area</dt>
+         <dt className="text-text-secondary">Built-up Area</dt>
          <dd className="font-medium dark:text-text-primary">{Number(request.area).toLocaleString()} sq ft</dd>
         </div>
         {request.terrainType && (
          <div className="flex justify-between">
-          <dt className="text-text-muted text-text-secondary">Terrain / Site</dt>
+          <dt className="text-text-secondary">Terrain / Site</dt>
           <dd className="font-medium dark:text-text-primary capitalize">{request.terrainType}</dd>
          </div>
         )}
         {request.planReference && (
          <div className="flex justify-between">
-          <dt className="text-text-muted text-text-secondary">Plan Reference</dt>
+          <dt className="text-text-secondary">Plan Reference</dt>
           <dd className="font-medium dark:text-text-primary">{request.planReference}</dd>
          </div>
         )}
         {request.layoutType && (
          <div className="flex justify-between">
-          <dt className="text-text-muted text-text-secondary">Layout Type</dt>
+          <dt className="text-text-secondary">Layout Type</dt>
           <dd className="font-medium dark:text-text-primary">{request.layoutType}</dd>
          </div>
         )}

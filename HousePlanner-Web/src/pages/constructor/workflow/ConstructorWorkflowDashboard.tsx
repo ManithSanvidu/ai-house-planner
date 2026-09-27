@@ -82,7 +82,7 @@ export const ConstructorWorkflowDashboard: React.FC = () => {
    <div className="mb-8 flex items-center justify-between">
     <div>
      <h1 className="text-2xl font-bold text-gray-900 dark:text-text-primary">My Workflow</h1>
-     <p className="mt-1 text-sm text-text-muted text-text-secondary">
+     <p className="mt-1 text-sm text-text-secondary">
       Manage and track daily logs for your active construction projects.
      </p>
     </div>
@@ -109,7 +109,7 @@ export const ConstructorWorkflowDashboard: React.FC = () => {
          <p className="text-xs font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">New Construction Request</p>
          <h3 className="text-lg font-bold text-gray-900 dark:text-text-primary">{request.title}</h3>
          <p className="text-sm text-text-secondary dark:text-gray-300">Customer: <strong>{request.customerName}</strong></p>
-         <div className="flex flex-wrap gap-3 text-sm text-text-muted text-text-secondary mt-2">
+         <div className="flex flex-wrap gap-3 text-sm text-text-secondary mt-2">
           {request.designVersion != null && <span>Version {request.designVersion}</span>}
           <span>{request.bedrooms} Bedrooms</span>
           <span>{request.bathrooms} Bathrooms</span>
@@ -140,7 +140,7 @@ export const ConstructorWorkflowDashboard: React.FC = () => {
        <Clock className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
       </div>
       <div>
-       <p className="text-sm font-medium text-text-muted text-text-secondary">Pending Requests</p>
+       <p className="text-sm font-medium text-text-secondary">Pending Requests</p>
        <p className="text-2xl font-bold text-gray-900 dark:text-text-primary">{pendingRequests.length}</p>
       </div>
      </div>
@@ -152,7 +152,7 @@ export const ConstructorWorkflowDashboard: React.FC = () => {
        <Briefcase className="h-6 w-6 text-blue-600 dark:text-blue-400" />
       </div>
       <div>
-       <p className="text-sm font-medium text-text-muted text-text-secondary">Active Projects</p>
+       <p className="text-sm font-medium text-text-secondary">Active Projects</p>
        <p className="text-2xl font-bold text-gray-900 dark:text-text-primary">{activeProjects.length}</p>
       </div>
      </div>
@@ -164,7 +164,7 @@ export const ConstructorWorkflowDashboard: React.FC = () => {
        <AlertTriangle className="h-6 w-6 text-amber-600 dark:text-amber-400" />
       </div>
       <div>
-       <p className="text-sm font-medium text-text-muted text-text-secondary">Delayed</p>
+       <p className="text-sm font-medium text-text-secondary">Delayed</p>
        <p className="text-2xl font-bold text-gray-900 dark:text-text-primary">0</p>
       </div>
      </div>
@@ -176,7 +176,7 @@ export const ConstructorWorkflowDashboard: React.FC = () => {
        <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-400" />
       </div>
       <div>
-       <p className="text-sm font-medium text-text-muted text-text-secondary">Completed</p>
+       <p className="text-sm font-medium text-text-secondary">Completed</p>
        <p className="text-2xl font-bold text-gray-900 dark:text-text-primary">{completedCount}</p>
       </div>
      </div>
@@ -200,7 +200,7 @@ export const ConstructorWorkflowDashboard: React.FC = () => {
           <h3 className="text-lg font-medium text-gray-900 dark:text-text-primary">
            Project {project.id.substring(0, 8)}
           </h3>
-          <div className="mt-2 flex items-center gap-4 text-sm text-text-muted text-text-secondary">
+          <div className="mt-2 flex items-center gap-4 text-sm text-text-secondary">
            <span className="flex items-center gap-1">
             <Activity className="h-4 w-4" />
             {project.constructionPhases.length} Phases
@@ -218,7 +218,7 @@ export const ConstructorWorkflowDashboard: React.FC = () => {
      ))}
      
      {projects.length === 0 && (
-      <li className="p-8 text-center text-text-muted text-text-secondary">
+      <li className="p-8 text-center text-text-secondary">
        No active projects. Accept a construction request above to get started.
       </li>
      )}

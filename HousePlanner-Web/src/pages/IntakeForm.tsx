@@ -275,18 +275,18 @@ const IntakeForm: React.FC = () => {
 
  if (isSuccess) {
   return (
-   <div className="min-h-[calc(100vh-65px)] flex items-center justify-center p-6 bg-gray-50 bg-background transition-colors">
+   <div className="min-h-[calc(100vh-65px)] flex items-center justify-center p-6 bg-gray-50 dark:bg-gray-800/50 transition-colors">
     <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-surface rounded-[2rem] p-10 max-w-md w-full text-center shadow-xl border border-gray-100 dark:border-border-strong">
      <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
       <CheckCircle2 size={40} className="text-green-600 dark:text-green-400" />
      </div>
      <h2 className="text-3xl font-bold text-gray-900 dark:text-text-primary mb-4">Project Created!</h2>
-     <p className="text-text-muted text-text-secondary mb-8 leading-relaxed">
+     <p className="text-text-secondary mb-8 leading-relaxed">
       Your requirements have been securely saved and the AI is analyzing the data.
      </p>
      <button 
       onClick={() => navigate(`/dashboard/workflows/${workflowId}`)}
-      className="w-full py-4 bg-gray-900 dark:bg-surface text-text-primary dark:text-gray-900 rounded-xl font-bold hover:bg-black dark:hover:bg-gray-100 transition-colors"
+      className="w-full py-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl font-bold hover:bg-black dark:hover:bg-gray-100 transition-colors"
      >
       Go to Project Dashboard
      </button>
@@ -333,7 +333,7 @@ const IntakeForm: React.FC = () => {
        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
         <div>
          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-text-primary mb-2">Tell us about your land</h2>
-         <p className="text-text-muted text-text-secondary">Basic details about your property size and terrain.</p>
+         <p className="text-text-secondary">Basic details about your property size and terrain.</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -342,10 +342,10 @@ const IntakeForm: React.FC = () => {
           <div className="flex gap-2">
            <input 
             type="number" name="landSize" value={formData.landSize} onChange={handleInputChange} 
-            className={`flex-1 bg-gray-50 bg-surface-elevated border ${fieldErrors.landSize ? 'border-red-500' : 'border-border'} rounded-xl px-4 py-3 text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-blue-500 outline-none`} 
+            className={`flex-1 bg-gray-50 dark:bg-gray-800/50 border ${fieldErrors.landSize ? 'border-red-500' : 'border-border'} rounded-xl px-4 py-3 text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-blue-500 outline-none`} 
             placeholder="e.g. 25"
            />
-           <select name="landUnit" value={formData.landUnit} onChange={handleInputChange} className="w-32 bg-gray-50 bg-surface-elevated border border-border rounded-xl px-4 py-3 text-gray-900 dark:text-text-primary outline-none">
+           <select name="landUnit" value={formData.landUnit} onChange={handleInputChange} className="w-32 bg-gray-50 dark:bg-gray-800/50 border border-border rounded-xl px-4 py-3 text-gray-900 dark:text-text-primary outline-none">
             <option value="perches">Perches</option>
             <option value="sqft">Sq Ft</option>
            </select>
@@ -354,7 +354,7 @@ const IntakeForm: React.FC = () => {
          </div>
          <div>
           <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Terrain Type</label>
-          <select name="terrainType" value={formData.terrainType} onChange={handleInputChange} className="w-full bg-gray-50 bg-surface-elevated border border-border rounded-xl px-4 py-3 text-gray-900 dark:text-text-primary outline-none">
+          <select name="terrainType" value={formData.terrainType} onChange={handleInputChange} className="w-full bg-gray-50 dark:bg-gray-800/50 border border-border rounded-xl px-4 py-3 text-gray-900 dark:text-text-primary outline-none">
            <option value="flat/urban">Flat / Urban</option>
            <option value="sloped">Sloped</option>
            <option value="coastal">Coastal / Beachfront</option>
@@ -372,43 +372,43 @@ const IntakeForm: React.FC = () => {
        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
         <div>
          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-text-primary mb-2">Define the plot</h2>
-         <p className="text-text-muted text-text-secondary">If dimensions are unavailable, the system can estimate conceptual proportions from land area.</p>
+         <p className="text-text-secondary">If dimensions are unavailable, the system can estimate conceptual proportions from land area.</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
          <div>
           <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Plot Width (ft) (Optional)</label>
-          <input type="number" name="plotWidth" value={formData.plotWidth} onChange={handleInputChange} className="w-full bg-gray-50 bg-surface-elevated border border-border rounded-xl px-4 py-3 text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Optional" />
+          <input type="number" name="plotWidth" value={formData.plotWidth} onChange={handleInputChange} className="w-full bg-gray-50 dark:bg-gray-800/50 border border-border rounded-xl px-4 py-3 text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Optional" />
          </div>
          <div>
           <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Plot Length (ft) (Optional)</label>
-          <input type="number" name="plotLength" value={formData.plotLength} onChange={handleInputChange} className="w-full bg-gray-50 bg-surface-elevated border border-border rounded-xl px-4 py-3 text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Optional" />
+          <input type="number" name="plotLength" value={formData.plotLength} onChange={handleInputChange} className="w-full bg-gray-50 dark:bg-gray-800/50 border border-border rounded-xl px-4 py-3 text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Optional" />
          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
          <div>
           <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Road Side</label>
-          <select name="roadSide" value={formData.roadSide} onChange={handleInputChange} className="w-full bg-gray-50 bg-surface-elevated border border-border rounded-xl px-4 py-3 text-gray-900 dark:text-text-primary outline-none">
+          <select name="roadSide" value={formData.roadSide} onChange={handleInputChange} className="w-full bg-gray-50 dark:bg-gray-800/50 border border-border rounded-xl px-4 py-3 text-gray-900 dark:text-text-primary outline-none">
            <option value="south">South</option><option value="north">North</option><option value="east">East</option><option value="west">West</option>
           </select>
          </div>
          <div>
           <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">North Direction</label>
-          <select name="northDirection" value={formData.northDirection} onChange={handleInputChange} className="w-full bg-gray-50 bg-surface-elevated border border-border rounded-xl px-4 py-3 text-gray-900 dark:text-text-primary outline-none">
+          <select name="northDirection" value={formData.northDirection} onChange={handleInputChange} className="w-full bg-gray-50 dark:bg-gray-800/50 border border-border rounded-xl px-4 py-3 text-gray-900 dark:text-text-primary outline-none">
            <option value="north">North</option><option value="east">East</option><option value="south">South</option><option value="west">West</option>
           </select>
          </div>
          <div>
           <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Main Access</label>
-          <select name="entranceSide" value={formData.entranceSide} onChange={handleInputChange} className="w-full bg-gray-50 bg-surface-elevated border border-border rounded-xl px-4 py-3 text-gray-900 dark:text-text-primary outline-none">
+          <select name="entranceSide" value={formData.entranceSide} onChange={handleInputChange} className="w-full bg-gray-50 dark:bg-gray-800/50 border border-border rounded-xl px-4 py-3 text-gray-900 dark:text-text-primary outline-none">
            <option value="road_side">Road Side (Default)</option><option value="north">North</option><option value="south">South</option><option value="east">East</option><option value="west">West</option>
           </select>
          </div>
         </div>
 
         <div className="border border-border dark:border-border-strong rounded-2xl overflow-hidden">
-         <button type="button" onClick={() => setShowAdvancedPlot(!showAdvancedPlot)} className="w-full bg-gray-50 bg-surface-elevated/50 p-4 flex items-center justify-between text-sm font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+         <button type="button" onClick={() => setShowAdvancedPlot(!showAdvancedPlot)} className="w-full bg-gray-50 dark:bg-gray-800/30 p-4 flex items-center justify-between text-sm font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
           Advanced Plot Constraints {showAdvancedPlot ? <Expand className="rotate-180" size={16} /> : <Expand size={16} />}
          </button>
          <AnimatePresence>
@@ -417,8 +417,8 @@ const IntakeForm: React.FC = () => {
             <div className="p-4 grid grid-cols-2 sm:grid-cols-4 gap-4 bg-surface">
              {['front', 'rear', 'left', 'right'].map((side) => (
               <div key={side}>
-               <label className="block text-xs font-bold text-text-muted text-text-secondary mb-1 capitalize">{side} Setback (ft)</label>
-               <input type="number" name={`${side}Setback`} value={(formData as any)[`${side}Setback`]} onChange={handleInputChange} className="w-full bg-gray-50 bg-surface-elevated border border-border rounded-lg px-3 py-2 text-gray-900 dark:text-text-primary outline-none" />
+               <label className="block text-xs font-bold text-text-secondary mb-1 capitalize">{side} Setback (ft)</label>
+               <input type="number" name={`${side}Setback`} value={(formData as any)[`${side}Setback`]} onChange={handleInputChange} className="w-full bg-gray-50 dark:bg-gray-800/50 border border-border rounded-lg px-3 py-2 text-gray-900 dark:text-text-primary outline-none" />
               </div>
              ))}
             </div>
@@ -429,7 +429,7 @@ const IntakeForm: React.FC = () => {
 
         <div>
          <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Target Completion Date (Optional)</label>
-         <input type="date" name="targetDate" value={formData.targetDate} onChange={handleInputChange} className="w-full sm:w-1/2 bg-gray-50 bg-surface-elevated border border-border rounded-xl px-4 py-3 text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-blue-500 outline-none" min={new Date().toISOString().split('T')[0]} />
+         <input type="date" name="targetDate" value={formData.targetDate} onChange={handleInputChange} className="w-full sm:w-1/2 bg-gray-50 dark:bg-gray-800/50 border border-border rounded-xl px-4 py-3 text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-blue-500 outline-none" min={new Date().toISOString().split('T')[0]} />
         </div>
        </motion.div>
       )}
@@ -439,11 +439,11 @@ const IntakeForm: React.FC = () => {
        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
         <div>
          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-text-primary mb-2">Describe the home you want</h2>
-         <p className="text-text-muted text-text-secondary">Basic requirements for the internal spaces.</p>
+         <p className="text-text-secondary">Basic requirements for the internal spaces.</p>
         </div>
 
         {compatibility?.supported && (
-         <div className="text-sm text-text-muted text-text-secondary bg-gray-50 bg-surface-elevated/50 px-4 py-3 rounded-xl border border-gray-100 dark:border-border-strong flex gap-3">
+         <div className="text-sm text-text-secondary bg-gray-50 dark:bg-gray-800/30 px-4 py-3 rounded-xl border border-gray-100 dark:border-border-strong flex gap-3">
           <Info size={18} className="text-blue-500 shrink-0" />
           <p>Based on your current inputs, options are restricted to what is feasible in our validated catalogue.</p>
          </div>
@@ -461,7 +461,7 @@ const IntakeForm: React.FC = () => {
               key={num} type="button" disabled={!isSupported}
               onClick={() => { setFormData(p => ({...p, bedrooms: num.toString()})); if (fieldErrors.bedrooms) setFieldErrors(p => ({...p, bedrooms: ''})); }}
               className={`w-12 h-12 rounded-xl border flex items-center justify-center font-bold text-sm transition-all
-               ${!isSupported ? 'opacity-40 border-border bg-gray-50 bg-surface-elevated cursor-not-allowed text-text-secondary' 
+               ${!isSupported ? 'opacity-40 border-border bg-gray-50 dark:bg-gray-800/50 cursor-not-allowed text-text-secondary' 
                 : formData.bedrooms === num.toString() ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 shadow-sm' 
                 : 'border-border hover:border-blue-300 dark:hover:border-blue-700 text-gray-700 dark:text-gray-300'}
               `}
@@ -486,7 +486,7 @@ const IntakeForm: React.FC = () => {
               key={num} type="button" disabled={!isSupported}
               onClick={() => { setFormData(p => ({...p, bathrooms: num.toString()})); if (fieldErrors.bathrooms) setFieldErrors(p => ({...p, bathrooms: ''})); }}
               className={`w-12 h-12 rounded-xl border flex items-center justify-center font-bold text-sm transition-all
-               ${!isSupported ? 'opacity-40 border-border bg-gray-50 bg-surface-elevated cursor-not-allowed text-text-secondary' 
+               ${!isSupported ? 'opacity-40 border-border bg-gray-50 dark:bg-gray-800/50 cursor-not-allowed text-text-secondary' 
                 : formData.bathrooms === num.toString() ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 shadow-sm' 
                 : 'border-border hover:border-blue-300 dark:hover:border-blue-700 text-gray-700 dark:text-gray-300'}
               `}
@@ -511,7 +511,7 @@ const IntakeForm: React.FC = () => {
               key={num} type="button" disabled={!isSupported}
               onClick={() => { setFormData(p => ({...p, floors: num.toString()})); if (fieldErrors.floors) setFieldErrors(p => ({...p, floors: ''})); }}
               className={`w-12 h-12 rounded-xl border flex items-center justify-center font-bold text-sm transition-all
-               ${!isSupported ? 'opacity-40 border-border bg-gray-50 bg-surface-elevated cursor-not-allowed text-text-secondary' 
+               ${!isSupported ? 'opacity-40 border-border bg-gray-50 dark:bg-gray-800/50 cursor-not-allowed text-text-secondary' 
                 : formData.floors === num.toString() ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 shadow-sm' 
                 : 'border-border hover:border-blue-300 dark:hover:border-blue-700 text-gray-700 dark:text-gray-300'}
               `}
@@ -527,7 +527,7 @@ const IntakeForm: React.FC = () => {
 
          <div className="sm:col-span-2">
           <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Architectural Style</label>
-          <select name="architecturalStyle" value={formData.architecturalStyle} onChange={handleInputChange} className="w-full bg-gray-50 bg-surface-elevated border border-border rounded-xl px-4 py-3 text-gray-900 dark:text-text-primary outline-none">
+          <select name="architecturalStyle" value={formData.architecturalStyle} onChange={handleInputChange} className="w-full bg-gray-50 dark:bg-gray-800/50 border border-border rounded-xl px-4 py-3 text-gray-900 dark:text-text-primary outline-none">
            {['Modern Minimalist', 'Tropical Modern', 'Traditional', 'Industrial', 'Contemporary'].map(style => {
             const isSupported = compatibility?.supported ? compatibility.supported.styles.includes(style) : true;
             return (
@@ -547,7 +547,7 @@ const IntakeForm: React.FC = () => {
        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
         <div>
          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-text-primary mb-2">Choose optional features</h2>
-         <p className="text-text-muted text-text-secondary">Select any extra requirements for your home.</p>
+         <p className="text-text-secondary">Select any extra requirements for your home.</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -565,7 +565,7 @@ const IntakeForm: React.FC = () => {
             key={feature.key} 
             onClick={() => toggleFeature(feature.key as keyof IntakeFormData)}
             className={`cursor-pointer border rounded-xl p-4 flex gap-4 transition-all
-             ${!isSupported ? 'opacity-40 border-border bg-gray-50 bg-surface-elevated/50 cursor-not-allowed' :
+             ${!isSupported ? 'opacity-40 border-border bg-gray-50 dark:bg-gray-800/30 cursor-not-allowed' :
               formData[feature.key as keyof IntakeFormData] ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-border bg-surface-elevated'}
             `}
             title={reason || (!isSupported ? 'Not available' : '')}
@@ -575,7 +575,7 @@ const IntakeForm: React.FC = () => {
             </div>
             <div>
              <h4 className={`font-bold text-sm ${formData[feature.key as keyof IntakeFormData] ? 'text-blue-900 dark:text-blue-200' : 'text-gray-900 dark:text-text-primary'}`}>{feature.label}</h4>
-             <p className={`text-xs mt-1 ${formData[feature.key as keyof IntakeFormData] ? 'text-blue-700 dark:text-blue-300' : 'text-text-muted text-text-secondary'}`}>
+             <p className={`text-xs mt-1 ${formData[feature.key as keyof IntakeFormData] ? 'text-blue-700 dark:text-blue-300' : 'text-text-secondary'}`}>
               {!isSupported && reason ? <span className="text-red-500 dark:text-red-400 block mb-1 font-medium">{reason}</span> : null}
               {feature.desc}
              </p>
@@ -592,7 +592,7 @@ const IntakeForm: React.FC = () => {
        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
         <div>
          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-text-primary mb-2">Review your project</h2>
-         <p className="text-text-muted text-text-secondary">Ensure all details are correct before generating your plan.</p>
+         <p className="text-text-secondary">Ensure all details are correct before generating your plan.</p>
         </div>
 
         {errorMessage && (
@@ -606,7 +606,7 @@ const IntakeForm: React.FC = () => {
         )}
 
         <div className="space-y-6">
-         <div className="bg-gray-50 bg-surface-elevated/50 rounded-2xl p-6 border border-gray-100 dark:border-border-strong">
+         <div className="bg-gray-50 dark:bg-gray-800/30 rounded-2xl p-6 border border-gray-100 dark:border-border-strong">
           <div className="flex justify-between items-center mb-4">
            <h3 className="font-bold text-gray-900 dark:text-text-primary flex items-center gap-2"><Map size={18} className="text-text-secondary" /> Land</h3>
            <button onClick={() => setCurrentStep(1)} className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline">Edit</button>
@@ -617,7 +617,7 @@ const IntakeForm: React.FC = () => {
           </ul>
          </div>
 
-         <div className="bg-gray-50 bg-surface-elevated/50 rounded-2xl p-6 border border-gray-100 dark:border-border-strong">
+         <div className="bg-gray-50 dark:bg-gray-800/30 rounded-2xl p-6 border border-gray-100 dark:border-border-strong">
           <div className="flex justify-between items-center mb-4">
            <h3 className="font-bold text-gray-900 dark:text-text-primary flex items-center gap-2"><Compass size={18} className="text-text-secondary" /> Plot & Site</h3>
            <button onClick={() => setCurrentStep(2)} className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline">Edit</button>
@@ -629,7 +629,7 @@ const IntakeForm: React.FC = () => {
           </ul>
          </div>
 
-         <div className="bg-gray-50 bg-surface-elevated/50 rounded-2xl p-6 border border-gray-100 dark:border-border-strong">
+         <div className="bg-gray-50 dark:bg-gray-800/30 rounded-2xl p-6 border border-gray-100 dark:border-border-strong">
           <div className="flex justify-between items-center mb-4">
            <h3 className="font-bold text-gray-900 dark:text-text-primary flex items-center gap-2"><Home size={18} className="text-text-secondary" /> House Requirements</h3>
            <button onClick={() => setCurrentStep(3)} className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline">Edit</button>
@@ -640,7 +640,7 @@ const IntakeForm: React.FC = () => {
           </ul>
          </div>
 
-         <div className="bg-gray-50 bg-surface-elevated/50 rounded-2xl p-6 border border-gray-100 dark:border-border-strong">
+         <div className="bg-gray-50 dark:bg-gray-800/30 rounded-2xl p-6 border border-gray-100 dark:border-border-strong">
           <div className="flex justify-between items-center mb-4">
            <h3 className="font-bold text-gray-900 dark:text-text-primary flex items-center gap-2"><CheckCircle2 size={18} className="text-text-secondary" /> Features</h3>
            <button onClick={() => setCurrentStep(4)} className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline">Edit</button>
@@ -661,7 +661,7 @@ const IntakeForm: React.FC = () => {
      </div>
 
      {/* STICKY FOOTER NAVIGATION */}
-     <div className="p-6 sm:p-10 bg-gray-50 bg-surface-elevated/30 border-t border-gray-100 dark:border-border-strong flex items-center justify-between">
+     <div className="p-6 sm:p-10 bg-gray-50 dark:bg-gray-800/20 border-t border-gray-100 dark:border-border-strong flex items-center justify-between">
       <button 
        type="button" 
        onClick={handleBack} 
@@ -676,7 +676,7 @@ const IntakeForm: React.FC = () => {
         type="button" 
         onClick={handleNext}
         disabled={currentStep === 3 && fieldErrors.compatibility !== undefined || currentStep === 4 && fieldErrors.compatibility !== undefined}
-        className="flex items-center gap-2 px-8 py-3 bg-gray-900 dark:bg-surface hover:bg-black dark:hover:bg-gray-200 text-text-primary dark:text-gray-900 rounded-xl font-bold text-sm transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+        className="flex items-center gap-2 px-8 py-3 bg-gray-900 dark:bg-white hover:bg-black dark:hover:bg-gray-200 text-white dark:text-gray-900 rounded-xl font-bold text-sm transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
        >
         Next <ChevronRight size={18} />
        </button>

@@ -58,14 +58,14 @@ const ApprovedRequestsPage: React.FC = () => {
      <h1 className="text-2xl font-bold text-gray-900 dark:text-text-primary flex items-center gap-2">
       <CheckCircle2 className="text-emerald-500" /> Validation History
      </h1>
-     <p className="text-text-muted text-text-secondary mt-1">Review previously approved and rejected requests.</p>
+     <p className="text-text-secondary mt-1">Review previously approved and rejected requests.</p>
     </div>
    </div>
    
    <div className="bg-surface border border-border dark:border-border-strong rounded-2xl shadow-sm overflow-hidden">
     <div className="overflow-x-auto">
-     <table className="w-full text-sm text-left text-text-muted text-text-secondary">
-      <thead className="text-xs text-gray-700 dark:text-gray-300 uppercase bg-gray-50 bg-surface-elevated/50 border-b border-border dark:border-border-strong">
+     <table className="w-full text-sm text-left text-text-secondary">
+      <thead className="text-xs text-gray-700 dark:text-gray-300 uppercase bg-gray-50 dark:bg-gray-800/30 border-b border-border dark:border-border-strong">
        <tr>
         <th scope="col" className="px-6 py-4 font-semibold">Client Name</th>
         <th scope="col" className="px-6 py-4 font-semibold">Submission Date</th>
@@ -114,8 +114,8 @@ const ApprovedRequestsPage: React.FC = () => {
        {requests.length === 0 && (
         <tr>
          <td colSpan={6} className="px-6 py-12 text-center">
-          <div className="flex flex-col items-center justify-center text-text-muted text-text-secondary">
-           <div className="bg-gray-50 bg-surface-elevated p-3 rounded-full mb-3">
+          <div className="flex flex-col items-center justify-center text-text-secondary">
+           <div className="bg-gray-50 dark:bg-gray-800/50 p-3 rounded-full mb-3">
             <CheckCircle2 className="w-6 h-6 text-text-secondary" />
            </div>
            <p className="text-sm font-medium">No validation history found.</p>

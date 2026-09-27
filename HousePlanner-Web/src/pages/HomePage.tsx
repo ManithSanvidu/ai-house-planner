@@ -345,7 +345,7 @@ const HomePage: React.FC = () => {
       </Link>
      </div>
      
-     <div className="hidden lg:flex items-center gap-10 text-[11px] font-semibold tracking-[0.15em] text-text-muted text-text-secondary">
+     <div className="hidden lg:flex items-center gap-10 text-[11px] font-semibold tracking-[0.15em] text-text-secondary">
       <Link to="/" className="text-gray-900 dark:text-text-primary hover:text-blue-600 dark:hover:text-blue-400 transition-colors">HOME</Link>
       <Link to="/features" className="hover:text-gray-900 dark:hover:text-text-primary transition-colors">FEATURES</Link>
       <Link to="/gallery" className="hover:text-gray-900 dark:hover:text-text-primary transition-colors">GALLERY</Link>
@@ -360,7 +360,7 @@ const HomePage: React.FC = () => {
       </Link>
       <Link 
        to="/login" 
-       className="hidden sm:flex bg-gray-900 dark:bg-surface hover:bg-black dark:hover:bg-gray-200 text-text-primary dark:text-gray-900 px-7 py-3.5 rounded-none text-[11px] font-bold tracking-[0.15em] transition-all"
+       className="hidden sm:flex bg-gray-900 dark:bg-white hover:bg-black dark:hover:bg-gray-200 text-white dark:text-gray-900 px-7 py-3.5 rounded-none text-[11px] font-bold tracking-[0.15em] transition-all"
       >
        START DESIGNING
       </Link>
@@ -380,13 +380,13 @@ const HomePage: React.FC = () => {
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="fixed inset-0 z-40 bg-surface/95 bg-background/95 backdrop-blur-xl flex flex-col items-center justify-center gap-8 lg:hidden"
+      className="fixed inset-0 z-40 bg-white/95 dark:bg-gray-950/95 backdrop-blur-xl flex flex-col items-center justify-center gap-8 lg:hidden"
      >
       <Link to="/" onClick={() => setIsMobileMenuOpen(false)} className="text-2xl font-semibold tracking-widest text-gray-900 dark:text-text-primary">HOME</Link>
       <Link to="/features" onClick={() => setIsMobileMenuOpen(false)} className="text-2xl font-semibold tracking-widest text-gray-900 dark:text-text-primary">FEATURES</Link>
       <Link to="/gallery" onClick={() => setIsMobileMenuOpen(false)} className="text-2xl font-semibold tracking-widest text-gray-900 dark:text-text-primary">GALLERY</Link>
       <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} className="text-2xl font-semibold tracking-widest text-text-muted">SIGN IN</Link>
-      <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} className="mt-8 bg-gray-900 dark:bg-surface text-text-primary dark:text-gray-900 px-8 py-4 text-sm font-bold tracking-[0.15em]">
+      <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} className="mt-8 bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-8 py-4 text-sm font-bold tracking-[0.15em]">
        START DESIGNING
       </Link>
      </motion.div>
@@ -421,7 +421,7 @@ const HomePage: React.FC = () => {
     >
      <div className="w-full lg:max-w-[45%] pointer-events-auto bg-background/70 bg-background/70 lg:bg-transparent lg:dark:bg-transparent backdrop-blur-md lg:backdrop-blur-none p-6 lg:p-0 rounded-3xl lg:rounded-none">
       <div className="inline-block mb-6">
-       <p className="text-[10px] font-bold tracking-[0.2em] text-text-muted text-text-secondary flex items-center gap-2">
+       <p className="text-[10px] font-bold tracking-[0.2em] text-text-secondary flex items-center gap-2">
         <span className="w-8 h-[1px] bg-gray-300 dark:bg-gray-700 transition-colors"></span>
         AI-ASSISTED HOME PLANNING
        </p>
@@ -434,15 +434,15 @@ const HomePage: React.FC = () => {
        </span>
       </h1>
       
-      <p className="text-base sm:text-lg text-text-muted text-text-secondary mb-10 leading-relaxed font-light lg:pr-10 transition-colors">
+      <p className="text-base sm:text-lg text-text-secondary mb-10 leading-relaxed font-light lg:pr-10 transition-colors">
        HomePlannerAI helps you validate land and home requirements, explore suitable design options, collaborate with architects, and move into construction planning.
       </p>
       
       <div className="flex flex-col sm:flex-row gap-4 mb-4">
-       <Link to="/login" className="bg-gray-900 dark:bg-surface hover:bg-black dark:hover:bg-gray-200 text-text-primary dark:text-gray-900 px-8 py-4 text-xs font-bold tracking-[0.15em] transition-all flex items-center justify-center gap-3 w-max rounded-xl lg:rounded-none">
+       <Link to="/login" className="bg-gray-900 dark:bg-white hover:bg-black dark:hover:bg-gray-200 text-white dark:text-gray-900 px-8 py-4 text-xs font-bold tracking-[0.15em] transition-all flex items-center justify-center gap-3 w-max rounded-xl lg:rounded-none">
         START DESIGNING <ArrowRight size={16} />
        </Link>
-       <button onClick={() => setIsChatOpen(true)} className="bg-transparent border border-border-strong border-border hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-900 dark:text-text-primary px-8 py-4 text-xs font-bold tracking-[0.15em] transition-all flex items-center justify-center gap-3 w-max rounded-xl lg:rounded-none">
+       <button onClick={() => setIsChatOpen(true)} className="bg-transparent border border-border dark:border-border-strong hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-900 dark:text-text-primary px-8 py-4 text-xs font-bold tracking-[0.15em] transition-all flex items-center justify-center gap-3 w-max rounded-xl lg:rounded-none">
         ASK AI ARCHITECT <MessageSquare size={16} />
        </button>
       </div>
@@ -461,7 +461,7 @@ const HomePage: React.FC = () => {
       <h2 className="text-3xl sm:text-4xl lg:text-5xl font-medium text-gray-900 dark:text-text-primary tracking-tight font-serif mb-6 transition-colors">
        Talk to the AI Architect Before You Design
       </h2>
-      <p className="text-base sm:text-lg text-text-muted text-text-secondary mb-8 leading-relaxed font-light transition-colors">
+      <p className="text-base sm:text-lg text-text-secondary mb-8 leading-relaxed font-light transition-colors">
        Ask planning questions about land size, room counts, layout ideas, or construction-related decisions before starting a full design workflow.
       </p>
       <button onClick={() => setIsChatOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-text-primary px-8 py-4 text-xs font-bold tracking-[0.15em] transition-all flex items-center justify-center gap-3 w-max rounded-xl shadow-lg shadow-blue-900/20">
@@ -470,19 +470,19 @@ const HomePage: React.FC = () => {
      </div>
      
      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <div onClick={() => { setPrompt("I have 25 perch land. How many bedrooms are suitable?"); setIsChatOpen(true); }} className="bg-gray-50 bg-surface-elevated/50 p-6 rounded-2xl border border-gray-100 dark:border-border-strong cursor-pointer hover:border-blue-300 dark:hover:border-blue-800 transition-colors group">
+      <div onClick={() => { setPrompt("I have 25 perch land. How many bedrooms are suitable?"); setIsChatOpen(true); }} className="bg-gray-50 dark:bg-gray-800/30 p-6 rounded-2xl border border-gray-100 dark:border-border-strong cursor-pointer hover:border-blue-300 dark:hover:border-blue-800 transition-colors group">
        <MessageSquare className="text-text-secondary mb-4 group-hover:text-blue-500 transition-colors" size={20} />
        <p className="text-sm text-gray-700 dark:text-gray-300 font-medium">"I have 25 perch land. How many bedrooms are suitable?"</p>
       </div>
-      <div onClick={() => { setPrompt("Is 2 bedrooms and 12 bathrooms realistic?"); setIsChatOpen(true); }} className="bg-gray-50 bg-surface-elevated/50 p-6 rounded-2xl border border-gray-100 dark:border-border-strong cursor-pointer hover:border-blue-300 dark:hover:border-blue-800 transition-colors group">
+      <div onClick={() => { setPrompt("Is 2 bedrooms and 12 bathrooms realistic?"); setIsChatOpen(true); }} className="bg-gray-50 dark:bg-gray-800/30 p-6 rounded-2xl border border-gray-100 dark:border-border-strong cursor-pointer hover:border-blue-300 dark:hover:border-blue-800 transition-colors group">
        <MessageSquare className="text-text-secondary mb-4 group-hover:text-blue-500 transition-colors" size={20} />
        <p className="text-sm text-gray-700 dark:text-gray-300 font-medium">"Is 2 bedrooms and 12 bathrooms realistic?"</p>
       </div>
-      <div onClick={() => { setPrompt("What house layout fits a narrow plot?"); setIsChatOpen(true); }} className="bg-gray-50 bg-surface-elevated/50 p-6 rounded-2xl border border-gray-100 dark:border-border-strong cursor-pointer hover:border-blue-300 dark:hover:border-blue-800 transition-colors group">
+      <div onClick={() => { setPrompt("What house layout fits a narrow plot?"); setIsChatOpen(true); }} className="bg-gray-50 dark:bg-gray-800/30 p-6 rounded-2xl border border-gray-100 dark:border-border-strong cursor-pointer hover:border-blue-300 dark:hover:border-blue-800 transition-colors group">
        <MessageSquare className="text-text-secondary mb-4 group-hover:text-blue-500 transition-colors" size={20} />
        <p className="text-sm text-gray-700 dark:text-gray-300 font-medium">"What house layout fits a narrow plot?"</p>
       </div>
-      <div onClick={() => { setPrompt("Can I build a 2-floor home on this site?"); setIsChatOpen(true); }} className="bg-gray-50 bg-surface-elevated/50 p-6 rounded-2xl border border-gray-100 dark:border-border-strong cursor-pointer hover:border-blue-300 dark:hover:border-blue-800 transition-colors group">
+      <div onClick={() => { setPrompt("Can I build a 2-floor home on this site?"); setIsChatOpen(true); }} className="bg-gray-50 dark:bg-gray-800/30 p-6 rounded-2xl border border-gray-100 dark:border-border-strong cursor-pointer hover:border-blue-300 dark:hover:border-blue-800 transition-colors group">
        <MessageSquare className="text-text-secondary mb-4 group-hover:text-blue-500 transition-colors" size={20} />
        <p className="text-sm text-gray-700 dark:text-gray-300 font-medium">"Can I build a 2-floor home on this site?"</p>
       </div>
@@ -503,37 +503,37 @@ const HomePage: React.FC = () => {
       <div className="bg-surface border border-border dark:border-border-strong p-8 rounded-3xl hover:border-blue-500/50 dark:hover:border-blue-500/50 transition-colors group">
        <Map className="text-blue-600 dark:text-blue-400 mb-6 group-hover:scale-110 transition-transform" size={32} />
        <h3 className="text-xl font-bold text-gray-900 dark:text-text-primary mb-3">Land Analysis</h3>
-       <p className="text-sm text-text-muted text-text-secondary leading-relaxed">Capture site dimensions, land size, and planning context to understand what is realistically possible.</p>
+       <p className="text-sm text-text-secondary leading-relaxed">Capture site dimensions, land size, and planning context to understand what is realistically possible.</p>
       </div>
       
       <div className="bg-surface border border-border dark:border-border-strong p-8 rounded-3xl hover:border-indigo-500/50 dark:hover:border-indigo-500/50 transition-colors group">
        <ClipboardCheck className="text-indigo-600 dark:text-indigo-400 mb-6 group-hover:scale-110 transition-transform" size={32} />
        <h3 className="text-xl font-bold text-gray-900 dark:text-text-primary mb-3">Requirement Validation</h3>
-       <p className="text-sm text-text-muted text-text-secondary leading-relaxed">Check whether requested bedrooms, bathrooms, floors, and features are suitable for the land.</p>
+       <p className="text-sm text-text-secondary leading-relaxed">Check whether requested bedrooms, bathrooms, floors, and features are suitable for the land.</p>
       </div>
       
       <div className="bg-surface border border-border dark:border-border-strong p-8 rounded-3xl hover:border-purple-500/50 dark:hover:border-purple-500/50 transition-colors group">
        <Home className="text-purple-600 dark:text-purple-400 mb-6 group-hover:scale-110 transition-transform" size={32} />
        <h3 className="text-xl font-bold text-gray-900 dark:text-text-primary mb-3">AI-Assisted Design</h3>
-       <p className="text-sm text-text-muted text-text-secondary leading-relaxed">Explore home design options that align with validated land and requirement inputs.</p>
+       <p className="text-sm text-text-secondary leading-relaxed">Explore home design options that align with validated land and requirement inputs.</p>
       </div>
       
       <div className="bg-surface border border-border dark:border-border-strong p-8 rounded-3xl hover:border-amber-500/50 dark:hover:border-amber-500/50 transition-colors group">
        <PenTool className="text-amber-600 dark:text-amber-400 mb-6 group-hover:scale-110 transition-transform" size={32} />
        <h3 className="text-xl font-bold text-gray-900 dark:text-text-primary mb-3">Architect Review</h3>
-       <p className="text-sm text-text-muted text-text-secondary leading-relaxed">Send selected designs for review and track approval status through the workflow.</p>
+       <p className="text-sm text-text-secondary leading-relaxed">Send selected designs for review and track approval status through the workflow.</p>
       </div>
       
       <div className="bg-surface border border-border dark:border-border-strong p-8 rounded-3xl hover:border-rose-500/50 dark:hover:border-rose-500/50 transition-colors group">
        <HardHat className="text-rose-600 dark:text-rose-400 mb-6 group-hover:scale-110 transition-transform" size={32} />
        <h3 className="text-xl font-bold text-gray-900 dark:text-text-primary mb-3">Constructor Workflow</h3>
-       <p className="text-sm text-text-muted text-text-secondary leading-relaxed">Request construction support and manage project progress after approval.</p>
+       <p className="text-sm text-text-secondary leading-relaxed">Request construction support and manage project progress after approval.</p>
       </div>
       
       <div className="bg-surface border border-border dark:border-border-strong p-8 rounded-3xl hover:border-emerald-500/50 dark:hover:border-emerald-500/50 transition-colors group">
        <Activity className="text-emerald-600 dark:text-emerald-400 mb-6 group-hover:scale-110 transition-transform" size={32} />
        <h3 className="text-xl font-bold text-gray-900 dark:text-text-primary mb-3">Progress Tracking</h3>
-       <p className="text-sm text-text-muted text-text-secondary leading-relaxed">Follow phases, daily logs, and schedule updates during construction.</p>
+       <p className="text-sm text-text-secondary leading-relaxed">Follow phases, daily logs, and schedule updates during construction.</p>
       </div>
      </div>
     </div>
@@ -564,7 +564,7 @@ const HomePage: React.FC = () => {
          {step.num}
         </div>
         <h4 className="text-sm font-bold text-gray-900 dark:text-text-primary mb-3 tracking-wide">{step.title}</h4>
-        <p className="text-xs text-text-muted text-text-secondary max-w-[150px] leading-relaxed">{step.desc}</p>
+        <p className="text-xs text-text-secondary max-w-[150px] leading-relaxed">{step.desc}</p>
        </div>
       ))}
      </div>
@@ -572,7 +572,7 @@ const HomePage: React.FC = () => {
    </section>
 
    {/* SECTION 5 - VALIDATION / TRUST */}
-   <section className="py-24 bg-gray-50 bg-surface-elevated/50 relative z-10 transition-colors duration-300">
+   <section className="py-24 bg-gray-50 dark:bg-gray-800/30 relative z-10 transition-colors duration-300">
     <div className="max-w-[1000px] mx-auto px-6 text-center">
      <h2 className="text-3xl lg:text-4xl font-medium text-gray-900 dark:text-text-primary tracking-tight font-serif mb-6 transition-colors">
       AI Guidance with Smart Validation
@@ -632,14 +632,14 @@ const HomePage: React.FC = () => {
         <Box className="text-gray-900 dark:text-text-primary transition-colors" size={20} strokeWidth={2} />
         <span className="text-sm font-bold text-gray-900 dark:text-text-primary tracking-[0.2em] transition-colors">HOMEPLANNER<span className="text-text-secondary">AI</span></span>
        </div>
-       <p className="text-text-muted text-text-secondary text-sm leading-relaxed max-w-sm mb-6 transition-colors">
+       <p className="text-text-secondary text-sm leading-relaxed max-w-sm mb-6 transition-colors">
         The most advanced AI architecture platform. Design, visualize, and plan your perfect home with precision and ease.
        </p>
       </div>
       
       <div>
        <h4 className="font-bold text-gray-900 dark:text-text-primary mb-4 text-sm tracking-wider uppercase transition-colors">Product</h4>
-       <ul className="space-y-3 text-sm text-text-muted text-text-secondary">
+       <ul className="space-y-3 text-sm text-text-secondary">
         <li><a href="#" className="hover:text-gray-900 dark:hover:text-text-primary transition-colors">Features</a></li>
         <li><a href="#" className="hover:text-gray-900 dark:hover:text-text-primary transition-colors">AI Floor Plans</a></li>
         <li><a href="#" className="hover:text-gray-900 dark:hover:text-text-primary transition-colors">3D Visualization</a></li>
@@ -649,7 +649,7 @@ const HomePage: React.FC = () => {
 
       <div>
        <h4 className="font-bold text-gray-900 dark:text-text-primary mb-4 text-sm tracking-wider uppercase transition-colors">Resources</h4>
-       <ul className="space-y-3 text-sm text-text-muted text-text-secondary">
+       <ul className="space-y-3 text-sm text-text-secondary">
         <li><a href="#" className="hover:text-gray-900 dark:hover:text-text-primary transition-colors">Design Gallery</a></li>
         <li><a href="#" className="hover:text-gray-900 dark:hover:text-text-primary transition-colors">Architecture Blog</a></li>
         <li><a href="#" className="hover:text-gray-900 dark:hover:text-text-primary transition-colors">Help Center</a></li>
@@ -659,7 +659,7 @@ const HomePage: React.FC = () => {
 
       <div>
        <h4 className="font-bold text-gray-900 dark:text-text-primary mb-4 text-sm tracking-wider uppercase transition-colors">Company</h4>
-       <ul className="space-y-3 text-sm text-text-muted text-text-secondary">
+       <ul className="space-y-3 text-sm text-text-secondary">
         <li><a href="#" className="hover:text-gray-900 dark:hover:text-text-primary transition-colors">About Us</a></li>
         <li><a href="#" className="hover:text-gray-900 dark:hover:text-text-primary transition-colors">Careers</a></li>
         <li><a href="#" className="hover:text-gray-900 dark:hover:text-text-primary transition-colors">Contact</a></li>
@@ -779,7 +779,7 @@ const HomePage: React.FC = () => {
         value={prompt}
         onChange={(e) => setPrompt(e.target.value)}
         placeholder="Message AI Architect..."
-        className="flex-1 bg-gray-50 bg-surface-elevated border border-border rounded-xl focus:ring-2 focus:ring-black dark:focus:ring-white focus:border-transparent text-black dark:text-text-primary placeholder-gray-500 dark:placeholder-gray-400 px-4 py-3 outline-none text-sm transition-all"
+        className="flex-1 bg-gray-50 dark:bg-gray-800/50 border border-border rounded-xl focus:ring-2 focus:ring-black dark:focus:ring-white focus:border-transparent text-black dark:text-text-primary placeholder-gray-500 dark:placeholder-gray-400 px-4 py-3 outline-none text-sm transition-all"
        />
        <button 
         type="submit"

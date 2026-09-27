@@ -10,7 +10,7 @@ export const WorkflowHistory: React.FC<WorkflowHistoryProps> = ({ logs }) => {
  if (logs.length === 0) {
   return (
    <div className="text-center py-8">
-    <p className="text-text-muted text-text-secondary">No logs recorded for this project yet.</p>
+    <p className="text-text-secondary">No logs recorded for this project yet.</p>
    </div>
   );
  }
@@ -67,7 +67,7 @@ export const WorkflowHistory: React.FC<WorkflowHistoryProps> = ({ logs }) => {
        )}
 
        {log.tomorrowPlan && (
-        <div className="bg-gray-50 bg-surface-elevated/50 p-3 rounded-lg">
+        <div className="bg-gray-50 dark:bg-gray-800/30 p-3 rounded-lg">
          <h4 className="font-medium text-gray-900 dark:text-text-primary mb-1">Plan for Tomorrow</h4>
          <p className="text-text-secondary">{log.tomorrowPlan}</p>
         </div>

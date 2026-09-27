@@ -33,7 +33,7 @@ const FeaturesPage: React.FC = () => {
       <span className="text-sm font-bold text-gray-900 dark:text-text-primary tracking-[0.2em]">HOMEPLANNER<span className="text-text-secondary">AI</span></span>
      </Link>
      
-     <div className="hidden lg:flex items-center gap-10 text-[11px] font-semibold tracking-[0.15em] text-text-muted text-text-secondary">
+     <div className="hidden lg:flex items-center gap-10 text-[11px] font-semibold tracking-[0.15em] text-text-secondary">
       <Link to="/" className="hover:text-gray-900 dark:hover:text-text-primary transition-colors">HOME</Link>
       <Link to="/features" className="text-gray-900 dark:text-text-primary hover:text-blue-600 dark:hover:text-blue-400 transition-colors">FEATURES</Link>
       <Link to="/gallery" className="hover:text-gray-900 dark:hover:text-text-primary transition-colors">GALLERY</Link>
@@ -46,7 +46,7 @@ const FeaturesPage: React.FC = () => {
       <Link to="/login" className="hidden sm:block text-[11px] font-bold tracking-[0.15em] text-gray-900 dark:text-text-primary hover:text-text-secondary dark:hover:text-gray-300 transition-colors">
        SIGN IN
       </Link>
-      <Link to="/login" className="hidden sm:flex bg-gray-900 dark:bg-surface hover:bg-black dark:hover:bg-gray-200 text-text-primary dark:text-gray-900 px-7 py-3.5 rounded-none text-[11px] font-bold tracking-[0.15em] transition-all">
+      <Link to="/login" className="hidden sm:flex bg-gray-900 dark:bg-white hover:bg-black dark:hover:bg-gray-200 text-white dark:text-gray-900 px-7 py-3.5 rounded-none text-[11px] font-bold tracking-[0.15em] transition-all">
        START DESIGNING
       </Link>
       <button className="lg:hidden text-gray-900 dark:text-text-primary" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
@@ -62,13 +62,13 @@ const FeaturesPage: React.FC = () => {
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="fixed inset-0 z-40 bg-surface/95 bg-background/95 backdrop-blur-xl flex flex-col items-center justify-center gap-8 lg:hidden"
+      className="fixed inset-0 z-40 bg-white/95 dark:bg-gray-950/95 backdrop-blur-xl flex flex-col items-center justify-center gap-8 lg:hidden"
      >
       <Link to="/" onClick={() => setIsMobileMenuOpen(false)} className="text-2xl font-semibold tracking-widest text-gray-900 dark:text-text-primary">HOME</Link>
       <Link to="/features" onClick={() => setIsMobileMenuOpen(false)} className="text-2xl font-semibold tracking-widest text-gray-900 dark:text-text-primary">FEATURES</Link>
       <Link to="/gallery" onClick={() => setIsMobileMenuOpen(false)} className="text-2xl font-semibold tracking-widest text-gray-900 dark:text-text-primary">GALLERY</Link>
       <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} className="text-2xl font-semibold tracking-widest text-text-muted">SIGN IN</Link>
-      <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} className="mt-8 bg-gray-900 dark:bg-surface text-text-primary dark:text-gray-900 px-8 py-4 text-sm font-bold tracking-[0.15em]">
+      <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} className="mt-8 bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-8 py-4 text-sm font-bold tracking-[0.15em]">
        START DESIGNING
       </Link>
      </motion.div>
@@ -78,11 +78,11 @@ const FeaturesPage: React.FC = () => {
    {/* HERO SECTION */}
    <section className="pt-40 pb-20 relative z-10 px-6">
     <div className="max-w-[1400px] mx-auto text-center">
-     <p className="text-[10px] font-bold tracking-[0.2em] text-text-muted text-text-secondary mb-6 uppercase">Platform Capabilities</p>
+     <p className="text-[10px] font-bold tracking-[0.2em] text-text-secondary mb-6 uppercase">Platform Capabilities</p>
      <h1 className="text-4xl sm:text-6xl font-medium text-gray-900 dark:text-text-primary tracking-tight mb-8 font-serif">
       From Land to Construction
      </h1>
-     <p className="text-lg text-text-muted text-text-secondary max-w-2xl mx-auto font-light leading-relaxed">
+     <p className="text-lg text-text-secondary max-w-2xl mx-auto font-light leading-relaxed">
       HomePlannerAI helps you turn land details and home requirements into a validated conceptual design, architect review workflow, and construction planning experience.
      </p>
     </div>
@@ -98,7 +98,7 @@ const FeaturesPage: React.FC = () => {
         <Map size={24} />
        </div>
        <h3 className="text-xl font-bold text-gray-900 dark:text-text-primary mb-3">Land Analysis</h3>
-       <p className="text-sm text-text-muted text-text-secondary mb-6 leading-relaxed">
+       <p className="text-sm text-text-secondary mb-6 leading-relaxed">
         Capture land size, dimensions, terrain, road orientation, setbacks, and other site details to understand the usable building envelope.
        </p>
        <ul className="space-y-2 text-xs font-semibold text-text-secondary dark:text-gray-300">
@@ -114,7 +114,7 @@ const FeaturesPage: React.FC = () => {
         <ClipboardCheck size={24} />
        </div>
        <h3 className="text-xl font-bold text-gray-900 dark:text-text-primary mb-3">Smart Requirement Validation</h3>
-       <p className="text-sm text-text-muted text-text-secondary mb-6 leading-relaxed">
+       <p className="text-sm text-text-secondary mb-6 leading-relaxed">
         Check whether requested bedrooms, bathrooms, floors, parking, and other features are reasonable and supported before design generation begins.
        </p>
        <ul className="space-y-2 text-xs font-semibold text-text-secondary dark:text-gray-300">
@@ -130,7 +130,7 @@ const FeaturesPage: React.FC = () => {
         <Sparkles size={24} />
        </div>
        <h3 className="text-xl font-bold text-gray-900 dark:text-text-primary mb-3">AI-Assisted House Design</h3>
-       <p className="text-sm text-text-muted text-text-secondary mb-6 leading-relaxed">
+       <p className="text-sm text-text-secondary mb-6 leading-relaxed">
         AI helps select and adapt compatible validated base plans based on your land and home requirements.
        </p>
        <ul className="space-y-2 text-xs font-semibold text-text-secondary dark:text-gray-300">
@@ -146,7 +146,7 @@ const FeaturesPage: React.FC = () => {
         <ShieldCheck size={24} />
        </div>
        <h3 className="text-xl font-bold text-gray-900 dark:text-text-primary mb-3">Plan Quality Validation</h3>
-       <p className="text-sm text-text-muted text-text-secondary mb-6 leading-relaxed">
+       <p className="text-sm text-text-secondary mb-6 leading-relaxed">
         Generated concepts are checked for geometry, circulation, zoning, room connectivity, stair alignment, and other planning-quality rules.
        </p>
        <ul className="space-y-2 text-xs font-semibold text-text-secondary dark:text-gray-300">
@@ -162,7 +162,7 @@ const FeaturesPage: React.FC = () => {
         <PenTool size={24} />
        </div>
        <h3 className="text-xl font-bold text-gray-900 dark:text-text-primary mb-3">Architect Review</h3>
-       <p className="text-sm text-text-muted text-text-secondary mb-6 leading-relaxed">
+       <p className="text-sm text-text-secondary mb-6 leading-relaxed">
         Send a selected design for architect review and keep approval history connected to the project.
        </p>
        <ul className="space-y-2 text-xs font-semibold text-text-secondary dark:text-gray-300">
@@ -178,7 +178,7 @@ const FeaturesPage: React.FC = () => {
         <HardHat size={24} />
        </div>
        <h3 className="text-xl font-bold text-gray-900 dark:text-text-primary mb-3">Construction Tracking</h3>
-       <p className="text-sm text-text-muted text-text-secondary mb-6 leading-relaxed">
+       <p className="text-sm text-text-secondary mb-6 leading-relaxed">
         Once a design is approved, request a constructor and manage the project through schedules, phases, daily logs, and calendar progress.
        </p>
        <ul className="space-y-2 text-xs font-semibold text-text-secondary dark:text-gray-300">
@@ -225,7 +225,7 @@ const FeaturesPage: React.FC = () => {
    </section>
 
    {/* VALIDATION / TRUST */}
-   <section className="py-24 relative z-10 bg-gray-50 bg-surface/50">
+   <section className="py-24 relative z-10 bg-gray-50 dark:bg-gray-800/50">
     <div className="max-w-[1000px] mx-auto px-6 text-center">
      <h2 className="text-3xl md:text-4xl font-serif text-gray-900 dark:text-text-primary mb-6">
       AI Suggestions, Deterministic Validation

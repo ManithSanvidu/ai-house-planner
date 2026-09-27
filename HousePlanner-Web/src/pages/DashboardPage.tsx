@@ -59,10 +59,10 @@ const DashboardPage: React.FC = () => {
       <Shield className="text-blue-600 dark:text-blue-400" size={28} />
      </div>
      <h1 className="text-3xl font-bold text-gray-900 dark:text-text-primary mb-3 tracking-tight transition-colors">Admin Dashboard</h1>
-     <p className="text-text-muted text-text-secondary mb-10 transition-colors">Manage the validated house-plan library and staff accounts.</p>
+     <p className="text-text-secondary mb-10 transition-colors">Manage the validated house-plan library and staff accounts.</p>
      <div className="flex flex-col sm:flex-row gap-4 justify-center">
       <Link to="/dashboard/admin/plans" className="flex-1">
-       <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-gray-900 dark:bg-surface text-text-primary dark:text-gray-900 rounded-xl font-semibold shadow-sm transition-colors">
+       <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl font-semibold shadow-sm transition-colors">
         <Library size={18} /><span>Manage Plans</span>
        </motion.button>
       </Link>
@@ -126,7 +126,7 @@ const DashboardPage: React.FC = () => {
       <h1 className="text-3xl font-bold text-gray-900 dark:text-text-primary tracking-tight mb-2 transition-colors">
        Welcome back, {user?.fullName?.split(' ')[0] || 'there'}
       </h1>
-      <p className="text-text-muted text-text-secondary transition-colors">
+      <p className="text-text-secondary transition-colors">
        Here’s an overview of your home planning journey.
       </p>
      </div>
@@ -154,7 +154,7 @@ const DashboardPage: React.FC = () => {
        <CheckCircle size={24} />
       </div>
       <div>
-       <p className="text-sm font-medium text-text-muted text-text-secondary mb-1 transition-colors">Approved Designs</p>
+       <p className="text-sm font-medium text-text-secondary mb-1 transition-colors">Approved Designs</p>
        <h3 className="text-2xl font-bold text-gray-900 dark:text-text-primary transition-colors">{approvedCount}</h3>
       </div>
      </motion.div>
@@ -164,7 +164,7 @@ const DashboardPage: React.FC = () => {
        <HardHat size={24} />
       </div>
       <div>
-       <p className="text-sm font-medium text-text-muted text-text-secondary mb-1 transition-colors">Active Construction</p>
+       <p className="text-sm font-medium text-text-secondary mb-1 transition-colors">Active Construction</p>
        <h3 className="text-2xl font-bold text-gray-900 dark:text-text-primary transition-colors">{activeCount}</h3>
       </div>
      </motion.div>
@@ -174,7 +174,7 @@ const DashboardPage: React.FC = () => {
        <Clock size={24} />
       </div>
       <div>
-       <p className="text-sm font-medium text-text-muted text-text-secondary mb-1 transition-colors">Pending Requests</p>
+       <p className="text-sm font-medium text-text-secondary mb-1 transition-colors">Pending Requests</p>
        <h3 className="text-2xl font-bold text-gray-900 dark:text-text-primary transition-colors">{pendingRequests}</h3>
       </div>
      </motion.div>
@@ -199,7 +199,7 @@ const DashboardPage: React.FC = () => {
              In Progress
             </span>
            </div>
-           <p className="text-sm text-text-muted text-text-secondary flex items-center gap-2 transition-colors">
+           <p className="text-sm text-text-secondary flex items-center gap-2 transition-colors">
             <Shield size={14} className="text-emerald-500" /> Architect Approved
            </p>
           </div>
@@ -208,7 +208,7 @@ const DashboardPage: React.FC = () => {
            <Link to={`/dashboard/workflows/${approvedDesigns.find(d => d.designId === activeProject.houseDesignId)?.workflowId}?design=${activeProject.houseDesignId}`} className="px-5 py-2.5 border border-border hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-900 dark:text-text-primary rounded-xl text-xs font-bold tracking-wider transition-colors text-center">
             VIEW DESIGN
            </Link>
-           <Link to={`/dashboard/construction`} className="px-5 py-2.5 bg-gray-900 dark:bg-surface hover:bg-black dark:hover:bg-gray-200 text-text-primary dark:text-gray-900 rounded-xl text-xs font-bold tracking-wider transition-colors text-center">
+           <Link to={`/dashboard/construction`} className="px-5 py-2.5 bg-gray-900 dark:bg-white hover:bg-black dark:hover:bg-gray-200 text-white dark:text-gray-900 rounded-xl text-xs font-bold tracking-wider transition-colors text-center">
             VIEW CONSTRUCTION
            </Link>
           </div>
@@ -227,11 +227,11 @@ const DashboardPage: React.FC = () => {
         </div>
        ) : (
         <div className="bg-surface border border-border dark:border-border-strong border-dashed rounded-3xl p-12 text-center flex flex-col items-center justify-center transition-colors">
-         <div className="w-16 h-16 bg-gray-50 bg-surface-elevated rounded-full flex items-center justify-center mb-4 transition-colors">
+         <div className="w-16 h-16 bg-gray-50 dark:bg-gray-800/50 rounded-full flex items-center justify-center mb-4 transition-colors">
           <FolderKanban className="text-text-secondary" size={24} />
          </div>
          <h3 className="text-lg font-bold text-gray-900 dark:text-text-primary mb-2 transition-colors">No active project yet</h3>
-         <p className="text-text-muted text-text-secondary text-sm mb-6 max-w-sm transition-colors">
+         <p className="text-text-secondary text-sm mb-6 max-w-sm transition-colors">
           Start by creating a new home project or requesting construction for an approved design.
          </p>
         </div>
@@ -248,7 +248,7 @@ const DashboardPage: React.FC = () => {
        <div className="grid sm:grid-cols-2 gap-4">
         {!approvedDesigns.length ? (
          <div className="sm:col-span-2 bg-surface border border-border dark:border-border-strong rounded-2xl p-8 text-center transition-colors">
-          <p className="text-text-muted text-text-secondary text-sm transition-colors">No designs have been approved yet.</p>
+          <p className="text-text-secondary text-sm transition-colors">No designs have been approved yet.</p>
          </div>
         ) : (
          approvedDesigns.slice(0, 4).map(d => {
@@ -258,7 +258,7 @@ const DashboardPage: React.FC = () => {
            <div key={d.designId} className="bg-surface border border-border dark:border-border-strong rounded-2xl p-5 shadow-sm hover:border-blue-200 dark:hover:border-blue-900/50 transition-colors flex flex-col h-full">
             <div className="flex items-start justify-between mb-4">
              <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gray-50 bg-surface-elevated rounded-lg flex items-center justify-center transition-colors">
+              <div className="w-10 h-10 bg-gray-50 dark:bg-gray-800/50 rounded-lg flex items-center justify-center transition-colors">
                <LayoutTemplate className="text-text-secondary text-text-muted" size={20} />
               </div>
               <div>
@@ -270,7 +270,7 @@ const DashboardPage: React.FC = () => {
              </div>
             </div>
             
-            <div className="flex gap-4 text-xs font-semibold text-text-muted text-text-secondary mb-6 bg-gray-50 bg-surface-elevated/50 p-3 rounded-xl border border-gray-100 dark:border-border-strong transition-colors">
+            <div className="flex gap-4 text-xs font-semibold text-text-secondary mb-6 bg-gray-50 dark:bg-gray-800/30 p-3 rounded-xl border border-gray-100 dark:border-border-strong transition-colors">
              <div><span className="text-gray-900 dark:text-text-primary transition-colors">{d.bedrooms}</span> Beds</div>
              <div><span className="text-gray-900 dark:text-text-primary transition-colors">{d.bathrooms}</span> Baths</div>
              <div><span className="text-gray-900 dark:text-text-primary transition-colors">{d.floorCount}</span> Flrs</div>
@@ -308,7 +308,7 @@ const DashboardPage: React.FC = () => {
        <p className="text-sm text-text-secondary mb-6 leading-relaxed transition-colors">
         {nextStep.msg}
        </p>
-       <Link to={nextStep.link} className="w-full flex items-center justify-center gap-2 py-3 bg-gray-900 dark:bg-surface text-text-primary dark:text-gray-900 rounded-xl text-xs font-bold tracking-wider hover:opacity-90 transition-all shadow-sm">
+       <Link to={nextStep.link} className="w-full flex items-center justify-center gap-2 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl text-xs font-bold tracking-wider hover:opacity-90 transition-all shadow-sm">
         {nextStep.icon}
         {nextStep.btn}
        </Link>

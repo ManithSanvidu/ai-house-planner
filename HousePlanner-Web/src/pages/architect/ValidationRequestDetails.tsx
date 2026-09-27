@@ -117,7 +117,7 @@ const ValidationRequestDetails: React.FC = () => {
        {request.status}
       </span>
      </div>
-     <p className="text-sm text-text-muted text-text-secondary mt-1 flex items-center gap-1">
+     <p className="text-sm text-text-secondary mt-1 flex items-center gap-1">
       <Clock size={14} /> Submitted on {formatDate(request.submissionDate)}
      </p>
     </div>
@@ -139,48 +139,48 @@ const ValidationRequestDetails: React.FC = () => {
        
        <div className="space-y-4">
         <div className="flex items-start gap-3">
-         <div className="p-2 bg-gray-50 bg-surface-elevated rounded-lg shrink-0">
-          <User size={18} className="text-text-muted text-text-secondary" />
+         <div className="p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg shrink-0">
+          <User size={18} className="text-text-secondary" />
          </div>
          <div>
-          <p className="text-xs font-medium text-text-muted text-text-secondary uppercase tracking-wider">Client Info</p>
+          <p className="text-xs font-medium text-text-secondary uppercase tracking-wider">Client Info</p>
           <p className="text-sm font-semibold text-gray-900 dark:text-text-primary mt-0.5">{request.clientName || 'Anonymous'}</p>
-          <p className="text-xs text-text-muted text-text-secondary">{request.clientEmail}</p>
+          <p className="text-xs text-text-secondary">{request.clientEmail}</p>
          </div>
         </div>
         
         <div className="flex items-start gap-3">
-         <div className="p-2 bg-gray-50 bg-surface-elevated rounded-lg shrink-0">
-          <Map size={18} className="text-text-muted text-text-secondary" />
+         <div className="p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg shrink-0">
+          <Map size={18} className="text-text-secondary" />
          </div>
          <div>
-          <p className="text-xs font-medium text-text-muted text-text-secondary uppercase tracking-wider">Land Details</p>
+          <p className="text-xs font-medium text-text-secondary uppercase tracking-wider">Land Details</p>
           <p className="text-sm font-semibold text-gray-900 dark:text-text-primary mt-0.5">{request.landSize ? `${request.landSize} Perches` : 'N/A'}</p>
-          <p className="text-xs text-text-muted text-text-secondary">Terrain: {request.terrainType || 'N/A'}</p>
+          <p className="text-xs text-text-secondary">Terrain: {request.terrainType || 'N/A'}</p>
          </div>
         </div>
        </div>
 
        <div className="space-y-4">
         <div className="flex items-start gap-3">
-         <div className="p-2 bg-gray-50 bg-surface-elevated rounded-lg shrink-0">
-          <Home size={18} className="text-text-muted text-text-secondary" />
+         <div className="p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg shrink-0">
+          <Home size={18} className="text-text-secondary" />
          </div>
          <div>
-          <p className="text-xs font-medium text-text-muted text-text-secondary uppercase tracking-wider">Preferences</p>
+          <p className="text-xs font-medium text-text-secondary uppercase tracking-wider">Preferences</p>
           <p className="text-sm font-semibold text-gray-900 dark:text-text-primary mt-0.5">{request.style || 'Any Style'}</p>
-          <p className="text-xs text-text-muted text-text-secondary">Budget: {request.budget ? `LKR ${request.budget.toLocaleString()}` : 'N/A'}</p>
+          <p className="text-xs text-text-secondary">Budget: {request.budget ? `LKR ${request.budget.toLocaleString()}` : 'N/A'}</p>
          </div>
         </div>
 
         <div className="flex items-start gap-3">
-         <div className="p-2 bg-gray-50 bg-surface-elevated rounded-lg shrink-0">
-          <Bed size={18} className="text-text-muted text-text-secondary" />
+         <div className="p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg shrink-0">
+          <Bed size={18} className="text-text-secondary" />
          </div>
          <div>
-          <p className="text-xs font-medium text-text-muted text-text-secondary uppercase tracking-wider">Requirements</p>
+          <p className="text-xs font-medium text-text-secondary uppercase tracking-wider">Requirements</p>
           <p className="text-sm font-semibold text-gray-900 dark:text-text-primary mt-0.5">{request.bedrooms ? `${request.bedrooms} Bedrooms` : 'N/A'}</p>
-          <p className="text-xs text-text-muted text-text-secondary">{request.floors ? `${request.floors} Floors` : 'N/A'}</p>
+          <p className="text-xs text-text-secondary">{request.floors ? `${request.floors} Floors` : 'N/A'}</p>
          </div>
         </div>
        </div>
@@ -198,11 +198,11 @@ const ValidationRequestDetails: React.FC = () => {
       </h2>
       
       {request.design && floorPlan ? (
-       <div className="h-[520px] bg-gray-50 bg-background border border-border dark:border-border-strong rounded-xl overflow-hidden">
+       <div className="h-[520px] bg-gray-50 dark:bg-gray-800/50 border border-border dark:border-border-strong rounded-xl overflow-hidden">
         <FloorPlanViewer data={floorPlan}/>
        </div>
       ) : (
-       <div className="p-8 text-center text-text-muted text-text-secondary border border-dashed border-border dark:border-border-strong rounded-xl">
+       <div className="p-8 text-center text-text-secondary border border-dashed border-border dark:border-border-strong rounded-xl">
         No active design generated for this request yet.
        </div>
       )}
@@ -258,7 +258,7 @@ const ValidationRequestDetails: React.FC = () => {
          <textarea
           id="review"
           rows={5}
-          className="block w-full rounded-xl border-border-strong border-border bg-gray-50 bg-background text-gray-900 dark:text-text-primary shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-3 outline-none"
+          className="block w-full rounded-xl border-border dark:border-border-strong bg-gray-50 dark:bg-gray-800/50 text-gray-900 dark:text-text-primary shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-3 outline-none"
           placeholder="Provide details about why this design is approved or rejected..."
           value={reviewNote}
           onChange={(e) => setReviewNote(e.target.value)}
@@ -278,7 +278,7 @@ const ValidationRequestDetails: React.FC = () => {
          <button
           onClick={handleReject}
           disabled={isSubmitting}
-          className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-border-strong border-border rounded-xl shadow-sm text-sm font-bold text-gray-700 dark:text-gray-300 bg-surface-elevated hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-border dark:border-border-strong rounded-xl shadow-sm text-sm font-bold text-gray-700 dark:text-gray-300 bg-surface-elevated hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
          >
           {isSubmitting ? 'Processing...' : <><XCircle size={18} /> Reject / Request Changes</>}
          </button>

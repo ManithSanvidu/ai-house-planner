@@ -69,7 +69,7 @@ export const ConstructorProjectWorkflow: React.FC = () => {
      <h1 className="text-2xl font-bold text-gray-900 dark:text-text-primary">
       Project Workflow: {project.id.substring(0, 8)}
      </h1>
-     <p className="mt-1 text-sm text-text-muted text-text-secondary">
+     <p className="mt-1 text-sm text-text-secondary">
       Track daily progress against the construction plan.
      </p>
     </div>
@@ -130,11 +130,11 @@ export const ConstructorProjectWorkflow: React.FC = () => {
 
      <div className="grid grid-cols-2 gap-4">
       <div className="rounded-xl bg-gray-50 p-4 bg-surface-elevated/50">
-       <p className="text-sm text-text-muted text-text-secondary">Planned Days</p>
+       <p className="text-sm text-text-secondary">Planned Days</p>
        <p className="text-xl font-bold text-gray-900 dark:text-text-primary">{progress.totalEstimatedDays}</p>
       </div>
       <div className="rounded-xl bg-gray-50 p-4 bg-surface-elevated/50">
-       <p className="text-sm text-text-muted text-text-secondary">Actual Days</p>
+       <p className="text-sm text-text-secondary">Actual Days</p>
        <p className="text-xl font-bold text-gray-900 dark:text-text-primary">{progress.daysCompleted}</p>
       </div>
      </div>
@@ -162,7 +162,7 @@ export const ConstructorProjectWorkflow: React.FC = () => {
         <time className="mb-2 block text-sm font-normal leading-none text-text-secondary text-text-muted">
          Estimated Duration: {phase.aiEstimatedDurationDays} days
         </time>
-        <p className="text-sm font-normal text-text-muted text-text-secondary">
+        <p className="text-sm font-normal text-text-secondary">
          Phase order: {phase.sequenceOrder}
         </p>
        </div>
@@ -228,7 +228,7 @@ const ProjectSetupScreen: React.FC<{ projectId: string, onSuccess: () => void }>
   <div className="rounded-2xl border border-border bg-surface p-8 shadow-sm dark:border-border-strong bg-surface">
    <div className="mx-auto max-w-lg text-center">
     <h2 className="text-2xl font-bold text-gray-900 dark:text-text-primary">Project Setup Required</h2>
-    <p className="mt-4 text-text-muted text-text-secondary">
+    <p className="mt-4 text-text-secondary">
      Before you can start logging daily progress, please provide an estimate of how many days it will take to complete this project.
     </p>
     

@@ -64,7 +64,7 @@ export const ConstructorProjectCalendar: React.FC<ConstructorProjectCalendarProp
   
   // Empty cells for days before the 1st
   for (let i = 0; i < firstDay; i++) {
-   cells.push(<div key={`empty-${i}`} className="min-h-[100px] border border-border bg-gray-50 bg-surface-elevated/30"></div>);
+   cells.push(<div key={`empty-${i}`} className="min-h-[100px] border border-border bg-gray-50 dark:bg-gray-800/20"></div>);
   }
   
   // Days of the month
@@ -122,7 +122,7 @@ export const ConstructorProjectCalendar: React.FC<ConstructorProjectCalendarProp
   const remaining = 42 - totalCells; // 6 rows of 7
   if (remaining > 0 && remaining < 7) {
     for (let i = 0; i < remaining; i++) {
-     cells.push(<div key={`end-empty-${i}`} className="min-h-[100px] border border-border bg-gray-50 bg-surface-elevated/30"></div>);
+     cells.push(<div key={`end-empty-${i}`} className="min-h-[100px] border border-border bg-gray-50 dark:bg-gray-800/20"></div>);
     }
   }
   
@@ -158,7 +158,7 @@ export const ConstructorProjectCalendar: React.FC<ConstructorProjectCalendarProp
    
    <div className="grid grid-cols-7 gap-0">
     {dayNames.map(day => (
-     <div key={day} className="text-center font-semibold text-xs py-2 text-text-muted uppercase tracking-wider border border-border bg-gray-50 bg-surface/50">
+     <div key={day} className="text-center font-semibold text-xs py-2 text-text-muted uppercase tracking-wider border border-border bg-gray-50 dark:bg-gray-800/50">
       {day}
      </div>
     ))}

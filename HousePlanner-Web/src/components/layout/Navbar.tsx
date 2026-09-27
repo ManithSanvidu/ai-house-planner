@@ -15,7 +15,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
  };
 
  return (
-  <header className="sticky top-0 z-30 w-full bg-surface/70 bg-background/70 backdrop-blur-xl border-b border-border/50 dark:border-border-strong/50 px-4 sm:px-6 py-3.5 flex items-center justify-between shadow-[0_4px_30px_rgba(0,0,0,0.03)] transition-colors duration-300">
+  <header className="sticky top-0 z-30 w-full bg-background/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-border/50 dark:border-border-strong/50 px-4 sm:px-6 py-3.5 flex items-center justify-between shadow-[0_4px_30px_rgba(0,0,0,0.03)] transition-colors duration-300">
    <div className="flex items-center gap-3">
     {onMenuClick && (
      <button 
@@ -39,8 +39,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
 
    {user && (
     <div className="flex items-center gap-5">
-     <div className="flex items-center gap-3 bg-surface-elevated/80 bg-surface border border-border/50 dark:border-border-strong rounded-xl px-3 py-1.5 shadow-sm transition-colors">
-      <div className="bg-zinc-200/50 bg-surface-elevated p-1.5 rounded-lg text-text-secondary transition-colors">
+     <div className="flex items-center gap-3 bg-white dark:bg-gray-800 border border-border/50 dark:border-border-strong rounded-xl px-3 py-1.5 shadow-sm transition-colors">
+      <div className="bg-zinc-100 dark:bg-gray-700 p-1.5 rounded-lg text-text-secondary transition-colors">
        <User size={14} />
       </div>
       <div className="flex flex-col text-left">
@@ -53,7 +53,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
 
      <button
       onClick={handleLogout}
-      className="group flex items-center gap-2 px-3 py-2 rounded-xl text-text-muted text-text-secondary hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50/80 dark:hover:bg-red-900/20 border border-transparent hover:border-red-100 dark:hover:border-red-900/50 transition-all shadow-sm hover:shadow"
+      className="group flex items-center gap-2 px-3 py-2 rounded-xl text-text-secondary hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50/80 dark:hover:bg-red-900/20 border border-transparent hover:border-red-100 dark:hover:border-red-900/50 transition-all shadow-sm hover:shadow"
      >
       <LogOut size={16} className="group-hover:-translate-x-0.5 transition-transform" />
       <span className="hidden sm:inline text-sm font-semibold">Sign Out</span>

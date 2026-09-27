@@ -37,7 +37,7 @@ export const ConstructorRequestsView = ({ projectId }: { projectId: string }) =>
  if (requests.length === 0) {
   return (
    <div className="mt-4 rounded-xl border border-dashed border-border-strong bg-gray-50 p-6 text-center border-border bg-surface-elevated/50">
-    <p className="text-sm text-text-muted text-text-secondary">No constructor requests yet.</p>
+    <p className="text-sm text-text-secondary">No constructor requests yet.</p>
     <p className="text-xs text-text-secondary mt-1">Share Project ID <strong>{projectId}</strong> with your constructor.</p>
    </div>
   );
@@ -61,7 +61,7 @@ export const ConstructorRequestsView = ({ projectId }: { projectId: string }) =>
         {req.status === 'approved' && <span className="flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-400"><CheckCircle2 className="h-3 w-3" /> Approved</span>}
         {req.status === 'rejected' && <span className="flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800 dark:bg-red-900/30 dark:text-red-400">Rejected</span>}
        </div>
-       <p className="text-xs text-text-muted text-text-secondary mt-1">
+       <p className="text-xs text-text-secondary mt-1">
         Requested on {new Date(req.requestedAt).toLocaleDateString()}
        </p>
       </div>

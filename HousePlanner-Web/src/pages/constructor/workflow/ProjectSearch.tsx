@@ -45,7 +45,7 @@ export const ProjectSearch: React.FC = () => {
   <div className="rounded-2xl border border-border bg-surface shadow-sm dark:border-border-strong bg-surface mb-8 overflow-hidden">
    <div className="border-b border-border bg-gray-50 px-6 py-4 dark:border-border-strong bg-surface-elevated/50">
     <h2 className="text-lg font-semibold text-gray-900 dark:text-text-primary">Search & Request Project</h2>
-    <p className="text-sm text-text-muted text-text-secondary">
+    <p className="text-sm text-text-secondary">
      Enter a Project ID provided by a client to request construction assignment.
     </p>
    </div>
@@ -85,19 +85,19 @@ export const ProjectSearch: React.FC = () => {
       
       <div className="grid gap-4 sm:grid-cols-2">
        <div>
-        <p className="text-xs text-text-muted text-text-secondary">Project ID</p>
+        <p className="text-xs text-text-secondary">Project ID</p>
         <p className="font-mono text-sm text-gray-900 dark:text-text-primary">{searchResult.id}</p>
        </div>
        <div>
-        <p className="text-xs text-text-muted text-text-secondary">Design Name</p>
+        <p className="text-xs text-text-secondary">Design Name</p>
         <p className="text-sm font-medium text-gray-900 dark:text-text-primary">{searchResult.designName}</p>
        </div>
        <div>
-        <p className="text-xs text-text-muted text-text-secondary">Current Status</p>
+        <p className="text-xs text-text-secondary">Current Status</p>
         <p className="text-sm text-gray-900 dark:text-text-primary">{searchResult.status}</p>
        </div>
        <div>
-        <p className="text-xs text-text-muted text-text-secondary">Created Date</p>
+        <p className="text-xs text-text-secondary">Created Date</p>
         <p className="text-sm text-gray-900 dark:text-text-primary">
          {new Date(searchResult.createdAt).toLocaleDateString()}
         </p>

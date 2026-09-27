@@ -53,14 +53,14 @@ const ValidationRequestsPage: React.FC = () => {
    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
     <div>
      <h1 className="text-2xl font-bold text-gray-900 dark:text-text-primary">Validation Requests</h1>
-     <p className="text-text-muted text-text-secondary mt-1">Review and validate client house designs.</p>
+     <p className="text-text-secondary mt-1">Review and validate client house designs.</p>
     </div>
    </div>
    
    <div className="bg-surface border border-border dark:border-border-strong rounded-2xl shadow-sm overflow-hidden">
     <div className="overflow-x-auto">
-     <table className="w-full text-sm text-left text-text-muted text-text-secondary">
-      <thead className="text-xs text-gray-700 dark:text-gray-300 uppercase bg-gray-50 bg-surface-elevated/50 border-b border-border dark:border-border-strong">
+     <table className="w-full text-sm text-left text-text-secondary">
+      <thead className="text-xs text-gray-700 dark:text-gray-300 uppercase bg-gray-50 dark:bg-gray-800/30 border-b border-border dark:border-border-strong">
        <tr>
         <th scope="col" className="px-6 py-4 font-semibold">Client Name</th>
         <th scope="col" className="px-6 py-4 font-semibold">Submission Date</th>
@@ -109,8 +109,8 @@ const ValidationRequestsPage: React.FC = () => {
        {requests.length === 0 && (
         <tr>
          <td colSpan={6} className="px-6 py-12 text-center">
-          <div className="flex flex-col items-center justify-center text-text-muted text-text-secondary">
-           <div className="bg-gray-50 bg-surface-elevated p-3 rounded-full mb-3">
+          <div className="flex flex-col items-center justify-center text-text-secondary">
+           <div className="bg-gray-50 dark:bg-gray-800/50 p-3 rounded-full mb-3">
             <svg className="w-6 h-6 text-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
