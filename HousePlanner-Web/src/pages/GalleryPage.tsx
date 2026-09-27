@@ -197,13 +197,13 @@ const GalleryPage: React.FC = () => {
     initial={{ y: 100 }}
     animate={{ y: 0 }}
     transition={{ delay: 1, type: 'spring' }}
-    className="fixed bottom-6 left-6 right-6 md:left-1/2 md:-translate-x-1/2 md:right-auto md:w-[600px] z-40 bg-surface/90 dark:bg-surface/90 backdrop-blur-xl rounded-2xl shadow-2xl p-4 border border-gray-700/50 dark:border-border/50 flex flex-col sm:flex-row items-center justify-between gap-4"
+    className="fixed bottom-6 left-6 right-6 md:left-1/2 md:-translate-x-1/2 md:right-auto md:w-[600px] z-40 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl rounded-2xl shadow-2xl p-4 border border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row items-center justify-between gap-4"
    >
     <div className="text-center sm:text-left">
-     <p className="text-text-primary dark:text-gray-900 font-bold">Want to generate your own?</p>
-     <p className="text-text-secondary dark:text-text-secondary text-sm">Join thousands of others today.</p>
+     <p className="text-gray-900 dark:text-white font-bold">Want to generate your own?</p>
+     <p className="text-gray-500 dark:text-gray-400 text-sm">Join thousands of others today.</p>
     </div>
-    <Link to="/login" className="bg-surface text-gray-900 dark:text-text-primary px-6 py-3 rounded-xl text-xs font-bold tracking-[0.1em] hover:scale-105 transition-transform flex items-center gap-2 whitespace-nowrap">
+    <Link to="/login" className="bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-6 py-3 rounded-xl text-xs font-bold tracking-[0.1em] hover:opacity-90 transition-all flex items-center gap-2 whitespace-nowrap shadow-md">
      SIGN UP NOW <ArrowRight size={14} />
     </Link>
    </motion.div>

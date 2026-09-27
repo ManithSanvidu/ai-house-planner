@@ -336,31 +336,33 @@ const IntakeForm: React.FC = () => {
          <p className="text-text-secondary">Basic details about your property size and terrain.</p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-         <div>
-          <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Land Size *</label>
-          <div className="flex gap-2">
-           <input 
-            type="number" name="landSize" value={formData.landSize} onChange={handleInputChange} 
-            className={`flex-1 bg-gray-50 dark:bg-gray-800/50 border ${fieldErrors.landSize ? 'border-red-500' : 'border-border'} rounded-xl px-4 py-3 text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-blue-500 outline-none`} 
-            placeholder="e.g. 25"
-           />
-           <select name="landUnit" value={formData.landUnit} onChange={handleInputChange} className="w-32 bg-gray-50 dark:bg-gray-800/50 border border-border rounded-xl px-4 py-3 text-gray-900 dark:text-text-primary outline-none">
-            <option value="perches">Perches</option>
-            <option value="sqft">Sq Ft</option>
+        <div className="grid grid-cols-1 gap-6">
+         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
+          <div>
+           <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Land Size *</label>
+           <div className="flex gap-2">
+            <input 
+             type="number" name="landSize" value={formData.landSize} onChange={handleInputChange} 
+             className={`flex-1 min-w-0 bg-gray-50 dark:bg-gray-800/50 border ${fieldErrors.landSize ? 'border-red-500' : 'border-border'} rounded-xl px-4 py-3 text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-blue-500 outline-none`} 
+             placeholder="e.g. 25"
+            />
+            <select name="landUnit" value={formData.landUnit} onChange={handleInputChange} className="w-28 shrink-0 bg-gray-50 dark:bg-gray-800/50 border border-border rounded-xl px-3 py-3 text-gray-900 dark:text-text-primary outline-none">
+             <option value="perches">Perches</option>
+             <option value="sqft">Sq Ft</option>
+            </select>
+           </div>
+           {fieldErrors.landSize && <p className="text-red-500 text-xs mt-2">{fieldErrors.landSize}</p>}
+          </div>
+          <div>
+           <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Terrain Type</label>
+           <select name="terrainType" value={formData.terrainType} onChange={handleInputChange} className="w-full bg-gray-50 dark:bg-gray-800/50 border border-border rounded-xl px-4 py-3 text-gray-900 dark:text-text-primary outline-none">
+            <option value="flat/urban">Flat / Urban</option>
+            <option value="sloped">Sloped</option>
+            <option value="coastal">Coastal / Beachfront</option>
+            <option value="wooded">Wooded / Forest</option>
+            <option value="rural/farm">Rural / Farmland</option>
            </select>
           </div>
-          {fieldErrors.landSize && <p className="text-red-500 text-xs mt-2">{fieldErrors.landSize}</p>}
-         </div>
-         <div>
-          <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Terrain Type</label>
-          <select name="terrainType" value={formData.terrainType} onChange={handleInputChange} className="w-full bg-gray-50 dark:bg-gray-800/50 border border-border rounded-xl px-4 py-3 text-gray-900 dark:text-text-primary outline-none">
-           <option value="flat/urban">Flat / Urban</option>
-           <option value="sloped">Sloped</option>
-           <option value="coastal">Coastal / Beachfront</option>
-           <option value="wooded">Wooded / Forest</option>
-           <option value="rural/farm">Rural / Farmland</option>
-          </select>
          </div>
         </div>
 
