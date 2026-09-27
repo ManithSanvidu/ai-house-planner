@@ -105,7 +105,7 @@ const LoginPage: React.FC = () => {
          value={email}
          onChange={(e) => setEmail(e.target.value)}
          required
-         className="block w-full pl-11 pr-4 py-3.5 bg-gray-50 bg-background border border-border dark:border-border-strong rounded-xl text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all outline-none"
+         className="block w-full pl-11 pr-4 py-3.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all outline-none"
          placeholder="name@example.com"
         />
        </div>
@@ -125,7 +125,7 @@ const LoginPage: React.FC = () => {
          value={password}
          onChange={(e) => setPassword(e.target.value)}
          required
-         className="block w-full pl-11 pr-4 py-3.5 bg-gray-50 bg-background border border-border dark:border-border-strong rounded-xl text-gray-900 dark:text-text-primary focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all outline-none"
+         className="block w-full pl-11 pr-4 py-3.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all outline-none"
          placeholder="••••••••"
         />
        </div>
