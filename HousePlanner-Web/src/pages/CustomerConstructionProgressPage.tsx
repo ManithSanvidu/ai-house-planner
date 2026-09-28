@@ -12,7 +12,16 @@ export default function CustomerConstructionProgressPage() {
  const activity=new Map<string,any>((data?.activity||[]).map((x:any)=>[String(x.date),x]));
  if(error)return <div role="alert" className="p-8">{error}</div>; if(!data)return <div className="p-8">Loading construction progress…</div>;
  return <main className="mx-auto max-w-6xl p-4 sm:p-8 space-y-7"><Link to="/dashboard/construction" className="inline-flex gap-2"><ArrowLeft size={18}/>Construction</Link>
- <header className="flex justify-between"><div><h1 className="text-3xl font-bold">Construction Progress</h1><p>Approved design v{data.project.designVersion} · {data.project.constructorName}</p></div><button onClick={()=>void load()} aria-label="Refresh progress" className="p-3 rounded-xl border"><RefreshCw size={18}/></button></header>
+ <header className="flex justify-between items-center">
+   <div>
+     <h1 className="text-3xl font-bold">Construction Progress</h1>
+     <p>Approved design v{data.project.designVersion} · {data.project.constructorName}</p>
+   </div>
+   <div className="flex gap-2">
+     <Link to={`/dashboard/construction/${projectId}/readiness`} className="px-4 py-2 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition">Readiness Planner</Link>
+     <button onClick={()=>void load()} aria-label="Refresh progress" className="p-2 rounded-xl border"><RefreshCw size={20}/></button>
+   </div>
+ </header>
  {data.project.status.toLowerCase() === 'cancelled' && <div role="status" className="rounded-xl bg-amber-50 p-4 text-amber-800"><b>Construction cancelled.</b> Project history is read-only.</div>}
  <section className="grid sm:grid-cols-3 gap-3"><Card label="Status" value={data.project.status}/><Card label="Current Phase" value={data.project.currentPhase||'Awaiting update'}/><Card label="Overall Progress" value={`${data.progress.overallProgress}%`}/></section>
  <CostBreakdownCard cost={data.project.cost}/>
