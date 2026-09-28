@@ -54,3 +54,4 @@ websockets
 xxhash
 zstandard
 matplotlib
+langchain-openai
