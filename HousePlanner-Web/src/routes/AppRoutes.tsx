@@ -15,6 +15,7 @@ import RegisterPage from '../pages/RegisterPage';
 import MyDesignsPage from '../pages/MyDesignsPage';
 import CustomerConstructionPage from '../pages/CustomerConstructionPage';
 import CustomerConstructionProgressPage from '../pages/CustomerConstructionProgressPage';
+import ConstructionReadinessPage from '../pages/ConstructionReadinessPage';
 import PlanDetailPage from '../pages/PlanDetailPage';
 import PlanLibraryPage from '../pages/PlanLibraryPage';
 import PricingManagementPage from '../pages/PricingManagementPage';
@@ -43,6 +44,8 @@ export const AppRoutes: React.FC = () => (
   <Route path="/dashboard/designs" element={<ProtectedRoute allowedRoles={['Customer']}><PageContainer><MyDesignsPage /></PageContainer></ProtectedRoute>} />
   <Route path="/dashboard/construction" element={<ProtectedRoute allowedRoles={['Customer']}><PageContainer><CustomerConstructionPage /></PageContainer></ProtectedRoute>} />
   <Route path="/dashboard/construction/:projectId" element={<ProtectedRoute allowedRoles={['Customer']}><PageContainer><CustomerConstructionProgressPage /></PageContainer></ProtectedRoute>} />
+  <Route path="/dashboard/construction/:projectId/readiness" element={<ProtectedRoute allowedRoles={['Customer', 'Constructor', 'Admin']}><PageContainer><ConstructionReadinessPage /></PageContainer></ProtectedRoute>} />
+  <Route path="/dashboard/readiness" element={<ProtectedRoute allowedRoles={['Customer', 'Constructor', 'Admin']}><PageContainer><ConstructionReadinessPage /></PageContainer></ProtectedRoute>} />
   <Route path="/dashboard/plans/:id" element={<ProtectedRoute allowedRoles={['Customer']}><PageContainer><PlanDetailPage /></PageContainer></ProtectedRoute>} />
   <Route path="/dashboard/admin/plans" element={<ProtectedRoute allowedRoles={['Admin']}><PageContainer><AdminPlansPage /></PageContainer></ProtectedRoute>} />
   <Route path="/dashboard/admin/plans/new" element={<ProtectedRoute allowedRoles={['Admin']}><PageContainer><AdminPlanFormPage /></PageContainer></ProtectedRoute>} />

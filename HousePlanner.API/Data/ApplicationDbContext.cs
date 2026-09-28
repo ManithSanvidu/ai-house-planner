@@ -25,6 +25,7 @@ namespace HousePlanner.API.Data
         public DbSet<PricingHistory> PricingHistory { get; set; }
         public DbSet<CostEstimate> CostEstimates { get; set; }
         public DbSet<CostEstimationRun> CostEstimationRuns { get; set; }
+        public DbSet<ConstructionMaterial> ConstructionMaterials { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
