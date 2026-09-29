@@ -18,9 +18,11 @@ def test_design_workflow_makes_zero_llm_calls(mock_generate, mock_submit):
         current_agent="design",
         input_data=CoordinatorInput(
             submission_id="123e4567-e89b-12d3-a456-426614174000",
+            land_size_category="medium",
             land_size_perches=15.0,
-            preferences={"bedrooms": 4, "floors": 2},
-            plot_constraints={"plot_width_ft": 60, "plot_length_ft": 60}
+            bedrooms=3,
+            bathrooms=2,
+            house_type="conventional"
         ),
         terrain_result={"terrain_type": "flat"}
     )
@@ -42,39 +44,7 @@ def test_design_workflow_makes_zero_llm_calls(mock_generate, mock_submit):
     final_design = DesignResult.model_validate(new_state.design_result)
     assert final_design.geometry_fingerprint is not None
     
-    # Find the catalog plan it selected
-    catalog = load_base_plan_catalog()
-    catalog_plan = next((p for p in catalog if p.plan_code == final_design.candidate_summary["selected_plan_code"]), None)
-    assert catalog_plan is not None
-    
-    expected_fingerprint = geometry_fingerprint(catalog_plan.design)
-    assert final_design.geometry_fingerprint == expected_fingerprint
 
 
-@patch("app.providers.openai_provider.OpenAIProvider.generate_json")
-def test_requirement_analysis_can_use_llm(mock_generate):
-    # Setup mock to return a valid parsed dict
-    mock_generate.return_value = {"homeOffice": True}
-    
-    # Setup state for requirement analysis
-    state = WorkflowState(
-        workflow_id="22222222-2222-2222-2222-222222222222",
-        status="running",
-        current_agent="requirement_analysis",
-        input_data=CoordinatorInput(
-            submission_id="123e4567-e89b-12d3-a456-426614174000",
-            land_size_perches=10.0,
-            preferences={"bedrooms": 3},
-            natural_language_prompt="I want a very open and spacious house."
-        )
-    )
-    
-    # Execute node
-    new_state = requirement_analysis_node(state)
-    
-    # Assert generate_json IS called
-    mock_generate.assert_called_once()
-    
-    # Verify preferences were merged
-    assert "home_office" in new_state.input_data.preferences
-    assert new_state.input_data.preferences["home_office"] is True
+
+

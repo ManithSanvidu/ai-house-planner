@@ -22,7 +22,8 @@ vi.mock('framer-motion', () => ({
  motion: {
   nav: ({ children, ...props }: any) => <nav {...props}>{children}</nav>,
   div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
-  img: ({ children, ...props }: any) => <img {...props} />
+  img: ({ children, ...props }: any) => <img {...props} />,
+  button: ({ children, ...props }: any) => <button {...props}>{children}</button>
  },
  useScroll: () => ({ scrollY: 0 }),
  useTransform: () => 0,
@@ -83,11 +84,16 @@ test('Valid DESIGN_REQUEST shows Continue button and navigates', async () => {
 
  renderApp();
 
- const input = screen.getByPlaceholderText('Describe your dream home...');
+ // Open the chat widget
+ const askAiBtn = screen.getAllByText(/ASK AI ARCHITECT/i)[0];
+ fireEvent.click(askAiBtn);
+
+ const input = await screen.findByPlaceholderText('Message AI Architect...');
  fireEvent.change(input, { target: { value: 'Design me a 4 bedroom 2 floor modern house on 25 perch' } });
  
- const genBtn = screen.getByText('GENERATE');
- fireEvent.click(genBtn);
+ // The generate button is a submit button without text, we can find it by type="submit" or role
+ const form = input.closest('form');
+ fireEvent.submit(form!);
 
  await waitFor(() => {
   expect(screen.getByText('Your request is feasible. I can start the design setup with these requirements.')).toBeTruthy();
@@ -125,11 +131,15 @@ test('Invalid DESIGN_REQUEST hides Continue button and shows suggestions', async
 
  renderApp();
 
- const input = screen.getByPlaceholderText('Describe your dream home...');
+ // Open the chat widget
+ const askAiBtn = screen.getAllByText(/ASK AI ARCHITECT/i)[0];
+ fireEvent.click(askAiBtn);
+
+ const input = await screen.findByPlaceholderText('Message AI Architect...');
  fireEvent.change(input, { target: { value: 'Design me a 6 bedroom single floor house on 3 perch land' } });
  
- const genBtn = screen.getByText('GENERATE');
- fireEvent.click(genBtn);
+ const form = input.closest('form');
+ fireEvent.submit(form!);
 
  await waitFor(() => {
   expect(screen.getByText('Your request is not supported with the available buildable area or catalogue.')).toBeTruthy();

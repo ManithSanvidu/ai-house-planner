@@ -1,7 +1,6 @@
 using System.Text.Json;
 using HousePlanner.API.Controllers;
 using HousePlanner.API.Data;
-using HousePlanner.API.DTOs;
 using HousePlanner.API.Entities;
 using HousePlanner.API.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -109,38 +108,4 @@ public class ProceduralContractTests
         Assert.Empty(db.HouseDesigns);
     }
 
-    [Fact]
-    public void ExpandedIntakeSerializesPythonCompatibleFieldNames()
-    {
-        var preferences = new PreferencesDto
-        {
-            Bedrooms = 3,
-            Bathrooms = 2,
-            Floors = 1,
-            OpenPlan = true,
-            MasterEnsuite = true,
-            SeparateDining = false,
-            UtilityRoom = true,
-            ParkingRequired = true,
-            SpacePriority = "balanced",
-            CirculationPreference = "space_efficient"
-        };
-        var plot = new PlotConstraintsDto
-        {
-            road_side = "south",
-            north_direction = "east",
-            entrance_side = "west",
-            setbacks = new SetbacksDto { front = 10, rear = 6, left = 5, right = 5 }
-        };
-        var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
-
-        using var preferencesJson = JsonDocument.Parse(JsonSerializer.Serialize(preferences, options));
-        using var plotJson = JsonDocument.Parse(JsonSerializer.Serialize(plot, options));
-        Assert.True(preferencesJson.RootElement.GetProperty("open_plan").GetBoolean());
-        Assert.True(preferencesJson.RootElement.GetProperty("master_ensuite").GetBoolean());
-        Assert.True(preferencesJson.RootElement.GetProperty("utility_room").GetBoolean());
-        Assert.Equal("space_efficient", preferencesJson.RootElement.GetProperty("circulation_preference").GetString());
-        Assert.Equal("east", plotJson.RootElement.GetProperty("north_direction").GetString());
-        Assert.Equal(6, plotJson.RootElement.GetProperty("setbacks").GetProperty("rear").GetDecimal());
-    }
 }

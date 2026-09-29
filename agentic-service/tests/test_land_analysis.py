@@ -35,13 +35,16 @@ def test_land_analysis_node_fallback_no_photo():
     state = WorkflowState(workflow_id="00000000-0000-0000-0000-000000000123")
     state.input_data = CoordinatorInput(
         submission_id="00000000-0000-0000-0000-000000000123",
+        land_size_category="medium",
         land_size_perches=20.0,
-        preferences={}
+        bedrooms=3,
+        bathrooms=2,
+        house_type="conventional"
     )
 
     updated_state = land_analysis_node(state)
 
-    assert updated_state.terrain_result["terrain_type"] == "unknown"
-    assert updated_state.terrain_result["slope_estimate"] == "unknown"
+    assert updated_state.terrain_result["terrain_type"] == "flat"
+    assert updated_state.terrain_result["slope_estimate"] == "flat"
     assert updated_state.current_agent == "design"
     assert "No photo URL" in updated_state.execution_log[-1].action

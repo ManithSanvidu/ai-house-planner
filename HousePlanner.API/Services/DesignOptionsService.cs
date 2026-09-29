@@ -1,7 +1,6 @@
 using HousePlanner.API.Data;
 using HousePlanner.API.Entities;
 using HousePlanner.API.Models;
-using HousePlanner.API.Controllers;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 
@@ -103,30 +102,31 @@ public class DesignOptionsService : IDesignOptionsService
         );
     }
 
-    public Task<DesignOptionsValidationResult> ValidateFinalSelectionAsync(AiGenerationRequest request, CancellationToken cancellationToken = default)
+    public Task<DesignOptionsValidationResult> ValidateFinalSelectionAsync(HouseRequirement request, CancellationToken cancellationToken = default)
     {
         var conflicts = new List<string>();
         
-        if (request.Preferences != null)
+        if ((request.LandSizeCategory != "small" && request.LandSizeCategory != "medium") || request.LandSizePerches < 10 || request.LandSizePerches > 35)
         {
-            if (request.Preferences.Bedrooms <= 0) conflicts.Add("bedrooms");
-            if (request.Preferences.Bathrooms <= 0) conflicts.Add("bathrooms");
-            if (request.Preferences.Floors <= 0) conflicts.Add("floors");
+            conflicts.Add("landSize");
         }
-        else
+        
+        var isInvalidBedrooms = request.Bedrooms < 1 || request.Bedrooms > 3;
+
+        if (isInvalidBedrooms)
         {
-            conflicts.Add("preferences");
+            conflicts.Add("bedrooms");
         }
 
-        if (request.LandSizePerches <= 0) conflicts.Add("landSize");
+        if (request.Bathrooms < 1 || request.Bathrooms > 2) conflicts.Add("bathrooms");
 
         if (conflicts.Count > 0)
         {
             return Task.FromResult(new DesignOptionsValidationResult
             {
                 IsValid = false,
-                ErrorCode = "INVALID_BASIC_REQUIREMENTS",
-                Message = "Please provide valid basic requirements (bedrooms, bathrooms, floors, and land size).",
+                ErrorCode = "INVALID_REQUIREMENTS",
+                Message = "The selected house requirements are not practical for this land size.",
                 Conflicts = conflicts,
                 Suggestions = new List<SuggestionDto>()
             });
@@ -135,9 +135,4 @@ public class DesignOptionsService : IDesignOptionsService
         return Task.FromResult(new DesignOptionsValidationResult { IsValid = true, Message = "Your requirements will be matched against available architectural plans." });
     }
 
-    public Task<DesignOptionsValidationResult> ValidateSpecificPlanAsync(PreDesignedHousePlan plan,
-        AiGenerationRequest request, CancellationToken cancellationToken = default)
-    {
-        return ValidateFinalSelectionAsync(request, cancellationToken);
-    }
 }

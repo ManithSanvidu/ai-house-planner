@@ -38,8 +38,24 @@ def test_ai_failure_does_not_break_workflow():
         assert "OpenAI outage" in result["error"]
 
 
+from app.schemas.workflow_state import CoordinatorInput
+
+def _make_state(workflow_id="workflow-1"):
+    return SimpleNamespace(
+        workflow_id=workflow_id,
+        input_data=CoordinatorInput(
+            submission_id="00000000-0000-0000-0000-000000000001",
+            land_size_category="medium",
+            land_size_perches=10.0,
+            bedrooms=1,
+            bathrooms=1,
+            house_type="conventional"
+        ),
+        design_result={"rooms": [{"room_type": "bedroom"}, {"room_type": "bathroom"}, {"room_type": "living"}, {"room_type": "kitchen"}, {"room_type": "dining"}]}
+    )
+
 def test_visualization_node_reuses_persisted_image():
-    state = SimpleNamespace(workflow_id="workflow-1", design_result={"rooms": []})
+    state = _make_state()
     with patch("app.design.visualization.visualization_agent._existing_visualization",
                return_value="https://example.com/existing.png"), \
          patch("app.design.visualization.visualization_agent.VisualizationAgent") as agent:
@@ -50,7 +66,7 @@ def test_visualization_node_reuses_persisted_image():
 
 
 def test_visualization_node_persists_new_image():
-    state = SimpleNamespace(workflow_id="workflow-1", design_result={"rooms": []})
+    state = _make_state()
     agent = MagicMock()
     agent.process.return_value = {"status": "success", "image_url": "https://example.com/new.png"}
     with patch("app.design.visualization.visualization_agent._existing_visualization", return_value=None), \
@@ -65,7 +81,7 @@ def test_visualization_node_persists_new_image():
 
 
 def test_visualization_disabled_never_calls_openai():
-    state = SimpleNamespace(workflow_id="workflow-disabled", design_result={"rooms": []})
+    state = _make_state("workflow-disabled")
     with patch("app.design.visualization.visualization_agent._existing_visualization", return_value=None), \
          patch("app.design.visualization.visualization_agent.ENABLE_AI_VISUALIZATION", False), \
          patch("app.design.visualization.visualization_agent.VisualizationAgent") as agent:

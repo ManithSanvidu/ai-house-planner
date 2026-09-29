@@ -270,16 +270,12 @@ def _run_estimation(state: WorkflowState) -> CostResult:
 def _resolve_pricing_context(state: WorkflowState) -> tuple[str, str]:
     """Resolve optional catalogue dimensions without changing the cost formula."""
     input_data = state.input_data
-    preferences = input_data.preferences if input_data and input_data.preferences else {}
     region = (
         (input_data.region if input_data else None)
-        or preferences.get("region")
         or "Sri Lanka"
     )
     quality = (
         (input_data.quality_level if input_data else None)
-        or preferences.get("quality_level")
-        or preferences.get("qualityLevel")
         or "Standard"
     )
     quality_normalized = str(quality).strip().title()

@@ -2,7 +2,7 @@ from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Security
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from app.api.dependencies import verify_api_key
 from app.design.generation.revision import preserve_revision_preferences
@@ -12,16 +12,14 @@ from app.workflows.house_planning_graph import app_graph
 router = APIRouter()
 
 class StartWorkflowRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     workflow_id: UUID
     submission_id: UUID
+    land_size_category: str
     land_size_perches: float
-    budget_lkr: float | None = None
-    manual_terrain_type: str | None = None
-    preferences: dict[str, Any]
-    plot_constraints: dict[str, Any] | None = None
-    design_seed: int | None = None
-    preferred_plan_code: str | None = None
-    natural_language_prompt: str | None = None
+    bedrooms: int
+    bathrooms: int
+    house_type: str
 
 class ResumeWorkflowRequest(BaseModel):
     workflow_id: UUID
@@ -29,11 +27,11 @@ class ResumeWorkflowRequest(BaseModel):
     user_revision_prompt: str
     land_size_perches: float
     budget_lkr: float | None = None
-    manual_terrain_type: str | None = None
-    preferences: dict[str, Any]
+    bedrooms: int
+    house_type: str
+    special_requirements: str | None = None
     terrain_result: dict[str, Any] | None = None
     previous_design: dict[str, Any] | None = None
-    plot_constraints: dict[str, Any] | None = None
     design_seed: int | None = None
     regeneration: bool = False
     previous_base_plan_code: str | None = None
@@ -85,9 +83,9 @@ def resume_workflow(
         submission_id=request.workflow_id,
         land_size_perches=request.land_size_perches,
         budget_lkr=request.budget_lkr,
-        manual_terrain_type=request.manual_terrain_type,
-        preferences=preferences,
-        plot_constraints=request.plot_constraints,
+        bedrooms=request.bedrooms,
+        house_type=request.house_type,
+        special_requirements=request.special_requirements,
         design_seed=request.design_seed,
         regeneration=request.regeneration,
         previous_base_plan_code=request.previous_base_plan_code,

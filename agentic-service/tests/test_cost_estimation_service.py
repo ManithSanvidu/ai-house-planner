@@ -147,8 +147,11 @@ def _make_state(
         input_data=CoordinatorInput(
             submission_id=uuid.uuid4(),
             budget_lkr=None if no_budget else budget_lkr,
+            land_size_category="medium",
             land_size_perches=10.0,
-            preferences={"bedrooms": 2, "floors": 1},
+            bedrooms=2,
+            bathrooms=1,
+            house_type="conventional"
         ),
         current_agent="cost_estimation",
     )

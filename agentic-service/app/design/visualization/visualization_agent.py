@@ -14,6 +14,16 @@ from app.config import (
 from app.services.ai_guard import DuplicateAIRequest, execute_once
 
 logger = logging.getLogger(__name__)
+ROOM_VALIDATION_ERROR = "Generated layout failed room requirement validation."
+
+
+def _room_program_matches(rooms: list[dict], bedrooms: int, bathrooms: int) -> bool:
+    bedroom_count = sum(1 for room in rooms if "bedroom" in str(room.get("room_type", "")).lower())
+    bathroom_count = sum(1 for room in rooms if "bath" in str(room.get("room_type", "")).lower())
+    required = ("living", "kitchen", "dining")
+    types = [str(room.get("room_type", "")).lower() for room in rooms]
+    return (bedroom_count == bedrooms and bathroom_count == bathrooms and
+            all(any(name in room_type for room_type in types) for name in required))
 
 class VisualizationAgent:
     def __init__(self, api_key: str = None, workflow_id: str | None = None):
@@ -48,6 +58,17 @@ def visualization_node(state):
     print(f"[Visualization Agent] Layout received: {len(rooms)} rooms")
     logger.info(f"[Visualization Agent] Layout received: {len(rooms)} rooms")
     
+    expected_bedrooms = getattr(getattr(state, "input_data", None), "bedrooms", None)
+    expected_bathrooms = getattr(getattr(state, "input_data", None), "bathrooms", None)
+    if (expected_bedrooms is None or expected_bathrooms is None or
+            not _room_program_matches(rooms, expected_bedrooms, expected_bathrooms)):
+        logger.error("[Visualization Agent] %s", ROOM_VALIDATION_ERROR)
+        state.design_result["ai_visualization"] = {
+            "image_url": None, "status": "failed", "error": ROOM_VALIDATION_ERROR
+        }
+        _persist_visualization_status(state.workflow_id, "failed")
+        return state
+
     existing = _existing_visualization(state.workflow_id)
     if existing:
         print("[VISUALIZATION CACHE] HIT")

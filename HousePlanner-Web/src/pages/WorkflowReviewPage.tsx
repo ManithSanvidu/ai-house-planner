@@ -6,6 +6,7 @@ import { Menu, Edit2, Trash2, Plus, Save, X } from 'lucide-react';
 import { AgentTimeline } from '../components/AgentTimeline';
 import useAuth from '../features/auth/useAuth';
 import { countLabel, formatArea, formatFloorName, formatFoundation, formatRoomName, formatTerrain, formatTopology, formatWorkflowStatus } from '../utils/presentation';
+import { SHOW_TECHNICAL_PLAN } from '../config/features';
 
 const roomGroup = (roomType: string) => {
  const type = roomType.toLowerCase();
@@ -57,6 +58,7 @@ export const WorkflowReviewPage: React.FC = () => {
 
  const { user } = useAuth();
  const isAdmin = user?.role === 'Admin' || user?.role === 'Constructor';
+ const showTechnicalPlan = SHOW_TECHNICAL_PLAN || Boolean(user && user.role !== 'Customer');
  const [isEditingPlan, setIsEditingPlan] = useState(false);
  const [editTargetDuration, setEditTargetDuration] = useState<number | ''>('');
  const [editScheduleStatus, setEditScheduleStatus] = useState<string>('ON_SCHEDULE');
@@ -380,14 +382,14 @@ export const WorkflowReviewPage: React.FC = () => {
      </div>
 
      {/* Room Summary */}
-     <div className="bg-surface-elevated p-4 rounded-xl border border-zinc-100 shadow-sm">
+     {showTechnicalPlan && <div className="bg-surface-elevated p-4 rounded-xl border border-zinc-100 shadow-sm">
       <h3 className="text-sm text-zinc-700 font-bold mb-3 flex items-center justify-between">
        Rooms <span className="bg-zinc-200 text-text-secondary px-2 py-0.5 rounded-full text-xs">{workflow.design.rooms.length}</span>
       </h3>
       <div className="space-y-4 max-h-80 overflow-y-auto pr-1">
        {groupOrder.filter(group => groups[group]?.length).map(group => <section key={group}><h4 className="text-xs uppercase tracking-wide text-text-secondary font-bold mb-1.5">{group}</h4><ul className="space-y-1.5">{groups[group].map(r => <li key={r.roomId} className="flex justify-between gap-3 text-xs p-2 bg-surface rounded-lg border border-zinc-100"><span className="font-semibold text-zinc-700">{r.name || formatRoomName(r.roomType)}</span><span className="text-text-muted whitespace-nowrap">{r.width} × {r.length} ft{floorPlanData.floor_count > 1 ? ` · ${formatFloorName(r.floorNumber)}` : ''}</span></li>)}</ul></section>)}
       </div>
-     </div>
+     </div>}
     </div>
    </aside>
    )}
@@ -408,7 +410,7 @@ export const WorkflowReviewPage: React.FC = () => {
         activeTab === 'floorplan' ? 'bg-surface text-indigo-600 shadow-sm' : 'text-text-muted hover:text-slate-700'
        }`}
       >
-       Floor Plan
+       {showTechnicalPlan ? 'Floor Plan' : 'Design Visualization'}
       </button>
       <button
        onClick={() => setActiveTab('construction')}
@@ -421,7 +423,7 @@ export const WorkflowReviewPage: React.FC = () => {
      </div>
 
      {/* Floor Tabs (Only show in floorplan view) */}
-     {activeTab === 'floorplan' && floorNumbers.length > 1 && (
+     {showTechnicalPlan && activeTab === 'floorplan' && floorNumbers.length > 1 && (
       <div className="flex flex-wrap gap-2 md:ml-auto w-full md:w-auto">
        {floorNumbers.map(floor => (
         <button
@@ -447,9 +449,9 @@ export const WorkflowReviewPage: React.FC = () => {
        {workflow.design.plotConstraints?.dimensions_estimated &&
         <p className="px-4 py-2 text-sm text-text-muted bg-amber-50 border-b border-amber-100 flex-shrink-0">Plot dimensions are estimated. Supply measured width and length to refine the plan.</p>}
        
-       <div className="grid lg:grid-cols-2 flex-1 min-h-[600px]">
+       <div className={`grid flex-1 min-h-[600px] ${showTechnicalPlan ? 'lg:grid-cols-2' : 'grid-cols-1'}`}>
         {/* Section 1: Technical Plan */}
-        <div className="border-r border-slate-200 flex flex-col relative h-full">
+        {showTechnicalPlan && <div className="border-r border-slate-200 flex flex-col relative h-full">
          <div className="absolute top-4 left-4 z-10 bg-surface/90 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-slate-200 text-sm font-semibold shadow-sm text-slate-800">
            Technical Floor Plan
          </div>
@@ -460,7 +462,7 @@ export const WorkflowReviewPage: React.FC = () => {
            floorFilter={selectedFloor}
           />
          </div>
-        </div>
+        </div>}
 
         {/* Section 2: AI Visualization */}
         <div className="flex flex-col relative h-full bg-zinc-950">
@@ -472,7 +474,7 @@ export const WorkflowReviewPage: React.FC = () => {
            <img src={visualizationData.imageUrl} alt="AI Architectural Visualization" className="w-full h-full object-contain rounded-xl shadow-2xl" />
           ) : visualizationData?.status === 'failed' ? (
            <div className="text-zinc-500 flex flex-col items-center gap-3">
-             <span className="text-sm">AI visualization generation failed. Technical plan available.</span>
+             <span className="text-sm">AI visualization generation failed. Please try again later.</span>
            </div>
           ) : visualizationData?.status === 'generating' || visualizationData === null ? (
            <div className="text-zinc-500 flex flex-col items-center gap-3">

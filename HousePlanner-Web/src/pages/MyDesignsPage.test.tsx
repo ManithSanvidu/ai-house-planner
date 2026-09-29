@@ -29,6 +29,7 @@ test('project grid renders multiple persisted versions and submit is disabled wi
  expect(screen.getByText('Version 1')).toBeTruthy();
  expect(screen.getByText('2 saved designs')).toBeTruthy();
  expect((screen.getByRole('button', { name: 'Send Selected to Architect' }) as HTMLButtonElement).disabled).toBe(true);
+ expect(screen.queryByLabelText('Version 2 floor-plan preview')).toBeNull();
 });
 
 test('selected card shows Unselect and no disabled Select control', async () => {

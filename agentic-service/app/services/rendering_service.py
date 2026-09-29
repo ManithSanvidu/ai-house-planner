@@ -29,8 +29,8 @@ def rendering_node(state: WorkflowState) -> WorkflowState:
     rooms = state.design_result['rooms']
     floors = sorted({room.get('floor', 1) for room in rooms})
     fig, axes = plt.subplots(1, len(floors), figsize=(7 * len(floors), 7), squeeze=False)
-    style = state.input_data.preferences.get('architecturalStyle', 'Modern Design')
-    fig.suptitle(f'Conceptual Floor Plan — {style}', fontsize=16)
+    style = state.input_data.house_type if state.input_data else 'Modern Design'
+    fig.suptitle(f'Conceptual Floor Plan — {style.title()}', fontsize=16)
 
     for ax, floor in zip(axes[0], floors):
         floor_rooms = [room for room in rooms if room.get('floor', 1) == floor]

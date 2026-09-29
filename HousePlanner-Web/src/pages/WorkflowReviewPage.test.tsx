@@ -54,12 +54,13 @@ describe('WorkflowReviewPage revision refresh', () => {
    <Routes><Route path="/dashboard/workflows/:id" element={<WorkflowReviewPage />} /></Routes>
   </MemoryRouter>);
 
-  expect(await screen.findByText('viewer:design-1')).toBeDefined();
+  expect(await screen.findByText('AI Architectural Visualization')).toBeDefined();
+  await waitFor(() => expect(workflowService.getDesignVisualization).toHaveBeenCalledWith('design-1'));
   fireEvent.click(screen.getByRole('button', { name: 'Generate Another Design' }));
 
   await waitFor(() => expect(workflowService.regenerateDesign)
    .toHaveBeenCalledWith('workflow-1', 'design-1'));
-  expect(await screen.findByText('viewer:design-2')).toBeDefined();
+  await waitFor(() => expect(workflowService.getDesignVisualization).toHaveBeenCalledWith('design-2'));
   expect(screen.getByText('Compact Rectangle')).toBeDefined();
   expect(screen.getByText('Architectural quality score: 91')).toBeDefined();
  });
@@ -88,5 +89,20 @@ describe('WorkflowReviewPage revision refresh', () => {
   const image = await screen.findByRole('img', { name: 'AI Architectural Visualization' });
   expect(image.getAttribute('src')).toBe('http://localhost:8001/visualizations/example.png');
   expect(screen.queryByText('Generating AI architectural visualization...')).toBeNull();
+ });
+
+ it('hides technical coordinates and room summaries from customers', async () => {
+  vi.mocked(workflowService.getWorkflowStatus).mockResolvedValue(status(1));
+  vi.mocked(workflowService.getDesignVisualization).mockResolvedValue({
+   status: 'completed', imageUrl: 'http://localhost:8001/visualizations/example.png',
+  });
+  render(<MemoryRouter initialEntries={['/dashboard/workflows/workflow-1']}>
+   <Routes><Route path="/dashboard/workflows/:id" element={<WorkflowReviewPage />} /></Routes>
+  </MemoryRouter>);
+
+  expect(await screen.findByRole('img', { name: 'AI Architectural Visualization' })).toBeTruthy();
+  expect(screen.queryByText('Technical Floor Plan')).toBeNull();
+  expect(screen.queryByText('viewer:design-1')).toBeNull();
+  expect(screen.queryByText('Rooms')).toBeNull();
  });
 });

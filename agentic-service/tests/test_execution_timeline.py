@@ -38,9 +38,11 @@ def _make_state(**overrides) -> WorkflowState:
         status="running",
         input_data=CoordinatorInput(
             submission_id=uuid4(),
+            land_size_category="medium",
             land_size_perches=10.0,
-            preferences={"bedrooms": 3},
-            manual_terrain_type="flat",
+            bedrooms=3,
+            bathrooms=2,
+            house_type="conventional",
         ),
     )
     defaults.update(overrides)
@@ -78,8 +80,8 @@ def test_coordinator_log_entry_contains_routing_decision():
     state = _make_state()
     result = coordinator_node(state)
     entry = result.execution_log[0]
-    # manual_terrain_type = flat → should route to design
-    assert "design" in entry.result or "Design" in entry.action
+    # now it always routes to land_analysis
+    assert "land_analysis" in entry.result or "Land Analysis" in entry.action
 
 
 # ─────────────────────────────────────────────────────────────────

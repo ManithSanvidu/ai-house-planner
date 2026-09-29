@@ -88,9 +88,13 @@ class OpenAIVisualizationService:
         layout_desc = "\n".join(descriptions)
 
         prompt = (
-            "Create a realistic architectural visualization based on this exact floor arrangement.\n\n"
+            "You are visualizing an already created residential layout.\n\n"
+            "Do not change:\n"
+            "- number of bedrooms\n"
+            "- number of bathrooms\n"
+            "- room arrangement\n\n"
+            "Create a realistic architectural visualization from this layout.\n\n"
             f"{layout_desc}\n\n"
-            "Do not change room positions.\n"
             "Do not add/remove rooms.\n"
             "Generate a professional architectural floor visualization."
         )

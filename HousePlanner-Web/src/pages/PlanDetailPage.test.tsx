@@ -88,6 +88,12 @@ test('ValidatedPlan_ShowsEstimatedCost', async () => {
  expect(await screen.findByText(/LKR 5,500,000/)).toBeTruthy();
 });
 
+test('customer plan detail hides coordinate floor-plan preview', async () => {
+ renderPage();
+ await screen.findByText(/Back to Plan Library/i);
+ expect(screen.queryByText('Floor plan')).toBeNull();
+});
+
 test('ValidatedPlan_CanRequestConstructorDirectly', async () => {
  renderPage();
  const requestBtn = await screen.findByRole('button', { name: /Request Constructor/i });

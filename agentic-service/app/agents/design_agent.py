@@ -39,9 +39,15 @@ def design_node(state: WorkflowState) -> WorkflowState:
 
     # Extract inputs safely
     land_size = state.input_data.land_size_perches if state.input_data else 10.0
-    preferences = state.input_data.preferences if state.input_data else {"bedrooms": 3, "floors": 2}
+    preferences = {
+        "bedrooms": getattr(state.input_data, 'bedrooms', 3),
+        "style": getattr(state.input_data, 'house_type', 'conventional'),
+        "floors": 1, # Default
+        "bathrooms": getattr(state.input_data, 'bathrooms', 1)
+    } if state.input_data else {"bedrooms": 3, "floors": 1, "style": "conventional", "bathrooms": 2}
 
-    terrain_type = "unknown"
+
+    terrain_type = "flat"
     if state.terrain_result and "terrain_type" in state.terrain_result:
         terrain_type = state.terrain_result["terrain_type"]
 
@@ -64,9 +70,7 @@ def design_node(state: WorkflowState) -> WorkflowState:
     try:
         if previous_design is not None:
             preferences = preserve_revision_preferences(preferences, previous_design)
-            if state.input_data:
-                state.input_data.preferences = preferences
-        plot_input = state.input_data.plot_constraints if state.input_data else None
+        plot_input = None
         seed = state.input_data.design_seed if state.input_data else None
         regeneration = state.input_data.regeneration if state.input_data else False
         excluded_plan_code = state.input_data.previous_base_plan_code if regeneration else None
@@ -93,13 +97,13 @@ def design_node(state: WorkflowState) -> WorkflowState:
         print(" ".join(additional))
         
         if gen_beds != req.bedrooms or gen_baths != req.bathrooms:
-            raise GenerationFailure(f"Room mismatch. Expected {req.bedrooms} beds, {req.bathrooms} baths. Got {gen_beds} beds, {gen_baths} baths.", [{'failures': ['room_count_mismatch']}])
+            raise GenerationFailure(f"Room mismatch. Expected {req.bedrooms} beds and {req.bathrooms} baths. Got {gen_beds} beds, {gen_baths} baths.", [{'failures': ['room_count_mismatch']}])
         
         quality = validate_architectural_quality(design, req=req, plot=plot)
         is_fallback = getattr(design, 'candidate_summary', {}).get('quality_status') == 'fallback'
         if not is_fallback and (not quality.passed or quality.status != 'VALID_HIGH_QUALITY'):
             raise GenerationFailure('Architectural quality validation failed.', [{'failures': quality.failures}])
-        validation = validate_geometry(design.rooms, req.bedrooms, req.floors, land_size,
+        validation = validate_geometry(design.rooms, req.bedrooms, getattr(design, 'floor_count', req.floors), land_size,
                                        plot=plot, design=design)
         if not is_fallback and not validation.passed:
             raise GenerationFailure('Local geometry validation failed.', [{'failures': validation.failures}])

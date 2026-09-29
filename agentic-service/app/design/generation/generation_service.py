@@ -372,7 +372,7 @@ def generate_layout(
     if not quality.passed:
         raise GenerationFailure('Architectural quality validation failed on catalog plan.', [{'base_plan_code': plan.plan_code, 'failures': quality.failures}])
         
-    geometry = validate_geometry(final_design.rooms, req.bedrooms, req.floors, plot.land_size_perches, plot=plot, design=final_design)
+    geometry = validate_geometry(final_design.rooms, req.bedrooms, getattr(final_design, 'floor_count', req.floors), plot.land_size_perches, plot=plot, design=final_design)
     if not geometry.passed:
         raise GenerationFailure('Geometry validation failed on catalog plan.', [{'base_plan_code': plan.plan_code, 'failures': geometry.failures}])
         

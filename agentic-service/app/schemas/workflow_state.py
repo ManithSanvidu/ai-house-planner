@@ -14,11 +14,12 @@ class ExecutionLogEntry(BaseModel):
 
 class CoordinatorInput(BaseModel):
     submission_id:UUID
+    land_size_category:str
     land_size_perches:float
+    bedrooms:int = 3
+    bathrooms:int = 1
+    house_type:str = "conventional"
     budget_lkr:float | None=None
-    manual_terrain_type:str | None=None
-    preferences:dict[str,Any]
-    plot_constraints:dict[str, Any] | None=None
     design_seed:int | None=None
     preferred_plan_code:str | None=None
     regeneration:bool=False
@@ -26,7 +27,7 @@ class CoordinatorInput(BaseModel):
     previous_design_fingerprint:str | None=None
     region:str | None=None
     quality_level:str | None=None
-    natural_language_prompt:str | None=None
+
 
 class WorkflowState(BaseModel):
     workflow_id:UUID

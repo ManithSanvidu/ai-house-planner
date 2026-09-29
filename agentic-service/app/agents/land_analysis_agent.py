@@ -32,19 +32,17 @@ def land_analysis_node(state: WorkflowState) -> WorkflowState:
     if state.terrain_result and state.terrain_result.get("terrain_type"):
         action = f"Skipped vision — manual terrain '{state.terrain_result['terrain_type']}' already set"
     else:
-        # Extract photo URL from preferences
+        # No photo URL in current deterministic input flow
         photo_url = None
-        if state.input_data and state.input_data.preferences:
-            photo_url = state.input_data.preferences.get("photo_url")
 
         if not photo_url:
             # No photo available — use safe default
             state.terrain_result = {
-                "terrain_type": "unknown",
-                "slope_estimate": "unknown",
-                "notable_features": ["no_photo_provided"]
+                "terrain_type": "flat",
+                "slope_estimate": "flat",
+                "notable_features": ["no_photo_provided", "defaulted_to_flat"]
             }
-            action = "No photo URL available — terrain unknown; manual classification required"
+            action = "No photo URL available — defaulted to flat terrain"
         else:
             # Call the vision classification tool with retry logic
             success = False
@@ -61,16 +59,14 @@ def land_analysis_node(state: WorkflowState) -> WorkflowState:
 
             if not success:
                 # Fallback to manual terrain
-                manual_terrain = state.input_data.manual_terrain_type if state.input_data else "unknown"
-                if not manual_terrain:
-                    manual_terrain = "unknown"
+                manual_terrain = "flat"
 
                 state.terrain_result = {
                     "terrain_type": manual_terrain,
-                    "slope_estimate": "unknown",
+                    "slope_estimate": "flat",
                     "notable_features": ["vision_failed_used_manual_fallback"]
                 }
-                action = f"Vision failed, fell back to manual terrain '{manual_terrain}'"
+                action = f"Vision failed, fell back to flat terrain"
 
     # Persist terrain result to ASP.NET (best-effort, don't block on failure)
     _persist_terrain(state)

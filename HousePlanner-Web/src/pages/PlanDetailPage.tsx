@@ -5,6 +5,7 @@ import { preDesignedPlanService, type PreDesignedPlanDetail } from '../services/
 import { customerConstructionService, type ConstructorProfile } from '../services/customerConstructionService';
 import { countLabel, formatArea, formatFloorName, formatTerrain, formatTopology, getCustomerPlanName, getPlanTopology } from '../utils/presentation';
 import type { CostSummaryDto } from '../services/workflowService';
+import { SHOW_TECHNICAL_PLAN } from '../config/features';
 
 export default function PlanDetailPage() {
  const { id = '' } = useParams();
@@ -96,10 +97,10 @@ export default function PlanDetailPage() {
     </div>
    </div>
 
-   <div className="grid lg:grid-cols-[minmax(0,1fr)_340px] gap-8">
+   <div className={SHOW_TECHNICAL_PLAN ? 'grid lg:grid-cols-[minmax(0,1fr)_340px] gap-8' : 'max-w-xl'}>
     
     {/* LEFT COLUMN - VIEWER */}
-    <div className="space-y-6">
+    {SHOW_TECHNICAL_PLAN && <div className="space-y-6">
      <section className="h-[500px] md:h-[700px] min-w-0 rounded-2xl overflow-hidden border border-border dark:border-border-strong relative bg-surface bg-background shadow-sm">
       {plan.floorCount > 1 && (
        <div className="absolute z-10 m-4 flex flex-wrap gap-2">
@@ -121,7 +122,7 @@ export default function PlanDetailPage() {
       )}
       <FloorPlanViewer data={plan.layout} floorFilter={floor} />
      </section>
-    </div>
+    </div>}
 
     {/* RIGHT COLUMN - SIDEBAR */}
     <aside className="space-y-6">

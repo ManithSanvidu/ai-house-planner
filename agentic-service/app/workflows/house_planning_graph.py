@@ -42,11 +42,10 @@ workflow.add_node("cost_estimation", cost_estimation_node)
 workflow.add_node("validation", validation_node)
 workflow.add_node("rendering", rendering_node)
 workflow.add_node("visualization", visualization_node)
-workflow.set_entry_point("coordinator")
+workflow.set_entry_point("design")
 
 # coordinator decides whether land analysis is needed;
-# requirement_analysis always runs next (self-skips if no NL prompt),
-# then hands off to whichever agent coordinator selected.
+# kept for future chat-based requests
 workflow.add_edge("coordinator", "requirement_analysis")
 workflow.add_conditional_edges(
     "requirement_analysis",

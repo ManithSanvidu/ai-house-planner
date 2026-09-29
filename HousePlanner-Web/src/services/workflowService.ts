@@ -157,39 +157,11 @@ export interface WorkflowDesignHistoryDto {
 }
 
 export interface StartDesignRequest {
- basePreDesignedPlanId?: string;
- planSelectionMode?: 'use';
- budgetLkr?: number;
+ landSizeCategory: 'small' | 'medium';
  landSizePerches: number;
- manualTerrainType?: string;
- region?: string;
- qualityLevel?: 'Basic' | 'Standard' | 'Premium' | 'Luxury';
- designSeed?: number;
- preferences: {
-  bedrooms: number;
-  bathrooms: number;
-  floors: number;
-  architecturalStyle?: string;
-  openPlan?: boolean;
-  masterEnsuite?: boolean;
-  separateDining?: boolean;
-  homeOffice?: boolean;
-  balcony?: boolean;
-  veranda?: boolean;
-  utilityRoom?: boolean;
-  parkingRequired?: boolean;
-  accessibility?: boolean;
-  spacePriority?: string;
-  circulationPreference?: 'space_efficient';
- };
- plotConstraints?: {
-  road_side: string;
-  plot_width_ft?: number;
-  plot_length_ft?: number;
-  north_direction?: string;
-  entrance_side?: string;
-  setbacks?: { front?: number; rear?: number; left?: number; right?: number };
- };
+ bedrooms: number;
+ bathrooms: number;
+ houseType: 'simple' | 'modern';
 }
 
 export const workflowService = {
