@@ -35,7 +35,6 @@ from app.schemas.workflow_state import WorkflowState
 PERCH_TO_SQFT: float = 272.25
 DEFAULT_MAX_COVERAGE_RATIO: float = 0.65
 DEFAULT_BUDGET_TOLERANCE_RATIO: float = 0.10
-MAX_VALIDATION_RETRIES: int = 2
 
 TERRAIN_FOUNDATION_COMPATIBILITY_MAP: dict[str, list[str]] = {
     "flat": ["strip", "raft", "pad", "slab", "shallow_strip", "isolated_pad", "conceptual"],
@@ -536,14 +535,10 @@ def validation_node(state: WorkflowState) -> WorkflowState:
         state.approval_status = "pending"
         state.current_agent = "rendering"
     else:
-        state.status = "rejected"
+        state.status = "failed"
         state.approval_status = "not_requested"
-        if state.retry_count < MAX_VALIDATION_RETRIES:
-            state.retry_count += 1
-            state.current_agent = "design"
-        else:
-            state.status = "failed"
-            state.current_agent = "failed"
+        state.current_agent = "failed"
+        state.validation_result["reason"] = "Selected catalogue plan failed validation"
 
     _submit_validation_result(state, val_result)
     return state

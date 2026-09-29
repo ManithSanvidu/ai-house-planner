@@ -27,7 +27,7 @@ def route_from_validation(state: WorkflowState) -> str:
         return "rendering"
     if state.status == "failed" or state.current_agent == "failed":
         return "failed"
-    return "design"
+    return "failed"
 
 
 workflow = StateGraph(WorkflowState)

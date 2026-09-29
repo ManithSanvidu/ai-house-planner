@@ -87,8 +87,12 @@ def design_node(state: WorkflowState) -> WorkflowState:
         state.status = 'failed'
         state.current_agent = 'failed'
         state.approval_status = 'not_requested'
-        state.validation_result = {'passed': False, 'failures': [str(exc)],
-                                   'candidate_failures': getattr(exc, 'failures', [])}
+        state.validation_result = {
+            'passed': False, 
+            'failures': [str(exc)],
+            'candidate_failures': getattr(exc, 'failures', []),
+            'reason': 'No compatible catalogue plan exists'
+        }
         state.execution_log.append(ExecutionLogEntry(
             agent_name='DesignAgent', action='Design generation failed; no layout submitted',
             tool_called='layout_generation_tool', result=str(exc),
