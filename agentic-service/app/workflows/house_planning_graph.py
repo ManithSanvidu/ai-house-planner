@@ -6,6 +6,7 @@ from app.orchestration.workflow_router import coordinator_node
 from app.services.cost_estimation_service import cost_estimation_node
 from app.agents.design_agent import design_node
 from app.agents.land_analysis_agent import land_analysis_node
+from app.agents.requirement_analysis_agent import requirement_analysis_node
 from app.services.rendering_service import rendering_node
 from app.validation.design_validation_service import validation_node
 from app.schemas.workflow_state import WorkflowState
@@ -32,6 +33,7 @@ def route_from_validation(state: WorkflowState) -> str:
 
 workflow = StateGraph(WorkflowState)
 workflow.add_node("coordinator", coordinator_node)
+workflow.add_node("requirement_analysis", requirement_analysis_node)
 workflow.add_node("land_analysis", land_analysis_node)
 workflow.add_node("design", design_node)
 workflow.add_node("construction_planning", construction_planning_node)
@@ -40,9 +42,13 @@ workflow.add_node("validation", validation_node)
 workflow.add_node("rendering", rendering_node)
 workflow.set_entry_point("coordinator")
 
+# coordinator decides whether land analysis is needed;
+# requirement_analysis always runs next (self-skips if no NL prompt),
+# then hands off to whichever agent coordinator selected.
+workflow.add_edge("coordinator", "requirement_analysis")
 workflow.add_conditional_edges(
-    "coordinator",
-    route_from_coordinator,
+    "requirement_analysis",
+    lambda state: state.current_agent,
     {
         "land_analysis": "land_analysis",
         "design": "design",
