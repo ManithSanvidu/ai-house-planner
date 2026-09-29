@@ -26,6 +26,7 @@ class CoordinatorInput(BaseModel):
     previous_design_fingerprint:str | None=None
     region:str | None=None
     quality_level:str | None=None
+    natural_language_prompt:str | None=None
 
 class WorkflowState(BaseModel):
     workflow_id:UUID

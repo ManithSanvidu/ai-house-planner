@@ -21,6 +21,7 @@ class StartWorkflowRequest(BaseModel):
     plot_constraints: dict[str, Any] | None = None
     design_seed: int | None = None
     preferred_plan_code: str | None = None
+    natural_language_prompt: str | None = None
 
 class ResumeWorkflowRequest(BaseModel):
     workflow_id: UUID
