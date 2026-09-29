@@ -249,19 +249,8 @@ def _derived_suffixes() -> list[tuple[str, dict[str, object]]]:
 
 @lru_cache(maxsize=1)
 def load_base_plan_catalog() -> list[BasePlanRecord]:
-    records = _load_seed_records()
-    originals = list(records)
-    if len(records) < CATALOG_MIN_SIZE:
-        for source_record, (suffix, transform) in zip(originals * 2, _derived_suffixes()):
-            if len(records) >= CATALOG_MIN_SIZE:
-                break
-            design = DesignResult.model_validate_json(source_record.layout_json)
-            design = transform_design(design, **transform)
-            source = {'designCode': source_record.plan_code, 'name': source_record.name, 'bathrooms': source_record.bathrooms, 'minimumLandSizePerches': source_record.minimum_land_perches, 'minimumPlotWidthFt': source_record.minimum_plot_width_ft, 'minimumPlotLengthFt': source_record.minimum_plot_length_ft, 'isActive': True}
-            derived = _record_from_design(source, design, suffix=suffix)
-            if derived is not None:
-                records.append(derived)
-    return records
+    """Returns strictly original catalogue geometries without synthetic padding."""
+    return _load_seed_records()
 
 
 def compatibility_rejection_reasons(plan: BasePlanRecord, req: Requirements,
