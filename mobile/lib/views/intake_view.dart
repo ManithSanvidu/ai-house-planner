@@ -134,9 +134,9 @@ class _IntakeViewState extends ConsumerState<IntakeView> {
                     if (_currentStep == 3) _buildStep3(data),
                     if (_currentStep == 4) _buildStep4(data),
                     if (_currentStep == 5) _buildStep5(data),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 12),
                     _buildFooter(intakeState.isLoading),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 80),
                   ],
                 ),
               ),
@@ -213,11 +213,7 @@ class _IntakeViewState extends ConsumerState<IntakeView> {
 
   Widget _buildFooter(bool isSubmitting) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-      decoration: const BoxDecoration(
-        color: Color(0xFFF9FAFB),
-        border: Border(top: BorderSide(color: AppTokens.line)),
-      ),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -231,30 +227,49 @@ class _IntakeViewState extends ConsumerState<IntakeView> {
                 style: OutlinedButton.styleFrom(
                   foregroundColor: const Color(0xFF475569),
                   side: const BorderSide(color: AppTokens.line),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  padding: const EdgeInsets.symmetric(vertical: 18),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                   backgroundColor: Colors.white,
                 ),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 16),
           ],
           Expanded(
             flex: _currentStep > 1 ? 2 : 1,
-            child: ElevatedButton(
-              onPressed: isSubmitting ? null : _nextStep,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _currentStep == 5 ? const Color(0xFF2563EB) : const Color(0xFF0F172A),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: (_currentStep == 5 ? const Color(0xFF2563EB) : const Color(0xFF0F172A)).withOpacity(0.25),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+                gradient: _currentStep == 5
+                    ? const LinearGradient(
+                        colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      )
+                    : null,
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
+              child: ElevatedButton(
+                onPressed: isSubmitting ? null : _nextStep,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _currentStep == 5 ? Colors.transparent : const Color(0xFF0F172A),
+                  foregroundColor: Colors.white,
+                  shadowColor: Colors.transparent,
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: isSubmitting
                     ? const [
@@ -291,9 +306,10 @@ class _IntakeViewState extends ConsumerState<IntakeView> {
                           size: 18,
                         ),
                       ],
-              ),
-            ),
-          ),
+              ), // end Row
+            ), // end ElevatedButton
+          ), // end Container
+        ), // end Expanded
         ],
       ),
     );
@@ -1082,6 +1098,7 @@ class _IntakeViewState extends ConsumerState<IntakeView> {
         border: Border.all(color: AppTokens.line),
       ),
       child: TextFormField(
+        key: ValueKey(hint),
         initialValue: initialValue,
         keyboardType: keyboardType,
         style: const TextStyle(fontSize: 14.5, color: AppTokens.ink),
