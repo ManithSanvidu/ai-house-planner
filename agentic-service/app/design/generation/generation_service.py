@@ -20,7 +20,7 @@ from app.design.exceptions import GenerationFailure
 from app.design.generation.diversity import geometry_fingerprint
 from app.design.program.models import Requirements
 from app.design.program.normalized_input import NormalizedDesignInput
-from app.design.generation.plan_adapter import PlanAdapter
+
 from app.design.catalogue.plan_suitability import suitability_breakdown
 from app.design.geometry.plot_constraints import PlotConstraints
 from app.design.generation.revision import (
@@ -347,30 +347,19 @@ def _validate_and_finalize(design: DesignResult, req: Requirements, plot: PlotCo
 
 
 def generate_layout(
-
     land_size_perches: float,
-
     terrain_type: str,
-
     preferences: dict,
-
     previous_design: dict | None = None,
-
     revision_reason: str | None = None,
-
     *,
-
     plot_constraints: dict | PlotConstraints | None = None,
-
     design_seed: int | None = None,
     preferred_plan_code: str | None = None,
     excluded_plan_code: str | None = None,
     excluded_fingerprint_explicit: str | None = None,
-
 ) -> DesignResult:
-
     try:
-
         if previous_design is not None:
             preferences = preserve_revision_preferences(preferences, previous_design)
         revised_preferences, applied_revision = apply_supported_revision(preferences, revision_reason)
@@ -378,173 +367,96 @@ def generate_layout(
         req, plot = prepare_inputs(land_size_perches, terrain_type, revised_preferences, plot_constraints, design_seed)
 
         if plot.terrain_type == 'unknown':
-
             raise GenerationFailure('Terrain is unknown; provide a manual terrain classification.')
-
         if plot.plot_width_ft and plot.plot_width_ft < 15:
-
             raise GenerationFailure(f'Plot width ({plot.plot_width_ft} ft) is too narrow for standard construction.')
-
         if plot.plot_length_ft and plot.plot_length_ft < 15:
-
             raise GenerationFailure(f'Plot length ({plot.plot_length_ft} ft) is too shallow for standard construction.')
-
         if plot.buildable_width < 10 or plot.buildable_length < 10:
-
             raise GenerationFailure('Setbacks leave insufficient buildable area (less than 10ft).')
-
     except (ValueError, TypeError) as exc:
-
         raise GenerationFailure(f'Invalid design requirements: {exc}') from exc
 
     normalized = NormalizedDesignInput.from_inputs(req, plot)
     logger.info('[Design Input] normalized=%s', normalized.model_dump())
 
     previous_plan_code = None
-
     previous_fingerprint = None
 
     if requests_another_design(revision_reason) and previous_design is None:
         raise GenerationFailure('Cannot compare geometry: the previous design is required.')
 
     if previous_design is not None:
-
         try:
-
             previous_layout = DesignResult.model_validate(previous_design)
-
             previous_fingerprint = geometry_fingerprint(previous_layout)
-
             previous_plan_code = previous_layout.candidate_summary.get('selected_plan_code') if isinstance(previous_layout.candidate_summary, dict) else None
-
         except Exception as exc:
             if requests_another_design(revision_reason):
                 raise GenerationFailure('Cannot compare geometry: the previous design is invalid.') from exc
             previous_fingerprint = None
 
     excluded_fingerprint = excluded_fingerprint_explicit or (previous_fingerprint if requests_another_design(revision_reason) else None)
+    
+    # Get the compatible candidate pool directly from base_plan_library logic
     candidate_pool = _candidate_pool(req, plot, excluded_fingerprint, preferred_plan_code, excluded_plan_code)
-    shortlist = candidate_pool[:7]
-
-    request_type = ('generate_another' if requests_another_design(revision_reason)
-                    else 'revision' if revision_reason else 'generation')
-    provider = get_available_design_provider()
-    provider_name = None
-    model_name = None
-    attempted_providers = []
-    decision = None
-    while provider:
-        provider_name = getattr(provider, 'provider_name', None)
-        model_name = getattr(provider, 'model_name', None)
-        attempted_providers.append(provider_name)
-        print(f'[Design Agent] Calling provider {provider.provider_name} for base-plan selection...')
-        user_prompt = _build_ai_prompt(normalized, shortlist, req, plot, previous_plan_code,
-                                       previous_fingerprint, revision_reason)
-        try:
-            decision = AIPlanDecision.model_validate(
-                provider.generate_json(SYSTEM_PROMPT, user_prompt, AIPlanDecision))
-            logger.info('[AI Selection] provider=%s model=%s selected_plan=%s alternatives=%s reason_codes=%s',
-                        provider_name, model_name, decision.selected_plan_code,
-                        decision.alternative_plan_codes, decision.reason_codes)
-            break
-        except Exception as exc:
-            print(f'[Design Agent] {provider_name} decision failed ({type(exc).__name__}); trying next provider.')
-            provider = get_next_design_provider(provider_name or '')
-            provider_name = None
-            model_name = None
-
-    adapter = PlanAdapter()
-    tried_codes: list[str] = []
-    failures: list[dict] = []
-    repeated_geometry = False
-
-    def attempt(plan, selection, selected_provider=None, selected_model=None):
-        nonlocal repeated_geometry
-        tried_codes.append(plan.plan_code)
-        try:
-            # Keep the selected code accurate when trying an alternative.
-            selection = selection.model_copy(update={'selected_plan_code': plan.plan_code})
-            logger.info('[Adaptation] plan_code=%s operations=%s',
-                        plan.plan_code, selection.adaptations.model_dump())
-            design = adapter.adapt(plan, selection, req, plot)
-            final_fingerprint = geometry_fingerprint(design)
-            if excluded_fingerprint and final_fingerprint == excluded_fingerprint:
-                repeated_geometry = True
-                failures.append({'plan_code': plan.plan_code,
-                                 'reason': 'previous_geometry_repeated',
-                                 'failures': [NO_DISTINCT_LAYOUT]})
-                return None
-            final_design = _validate_and_finalize(
-                design, req, plot, plan.plan_code, selected_provider, selected_model,
-                selection, tried_codes, candidate_pool)
-            logger.info('[Validation] plan_code=%s architectural_score=%s geometry_passed=%s',
-                        plan.plan_code, final_design.design_score, True)
-            generation_mode = ('ai_adapted_template' if selected_provider else
-                               'deterministic_fallback' if attempted_providers else
-                               'deterministic_template_selection')
-            final_design.candidate_summary.update({
-                'generation_mode': generation_mode,
-                'ai_ran': bool(attempted_providers),
-                'attempted_providers': attempted_providers,
-                'base_plan_name': plan.name,
-                'base_plan_code': plan.plan_code,
-                'template_id': final_design.template_id,
-                'alternative_plan_codes': selection.alternative_plan_codes,
-                'reason_codes': selection.reason_codes,
-                'normalized_input': normalized.model_dump(),
-                'compatible_plan_count': len(candidate_pool),
-            })
-            if previous_fingerprint:
-                final_design.candidate_summary['previous_fingerprint'] = previous_fingerprint
-            if previous_plan_code:
-                final_design.candidate_summary['previous_plan_code'] = previous_plan_code
-            if revision_reason:
-                final_design.candidate_summary['revision_feedback'] = revision_reason
-                final_design.candidate_summary['bounded_revision_preferences'] = applied_revision
-            logger.info('[Final Design] selected_base_plan=%s topology=%s fingerprint=%s generation_mode=%s',
-                        plan.plan_code, final_design.template_family,
-                        final_design.geometry_fingerprint,
-                        final_design.candidate_summary.get('generation_mode'))
-            logger.info('[AI Agent] request_type=%s provider=%s model=%s candidate_count=%s selected_plan=%s reason_codes=%s generation_mode=%s',
-                        request_type, selected_provider or 'deterministic', selected_model or 'none',
-                        len(shortlist), plan.plan_code, selection.reason_codes,
-                        final_design.candidate_summary.get('generation_mode'))
-            return final_design
-        except GenerationFailure as exc:
-            failures.extend(exc.failures or [{'plan_code': plan.plan_code, 'failures': [str(exc)]}])
-        except Exception as exc:
-            failures.append({'plan_code': plan.plan_code, 'failures': [str(exc)]})
-        return None
-
-    if decision is not None:
-        candidate_by_code = {plan.plan_code: plan for plan in shortlist}
-        for plan_code in [decision.selected_plan_code, *decision.alternative_plan_codes]:
-            if plan_code in tried_codes:
-                continue
-            plan = candidate_by_code.get(plan_code)
-            if plan is None:
-                failures.append({'plan_code': plan_code, 'failures': ['plan_not_compatible']})
-                continue
-            result = attempt(plan, decision, provider_name, model_name)
-            if result is not None:
-                return result
-
-    # Try all unique compatible geometries, including those outside the shortlist.
-    # AI adaptations may have failed, so retry those plans with deterministic adaptations.
-    fallback = _fallback_decision(candidate_pool, req, plot, previous_plan_code, excluded_fingerprint)
-    logger.info('[AI Selection] provider=deterministic selected_plan=%s alternatives=%s reason_codes=%s',
-                fallback.selected_plan_code, fallback.alternative_plan_codes, fallback.reason_codes)
-    for plan in candidate_pool:
-        result = attempt(plan, fallback)
-        if result is not None:
-            return result
-
-    if repeated_geometry:
-        raise GenerationFailure(NO_DISTINCT_LAYOUT, failures)
-    if failures:
-        raise GenerationFailure('No validated base plan could be adapted into a high-quality design.', failures)
-    raise GenerationFailure('Candidate pool exhausted without finding a valid plan.')
-
+    
+    if not candidate_pool:
+        raise GenerationFailure('Candidate pool exhausted without finding a valid plan.')
+        
+    # Deterministically select the top ranked plan
+    plan = candidate_pool[0]
+    
+    # Deep copy the design so we don't modify the cached catalog instance
+    final_design = plan.design.model_copy(deep=True)
+    
+    # Validate the pure catalog plan to append score and metrics
+    quality = validate_architectural_quality(final_design, req=req, plot=plot)
+    if not quality.passed:
+        raise GenerationFailure('Architectural quality validation failed on catalog plan.', [{'base_plan_code': plan.plan_code, 'failures': quality.failures}])
+        
+    geometry = validate_geometry(final_design.rooms, req.bedrooms, req.floors, plot.land_size_perches, plot=plot, design=final_design)
+    if not geometry.passed:
+        raise GenerationFailure('Geometry validation failed on catalog plan.', [{'base_plan_code': plan.plan_code, 'failures': geometry.failures}])
+        
+    final_design.design_score = quality.score
+    final_design.candidate_status = quality.status
+    final_design.geometry_fingerprint = geometry_fingerprint(final_design)
+    
+    if final_design.candidate_summary is None:
+        final_design.candidate_summary = {}
+        
+    final_design.candidate_summary.update({
+        'generation_mode': 'deterministic_template_selection',
+        'ai_ran': False,
+        'base_plan_name': plan.name,
+        'base_plan_code': plan.plan_code,
+        'selected_plan_code': plan.plan_code,
+        'template_id': final_design.template_id,
+        'normalized_input': normalized.model_dump(),
+        'compatible_plan_count': len(candidate_pool),
+        'tried_plan_codes': [plan.plan_code],
+        'compatible_plan_codes': [p.plan_code for p in candidate_pool],
+        'catalog_size': len(load_base_plan_catalog()),
+        'quality_metrics': quality.metrics,
+        'quality_breakdown': quality.score_breakdown,
+        'geometry_validation': geometry.to_dict(),
+    })
+    
+    if previous_fingerprint:
+        final_design.candidate_summary['previous_fingerprint'] = previous_fingerprint
+    if previous_plan_code:
+        final_design.candidate_summary['previous_plan_code'] = previous_plan_code
+    if revision_reason:
+        final_design.candidate_summary['revision_feedback'] = revision_reason
+        final_design.candidate_summary['bounded_revision_preferences'] = applied_revision
+        
+    logger.info('[Final Design] selected_base_plan=%s topology=%s fingerprint=%s generation_mode=%s',
+                plan.plan_code, final_design.template_family,
+                final_design.geometry_fingerprint,
+                final_design.candidate_summary.get('generation_mode'))
+                
+    return final_design
 
 
 def select_template(bedrooms: int, floors: int, terrain_type: str, land_size_perches: float) -> dict:
