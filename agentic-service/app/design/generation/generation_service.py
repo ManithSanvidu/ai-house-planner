@@ -30,19 +30,10 @@ from app.design.generation.revision import (
 )
 from app.design.quality.scoring import family_affinity
 from app.design.geometry.topology_registry import eligible_topologies
-from app.providers import get_available_design_provider, get_next_design_provider
-from app.schemas.ai_plan_decision import AIPlanDecision
 from app.schemas.design_result import DesignResult
 from app.validation.geometry_validator import validate_geometry
 from app.land.land_math import MAX_COVERAGE_RATIO, SQFT_PER_PERCH
 
-SYSTEM_PROMPT = (
-
-    "You are the HousePlanner design-selection agent. Choose among validated base plans only. "
-
-    "Do not generate coordinates, room dimensions, openings, or stair locations. Return only the strict schema."
-
-)
 
 logger = logging.getLogger(__name__)
 
@@ -308,145 +299,7 @@ def _candidate_pool(req: Requirements, plot: PlotConstraints, previous_fingerpri
 
 
 
-def _build_ai_prompt(normalized: NormalizedDesignInput, plans, req: Requirements,
-                     plot: PlotConstraints, previous_plan_code=None,
 
-                     previous_fingerprint=None, revision_reason: str | None = None) -> str:
-
-    payload = {
-
-        'normalized_input': normalized.model_dump(),
-
-        'candidate_plans': compact_plan_metadata(plans, req, plot),
-
-        'previous_plan_code': previous_plan_code,
-
-        'previous_fingerprint': previous_fingerprint,
-
-        'revision_reason': revision_reason,
-
-        'generation_mode': 'generate_another' if requests_another_design(revision_reason) else 'generate',
-
-    }
-
-    return json.dumps(payload, separators=(',', ':'), ensure_ascii=True)
-
-
-
-def _fallback_decision(plans, req: Requirements, plot: PlotConstraints, previous_plan_code=None,
-
-                       previous_fingerprint=None) -> AIPlanDecision:
-
-    plans = deduplicate_base_plans(plans, previous_fingerprint)
-    if not plans:
-        raise GenerationFailure(NO_DISTINCT_LAYOUT)
-    chosen = plans[0]
-
-    alternatives = [plan.plan_code for plan in plans[1:7]]
-
-    public_orientation = plot.road_side
-
-    private_orientation = {'south': 'north', 'north': 'south', 'east': 'west', 'west': 'east'}[plot.road_side]
-
-    service_orientation = {'south': 'west', 'north': 'east', 'east': 'south', 'west': 'north'}[plot.road_side]
-
-    return AIPlanDecision.model_validate({
-
-        'selected_plan_code': chosen.plan_code,
-
-        'alternative_plan_codes': alternatives,
-
-        'design_intent': {
-
-            'public_zone_orientation': public_orientation,
-
-            'private_zone_orientation': private_orientation,
-
-            'service_zone_orientation': service_orientation,
-
-            'privacy_priority': 'high' if getattr(req, 'privacy_priority', False) or getattr(req, 'attached_bathroom', False) else 'balanced',
-
-            'circulation_preference': 'short_central_hall',
-
-        },
-
-        'adaptations': {
-
-            'mirror_horizontal': False,
-
-            'mirror_vertical': False,
-
-            'rotation_degrees': 0,
-
-            'living_scale': 1.0,
-
-            'bedroom_scale': 1.0,
-
-            'entrance_side': plot.effective_entrance_side,
-
-            'preserve_stair_core': True,
-
-            'preserve_wet_core': True,
-
-        },
-
-        'reason_codes': ['plot_fit', 'preference_match', 'low_circulation'],
-
-    })
-
-
-
-def _validate_and_finalize(design: DesignResult, req: Requirements, plot: PlotConstraints,
-
-                           base_plan_code: str, provider_name: str | None, model_name: str | None,
-
-                           ai_decision: AIPlanDecision, tried_codes: list[str], candidate_pool) -> DesignResult:
-
-    quality = validate_architectural_quality(design, req=req, plot=plot)
-
-    if not quality.passed:
-
-        raise GenerationFailure('Architectural quality validation failed.', [{'base_plan_code': base_plan_code, 'failures': quality.failures}])
-
-    geometry = validate_geometry(design.rooms, req.bedrooms, req.floors, plot.land_size_perches, plot=plot, design=design)
-
-    if not geometry.passed:
-
-        raise GenerationFailure('Local geometry validation failed.', [{'base_plan_code': base_plan_code, 'failures': geometry.failures}])
-
-    design.design_score = quality.score
-
-    design.candidate_status = quality.status
-
-    design.geometry_fingerprint = geometry_fingerprint(design)
-
-    if design.candidate_summary is None:
-        design.candidate_summary = {}
-    design.candidate_summary.update({
-
-        'selected_plan_code': base_plan_code,
-
-        'provider': provider_name,
-
-        'model': model_name,
-
-        'generation_mode': 'ai_adapted_template' if provider_name else 'deterministic_template_selection',
-
-        'quality_metrics': quality.metrics,
-
-        'quality_breakdown': quality.score_breakdown,
-
-        'geometry_validation': geometry.to_dict(),
-
-        'tried_plan_codes': tried_codes,
-
-        'compatible_plan_codes': [plan.plan_code for plan in candidate_pool],
-
-        'catalog_size': len(load_base_plan_catalog()),
-
-    })
-
-    return design
 
 
 
