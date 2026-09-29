@@ -244,7 +244,7 @@ class _IntakeViewState extends ConsumerState<IntakeView> {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: (_currentStep == 5 ? const Color(0xFF2563EB) : const Color(0xFF0F172A)).withOpacity(0.25),
+                    color: (_currentStep == 5 ? const Color(0xFF2563EB) : const Color(0xFF0F172A)).withValues(alpha: 0.25),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -1018,35 +1018,6 @@ class _IntakeViewState extends ConsumerState<IntakeView> {
     );
   }
 
-  Widget _buildChip(
-    String label, {
-    bool isActive = false,
-    VoidCallback? onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppTokens.radiusPill),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: isActive ? AppTokens.accentSoft : Colors.white,
-          borderRadius: BorderRadius.circular(AppTokens.radiusPill),
-          border: Border.all(
-            color: isActive ? AppTokens.accent : AppTokens.line,
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isActive ? AppTokens.accent : AppTokens.inkSoft,
-            fontSize: 12.5,
-            fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildCard({
     required String title,
     String? subtitle,
@@ -1226,7 +1197,7 @@ class _IntakeViewState extends ConsumerState<IntakeView> {
             onTap: () => ref.read(intakeProvider.notifier).clearPhoto(),
             child: CircleAvatar(
               radius: 16,
-              backgroundColor: Colors.black.withOpacity(0.6),
+              backgroundColor: Colors.black.withValues(alpha: 0.6),
               child: const Icon(Icons.close, color: Colors.white, size: 18),
             ),
           ),
