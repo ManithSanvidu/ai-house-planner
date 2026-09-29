@@ -13,7 +13,7 @@ from app.design.geometry.adjacency import exterior_segments, graph_for
 from app.design.quality.architectural_quality import validate_architectural_quality
 from app.design.generation.diversity import geometry_fingerprint
 from app.design.program.models import Requirements
-from app.design.generation.plan_adapter import transform_design
+
 from app.design.catalogue.plan_suitability import accessibility_details, suitability_breakdown
 from app.design.geometry.plot_constraints import PlotConstraints
 from app.design.quality.quality_metrics import calculate_quality_metrics
@@ -287,21 +287,9 @@ def compatibility_rejection_reasons(plan: BasePlanRecord, req: Requirements,
     if max_y - min_y > plot.buildable_length + 0.001:
         reasons.append('footprint_length')
 
-    # Hard capability requirements: if the user explicitly selected these, the plan MUST support them.
-    # Note: Soft suitability preferences (like space_priority or style) only affect ranking score, not filtering.
-    required_capabilities = {
-        'accessibility': req.accessibility,
-        'master_ensuite': req.master_bedroom or req.attached_bathroom,
-        'open_plan': req.open_plan,
-        'separate_dining': req.dining_required,
-        'home_office': req.home_office,
-        'balcony': req.balcony,
-        'veranda': req.veranda,
-        'utility_room': req.utility_room,
-        'parking': req.parking,
-    }
-    reasons.extend(f'missing_{name}' for name, required in required_capabilities.items()
-                   if required and not plan.capabilities.get(name, False))
+    # Feature capabilities (balcony, home_office, etc) are evaluated as soft constraints in 
+    # plan_suitability.py -> suitability_breakdown() to allow graceul fallback when exact feature
+    # combinations are not available in the current catalogue.
     return reasons
 
 

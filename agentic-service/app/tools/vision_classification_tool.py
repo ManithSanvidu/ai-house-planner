@@ -8,7 +8,7 @@ System prompt enforces JSON-only output with controlled enum values.
 """
 import json
 
-from app.config import OPENAI_API_KEY
+from app.config import OPENAI_API_KEY, ENABLE_OPENAI
 from app.schemas.terrain_result import TerrainResult
 
 # The strict system prompt — forces JSON-only output with controlled values
@@ -49,13 +49,34 @@ RETRY_PROMPT = """Return ONLY a JSON object. No text before or after.
 
 
 
-def vision_classification_tool(photo_url: str) -> TerrainResult:
+def vision_classification_tool(photo_url: str, workflow_id: object | None = None) -> TerrainResult:
+    # Kill switch
+    if not ENABLE_OPENAI:
+        print("[Vision Tool] ENABLE_OPENAI=false -- returning fallback, no API call made.")
+        return _safe_fallback("openai_disabled")
+
     if not OPENAI_API_KEY:
         print("[Vision Tool] No OPENAI_API_KEY set. Returning manual terrain required.")
         return _safe_fallback("manual_terrain_required")
 
+    # Daily spend cap
     try:
-        result_text = _call_groq_vision(photo_url, LAND_ANALYSIS_SYSTEM_PROMPT)
+        from app.services.ai_guard_db import check_daily_limit, DailyLimitExceeded
+        check_daily_limit()
+    except Exception as exc:
+        if "DailyLimitExceeded" in type(exc).__name__ or "limit" in str(exc).lower():
+            print(f"[Vision Tool] Daily limit reached -- skipping vision call.")
+            return _safe_fallback("daily_limit_exceeded")
+
+    try:
+        if workflow_id is not None:
+            from app.services.ai_guard import execute_once
+            result_text, _ = execute_once(
+                workflow_id, "terrain_vision",
+                lambda: _call_openai_vision(photo_url, LAND_ANALYSIS_SYSTEM_PROMPT, workflow_id),
+            )
+        else:
+            result_text = _call_openai_vision(photo_url, LAND_ANALYSIS_SYSTEM_PROMPT, workflow_id)
         terrain = _parse_terrain_result(result_text)
         if terrain:
             return terrain
@@ -64,9 +85,14 @@ def vision_classification_tool(photo_url: str) -> TerrainResult:
         print(f"[Vision Tool] Vision API error: {e}")
         return _safe_fallback(f"api_error: {str(e)[:100]}")
 
-def _call_groq_vision(photo_url: str, prompt: str) -> str:
-    """Call OpenAI Vision API with an image URL and return the raw text."""
+def _call_openai_vision(photo_url: str, prompt: str, workflow_id: object | None = None) -> str:
+    """Call OpenAI Vision API with an image URL and return the raw text response."""
     import requests
+    characters = len(prompt) + len(photo_url)
+    print(
+        f"[AI Request] purpose=terrain_vision workflow={workflow_id or 'n/a'} "
+        f"characters={characters} estimated_tokens={characters // 4}"
+    )
     response = requests.post(
         "https://api.openai.com/v1/chat/completions",
         headers={
@@ -91,6 +117,23 @@ def _call_groq_vision(photo_url: str, prompt: str) -> str:
     )
     response.raise_for_status()
     data = response.json()
+    # Log cost
+    usage = data.get("usage", {})
+    try:
+        from app.services.ai_guard_db import log_ai_cost
+        log_ai_cost(
+            str(workflow_id) if workflow_id else None,
+            "terrain_vision", "gpt-4o",
+            usage.get("prompt_tokens", 0),
+            usage.get("completion_tokens", 0),
+        )
+    except Exception:
+        pass
+    print(
+        f"[Model Usage] provider=openai purpose=terrain_vision workflow={workflow_id or 'n/a'} "
+        f"input_tokens={usage.get('prompt_tokens', '?')} "
+        f"output_tokens={usage.get('completion_tokens', '?')}"
+    )
     if 'choices' in data and len(data['choices']) > 0:
         return data['choices'][0]['message']['content'].strip()
     return "{}"

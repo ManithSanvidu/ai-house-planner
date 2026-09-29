@@ -46,8 +46,8 @@ class WorkflowState(BaseModel):
     #Internal routing data
     input_data:CoordinatorInput | None=None
     current_agent:str="coordinator"
+    ai_design_generated:bool=False
+    design_version:int | None=None
 
     #To store user chat feedback for revisions
     user_revision_prompt:str | None=None
-
-

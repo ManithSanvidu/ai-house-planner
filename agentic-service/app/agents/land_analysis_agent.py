@@ -50,7 +50,7 @@ def land_analysis_node(state: WorkflowState) -> WorkflowState:
             success = False
             for attempt in range(2): # 1 retry
                 try:
-                    terrain_result = vision_classification_tool(photo_url)
+                    terrain_result = vision_classification_tool(photo_url, workflow_id=state.workflow_id)
                     state.terrain_result = terrain_result.model_dump()
                     action = f"Classified terrain as '{terrain_result.terrain_type}' (slope: {terrain_result.slope_estimate})"
                     tool = "vision_classification_tool"

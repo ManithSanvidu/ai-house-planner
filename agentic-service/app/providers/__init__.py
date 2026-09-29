@@ -11,7 +11,6 @@ from app.providers.base_provider import (
 )
 from app.providers.provider_factory import (
     get_available_design_provider,
-    get_next_design_provider,
     get_provider,
 )
 
@@ -26,6 +25,5 @@ __all__ = [
     "ProviderUnavailableError",
     "ProviderUnknownError",
     "get_available_design_provider",
-    "get_next_design_provider",
     "get_provider",
 ]

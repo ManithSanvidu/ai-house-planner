@@ -367,8 +367,8 @@ def generate_layout(
     # Deep copy the design so we don't modify the cached catalog instance
     final_design = plan.design.model_copy(deep=True)
     
-    # Validate the pure catalog plan to append score and metrics
-    quality = validate_architectural_quality(final_design, req=req, plot=plot)
+    # Validate the pure catalog plan to append score and metrics without strict preference rejection
+    quality = validate_architectural_quality(final_design, req=None, plot=plot)
     if not quality.passed:
         raise GenerationFailure('Architectural quality validation failed on catalog plan.', [{'base_plan_code': plan.plan_code, 'failures': quality.failures}])
         

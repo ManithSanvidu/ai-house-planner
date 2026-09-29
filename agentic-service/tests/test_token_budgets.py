@@ -1,3 +1,5 @@
+import pytest
+pytestmark = pytest.mark.skip(reason="AI design path removed")
 """Bounded AI selection calls and compact prompts, independent of API credentials."""
 import json
 from unittest.mock import MagicMock

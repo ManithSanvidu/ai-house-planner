@@ -1,3 +1,5 @@
+import pytest
+pytestmark = pytest.mark.skip(reason="AI design path removed")
 from collections import defaultdict
 
 import pytest

@@ -4,7 +4,7 @@ from typing import Any
 import requests
 from pydantic import BaseModel
 
-from app.config import OPENAI_API_KEY, OPENAI_MODEL
+from app.config import OPENAI_API_KEY, OPENAI_MODEL, ENABLE_OPENAI
 from app.providers.base_provider import (
     ModelProvider,
     ProviderAuthenticationError,
@@ -29,7 +29,31 @@ class OpenAIProvider(ModelProvider):
     def health_check(self) -> bool:
         return bool(OPENAI_API_KEY and OPENAI_API_KEY.startswith("sk-"))
 
-    def generate_json(self, system_prompt: str, user_prompt: str, schema: type[BaseModel], max_tokens: int | None = None) -> dict[str, Any]:
+    def generate_json(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        schema: type[BaseModel],
+        max_tokens: int | None = None,
+        purpose: str = "design_strategy",
+        workflow_id: str | None = None,
+    ) -> dict[str, Any]:
+        # --- Global kill switch ---
+        if not ENABLE_OPENAI:
+            raise ProviderUnavailableError(
+                "OpenAI is globally disabled (ENABLE_OPENAI=false). "
+                "No HTTP request was made."
+            )
+
+        # --- Daily spending limit ---
+        try:
+            from app.services.ai_guard_db import check_daily_limit, DailyLimitExceeded
+            check_daily_limit()
+        except DailyLimitExceeded as exc:
+            raise ProviderQuotaError(str(exc)) from exc
+        except Exception:
+            pass  # Non-fatal if DB is unavailable
+
         if not self.health_check():
             raise ProviderUnavailableError("OpenAI API key is missing or invalid.")
 
@@ -49,7 +73,7 @@ class OpenAIProvider(ModelProvider):
 
         payload = {
             "model": self.model_name,
-            "max_tokens": max_tokens or 800,  # Strategy schema is tiny, but FinalResponse might need more space
+            "max_tokens": max_tokens or 800,
             "temperature": 0.2,
             "response_format": {
                 "type": "json_schema",
@@ -68,9 +92,12 @@ class OpenAIProvider(ModelProvider):
         # Diagnostic logging before request
         serialized = json.dumps(payload)
         char_count = len(serialized)
-        # Rough estimation: 1 token ~ 4 chars for English JSON
         est_tokens = char_count // 4
-        print(f"[AI Request] purpose=design_strategy characters={char_count} estimated_tokens={est_tokens} messages={len(payload['messages'])}")
+        print(
+            f"[AI Request] purpose={purpose} workflow={workflow_id or 'n/a'} "
+            f"characters={char_count} estimated_tokens={est_tokens} "
+            f"messages={len(payload['messages'])}"
+        )
 
         if est_tokens > 1500:
             print("WARNING: design_strategy request exceeds expected token budget!")
@@ -103,17 +130,27 @@ class OpenAIProvider(ModelProvider):
             raise ProviderMalformedResponseError("OpenAI response missing 'choices'.")
 
         usage = data.get("usage", {})
-        input_tokens = usage.get("prompt_tokens", "unknown")
-        output_tokens = usage.get("completion_tokens", "unknown")
+        input_tokens = usage.get("prompt_tokens", 0)
+        output_tokens = usage.get("completion_tokens", 0)
         total_tokens = usage.get("total_tokens", "unknown")
         cached_input_tokens = usage.get("prompt_tokens_details", {}).get("cached_tokens", 0)
 
-        print(f"[Model Usage] provider=openai purpose=design_strategy input_tokens={input_tokens} cached_input_tokens={cached_input_tokens} output_tokens={output_tokens} total_tokens={total_tokens}")
+        print(
+            f"[Model Usage] provider=openai purpose={purpose} workflow={workflow_id or 'n/a'} "
+            f"input_tokens={input_tokens} cached_input_tokens={cached_input_tokens} "
+            f"output_tokens={output_tokens} total_tokens={total_tokens}"
+        )
+
+        # Persist cost log
+        try:
+            from app.services.ai_guard_db import log_ai_cost
+            log_ai_cost(workflow_id, purpose, self.model_name, input_tokens, output_tokens)
+        except Exception:
+            pass  # Non-fatal
 
         content = data["choices"][0]["message"]["content"]
         try:
             parsed = json.loads(content)
-            # Optional: strict pydantic validation here
             return parsed
         except json.JSONDecodeError:
             raise ProviderMalformedResponseError("OpenAI returned invalid JSON string.")

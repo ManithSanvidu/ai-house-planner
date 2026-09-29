@@ -234,4 +234,8 @@ export const workflowService = {
   const response = await apiClient.put(`/workflows/${workflowId}/construction-plan`, planData);
   return response.data;
  },
+ getDesignVisualization: async (designId: string) => {
+  const response = await apiClient.get(`/design/${designId}/visualization`);
+  return response.data;
+ },
 };

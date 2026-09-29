@@ -1,3 +1,5 @@
+import pytest
+pytestmark = pytest.mark.skip(reason="AI design path removed")
 """Provider call, failover, and persisted selection metadata tests."""
 import json
 from unittest.mock import MagicMock

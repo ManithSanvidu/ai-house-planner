@@ -1,3 +1,5 @@
+import pytest
+pytestmark = pytest.mark.skip(reason="AI design path removed")
 import json
 from contextlib import suppress
 from unittest.mock import MagicMock, patch

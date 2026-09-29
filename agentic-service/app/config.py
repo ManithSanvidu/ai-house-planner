@@ -3,6 +3,8 @@ from pathlib import Path
 
 OUTPUT_PLANS_DIR = Path(__file__).resolve().parents[1] / "output_plans"
 OUTPUT_PLANS_DIR.mkdir(parents=True, exist_ok=True)
+VISUALIZATIONS_DIR = Path(__file__).resolve().parents[1] / "storage" / "visualizations"
+VISUALIZATIONS_DIR.mkdir(parents=True, exist_ok=True)
 def load_dotenv():
     env_paths = [
         os.path.join(os.path.dirname(__file__), "..", ".env"),
@@ -61,6 +63,12 @@ DESIGN_PROVIDER_ORDER = [
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "dummy-key-for-tests")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o")
+ENABLE_AI_VISUALIZATION = os.getenv("ENABLE_AI_VISUALIZATION", "true").strip().lower() in {"1", "true", "yes", "on"}
+AGENTIC_PUBLIC_BASE_URL = os.getenv("AGENTIC_PUBLIC_BASE_URL", "http://localhost:8001").rstrip("/")
+
+# OpenAI cost protection
+ENABLE_OPENAI = os.getenv("ENABLE_OPENAI", "true").strip().lower() not in {"0", "false", "no", "off"}
+OPENAI_DAILY_LIMIT_USD = float(os.getenv("OPENAI_DAILY_LIMIT_USD", "1.00"))
 
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3:8b")

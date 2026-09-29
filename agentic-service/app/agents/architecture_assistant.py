@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import hashlib
+import json
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -86,10 +89,23 @@ Pay attention to the previous conversation history if provided, as the user migh
 
     history_context = ""
     if history:
-        history_context = "Chat History:\n" + "\n".join([f"{msg['role'].capitalize()}: {msg['content']}" for msg in history]) + "\n\n"
+        compact_history = history[-4:]
+        history_context = "Recent context:\n" + "\n".join(
+            f"{msg['role']}: {str(msg['content'])[:500]}" for msg in compact_history
+        ) + "\n"
+
+    request_key = hashlib.sha256(
+        json.dumps({"message": message, "history": history[-4:] if history else []}, sort_keys=True).encode()
+    ).hexdigest()
+    from app.services.ai_guard import execute_once
 
     try:
-        res = provider.generate_json(system_prompt, f'{history_context}User message: "{message}"', AssistantInterpretation)
+        res, _ = execute_once(
+            request_key, "assistant_interpretation",
+            lambda: provider.generate_json(
+                system_prompt, f'{history_context}User message: "{message[:1000]}"',
+                AssistantInterpretation, purpose="assistant_interpretation"),
+        )
         intent = res.get('intent', 'UNKNOWN')
         reqs_obj = res.get('requirements')
         reqs = reqs_obj if isinstance(reqs_obj, dict) else (reqs_obj.dict() if reqs_obj else None)
@@ -176,7 +192,12 @@ RULES:
 3. Do NOT claim structural or code approval. Include a brief disclaimer."""
 
         try:
-            final_res = provider.generate_json(final_system_prompt, context_str, FinalResponse)
+            final_res, _ = execute_once(
+                request_key, "assistant_response",
+                lambda: provider.generate_json(
+                    final_system_prompt, context_str[:4000], FinalResponse,
+                    purpose="assistant_response"),
+            )
             reply = final_res.get('reply', 'No reply generated.')
         except Exception as e:
             reply = res.get('message', str(e))

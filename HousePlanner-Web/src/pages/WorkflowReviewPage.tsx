@@ -29,6 +29,31 @@ export const WorkflowReviewPage: React.FC = () => {
  const [activeTab, setActiveTab] = useState<'floorplan' | 'construction'>('floorplan');
  const [pollCycle, setPollCycle] = useState(0);
  const [actionLoading, setActionLoading] = useState(false);
+ const [visualizationData, setVisualizationData] = useState<any>(null);
+
+ useEffect(() => {
+  const designId = workflow?.design?.designId;
+  if (!designId) return;
+
+  let cancelled = false;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const loadVisualization = async () => {
+   try {
+    const result = await workflowService.getDesignVisualization(designId);
+    if (cancelled) return;
+    setVisualizationData(result);
+    if (result.status === 'generating') timer = setTimeout(loadVisualization, 3000);
+   } catch {
+    if (!cancelled) setVisualizationData({ status: 'failed', imageUrl: null });
+   }
+  };
+  setVisualizationData(null);
+  loadVisualization();
+  return () => {
+   cancelled = true;
+   if (timer) clearTimeout(timer);
+  };
+ }, [workflow?.design?.designId]);
 
  const { user } = useAuth();
  const isAdmin = user?.role === 'Admin' || user?.role === 'Constructor';
@@ -418,15 +443,47 @@ export const WorkflowReviewPage: React.FC = () => {
     {/* Content Area */}
     <div className="flex-1 overflow-auto relative min-h-[480px]">
      {activeTab === 'floorplan' ? (
-      <>
+      <div className="flex flex-col h-full overflow-y-auto bg-slate-50">
        {workflow.design.plotConstraints?.dimensions_estimated &&
-        <p className="px-4 py-2 text-sm text-text-muted bg-amber-50 border-b border-amber-100">Plot dimensions are estimated. Supply measured width and length to refine the plan.</p>}
-       <FloorPlanViewer
-        data={floorPlanData}
-        pixelsPerFoot={22}
-        floorFilter={selectedFloor}
-       />
-      </>
+        <p className="px-4 py-2 text-sm text-text-muted bg-amber-50 border-b border-amber-100 flex-shrink-0">Plot dimensions are estimated. Supply measured width and length to refine the plan.</p>}
+       
+       <div className="grid lg:grid-cols-2 flex-1 min-h-[600px]">
+        {/* Section 1: Technical Plan */}
+        <div className="border-r border-slate-200 flex flex-col relative h-full">
+         <div className="absolute top-4 left-4 z-10 bg-surface/90 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-slate-200 text-sm font-semibold shadow-sm text-slate-800">
+           Technical Floor Plan
+         </div>
+         <div className="flex-1 min-h-0">
+          <FloorPlanViewer
+           data={floorPlanData}
+           pixelsPerFoot={22}
+           floorFilter={selectedFloor}
+          />
+         </div>
+        </div>
+
+        {/* Section 2: AI Visualization */}
+        <div className="flex flex-col relative h-full bg-zinc-950">
+         <div className="absolute top-4 left-4 z-10 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-lg border border-zinc-700 text-sm font-semibold shadow-sm text-zinc-200">
+           AI Architectural Visualization
+         </div>
+         <div className="flex-1 flex items-center justify-center p-8 min-h-0">
+          {visualizationData?.status === 'completed' && visualizationData?.imageUrl ? (
+           <img src={visualizationData.imageUrl} alt="AI Architectural Visualization" className="w-full h-full object-contain rounded-xl shadow-2xl" />
+          ) : visualizationData?.status === 'failed' ? (
+           <div className="text-zinc-500 flex flex-col items-center gap-3">
+             <span className="text-sm">AI visualization generation failed. Technical plan available.</span>
+           </div>
+          ) : visualizationData?.status === 'generating' || visualizationData === null ? (
+           <div className="text-zinc-500 flex flex-col items-center gap-3">
+             <div className="w-8 h-8 border-4 border-zinc-700 border-t-indigo-500 rounded-full animate-spin"></div>
+             <span className="text-sm">Generating AI architectural visualization...</span>
+           </div>
+          ) : null}
+         </div>
+        </div>
+       </div>
+      </div>
      ) : (
       // Construction Plan View
       <div className="p-8 max-w-4xl mx-auto">

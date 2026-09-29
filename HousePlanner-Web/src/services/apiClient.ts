@@ -6,7 +6,7 @@ localStorage.removeItem('mockToken');
 localStorage.removeItem('mockUser');
 
 const apiClient = axios.create({
- baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api/v1',
+ baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5265/api/v1',
  headers: {
   'Content-Type': 'application/json',
  },
@@ -15,7 +15,12 @@ const apiClient = axios.create({
 // Axios request interceptor to inject the Bearer token dynamically
 apiClient.interceptors.request.use(
  async (config) => {
-  const { data: { session } } = await supabase.auth.getSession();
+  let { data: { session } } = await supabase.auth.getSession();
+  const expiresSoon = session?.expires_at && session.expires_at * 1000 <= Date.now() + 60_000;
+  if (expiresSoon) {
+   const { data } = await supabase.auth.refreshSession();
+   session = data.session;
+  }
   if (session?.access_token && config.headers) {
    config.headers.Authorization = `Bearer ${session.access_token}`;
   }
@@ -24,6 +29,19 @@ apiClient.interceptors.request.use(
  (error) => {
   return Promise.reject(error);
  }
+);
+
+// Axios errors are frequently logged by page-level handlers. Remove the bearer
+// credential from the rejected config so developer tools cannot expose it.
+apiClient.interceptors.response.use(
+ response => response,
+ (error) => {
+  if (error?.config?.headers) {
+   delete error.config.headers.Authorization;
+   delete error.config.headers.authorization;
+  }
+  return Promise.reject(error);
+ },
 );
 
 export default apiClient;

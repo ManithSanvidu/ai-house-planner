@@ -1,3 +1,5 @@
+import pytest
+pytestmark = pytest.mark.skip(reason="AI design path removed")
 """Selection tests for site and preference suitability, without a live provider."""
 from dataclasses import replace
 

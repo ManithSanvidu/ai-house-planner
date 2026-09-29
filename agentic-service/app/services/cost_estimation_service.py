@@ -59,6 +59,11 @@ def cost_estimation_node(state: WorkflowState) -> WorkflowState:
     On failure  → sets state.status = 'failed', state.current_agent = 'failed',
                   appends an ExecutionLogEntry, and returns without crashing.
     """
+    if state.cost_result:
+        print("[Cost Estimation Service] Existing estimate reused")
+        state.current_agent = "validation"
+        return state
+
     print(f"[Cost Estimation Service] Starting for workflow {state.workflow_id} …")
 
     started_at = datetime.now(timezone.utc)

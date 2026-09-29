@@ -86,85 +86,130 @@ const IntakeForm: React.FC = () => {
   { id: 5, title: 'Review' }
  ];
 
- // Dynamic Compatibility Effect
- useEffect(() => {
-  const fetchCompatibility = async () => {
-   if (!formData.landSize || Number(formData.landSize) <= 0) return;
-   try {
-    const payload = {
-     landSize: parseFloat(formData.landSize),
-     landUnit: formData.landUnit,
-     plotWidthFt: formData.plotWidth ? parseFloat(formData.plotWidth) : null,
-     plotLengthFt: formData.plotLength ? parseFloat(formData.plotLength) : null,
-     terrainType: formData.terrainType,
-     bedrooms: formData.bedrooms ? parseInt(formData.bedrooms) : null,
-     bathrooms: formData.bathrooms ? parseInt(formData.bathrooms) : null,
-     floors: formData.floors ? parseInt(formData.floors) : null,
-     style: formData.architecturalStyle,
-     features: {
-      openPlan: formData.openPlan,
-      masterEnsuite: formData.masterEnsuite,
-      separateDining: formData.separateDining,
-      homeOffice: formData.homeOffice,
-      balcony: formData.balcony,
-      veranda: formData.veranda,
-      utilityRoom: formData.utilityRoom,
-      parkingRequired: formData.parkingRequired,
-      accessibility: formData.accessibility,
-     }
-    };
-    const res = await workflowService.checkCompatibility(payload);
-    setCompatibility(res);
-
-    // Cascading Re-evaluation
-    let clearedOptions = [];
-    const newFormData = { ...formData };
-
-    if (res.supported) {
-     if (formData.bedrooms && !res.supported.bedrooms.includes(parseInt(formData.bedrooms))) {
-      newFormData.bedrooms = res.supported.bedrooms[0]?.toString() || '';
-      clearedOptions.push('Bedrooms');
-     }
-     if (formData.bathrooms && !res.supported.bathrooms.includes(parseInt(formData.bathrooms))) {
-      newFormData.bathrooms = res.supported.bathrooms[0]?.toString() || '';
-      clearedOptions.push('Bathrooms');
-     }
-     if (formData.floors && !res.supported.floors.includes(parseInt(formData.floors))) {
-      newFormData.floors = res.supported.floors[0]?.toString() || '';
-      clearedOptions.push('Floors');
-     }
-     if (formData.architecturalStyle && !res.supported.styles.includes(formData.architecturalStyle)) {
-      newFormData.architecturalStyle = res.supported.styles[0] || 'Modern Minimalist';
-      clearedOptions.push('Style');
-     }
-     
-     Object.keys(res.supported.features).forEach(feat => {
-      if (newFormData[feat as keyof IntakeFormData] === true && !res.supported.features[feat]) {
-       (newFormData as any)[feat] = false;
-       clearedOptions.push(feat.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()));
-      }
-     });
+  // Dynamic Land Size Constraints
+  const getCategoryConstraints = (size: number, unit: string) => {
+    const perches = unit === 'sqft' ? size / 272.25 : size;
+    if (!perches || perches <= 20) {
+      return { category: 'Small Plot (10-20 Perches)', maxBeds: 2, maxBaths: 2, maxOffice: false, extraRooms: false };
+    } else if (perches <= 35) {
+      return { category: 'Medium Plot (21-35 Perches)', maxBeds: 4, maxBaths: 3, maxOffice: true, extraRooms: true };
+    } else {
+      return { category: 'Large Plot (36+ Perches)', maxBeds: 6, maxBaths: 6, maxOffice: true, extraRooms: true };
     }
-
-    if (clearedOptions.length > 0) {
-     setFormData(newFormData);
-     setCompatibilityMessage(`Your previous selection for ${clearedOptions.join(', ')} is no longer compatible and has been cleared.`);
-     setTimeout(() => setCompatibilityMessage(''), 8000);
-    }
-   } catch (err) {
-    // Silently fail compatibility check if server error, rely on final generation validation
-   }
   };
-  
-  // Simple debounce to avoid spamming the endpoint
-  const timer = setTimeout(fetchCompatibility, 400);
-  return () => clearTimeout(timer);
- }, [
-  formData.landSize, formData.landUnit, formData.plotWidth, formData.plotLength, formData.terrainType,
-  formData.bedrooms, formData.bathrooms, formData.floors, formData.architecturalStyle,
-  formData.openPlan, formData.masterEnsuite, formData.separateDining, formData.homeOffice,
-  formData.balcony, formData.veranda, formData.utilityRoom, formData.parkingRequired, formData.accessibility
- ]);
+
+  const constraints = getCategoryConstraints(Number(formData.landSize), formData.landUnit);
+
+  useEffect(() => {
+    if (!formData.landSize) return;
+    
+    let updated = false;
+    const newFormData = { ...formData };
+    
+    if (parseInt(newFormData.bedrooms) > constraints.maxBeds) {
+      newFormData.bedrooms = constraints.maxBeds.toString();
+      updated = true;
+    }
+    if (parseInt(newFormData.bathrooms) > constraints.maxBaths) {
+      newFormData.bathrooms = constraints.maxBaths.toString();
+      updated = true;
+    }
+    if (newFormData.homeOffice && !constraints.maxOffice) {
+      newFormData.homeOffice = false;
+      updated = true;
+    }
+    if (!constraints.extraRooms && (newFormData.separateDining || newFormData.utilityRoom || newFormData.veranda)) {
+      newFormData.separateDining = false;
+      newFormData.utilityRoom = false;
+      newFormData.veranda = false;
+      updated = true;
+    }
+    
+    if (updated) {
+      setFormData(newFormData);
+      setCompatibilityMessage(`Options restricted to match your ${constraints.category} limits.`);
+      setTimeout(() => setCompatibilityMessage(''), 8000);
+    }
+  }, [formData.landSize, formData.landUnit]);
+
+  useEffect(() => {
+   const fetchCompatibility = async () => {
+    if (!formData.landSize || Number(formData.landSize) <= 0) return;
+    try {
+     const payload = {
+      landSize: parseFloat(formData.landSize),
+      landUnit: formData.landUnit,
+      plotWidthFt: formData.plotWidth ? parseFloat(formData.plotWidth) : null,
+      plotLengthFt: formData.plotLength ? parseFloat(formData.plotLength) : null,
+      terrainType: formData.terrainType,
+      bedrooms: formData.bedrooms ? parseInt(formData.bedrooms) : null,
+      bathrooms: formData.bathrooms ? parseInt(formData.bathrooms) : null,
+      floors: formData.floors ? parseInt(formData.floors) : null,
+      style: formData.architecturalStyle,
+      features: {
+       openPlan: formData.openPlan,
+       masterEnsuite: formData.masterEnsuite,
+       separateDining: formData.separateDining,
+       homeOffice: formData.homeOffice,
+       balcony: formData.balcony,
+       veranda: formData.veranda,
+       utilityRoom: formData.utilityRoom,
+       parkingRequired: formData.parkingRequired,
+       accessibility: formData.accessibility,
+      }
+     };
+     const res = await workflowService.checkCompatibility(payload);
+     setCompatibility(res);
+
+     // Cascading Re-evaluation
+     let clearedOptions = [];
+     const newFormData = { ...formData };
+
+     if (res.supported) {
+      if (formData.bedrooms && !res.supported.bedrooms.includes(parseInt(formData.bedrooms))) {
+       newFormData.bedrooms = res.supported.bedrooms.find((b: number) => b <= constraints.maxBeds)?.toString() || res.supported.bedrooms[0]?.toString() || '';
+       clearedOptions.push('Bedrooms');
+      }
+      if (formData.bathrooms && !res.supported.bathrooms.includes(parseInt(formData.bathrooms))) {
+       newFormData.bathrooms = res.supported.bathrooms.find((b: number) => b <= constraints.maxBaths)?.toString() || res.supported.bathrooms[0]?.toString() || '';
+       clearedOptions.push('Bathrooms');
+      }
+      if (formData.floors && !res.supported.floors.includes(parseInt(formData.floors))) {
+       newFormData.floors = res.supported.floors[0]?.toString() || '';
+       clearedOptions.push('Floors');
+      }
+      if (formData.architecturalStyle && !res.supported.styles.includes(formData.architecturalStyle)) {
+       newFormData.architecturalStyle = res.supported.styles[0] || 'Modern Minimalist';
+       clearedOptions.push('Style');
+      }
+      
+      Object.keys(res.supported.features).forEach(feat => {
+       if (newFormData[feat as keyof IntakeFormData] === true && !res.supported.features[feat]) {
+        (newFormData as any)[feat] = false;
+        clearedOptions.push(feat.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()));
+       }
+      });
+     }
+
+     if (clearedOptions.length > 0) {
+      setFormData(newFormData);
+      setCompatibilityMessage(`Your previous selection for ${clearedOptions.join(', ')} is no longer compatible and has been cleared.`);
+      setTimeout(() => setCompatibilityMessage(''), 8000);
+     }
+    } catch (err) {
+     // Silently fail compatibility check if server error, rely on final generation validation
+    }
+   };
+   
+   // Simple debounce to avoid spamming the endpoint
+   const timer = setTimeout(fetchCompatibility, 400);
+   return () => clearTimeout(timer);
+  }, [
+   formData.landSize, formData.landUnit, formData.plotWidth, formData.plotLength, formData.terrainType,
+   formData.bedrooms, formData.bathrooms, formData.floors, formData.architecturalStyle,
+   formData.openPlan, formData.masterEnsuite, formData.separateDining, formData.homeOffice,
+   formData.balcony, formData.veranda, formData.utilityRoom, formData.parkingRequired, formData.accessibility
+  ]);
 
  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
   let { name, value } = e.target;
@@ -183,25 +228,41 @@ const IntakeForm: React.FC = () => {
   setFormData((prev) => ({ ...prev, [name]: !prev[name] }));
  };
 
- const validateStep = (step: number) => {
-  const errors: { [key: string]: string } = {};
-  if (step === 1) {
-   if (!formData.landSize || Number(formData.landSize) <= 0) {
-    errors.landSize = 'Land size is required and must be greater than 0.';
+  const validateStep = (step: number) => {
+   const errors: { [key: string]: string } = {};
+   if (step === 1) {
+    if (!formData.landSize || Number(formData.landSize) <= 0) {
+     errors.landSize = 'Land size is required and must be greater than 0.';
+    }
    }
-  }
-  if (step === 3) {
-   if (!formData.bedrooms || Number(formData.bedrooms) < 1) errors.bedrooms = 'Bedrooms must be at least 1.';
-   if (!formData.bathrooms || Number(formData.bathrooms) < 1) errors.bathrooms = 'Bathrooms must be at least 1.';
-   if (!formData.floors || Number(formData.floors) < 1) errors.floors = 'Floors must be at least 1.';
-   if (compatibility?.compatiblePlanCount === 0) errors.compatibility = 'No compatible plans support this configuration.';
-  }
-  if (step === 4) {
-   if (compatibility?.compatiblePlanCount === 0) errors.compatibility = 'No compatible plans support these features.';
-  }
-  setFieldErrors(errors);
-  return Object.keys(errors).length === 0;
- };
+   if (step === 3) {
+    if (!formData.bedrooms || Number(formData.bedrooms) < 1) errors.bedrooms = 'Bedrooms must be at least 1.';
+    if (!formData.bathrooms || Number(formData.bathrooms) < 1) errors.bathrooms = 'Bathrooms must be at least 1.';
+    if (!formData.floors || Number(formData.floors) < 1) errors.floors = 'Floors must be at least 1.';
+    if (compatibility?.compatiblePlanCount === 0) errors.compatibility = 'No compatible plans support this configuration.';
+   }
+   if (step === 4) {
+    if (compatibility?.compatiblePlanCount === 0) errors.compatibility = 'No compatible plans support these features.';
+   }
+   if (step === 5) {
+    const estimatedFootprintSqft = (
+      parseInt(formData.bedrooms || '0') * 150 +
+      parseInt(formData.bathrooms || '0') * 60 +
+      (formData.homeOffice ? 120 : 0) +
+      (formData.separateDining ? 150 : 0) +
+      (formData.utilityRoom ? 80 : 0) +
+      (formData.veranda ? 100 : 0) +
+      600 // Base for living, kitchen, circulation
+    ) / Math.max(1, parseInt(formData.floors || '1'));
+    
+    const landAreaSqft = formData.landUnit === 'perches' ? Number(formData.landSize) * 272.25 : Number(formData.landSize);
+    if (landAreaSqft > 0 && estimatedFootprintSqft > landAreaSqft * 0.5) {
+      errors.footprint = 'Total estimated footprint exceeds ~50% of the entered plot area. Please increase floors or reduce rooms.';
+    }
+   }
+   setFieldErrors(errors);
+   return Object.keys(errors).length === 0;
+  };
 
  const handleNext = () => {
   if (validateStep(currentStep)) {
@@ -351,6 +412,11 @@ const IntakeForm: React.FC = () => {
              <option value="sqft">Sq Ft</option>
             </select>
            </div>
+           <div className="mt-3 flex gap-2 flex-wrap">
+             <button type="button" onClick={() => setFormData(p => ({...p, landSize: '15', landUnit: 'perches'}))} className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-blue-200 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100 transition-colors">Small (15 Perches)</button>
+             <button type="button" onClick={() => setFormData(p => ({...p, landSize: '25', landUnit: 'perches'}))} className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-indigo-200 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 transition-colors">Medium (25 Perches)</button>
+             <button type="button" onClick={() => setFormData(p => ({...p, landSize: '40', landUnit: 'perches'}))} className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-purple-200 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 hover:bg-purple-100 transition-colors">Large (40 Perches)</button>
+           </div>
            {fieldErrors.landSize && <p className="text-red-500 text-xs mt-2">{fieldErrors.landSize}</p>}
           </div>
           <div>
@@ -452,55 +518,57 @@ const IntakeForm: React.FC = () => {
         )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-         {/* Bedrooms */}
-         <div>
-          <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Bedrooms *</label>
-          <div className="flex gap-2 flex-wrap">
-           {[2, 3, 4, 5].map(num => {
-            const isSupported = compatibility?.supported ? compatibility.supported.bedrooms.includes(num) : true;
-            return (
-             <button
-              key={num} type="button" disabled={!isSupported}
-              onClick={() => { setFormData(p => ({...p, bedrooms: num.toString()})); if (fieldErrors.bedrooms) setFieldErrors(p => ({...p, bedrooms: ''})); }}
-              className={`w-12 h-12 rounded-xl border flex items-center justify-center font-bold text-sm transition-all
-               ${!isSupported ? 'opacity-40 border-border bg-gray-50 dark:bg-gray-800/50 cursor-not-allowed text-text-secondary' 
-                : formData.bedrooms === num.toString() ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 shadow-sm' 
-                : 'border-border hover:border-blue-300 dark:hover:border-blue-700 text-gray-700 dark:text-gray-300'}
-              `}
-              title={!isSupported ? `No validated plans support ${num} bedrooms with your current land and floor selection.` : ""}
-             >
-              {num}
-             </button>
-            );
-           })}
+          {/* Bedrooms */}
+          <div>
+           <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Bedrooms *</label>
+           <div className="flex gap-2 flex-wrap">
+            {[2, 3, 4, 5, 6].map(num => {
+             const withinLimit = num <= constraints.maxBeds;
+             const isSupported = withinLimit && (compatibility?.supported ? compatibility.supported.bedrooms.includes(num) : true);
+             return (
+              <button
+               key={num} type="button" disabled={!isSupported}
+               onClick={() => { setFormData(p => ({...p, bedrooms: num.toString()})); if (fieldErrors.bedrooms) setFieldErrors(p => ({...p, bedrooms: ''})); }}
+               className={`w-12 h-12 rounded-xl border flex items-center justify-center font-bold text-sm transition-all
+                ${!isSupported ? 'opacity-40 border-border bg-gray-50 dark:bg-gray-800/50 cursor-not-allowed text-text-secondary' 
+                 : formData.bedrooms === num.toString() ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 shadow-sm' 
+                 : 'border-border hover:border-blue-300 dark:hover:border-blue-700 text-gray-700 dark:text-gray-300'}
+               `}
+               title={!withinLimit ? `Max ${constraints.maxBeds} beds allowed for ${constraints.category}` : (!isSupported ? `No validated plans support ${num} bedrooms with your current selection.` : "")}
+              >
+               {num}
+              </button>
+             );
+            })}
+           </div>
+           {fieldErrors.bedrooms && <p className="text-red-500 text-xs mt-2">{fieldErrors.bedrooms}</p>}
           </div>
-          {fieldErrors.bedrooms && <p className="text-red-500 text-xs mt-2">{fieldErrors.bedrooms}</p>}
-         </div>
          
-         {/* Bathrooms */}
-         <div>
-          <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Bathrooms *</label>
-          <div className="flex gap-2 flex-wrap">
-           {[1, 2, 3].map(num => {
-            const isSupported = compatibility?.supported ? compatibility.supported.bathrooms.includes(num) : true;
-            return (
-             <button
-              key={num} type="button" disabled={!isSupported}
-              onClick={() => { setFormData(p => ({...p, bathrooms: num.toString()})); if (fieldErrors.bathrooms) setFieldErrors(p => ({...p, bathrooms: ''})); }}
-              className={`w-12 h-12 rounded-xl border flex items-center justify-center font-bold text-sm transition-all
-               ${!isSupported ? 'opacity-40 border-border bg-gray-50 dark:bg-gray-800/50 cursor-not-allowed text-text-secondary' 
-                : formData.bathrooms === num.toString() ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 shadow-sm' 
-                : 'border-border hover:border-blue-300 dark:hover:border-blue-700 text-gray-700 dark:text-gray-300'}
-              `}
-              title={!isSupported ? `Not available with your current land, floor, and bedroom selection.` : ""}
-             >
-              {num}
-             </button>
-            );
-           })}
+          {/* Bathrooms */}
+          <div>
+           <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Bathrooms *</label>
+           <div className="flex gap-2 flex-wrap">
+            {[1, 2, 3, 4, 5, 6].map(num => {
+             const withinLimit = num <= constraints.maxBaths;
+             const isSupported = withinLimit && (compatibility?.supported ? compatibility.supported.bathrooms.includes(num) : true);
+             return (
+              <button
+               key={num} type="button" disabled={!isSupported}
+               onClick={() => { setFormData(p => ({...p, bathrooms: num.toString()})); if (fieldErrors.bathrooms) setFieldErrors(p => ({...p, bathrooms: ''})); }}
+               className={`w-12 h-12 rounded-xl border flex items-center justify-center font-bold text-sm transition-all
+                ${!isSupported ? 'opacity-40 border-border bg-gray-50 dark:bg-gray-800/50 cursor-not-allowed text-text-secondary' 
+                 : formData.bathrooms === num.toString() ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 shadow-sm' 
+                 : 'border-border hover:border-blue-300 dark:hover:border-blue-700 text-gray-700 dark:text-gray-300'}
+               `}
+               title={!withinLimit ? `Max ${constraints.maxBaths} baths allowed for ${constraints.category}` : (!isSupported ? `Not available with your current land, floor, and bedroom selection.` : "")}
+              >
+               {num}
+              </button>
+             );
+            })}
+           </div>
+           {fieldErrors.bathrooms && <p className="text-red-500 text-xs mt-2">{fieldErrors.bathrooms}</p>}
           </div>
-          {fieldErrors.bathrooms && <p className="text-red-500 text-xs mt-2">{fieldErrors.bathrooms}</p>}
-         </div>
 
          {/* Floors */}
          <div>
@@ -553,38 +621,44 @@ const IntakeForm: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-         {[
-          { key: 'separateDining', label: 'Separate Dining Area', desc: 'Enclosed or distinct dining room.' },
-          { key: 'homeOffice', label: 'Home Office', desc: 'Dedicated workspace room.' },
-          { key: 'accessibility', label: 'Accessible Layout', desc: 'Reduced-step and wheelchair friendly.' },
-         ].map((feature) => {
-          const featKeyAPI = feature.key;
-          const isSupported = compatibility?.supported?.features ? compatibility.supported.features[featKeyAPI] !== false : true;
-          const reason = compatibility?.reasons ? compatibility.reasons[`feature.${featKeyAPI.replace(/([A-Z])/g, "_$1").toLowerCase()}`] : '';
+          {[
+           { key: 'separateDining', label: 'Separate Dining Area', desc: 'Enclosed or distinct dining room.' },
+           { key: 'homeOffice', label: 'Home Office', desc: 'Dedicated workspace room.' },
+           { key: 'accessibility', label: 'Accessible Layout', desc: 'Reduced-step and wheelchair friendly.' },
+           { key: 'utilityRoom', label: 'Utility Room', desc: 'Space for laundry, storage, and utilities.' },
+          ].map((feature) => {
+           const featKeyAPI = feature.key;
+           
+           let withinLimit = true;
+           if (feature.key === 'homeOffice' && !constraints.maxOffice) withinLimit = false;
+           if (['separateDining', 'utilityRoom'].includes(feature.key) && !constraints.extraRooms) withinLimit = false;
+           
+           const isSupported = withinLimit && (compatibility?.supported?.features ? compatibility.supported.features[featKeyAPI] !== false : true);
+           const reason = !withinLimit ? `Not available for ${constraints.category}` : (compatibility?.reasons ? compatibility.reasons[`feature.${featKeyAPI.replace(/([A-Z])/g, "_$1").toLowerCase()}`] : '');
 
-          return (
-           <div 
-            key={feature.key} 
-            onClick={() => toggleFeature(feature.key as keyof IntakeFormData)}
-            className={`cursor-pointer border rounded-xl p-4 flex gap-4 transition-all
-             ${!isSupported ? 'opacity-40 border-border bg-gray-50 dark:bg-gray-800/30 cursor-not-allowed' :
-              formData[feature.key as keyof IntakeFormData] ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-border bg-surface-elevated'}
-            `}
-            title={reason || (!isSupported ? 'Not available' : '')}
-           >
-            <div className={`mt-1 flex-shrink-0 ${formData[feature.key as keyof IntakeFormData] ? 'text-blue-600 dark:text-blue-400' : 'text-text-secondary'}`}>
-             {formData[feature.key as keyof IntakeFormData] ? <CheckSquare size={20} /> : <div className={`w-5 h-5 border-2 rounded ${!isSupported ? 'border-border' : 'border-border-strong dark:border-gray-600'}`} />}
+           return (
+            <div 
+             key={feature.key} 
+             onClick={() => { if (withinLimit) toggleFeature(feature.key as keyof IntakeFormData) }}
+             className={`cursor-pointer border rounded-xl p-4 flex gap-4 transition-all
+              ${!isSupported ? 'opacity-40 border-border bg-gray-50 dark:bg-gray-800/30 cursor-not-allowed' :
+               formData[feature.key as keyof IntakeFormData] ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-border bg-surface-elevated'}
+             `}
+             title={reason || (!isSupported ? 'Not available' : '')}
+            >
+             <div className={`mt-1 flex-shrink-0 ${formData[feature.key as keyof IntakeFormData] ? 'text-blue-600 dark:text-blue-400' : 'text-text-secondary'}`}>
+              {formData[feature.key as keyof IntakeFormData] ? <CheckSquare size={20} /> : <div className={`w-5 h-5 border-2 rounded ${!isSupported ? 'border-border' : 'border-border-strong dark:border-gray-600'}`} />}
+             </div>
+             <div>
+              <h4 className={`font-bold text-sm ${formData[feature.key as keyof IntakeFormData] ? 'text-blue-900 dark:text-blue-200' : 'text-gray-900 dark:text-text-primary'}`}>{feature.label}</h4>
+              <p className={`text-xs mt-1 ${formData[feature.key as keyof IntakeFormData] ? 'text-blue-700 dark:text-blue-300' : 'text-text-secondary'}`}>
+               {!isSupported && reason ? <span className="text-red-500 dark:text-red-400 block mb-1 font-medium">{reason}</span> : null}
+               {feature.desc}
+              </p>
+             </div>
             </div>
-            <div>
-             <h4 className={`font-bold text-sm ${formData[feature.key as keyof IntakeFormData] ? 'text-blue-900 dark:text-blue-200' : 'text-gray-900 dark:text-text-primary'}`}>{feature.label}</h4>
-             <p className={`text-xs mt-1 ${formData[feature.key as keyof IntakeFormData] ? 'text-blue-700 dark:text-blue-300' : 'text-text-secondary'}`}>
-              {!isSupported && reason ? <span className="text-red-500 dark:text-red-400 block mb-1 font-medium">{reason}</span> : null}
-              {feature.desc}
-             </p>
-            </div>
-           </div>
-          )
-         })}
+           )
+          })}
         </div>
        </motion.div>
       )}
@@ -607,6 +681,16 @@ const IntakeForm: React.FC = () => {
          </div>
         )}
 
+        {fieldErrors.footprint && (
+         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 rounded-xl flex items-start gap-3">
+          <Info className="text-red-500 shrink-0 mt-0.5" size={18} />
+          <div>
+           <p className="text-red-800 dark:text-red-300 font-semibold text-sm">Configuration Warning:</p>
+           <p className="text-red-600 dark:text-red-400 text-sm mt-1">{fieldErrors.footprint}</p>
+          </div>
+         </div>
+        )}
+
         <div className="space-y-6">
          <div className="bg-gray-50 dark:bg-gray-800/30 rounded-2xl p-6 border border-gray-100 dark:border-border-strong">
           <div className="flex justify-between items-center mb-4">
@@ -615,6 +699,7 @@ const IntakeForm: React.FC = () => {
           </div>
           <ul className="text-sm text-text-secondary dark:text-gray-300 space-y-2">
            <li>• {formData.landSize} {formData.landUnit}</li>
+           <li>• Category: <span className="font-semibold text-blue-600 dark:text-blue-400">{constraints.category}</span></li>
            <li>• {formData.terrainType}</li>
           </ul>
          </div>
@@ -686,8 +771,8 @@ const IntakeForm: React.FC = () => {
        <button 
         type="button" 
         onClick={handleSubmit}
-        disabled={isSubmitting}
-        className="flex items-center justify-center gap-3 px-8 py-4 bg-blue-600 hover:bg-blue-700 text-text-primary rounded-xl font-bold text-sm transition-colors shadow-sm disabled:opacity-70 min-w-[200px]"
+        disabled={isSubmitting || fieldErrors.footprint !== undefined}
+        className="flex items-center justify-center gap-3 px-8 py-4 bg-blue-600 hover:bg-blue-700 text-text-primary rounded-xl font-bold text-sm transition-colors shadow-sm disabled:opacity-70 disabled:cursor-not-allowed min-w-[200px]"
        >
         {isSubmitting ? (
          <>

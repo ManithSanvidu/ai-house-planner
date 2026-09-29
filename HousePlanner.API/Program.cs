@@ -89,12 +89,10 @@ builder.Services
             Environment.GetEnvironmentVariable("SUPABASE_URL")
             ?? "https://cqfelbazvvbeiwwydwmn.supabase.co";
 
-        var supabaseJwtSecret =
-            Environment.GetEnvironmentVariable("SUPABASE_JWT_SECRET");
-
         options.MapInboundClaims = false;
-
         options.Authority = $"{supabaseUrl}/auth/v1";
+        options.RequireHttpsMetadata = true;
+        options.RefreshOnIssuerKeyNotFound = true;
 
         options.TokenValidationParameters =
             new Microsoft.IdentityModel.Tokens.TokenValidationParameters
@@ -107,12 +105,6 @@ builder.Services
 
                 ValidateLifetime = true,
                 ValidateIssuerSigningKey = true,
-
-                IssuerSigningKey =
-                    new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
-                        System.Text.Encoding.UTF8.GetBytes(
-                            supabaseJwtSecret ?? string.Empty)),
-
                 RoleClaimType = ClaimTypes.Role,
                 NameClaimType = "sub"
             };
@@ -122,8 +114,6 @@ builder.Services
             {
                 OnTokenValidated = async context =>
                 {
-                    Console.WriteLine("========== TOKEN VALIDATED ==========");
-
                     var uid = context.Principal?
                         .FindFirst("sub")?.Value;
 
@@ -136,7 +126,7 @@ builder.Services
                         return;
                     }
 
-                    Console.WriteLine($"[Auth] Supabase UID: {uid}");
+                    Console.WriteLine($"[Auth] Authenticated Supabase UID: {uid}");
 
                     var db = context.HttpContext.RequestServices
                         .GetRequiredService<ApplicationDbContext>();
@@ -163,6 +153,20 @@ builder.Services
                         Console.WriteLine(
                             $"[Auth] Application user not found for UID: {uid}");
                     }
+                },
+                OnAuthenticationFailed = context =>
+                {
+                    Console.WriteLine(
+                        $"[Auth] JWT validation failed ({context.Exception.GetType().Name}). " +
+                        $"Authorization header present: {context.Request.Headers.ContainsKey("Authorization")}");
+                    return Task.CompletedTask;
+                },
+                OnChallenge = context =>
+                {
+                    Console.WriteLine(
+                        $"[Auth] Bearer challenge. Authorization header present: " +
+                        $"{context.Request.Headers.ContainsKey("Authorization")}");
+                    return Task.CompletedTask;
                 }
             };
     });

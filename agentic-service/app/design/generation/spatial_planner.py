@@ -8,73 +8,35 @@ from app.design.geometry.plot_constraints import PlotConstraints
 from app.design.program.spatial_program import SpatialProgram
 from app.design.exceptions import GenerationFailure
 from app.providers import get_available_design_provider
+from app.cache import AIResponseCache, spatial_program_cache_key
 
 logger = logging.getLogger(__name__)
 
-SYSTEM_PROMPT = """You are the HousePlanner Spatial Planning Agent.
-ROLE:
-Generate a semantic architectural spatial program based on the provided requirements and site constraints.
-Do NOT generate room coordinates (x, y, width, length).
-Reason about room types, zones, adjacencies, multi-floor allocation, privacy, and circulation.
-
-CONSTRAINTS:
-1. You MUST include exactly the requested number of bedrooms and bathrooms.
-2. Ensure the total programmed area fits within the area_budget_sqft.
-3. Use semantic positions (e.g., FRONT, REAR, CENTER) for room placement.
-4. Rooms must be assigned to valid floors (1 to floor_count).
-5. Output ONLY raw JSON matching the required schema.
-
-ARCHITECTURAL PRIORITIES:
-- Respect the requested space priority (e.g., compact, spacious living).
-- Place public zones near the entrance.
-- Ensure private zones have high privacy and are away from the road if possible.
-- Group service zones (kitchen, utility) and wet zones (bathrooms) for plumbing efficiency.
-"""
+SYSTEM_PROMPT = """Create a semantic house SpatialProgram matching the supplied counts and requirements.
+Do not create coordinates. Keep rooms within a reasonable area for the land size. Put public rooms
+near the entrance, private rooms away from it, and group service/wet rooms. Use valid floors and
+semantic positions. Return only JSON matching the schema."""
 
 def _build_prompt(req: Requirements, plot: PlotConstraints, area_budget_sqft: float) -> str:
-    # Build a compact structured input payload
-    site = {
-        "buildable_width": round(plot.buildable_width, 1),
-        "buildable_depth": round(plot.buildable_length, 1),
-        "road_side": plot.road_side.upper(),
-        "north_direction": plot.north_direction.upper() if plot.north_direction else "UNKNOWN",
-        "plot_class": plot.plot_class.upper(),
-        "terrain": plot.terrain_type.upper(),
-        "entrance_preference": plot.effective_entrance_side.upper()
-    }
-    
-    house = {
-        "floors": req.floors,
+    requirements = {
         "bedrooms": req.bedrooms,
         "bathrooms": req.bathrooms,
-        "style": req.style,
-        "open_plan": req.open_plan
-    }
-    
-    features = {
+        "open_plan": req.open_plan,
         "separate_dining": req.dining_required,
         "master_bedroom": req.master_bedroom,
         "home_office": req.home_office,
         "parking": req.parking,
         "accessibility": req.accessibility,
-        "utility_room": req.utility_room
+        "utility_room": req.utility_room,
+        "space_priority": req.space_priority,
     }
-    
-    priority = {
-        "space": req.space_priority,
-        "circulation": req.circulation_preference,
-        "compact": req.compact_priority,
-        "privacy": req.privacy_priority
-    }
-
     payload = {
-        "SITE": site,
-        "HOUSE": house,
-        "FEATURES": features,
-        "PRIORITY": priority,
-        "CONSTRAINTS": {
-            "area_budget_sqft": round(area_budget_sqft, 1)
-        }
+        "bedrooms": req.bedrooms,
+        "bathrooms": req.bathrooms,
+        "floors": req.floors,
+        "style": req.style,
+        "land_size": plot.land_size_perches,
+        "requirements": requirements,
     }
     return json.dumps(payload, separators=(',', ':'))
 
@@ -124,7 +86,7 @@ def _validate_spatial_program(program: SpatialProgram, req: Requirements, area_b
         raise ValueError("Programmed area must be positive.")
 
 
-def plan_spatial_program(req: Requirements, plot: PlotConstraints) -> tuple[SpatialProgram, dict[str, Any]]:
+def plan_spatial_program(req: Requirements, plot: PlotConstraints, workflow_id: object | None = None) -> tuple[SpatialProgram, dict[str, Any]]:
     # 1. Area budget calculation
     # Using 65% coverage limit (max_buildable_area from land_math)
     # Total available area depends on floors
@@ -143,9 +105,24 @@ def plan_spatial_program(req: Requirements, plot: PlotConstraints) -> tuple[Spat
         raise GenerationFailure("No LLM provider available for spatial planning.")
 
     start_time = time.time()
+    cache = AIResponseCache()
+    cache_key = spatial_program_cache_key(req, plot.land_size_perches)
+    raw_json = cache.get(cache_key) if provider.provider_name == "openai" else None
+    cache_hit = raw_json is not None
     try:
-        # Ask for up to 1500 tokens. A spatial program might take ~800 tokens depending on room count.
-        raw_json = provider.generate_json(SYSTEM_PROMPT, user_prompt, SpatialProgram, max_tokens=1500)
+        if raw_json is not None:
+            print("[AI CACHE] HIT")
+        else:
+            print("[AI CACHE] MISS")
+            if provider.provider_name == "openai" and workflow_id is not None:
+                from app.services.ai_guard import execute_once
+                raw_json, _ = execute_once(
+                    workflow_id,
+                    "design_strategy",
+                    lambda: provider.generate_json(SYSTEM_PROMPT, user_prompt, SpatialProgram, max_tokens=1500),
+                )
+            else:
+                raw_json = provider.generate_json(SYSTEM_PROMPT, user_prompt, SpatialProgram, max_tokens=1500)
     except Exception as exc:
         raise GenerationFailure(f"Spatial planning failed: {exc}") from exc
         
@@ -154,6 +131,8 @@ def plan_spatial_program(req: Requirements, plot: PlotConstraints) -> tuple[Spat
     try:
         program = SpatialProgram.model_validate(raw_json)
         _validate_spatial_program(program, req, area_budget_sqft)
+        if provider.provider_name == "openai" and not cache_hit:
+            cache.set(cache_key, raw_json)
     except ValueError as exc:
         raise GenerationFailure(f"Validation failed on generated spatial program: {exc}") from exc
 
@@ -163,7 +142,8 @@ def plan_spatial_program(req: Requirements, plot: PlotConstraints) -> tuple[Spat
         "latency_ms": latency_ms,
         "prompt_chars": prompt_chars,
         "area_budget_sqft": round(area_budget_sqft, 1),
-        "total_target_area": sum(r.target_area_sqft for r in program.rooms)
+        "total_target_area": sum(r.target_area_sqft for r in program.rooms),
+        "cache_hit": cache_hit,
     }
     
     return program, metadata

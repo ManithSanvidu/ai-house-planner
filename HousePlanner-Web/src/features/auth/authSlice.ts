@@ -58,7 +58,6 @@ export const loginAsync = createAsyncThunk(
   try {
    return await authService.login(email, password);
   } catch (error: any) {
-   console.log('DEBUG [Login Error Details]:', error);
    let message = 'An error occurred during authentication.';
    if (error.code) {
     switch (error.code) {

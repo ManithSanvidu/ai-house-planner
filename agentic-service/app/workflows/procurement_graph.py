@@ -4,7 +4,9 @@ from typing import Any, Dict, List, TypedDict
 from langgraph.graph import StateGraph, END
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
-from app.config import OPENAI_API_KEY
+from app.config import OPENAI_API_KEY, ENABLE_OPENAI
+from app.services.ai_guard import execute_once
+from app.providers.base_provider import ProviderUnavailableError, ProviderQuotaError
 
 class ProcurementState(TypedDict):
     project_id: str
@@ -26,6 +28,53 @@ class ProcurementState(TypedDict):
     final_recommendation: dict
 
 llm = ChatOpenAI(model="gpt-4o", api_key=OPENAI_API_KEY, temperature=0.2)
+
+
+def _invoke_once(state: ProcurementState, purpose: str, prompt, values: dict):
+    # --- Kill switch ---
+    if not ENABLE_OPENAI:
+        raise ProviderUnavailableError(
+            f"OpenAI is globally disabled (ENABLE_OPENAI=false). purpose={purpose} blocked."
+        )
+    # --- Daily spend cap ---
+    try:
+        from app.services.ai_guard_db import check_daily_limit, DailyLimitExceeded
+        check_daily_limit()
+    except Exception as exc:
+        if "DailyLimitExceeded" in type(exc).__name__ or "limit" in str(exc).lower():
+            raise ProviderQuotaError(str(exc)) from exc
+
+    project_id = state.get("project_id", "unknown")
+    rendered = "\n".join(str(message.content) for message in prompt.format_messages(**values))
+    print(
+        f"[AI Request] purpose={purpose} workflow={project_id} "
+        f"characters={len(rendered)} estimated_tokens={len(rendered) // 4}"
+    )
+    chain = prompt | llm
+    result, _ = execute_once(project_id, purpose, lambda: chain.invoke(values))
+
+    # --- Cost logging (langchain response object has .response_metadata) ---
+    try:
+        from app.services.ai_guard_db import log_ai_cost
+        meta = getattr(result, "response_metadata", {}) or {}
+        usage = meta.get("token_usage", {})
+        log_ai_cost(
+            project_id, purpose, "gpt-4o",
+            usage.get("prompt_tokens", 0),
+            usage.get("completion_tokens", 0),
+        )
+    except Exception:
+        pass
+
+    return result
+
+
+def _compact(items: list, fields: tuple[str, ...], limit: int = 20) -> str:
+    """Keep prompts bounded and exclude ORM/API fields irrelevant to the decision."""
+    return json.dumps([
+        {field: item.get(field) for field in fields if field in item}
+        for item in items[:limit]
+    ], separators=(",", ":"))
 
 def extract_json(content: str) -> dict | list:
     content = content.strip()
@@ -54,10 +103,9 @@ def material_requirement_node(state: ProcurementState) -> ProcurementState:
     required_materials = []
     
     try:
-        chain = prompt | llm
-        response = chain.invoke({
-            "phases": json.dumps(state.get("upcoming_phases", [])),
-            "inventory": json.dumps(inventory)
+        response = _invoke_once(state, "procurement_materials", prompt, {
+            "phases": _compact(state.get("upcoming_phases", []), ("name", "status", "start_date")),
+            "inventory": _compact(inventory, ("name", "required", "available", "ordered", "unit"))
         })
         llm_materials = extract_json(response.content)
         if isinstance(llm_materials, list):
@@ -116,10 +164,9 @@ def procurement_node(state: ProcurementState) -> ProcurementState:
     )
     
     try:
-        chain = prompt | llm
-        response = chain.invoke({
-            "phases": json.dumps(state.get("upcoming_phases", [])),
-            "inventory": json.dumps(state.get("inventory", []))
+        response = _invoke_once(state, "procurement_plan", prompt, {
+            "phases": _compact(state.get("upcoming_phases", []), ("name", "status", "start_date")),
+            "inventory": _compact(state.get("inventory", []), ("name", "required", "available", "ordered", "unit"))
         })
         result = extract_json(response.content)
         plan = result.get("procurement_plan", [])
@@ -165,10 +212,9 @@ def risk_node(state: ProcurementState) -> ProcurementState:
     )
     
     try:
-        chain = prompt | llm
-        response = chain.invoke({
-            "phases": json.dumps(state.get("upcoming_phases", [])),
-            "shortages": json.dumps(state.get("shortages", []))
+        response = _invoke_once(state, "procurement_risk", prompt, {
+            "phases": _compact(state.get("upcoming_phases", []), ("name", "status", "start_date")),
+            "shortages": _compact(state.get("shortages", []), ("material_name", "shortage", "unit"))
         })
         risks = extract_json(response.content)
     except Exception as e:
@@ -190,10 +236,9 @@ def acceleration_node(state: ProcurementState) -> ProcurementState:
         Output ONLY valid JSON object."""
     )
     try:
-        chain = prompt | llm
-        response = chain.invoke({
-            "phases": json.dumps(state.get("upcoming_phases", [])),
-            "shortages": json.dumps(state.get("shortages", []))
+        response = _invoke_once(state, "procurement_acceleration", prompt, {
+            "phases": _compact(state.get("upcoming_phases", []), ("name", "status", "start_date")),
+            "shortages": _compact(state.get("shortages", []), ("material_name", "shortage", "unit"))
         })
         accel = extract_json(response.content)
     except:

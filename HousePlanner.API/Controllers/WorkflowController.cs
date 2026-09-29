@@ -791,5 +791,48 @@ public class WorkflowController : ControllerBase
 
         return Ok(new { message = "Workflow deleted successfully." });
     }
-}
 
+    [HttpGet("/api/v1/design/{id:guid}/visualization")]
+    [Authorize]
+    public async Task<IActionResult> GetDesignVisualization(Guid id)
+    {
+        var user = await _currentUserService.GetAsync(HttpContext);
+        if (user?.Id == null) return Unauthorized();
+
+        var design = await _context.HouseDesigns.AsNoTracking()
+            .FirstOrDefaultAsync(d => d.Id == id);
+
+        if (design == null) return NotFound();
+
+        // Check if user has access
+        var workflow = await _context.WorkflowStates.AsNoTracking()
+            .Include(w => w.LandSubmission)
+            .FirstOrDefaultAsync(w => w.Id == design.WorkflowStateId);
+            
+        if (workflow == null) return NotFound();
+        
+        bool isCustomer = string.Equals(user.Role, "Customer", StringComparison.OrdinalIgnoreCase);
+        if (isCustomer && workflow.LandSubmission.ClientId != user.Id.Value)
+        {
+            return Forbid();
+        }
+
+        JsonElement? layoutRoot = null;
+        if (!string.IsNullOrWhiteSpace(design.LayoutJson) && design.LayoutJson != "{}")
+        {
+            try {
+                using var document = JsonDocument.Parse(design.LayoutJson);
+                layoutRoot = document.RootElement.Clone();
+            } catch { }
+        }
+        
+        return Ok(new
+        {
+            designId = design.Id.ToString(),
+            layout = layoutRoot,
+            technicalImage = design.TechnicalPlanImage,
+            imageUrl = design.AIVisualizationImage,
+            status = design.AIVisualizationStatus
+        });
+    }
+}

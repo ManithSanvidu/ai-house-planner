@@ -11,6 +11,7 @@ namespace HousePlanner.API.Controllers;
 [Route("api/v1/internal/workflows")]
 public class InternalWorkflowController : ControllerBase
 {
+    public sealed record VisualizationUpdateRequest(string? ImageUrl, string Status = "completed");
     private readonly ApplicationDbContext _context;
     private readonly ILogger<InternalWorkflowController> _logger;
 
@@ -26,6 +27,45 @@ public class InternalWorkflowController : ControllerBase
             .Include(w => w.HouseDesigns)
                 .ThenInclude(d => d.CostEstimates)
             .FirstOrDefaultAsync(w => w.Id == id);
+    }
+
+    [HttpGet("{id:guid}/visualization")]
+    public async Task<IActionResult> GetCurrentVisualization(Guid id)
+    {
+        var design = await _context.HouseDesigns.AsNoTracking()
+            .Where(d => d.WorkflowStateId == id && d.IsCurrent && !d.IsArchived)
+            .OrderByDescending(d => d.Version)
+            .Select(d => new { designId = d.Id, imageUrl = d.AIVisualizationImage, status = d.AIVisualizationStatus })
+            .FirstOrDefaultAsync();
+
+        return design is null ? NotFound() : Ok(design);
+    }
+
+    [HttpPatch("{id:guid}/visualization")]
+    public async Task<IActionResult> SaveCurrentVisualization(Guid id, [FromBody] VisualizationUpdateRequest request)
+    {
+        var status = request.Status.Trim().ToLowerInvariant();
+        if (status is not ("generating" or "completed" or "failed"))
+            return BadRequest(new { message = "Visualization status must be generating, completed, or failed." });
+        if (status == "completed" && string.IsNullOrWhiteSpace(request.ImageUrl))
+            return BadRequest(new { message = "A completed visualization requires an image URL." });
+
+        var design = await _context.HouseDesigns
+            .Where(d => d.WorkflowStateId == id && d.IsCurrent && !d.IsArchived)
+            .OrderByDescending(d => d.Version)
+            .FirstOrDefaultAsync();
+
+        if (design is null) return NotFound();
+        if (status == "completed" && string.IsNullOrWhiteSpace(design.AIVisualizationImage))
+        {
+            design.AIVisualizationImage = request.ImageUrl;
+        }
+        design.AIVisualizationStatus = string.IsNullOrWhiteSpace(design.AIVisualizationImage)
+            ? status
+            : "completed";
+        await _context.SaveChangesAsync();
+
+        return Ok(new { designId = design.Id, imageUrl = design.AIVisualizationImage, status = design.AIVisualizationStatus });
     }
 
     /// <summary>
@@ -52,13 +92,13 @@ public class InternalWorkflowController : ControllerBase
                 ? foundProp.GetString() ?? "unknown"
                 : "unknown";
 
-            string? templateId = layoutData.TryGetProperty("template_id", out var tmplProp)
-                ? tmplProp.GetString()
-                : null;
+            string templateId = layoutData.TryGetProperty("template_id", out var tmplProp) && tmplProp.ValueKind != JsonValueKind.Null
+                ? tmplProp.GetString() ?? "CUSTOM"
+                : "CUSTOM";
 
-            string? terrainType = layoutData.TryGetProperty("terrain_type", out var terrProp)
-                ? terrProp.GetString()
-                : null;
+            string terrainType = layoutData.TryGetProperty("terrain_type", out var terrProp) && terrProp.ValueKind != JsonValueKind.Null
+                ? terrProp.GetString() ?? "flat"
+                : "flat";
 
             // Mark all existing designs for this workflow as not current
             foreach (var existing in workflow.HouseDesigns.Where(d => d.IsCurrent))
@@ -79,7 +119,10 @@ public class InternalWorkflowController : ControllerBase
                 TerrainType = terrainType,
                 IsCurrent = true, // New design is always current
                 LayoutJson = layoutData.GetRawText(),
-                DesignSource = basePlanId is null ? "ai_generated" : "adapted_pre_designed",
+                TechnicalPlanImage = layoutData.TryGetProperty("technical_plan_image", out var techProp) ? techProp.GetString() : null,
+                AIVisualizationImage = layoutData.TryGetProperty("ai_visualization", out var aiProp) && aiProp.ValueKind != JsonValueKind.Null ? aiProp.GetProperty("image_url").GetString() : null,
+                AIVisualizationStatus = "generating",
+                DesignSource = basePlanId is null ? "AI_GENERATED" : "adapted_pre_designed",
                 BasePreDesignedPlanId = basePlanId,
                 CreatedAt = DateTimeOffset.UtcNow,
                 Rooms = new List<Room>()
@@ -130,6 +173,7 @@ public class InternalWorkflowController : ControllerBase
         }
         catch (Exception ex)
         {
+            Console.WriteLine(ex.ToString());
             _logger.LogError(ex, "Error saving design for workflow {WorkflowId}", id);
             return StatusCode(StatusCodes.Status500InternalServerError, new { message = "An error occurred saving the design." });
         }

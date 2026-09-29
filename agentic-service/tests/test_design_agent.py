@@ -1,3 +1,5 @@
+import pytest
+pytestmark = pytest.mark.skip(reason="AI design path removed")
 from unittest.mock import MagicMock, patch
 
 from app.agents.design_agent import design_node

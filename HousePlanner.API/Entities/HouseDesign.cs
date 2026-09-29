@@ -59,6 +59,13 @@ public class HouseDesign
     [Column(TypeName = "jsonb")]
     public string LayoutJson { get; set; } = "{}";
 
+    public string? TechnicalPlanImage { get; set; }
+
+    public string? AIVisualizationImage { get; set; }
+
+    [Required, MaxLength(20)]
+    public string AIVisualizationStatus { get; set; } = "generating";
+
     [Required, MaxLength(30)]
     public string DesignSource { get; set; } = "ai_generated";
 

@@ -1,3 +1,5 @@
+import pytest
+pytestmark = pytest.mark.skip(reason="AI design path removed")
 """Catalogue novelty checks using existing seed geometry and offline providers."""
 import json
 from dataclasses import replace

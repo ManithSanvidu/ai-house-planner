@@ -33,6 +33,9 @@ __pycache__/
 *.pyc
 *.pyo
 .pytest_cache/
+agentic-service/.cache/
+agentic-service/storage/visualizations/*
+!agentic-service/storage/visualizations/.gitkeep
 execution_log.json
 test_out.log
 uvicorn.log

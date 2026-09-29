@@ -226,7 +226,7 @@ def test_validation_uses_total_cost_lkr():
 
     result = validation_node(state)
 
-    assert result.status == "rejected"
+    assert result.status == "failed"
     assert result.validation_result["is_valid"] is False
 
 

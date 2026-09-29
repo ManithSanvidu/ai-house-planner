@@ -38,7 +38,7 @@ class OllamaProvider(ModelProvider):
         except requests.RequestException:
             return False
 
-    def generate_json(self, system_prompt: str, user_prompt: str, schema: type[BaseModel], max_tokens: int | None = None) -> dict[str, Any]:
+    def generate_json(self, system_prompt: str, user_prompt: str, schema: type[BaseModel], max_tokens: int | None = None, purpose: str = "design_strategy") -> dict[str, Any]:
         url = f"{OLLAMA_BASE_URL.rstrip('/')}/api/chat"
 
         schema_str = json.dumps(schema.model_json_schema())

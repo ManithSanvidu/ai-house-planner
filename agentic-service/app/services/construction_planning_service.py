@@ -69,6 +69,11 @@ def construction_planning_node(state:WorkflowState)->WorkflowState:
     """LangGraph node for construction planning generation."""
     start_time=datetime.now(timezone.utc)
 
+    if state.construction_plan_result:
+        print("[Construction Planning Service] Existing plan reused")
+        state.current_agent="cost_estimation"
+        return state
+
     if not state.design_result:
         print(f"[Construction Planning Service] Planning for workflow {state.workflow_id}...")
         state.current_agent="cost_estimation"

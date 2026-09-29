@@ -424,6 +424,14 @@ namespace HousePlanner.API.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("AIVisualizationImage")
+                        .HasColumnType("text");
+
+                    b.Property<string>("AIVisualizationStatus")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
                     b.Property<Guid?>("BasePreDesignedPlanId")
                         .HasColumnType("uuid");
 
@@ -454,6 +462,9 @@ namespace HousePlanner.API.Migrations
                     b.Property<string>("LayoutJson")
                         .IsRequired()
                         .HasColumnType("jsonb");
+
+                    b.Property<string>("TechnicalPlanImage")
+                        .HasColumnType("text");
 
                     b.Property<string>("TemplateId")
                         .HasMaxLength(50)

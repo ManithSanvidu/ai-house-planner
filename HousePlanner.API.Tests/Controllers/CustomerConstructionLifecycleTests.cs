@@ -26,7 +26,9 @@ public sealed partial class CustomerConstructionLifecycleTests
     public CustomerConstructionLifecycleTests()
     {
         _db = new ApplicationDbContext(new DbContextOptionsBuilder<ApplicationDbContext>()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options);
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .ConfigureWarnings(x => x.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning))
+            .Options);
         var customerRole = new Role { Id = 1, Name = "Customer" };
         var constructorRole = new Role { Id = 2, Name = "Constructor" };
         _db.AddRange(customerRole, constructorRole,
@@ -316,7 +318,7 @@ public sealed partial class CustomerConstructionLifecycleTests
         var plan = new PreDesignedHousePlan { Id = Guid.NewGuid(), Name = "A", IsActive = true, Bedrooms = 3, FloorCount = 1, LayoutJson = "{}" };
         _db.PreDesignedHousePlans.Add(plan); await _db.SaveChangesAsync();
         await CustomerController(_customerA).CreateRequestFromPlan(new CreateConstructionRequestFromPlan(plan.Id, _constructorA), default);
-        var workflow = await _db.WorkflowStates.Include(w => w.HouseDesigns).FirstOrDefaultAsync(w => w.BasePreDesignedPlanId == plan.Id);
+        var workflow = await _db.WorkflowStates.Include(w => w.HouseDesigns).FirstAsync();
         Assert.NotNull(workflow?.PreferredHouseDesignId);
         Assert.Contains(workflow.HouseDesigns, d => d.Id == workflow.PreferredHouseDesignId);
     }

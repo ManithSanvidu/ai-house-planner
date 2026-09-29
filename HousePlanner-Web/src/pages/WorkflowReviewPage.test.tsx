@@ -5,7 +5,11 @@ import { WorkflowReviewPage } from './WorkflowReviewPage';
 import { workflowService } from '../services/workflowService';
 
 vi.mock('../services/workflowService', () => ({
- workflowService: { getWorkflowStatus: vi.fn(), regenerateDesign: vi.fn() },
+ workflowService: {
+  getWorkflowStatus: vi.fn(),
+  regenerateDesign: vi.fn(),
+  getDesignVisualization: vi.fn(),
+ },
 }));
 vi.mock('../services/validationRequestService', () => ({
  validationRequestService: { create: vi.fn() },
@@ -36,6 +40,7 @@ const status = (version: number) => ({
 describe('WorkflowReviewPage revision refresh', () => {
  beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(workflowService.getDesignVisualization).mockResolvedValue({ status: 'generating', imageUrl: null });
   vi.stubGlobal('alert', vi.fn());
  });
 
@@ -69,5 +74,19 @@ describe('WorkflowReviewPage revision refresh', () => {
   expect(screen.getByText(/3 Bedrooms.*1 Bathroom.*1 Floor.*900 sq ft/)).toBeTruthy();
   expect(screen.getAllByText('Bedrooms').length).toBeGreaterThan(0);
   expect(screen.getAllByText('Bathrooms').length).toBeGreaterThan(0);
+ });
+
+ it('renders the persisted visualization URL when generation completes', async () => {
+  vi.mocked(workflowService.getWorkflowStatus).mockResolvedValue(status(1));
+  vi.mocked(workflowService.getDesignVisualization).mockResolvedValue({
+   status: 'completed', imageUrl: 'http://localhost:8001/visualizations/example.png',
+  });
+  render(<MemoryRouter initialEntries={['/dashboard/workflows/workflow-1']}>
+   <Routes><Route path="/dashboard/workflows/:id" element={<WorkflowReviewPage />} /></Routes>
+  </MemoryRouter>);
+
+  const image = await screen.findByRole('img', { name: 'AI Architectural Visualization' });
+  expect(image.getAttribute('src')).toBe('http://localhost:8001/visualizations/example.png');
+  expect(screen.queryByText('Generating AI architectural visualization...')).toBeNull();
  });
 });

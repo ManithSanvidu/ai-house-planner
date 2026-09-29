@@ -54,73 +54,47 @@ public class DesignOptionsServiceTests
     }
 
     [Fact]
-    public async Task GetAvailableOptions_UnsupportedFeature_IsUnavailable()
+    public async Task GetAvailableOptions_FeaturesAreAlwaysAvailable_ToAllowAgentMatching()
     {
         var context = GetDbContext();
         await SeedData(context);
         var service = new DesignOptionsService(context);
 
-        // Neither plan has ParkingSpaces > 0
+        // Even though neither plan has parking, the feature should be 'available' 
+        // to let the user submit the requirement and let the Python agent find the closest match.
         var result = await service.GetAvailableOptionsAsync(new DesignOptionsRequestDto());
 
-        Assert.False(result.Features["parking"].Available);
-        Assert.NotNull(result.Features["parking"].Reason);
+        Assert.True(result.Features["parking"].Available);
         Assert.True(result.Features["open_plan"].Available);
+        Assert.True(result.Features["balcony"].Available);
     }
 
     [Fact]
-    public async Task GetAvailableOptions_ChangingLandRange_ChangesBedroomOptions()
+    public async Task ValidateFinalSelection_BasicRequirementsInvalid_IsRejected()
     {
         var context = GetDbContext();
-        await SeedData(context);
-        var service = new DesignOptionsService(context);
-
-        // For land 5-8 perches (max 8), only Plan 1 (min 6) matches. Plan 2 (min 15) is filtered out.
-        var result = await service.GetAvailableOptionsAsync(new DesignOptionsRequestDto { LandRangeId = "LAND_5_8" });
-
-        Assert.Single(result.Bedrooms);
-        Assert.Equal(2, result.Bedrooms[0]);
-    }
-
-    [Fact]
-    public async Task GetAvailableOptions_ChangingFloors_ChangesFeatureAvailability()
-    {
-        var context = GetDbContext();
-        await SeedData(context);
-        var service = new DesignOptionsService(context);
-
-        // Floors = 1 restricts to Plan 1, which has NO balcony.
-        var result = await service.GetAvailableOptionsAsync(new DesignOptionsRequestDto { Floors = 1 });
-        Assert.False(result.Features["balcony"].Available);
-
-        // Floors = 2 restricts to Plan 2, which HAS balcony.
-        var result2 = await service.GetAvailableOptionsAsync(new DesignOptionsRequestDto { Floors = 2 });
-        Assert.True(result2.Features["balcony"].Available);
-    }
-
-    [Fact]
-    public async Task ValidateFinalSelection_InvalidSelection_IsRejected()
-    {
-        var context = GetDbContext();
-        await SeedData(context);
         var service = new DesignOptionsService(context);
 
         var req = new AiGenerationRequest
         {
-            LandSizePerches = 7, // Maps to 5-8 range -> Plan 1
+            LandSizePerches = 0, // Invalid land size
             Preferences = new PreferencesDto
             {
-                Balcony = true // Invalid because Plan 1 has no balcony
+                Bedrooms = 0, // Invalid
+                Bathrooms = 0, // Invalid
+                Floors = 0 // Invalid
             }
         };
 
         var validation = await service.ValidateFinalSelectionAsync(req);
         Assert.False(validation.IsValid);
-        Assert.Equal("UNSUPPORTED_DESIGN_CONFIGURATION", validation.ErrorCode);
+        Assert.Equal("INVALID_BASIC_REQUIREMENTS", validation.ErrorCode);
+        Assert.Contains("landSize", validation.Conflicts);
+        Assert.Contains("bedrooms", validation.Conflicts);
     }
 
     [Fact]
-    public async Task ValidateFinalSelection_ValidSelection_Passes()
+    public async Task ValidateFinalSelection_ValidSelection_PassesAndRecommendsMatching()
     {
         var context = GetDbContext();
         await SeedData(context);
@@ -128,52 +102,31 @@ public class DesignOptionsServiceTests
 
         var req = new AiGenerationRequest
         {
-            LandSizePerches = 16, // Maps to 12-20 range -> Plan 1 & Plan 2.
+            LandSizePerches = 16,
             Preferences = new PreferencesDto
             {
-                Floors = 2, // -> Plan 2
+                Floors = 2,
                 Bedrooms = 4,
                 Bathrooms = 3,
-                Balcony = true, // Plan 2 has balcony
+                Balcony = true,
                 OpenPlan = true
             }
         };
 
         var validation = await service.ValidateFinalSelectionAsync(req);
-        Assert.True(validation.IsValid, "Validation failed: " + string.Join(", ", validation.Suggestions));
+        Assert.True(validation.IsValid);
+        Assert.Equal("Your requirements will be matched against available architectural plans.", validation.Message);
     }
 
     [Fact]
-    public async Task ValidateFinalSelection_ExactUserFailure_IsRejected()
-    {
-        var context = GetDbContext();
-        await SeedData(context); // Plan 2 has parking=false, floors=2, beds=4, baths=3
-        var service = new DesignOptionsService(context);
-
-        var req = new AiGenerationRequest
-        {
-            LandSizePerches = 25,
-            Preferences = new PreferencesDto
-            {
-                Floors = 2,
-                Bedrooms = 4,
-                Bathrooms = 2, // Plan 2 has 3 bathrooms, so this will fail
-                ParkingRequired = true // Plan 2 doesn't have parking
-            }
-        };
-
-        var validation = await service.ValidateFinalSelectionAsync(req);
-        Assert.False(validation.IsValid);
-        Assert.Equal("UNSUPPORTED_DESIGN_CONFIGURATION", validation.ErrorCode);
-    }
-
-    [Fact]
-    public async Task ValidateFinalSelection_ConflictingSelection_GeneratesSuggestions()
+    public async Task ValidateFinalSelection_UnsupportedConfiguration_PassesToAgent()
     {
         var context = GetDbContext();
         await SeedData(context);
         var service = new DesignOptionsService(context);
 
+        // A configuration that doesn't perfectly match the DB catalogue:
+        // Land 25, 2 floors, 4 beds, 2 baths, requires parking.
         var req = new AiGenerationRequest
         {
             LandSizePerches = 25,
@@ -181,31 +134,14 @@ public class DesignOptionsServiceTests
             {
                 Floors = 2,
                 Bedrooms = 4,
-                Bathrooms = 3, // Valid for Plan 2
-                ParkingRequired = true // Invalid for Plan 2
+                Bathrooms = 2,
+                ParkingRequired = true
             }
         };
 
+        // It should NOT be rejected by the backend API anymore, because 
+        // the python agentic service handles compatibility matches now.
         var validation = await service.ValidateFinalSelectionAsync(req);
-        Assert.False(validation.IsValid);
-        Assert.Contains("parking", validation.Conflicts);
-        Assert.Contains(validation.Suggestions, s => s.Field == "parkingRequired" && (bool)s.Value == false);
-    }
-
-    [Fact]
-    public async Task ValidateSpecificPlan_RejectsMismatchEvenWhenAnotherCataloguePlanMatches()
-    {
-        var context = GetDbContext(); await SeedData(context);
-        var selected = await context.PreDesignedHousePlans.SingleAsync(x => x.DesignCode == "P1");
-        var request = new AiGenerationRequest
-        {
-            LandSizePerches = 20,
-            Preferences = new PreferencesDto { Bedrooms = 4, Bathrooms = 3, Floors = 2, Balcony = true }
-        };
-        var result = await new DesignOptionsService(context).ValidateSpecificPlanAsync(selected, request);
-        Assert.False(result.IsValid);
-        Assert.Equal("SELECTED_PLAN_INCOMPATIBLE", result.ErrorCode);
-        Assert.Contains("bedrooms", result.Conflicts);
-        Assert.Contains("balcony", result.Conflicts);
+        Assert.True(validation.IsValid);
     }
 }

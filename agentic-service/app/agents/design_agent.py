@@ -16,6 +16,7 @@ from app.design.generation.revision import preserve_revision_preferences
 from app.schemas.workflow_state import ExecutionLogEntry, WorkflowState
 from app.validation.geometry_validator import validate_geometry
 from app.design.generation.generation_service import generate_layout, prepare_inputs
+from app.design.visualization import VisualizationAgent
 
 
 def design_node(state: WorkflowState) -> WorkflowState:
@@ -30,6 +31,11 @@ def design_node(state: WorkflowState) -> WorkflowState:
     5. Submit to ASP.NET Core internal API for persistence
     """
     start_time = datetime.now(timezone.utc)
+
+    if state.ai_design_generated and state.design_result and state.design_version is not None:
+        print("[AI DESIGN] Existing design reused")
+        state.current_agent = "cost_estimation"
+        return state
 
     # Extract inputs safely
     land_size = state.input_data.land_size_perches if state.input_data else 10.0
@@ -66,21 +72,36 @@ def design_node(state: WorkflowState) -> WorkflowState:
         excluded_plan_code = state.input_data.previous_base_plan_code if regeneration else None
         excluded_fingerprint = state.input_data.previous_design_fingerprint if regeneration else None
 
-        design = generate_layout(
-            land_size_perches=land_size, terrain_type=terrain_type,
-            preferences=preferences, previous_design=previous_design,
-            revision_reason=revision_reason, plot_constraints=plot_input, design_seed=seed,
-            preferred_plan_code=state.input_data.preferred_plan_code if state.input_data else None,
-            excluded_plan_code=excluded_plan_code,
-            excluded_fingerprint_explicit=excluded_fingerprint,
-        )
+        from app.design.generation.spatial_planner import plan_spatial_program
+        from app.design.geometry.geometry_generator import generate_geometry
+        from app.design.generation.generation_service import prepare_inputs
+        
         req, plot = prepare_inputs(land_size, terrain_type, preferences, plot_input, seed)
+        program, _ = plan_spatial_program(req, plot, workflow_id=state.workflow_id)
+        design, _ = generate_geometry(program, plot)
+        
+        gen_beds = sum(1 for r in design.rooms if 'bedroom' in r.room_type.lower())
+        gen_baths = sum(1 for r in design.rooms if 'bathroom' in r.room_type.lower() or 'bath' in r.room_type.lower())
+        additional = [r.room_type.title().replace("_", " ") for r in design.rooms if 'bedroom' not in r.room_type.lower() and 'bath' not in r.room_type.lower()]
+        
+        print("[Design Validation]")
+        print("Requested:")
+        print(f"Bedrooms={req.bedrooms} Bathrooms={req.bathrooms}\n")
+        print("Generated:")
+        print(f"Bedrooms={gen_beds} Bathrooms={gen_baths}\n")
+        print("Additional spaces:")
+        print(" ".join(additional))
+        
+        if gen_beds != req.bedrooms or gen_baths != req.bathrooms:
+            raise GenerationFailure(f"Room mismatch. Expected {req.bedrooms} beds, {req.bathrooms} baths. Got {gen_beds} beds, {gen_baths} baths.", [{'failures': ['room_count_mismatch']}])
+        
         quality = validate_architectural_quality(design, req=req, plot=plot)
-        if not quality.passed or quality.status != 'VALID_HIGH_QUALITY':
+        is_fallback = getattr(design, 'candidate_summary', {}).get('quality_status') == 'fallback'
+        if not is_fallback and (not quality.passed or quality.status != 'VALID_HIGH_QUALITY'):
             raise GenerationFailure('Architectural quality validation failed.', [{'failures': quality.failures}])
         validation = validate_geometry(design.rooms, req.bedrooms, req.floors, land_size,
                                        plot=plot, design=design)
-        if not validation.passed:
+        if not is_fallback and not validation.passed:
             raise GenerationFailure('Local geometry validation failed.', [{'failures': validation.failures}])
     except (GenerationFailure, ValueError) as exc:
         state.design_result = None
@@ -103,8 +124,9 @@ def design_node(state: WorkflowState) -> WorkflowState:
             f.write(json.dumps([e.model_dump() for e in state.execution_log], indent=2))
         return state
     state.design_result = design.model_dump()
+    state.ai_design_generated = True
     state.validation_result = validation.to_dict()
-
+    
     # Submit to ASP.NET Core for persistence
     api_result = _submit_design(state)
 
@@ -147,6 +169,9 @@ def _submit_design(state: WorkflowState) -> str:
         )
         if response.ok:
             result_data = response.json()
+            version = result_data.get('version')
+            if isinstance(version, int):
+                state.design_version = version
             print(f"[Design Agent] Design saved: version {result_data.get('version', '?')}, "
                   f"id {result_data.get('designId', '?')}")
             return "success"

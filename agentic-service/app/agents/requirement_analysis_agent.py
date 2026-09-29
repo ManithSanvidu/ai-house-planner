@@ -22,6 +22,7 @@ from pydantic import BaseModel, Field
 from app.providers.openai_provider import OpenAIProvider
 from app.providers.base_provider import ProviderError
 from app.schemas.workflow_state import ExecutionLogEntry, WorkflowState
+from app.services.ai_guard import execute_once
 
 logger = logging.getLogger(__name__)
 
@@ -89,11 +90,16 @@ def requirement_analysis_node(state: WorkflowState) -> WorkflowState:
     print(f"[Requirement Analysis] Processing prompt ({len(prompt)} chars)")
 
     try:
-        raw: dict[str, Any] = _provider.generate_json(
-            system_prompt=_SYSTEM_PROMPT,
-            user_prompt=f"Extract house requirements from this description:\n\n{prompt}",
-            schema=ExtractedRequirements,
-            max_tokens=400,
+        raw, _ = execute_once(
+            state.workflow_id,
+            "requirement_analysis",
+            lambda: _provider.generate_json(
+                system_prompt=_SYSTEM_PROMPT,
+                user_prompt=f"Extract house requirements from this description:\n\n{prompt}",
+                schema=ExtractedRequirements,
+                max_tokens=400,
+                purpose="requirement_analysis",
+            ),
         )
     except ProviderError as exc:
         logger.warning("[RequirementAnalysis] Provider unavailable (%s) — state unchanged.", exc)

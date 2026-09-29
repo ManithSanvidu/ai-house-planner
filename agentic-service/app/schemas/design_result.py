@@ -63,3 +63,4 @@ class DesignResult(BaseModel):
     site_features: list[dict] = Field(default_factory=list)
     candidate_status: Literal["GEOMETRICALLY_INVALID", "ARCHITECTURALLY_POOR", "VALID_HIGH_QUALITY"] | None = None
     candidate_summary: dict = Field(default_factory=dict)
+    ai_visualization: dict | None = None
