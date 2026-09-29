@@ -67,6 +67,7 @@ public class WorkflowController : ControllerBase
                     w.PreferredHouseDesignId,
                     w.FailureReason,
                     w.ConstructionPlan,
+                    w.AgentExecutionLogJson,
                     // Pick the current (or latest) design version
                     LatestDesign = w.HouseDesigns
                         .Where(d => !d.IsArchived && (designId == null || d.Id == designId))
@@ -211,6 +212,17 @@ public class WorkflowController : ControllerBase
                 }
             }
 
+            JsonElement? parsedExecutionLog = null;
+            if (!string.IsNullOrEmpty(workflow.AgentExecutionLogJson))
+            {
+                try
+                {
+                    using var logDoc = JsonDocument.Parse(workflow.AgentExecutionLogJson);
+                    parsedExecutionLog = logDoc.RootElement.Clone();
+                }
+                catch (JsonException) { /* best-effort */ }
+            }
+
             var responseDto = new WorkflowStatusResponseDto(
                 WorkflowId: workflow.Id,
                 Status: workflow.Status,
@@ -227,7 +239,8 @@ public class WorkflowController : ControllerBase
                     .OrderByDescending(r => r.CreatedAt).Select(r => r.Status).FirstOrDefaultAsync(),
                 ArchitectFeedback: designDto is null ? null : await _context.ValidationRequests.AsNoTracking()
                     .Where(r => r.WorkflowStateId == workflow.Id && r.HouseDesignId == designDto.DesignId)
-                    .OrderByDescending(r => r.CreatedAt).Select(r => r.ArchitectReview).FirstOrDefaultAsync()
+                    .OrderByDescending(r => r.CreatedAt).Select(r => r.ArchitectReview).FirstOrDefaultAsync(),
+                AgentExecutionLog: parsedExecutionLog
             );
 
             return Ok(responseDto);

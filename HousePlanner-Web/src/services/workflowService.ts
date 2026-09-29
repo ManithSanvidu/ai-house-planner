@@ -101,6 +101,12 @@ export interface ConstructionPlanSummaryDto {
  optimization_notes: string[];
 }
 
+export interface AgentExecutionLogEntry {
+  agent: string;
+  status: 'completed' | 'failed' | string;
+  message: string;
+}
+
 export interface WorkflowStatusResponseDto {
  workflowId: string;
  status: string;
@@ -114,6 +120,7 @@ export interface WorkflowStatusResponseDto {
  architectReviewStatus?: string | null;
  architectFeedback?: string | null;
  constructionPlan?: ConstructionPlanSummaryDto | null;
+ agentExecutionLog?: AgentExecutionLogEntry[] | null;
 }
 
 export interface DesignHistoryDto {

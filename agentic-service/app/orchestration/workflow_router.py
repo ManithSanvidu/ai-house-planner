@@ -1,5 +1,6 @@
 from __future__ import annotations
-from app.schemas.workflow_state import WorkflowState
+from datetime import datetime, timezone
+from app.schemas.workflow_state import ExecutionLogEntry, WorkflowState
 
 
 def coordinator_node(state: WorkflowState) -> WorkflowState:
@@ -49,5 +50,12 @@ def coordinator_node(state: WorkflowState) -> WorkflowState:
     state.current_agent = next_agent
 
     print(f"[Coordinator Agent] {action_log}")
+
+    state.execution_log.append(ExecutionLogEntry(
+        agent_name="CoordinatorAgent",
+        action=f"Workflow initialised — {action_log}",
+        result=f"next_agent={next_agent}",
+        created_at_utc=datetime.now(timezone.utc).isoformat(),
+    ))
 
     return state

@@ -16,7 +16,8 @@ public record WorkflowStatusResponseDto(
     string? FailureReason = null,
     Guid? PreferredHouseDesignId = null,
     string? ArchitectReviewStatus = null,
-    string? ArchitectFeedback = null
+    string? ArchitectFeedback = null,
+    System.Text.Json.JsonElement? AgentExecutionLog = null
 );
 
 public record HouseDesignSummaryDto(

@@ -52,6 +52,10 @@ public class WorkflowState
     /// <summary>The version explicitly selected by the client. Independent of generation IsCurrent.</summary>
     public Guid? PreferredHouseDesignId { get; set; }
 
+    /// <summary>JSON array of agent execution log entries produced by the Python agent pipeline.</summary>
+    [Column(TypeName = "jsonb")]
+    public string? AgentExecutionLogJson { get; set; }
+
     // Navigation properties
     public virtual ICollection<HouseDesign> HouseDesigns { get; set; } = new List<HouseDesign>();
 }

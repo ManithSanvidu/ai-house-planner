@@ -110,9 +110,13 @@ def design_node(state: WorkflowState) -> WorkflowState:
 
     duration = int((datetime.now(timezone.utc) - start_time).total_seconds() * 1000)
 
-    action = "Generated room layout and foundation"
+    plan_code = design.template_id or design.base_plan_code if hasattr(design, "base_plan_code") else design.template_id
     if revision_reason:
-        action = f"Revised design — reason: {revision_reason[:100]}"
+        action = f"Catalogue plan revised — reason: {revision_reason[:80]}"
+    elif plan_code:
+        action = f"Catalogue plan selected: {plan_code}"
+    else:
+        action = "Catalogue plan selected and room layout generated"
 
     state.execution_log.append(ExecutionLogEntry(
         agent_name="DesignAgent",

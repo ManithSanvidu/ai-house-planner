@@ -1,5 +1,6 @@
 """Render one centered conceptual plan panel per floor."""
 import os
+from datetime import datetime, timezone
 
 try:
     import matplotlib
@@ -11,7 +12,8 @@ except ImportError:
     HAS_MATPLOTLIB = False
 
 from app.config import OUTPUT_PLANS_DIR
-from app.schemas.workflow_state import WorkflowState
+from app.schemas.workflow_state import ExecutionLogEntry, WorkflowState
+from app.utils.execution_log import push_execution_log
 
 ABBREVIATIONS = {
     'living_room': 'Living', 'bathroom_attached': 'Ensuite',
@@ -71,10 +73,16 @@ def rendering_node(state: WorkflowState) -> WorkflowState:
     fig.tight_layout(rect=(0, 0, 1, 0.95), pad=1.2)
     fig.savefig(str(file_path), bbox_inches='tight', pad_inches=0.15, dpi=220)
     plt.close(fig)
-    state.execution_log.append({
-        'agent_name': 'RenderingAgent', 'action': f'Saved visual plan to {file_path}',
-        'result': 'success', 'created_at_utc': 'now',
-    })
+    state.execution_log.append(ExecutionLogEntry(
+        agent_name='RenderingAgent',
+        action=f'Rendering completed — saved visual plan to {file_path}',
+        result='success',
+        created_at_utc=datetime.now(timezone.utc).isoformat(),
+    ))
+
+    # Push the full execution timeline to ASP.NET Core (best-effort, non-blocking)
+    push_execution_log(state)
+
     return state
 
 

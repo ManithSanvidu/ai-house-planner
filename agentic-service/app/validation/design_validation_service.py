@@ -536,11 +536,22 @@ def validation_node(state: WorkflowState) -> WorkflowState:
         state.status = "awaiting_approval"
         state.approval_status = "pending"
         state.current_agent = "rendering"
+        log_message = "Design validation passed — all safety and compliance rules satisfied"
     else:
         state.status = "failed"
         state.approval_status = "not_requested"
         state.current_agent = "failed"
         state.validation_result["reason"] = "Selected catalogue plan failed validation"
+        log_message = f"Design validation failed — {val_result.revision_reason or 'see details'}"
+
+    from datetime import datetime, timezone
+    from app.schemas.workflow_state import ExecutionLogEntry
+    state.execution_log.append(ExecutionLogEntry(
+        agent_name="ValidationAgent",
+        action=log_message,
+        result="passed" if val_result.passed else "failed",
+        created_at_utc=datetime.now(timezone.utc).isoformat(),
+    ))
 
     _submit_validation_result(state, val_result)
     return state

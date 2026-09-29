@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using HousePlanner.API.Data;
 using HousePlanner.API.DTOs;
 using HousePlanner.API.Entities;
@@ -190,6 +190,30 @@ public class InternalWorkflowController : ControllerBase
         await _context.SaveChangesAsync();
         return Ok(new { status = workflow.Status });
     }
+
+    /// <summary>
+    /// Internal endpoint for the Python agent pipeline to persist the agent execution timeline.
+    /// Accepts a JSON array of { agent, status, message } entries and stores them as jsonb.
+    /// </summary>
+    [HttpPatch("{id:guid}/execution-log")]
+    public async Task<IActionResult> UpdateExecutionLog(Guid id, [FromBody] JsonElement logData)
+    {
+        if (logData.ValueKind != JsonValueKind.Array)
+            return BadRequest(new { message = "Body must be a JSON array of log entries." });
+
+        var workflow = await FindWorkflowState(id);
+        if (workflow is null)
+            return NotFound(new { message = $"Unknown workflow {id}." });
+
+        workflow.AgentExecutionLogJson = logData.GetRawText();
+        workflow.UpdatedAt = DateTimeOffset.UtcNow;
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation("Execution log saved for workflow {WorkflowId} ({Count} entries)",
+            id, logData.GetArrayLength());
+        return Ok(new { message = "Execution log saved.", count = logData.GetArrayLength() });
+    }
+
 
     /// <summary>
     /// Internal endpoint for the Land Analysis Agent to update terrain results.
