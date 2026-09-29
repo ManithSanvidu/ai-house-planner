@@ -150,6 +150,110 @@ def prepare_inputs(
 NO_DISTINCT_LAYOUT = 'No distinct compatible layout is currently available for these requirements.'
 
 
+# ---------------------------------------------------------------------------
+# Deterministic recommendation metadata
+# ---------------------------------------------------------------------------
+
+_REASON_LABELS: dict[str, str] = {
+    'missing_home_office': 'home office not available',
+    'missing_accessibility': 'accessible layout not available',
+    'missing_master_ensuite': 'master ensuite not available',
+    'missing_open_plan': 'open-plan living not available',
+    'missing_separate_dining': 'separate dining room not available',
+    'missing_balcony': 'balcony not available',
+    'missing_veranda': 'veranda not available',
+    'missing_utility_room': 'utility room not available',
+    'missing_parking': 'parking not available',
+    'floor_count': 'floor count mismatch',
+    'bedroom_count': 'bedroom count mismatch',
+    'bathroom_count': 'insufficient bathrooms',
+    'minimum_land': 'plot too small',
+    'terrain': 'terrain incompatible',
+    'plot_shape': 'plot shape not supported',
+    'footprint_width': 'footprint too wide for plot',
+    'footprint_length': 'footprint too long for plot',
+    'inactive': 'plan inactive',
+}
+
+
+def _build_recommendation_metadata(
+    plan,
+    candidate_pool: list,
+    req: Requirements,
+    plot: PlotConstraints,
+) -> dict:
+    """Return deterministic explanation, matching reasons, and rejected alternatives.
+    No LLM is called. All text is derived from existing compatibility/suitability data.
+    """
+    # ---- matching reasons ----
+    reasons: list[str] = []
+    reasons.append(f'{plan.bedrooms} bedroom{"s" if plan.bedrooms != 1 else ""} matched')
+    reasons.append(f'{plan.bathrooms} bathroom{"s" if plan.bathrooms != 1 else ""} matched')
+    reasons.append(
+        'single floor requirement matched' if plan.floors == 1
+        else f'{plan.floors}-floor requirement matched'
+    )
+    if req.style and req.style.casefold() in {s.casefold() for s in plan.supported_styles}:
+        reasons.append(f'{req.style} style matched')
+    feature_map = [
+        ('home_office',      req.home_office,                      'home office available'),
+        ('master_ensuite',   req.master_bedroom or req.attached_bathroom, 'master ensuite available'),
+        ('open_plan',        req.open_plan,                        'open-plan living available'),
+        ('separate_dining',  req.dining_required,                  'separate dining room available'),
+        ('balcony',          req.balcony,                          'balcony available'),
+        ('veranda',          req.veranda,                          'veranda available'),
+        ('utility_room',     req.utility_room,                     'utility room available'),
+        ('parking',          req.parking,                          'parking available'),
+        ('accessibility',    req.accessibility,                    'accessible layout available'),
+    ]
+    for cap_key, requested, label in feature_map:
+        if requested and plan.capabilities.get(cap_key, False):
+            reasons.append(label)
+
+    breakdown = suitability_breakdown(plan, req, plot)
+    if breakdown['plot_fit']['shape_supported']:
+        reasons.append('plot shape supported')
+    if breakdown['plot_fit']['entrance_match']:
+        reasons.append('entrance orientation matched')
+
+    # ---- selection explanation ----
+    core = [f'{plan.bedrooms} bedroom', f'{plan.bathrooms} bathroom',
+            f'{"single" if plan.floors == 1 else plan.floors}-floor']
+    feature_labels = [r for _, req_val, label in feature_map if req_val for r in ([label] if plan.capabilities.get(_, False) else [])]
+    matched_parts = ', '.join(core + (feature_labels[:3] if feature_labels else []))
+    explanation = (
+        f'Selected because it matches {matched_parts} '
+        f'and scored highest ({breakdown["score"]:.0f}/100) among {len(candidate_pool)} '
+        f'compatible plan{"s" if len(candidate_pool) != 1 else ""}.'
+    )
+
+    # ---- rejected alternatives (runner-up plans) ----
+    rejected_alternatives: list[dict] = []
+    for alt in candidate_pool[1:4]:          # up to 3 runner-ups
+        alt_reasons = compatibility_rejection_reasons(alt, req, plot)
+        # Runner-ups passed hard compatibility, so rejection here means lower score
+        alt_breakdown = suitability_breakdown(alt, req, plot)
+        score_gap = round(breakdown['score'] - alt_breakdown['score'], 1)
+        missing_caps = [_REASON_LABELS.get(r, r.replace('_', ' ')) for r in alt_reasons]
+        reason_text = (
+            '; '.join(missing_caps[:2]) if missing_caps
+            else f'lower suitability score (gap: {score_gap} points)'
+        )
+        rejected_alternatives.append({
+            'plan_code': alt.plan_code,
+            'plan_name': alt.name,
+            'score': alt_breakdown['score'],
+            'reason': reason_text,
+        })
+
+    return {
+        'selection_explanation': explanation,
+        'matching_reasons': reasons,
+        'rejected_alternatives': rejected_alternatives,
+    }
+
+
+
 def _candidate_pool(req: Requirements, plot: PlotConstraints, previous_fingerprint=None,
                     preferred_plan_code: str | None = None,
                     excluded_plan_code: str | None = None):
@@ -426,6 +530,8 @@ def generate_layout(
     if final_design.candidate_summary is None:
         final_design.candidate_summary = {}
         
+    recommendation = _build_recommendation_metadata(plan, candidate_pool, req, plot)
+
     final_design.candidate_summary.update({
         'generation_mode': 'deterministic_template_selection',
         'ai_ran': False,
@@ -441,6 +547,10 @@ def generate_layout(
         'quality_metrics': quality.metrics,
         'quality_breakdown': quality.score_breakdown,
         'geometry_validation': geometry.to_dict(),
+        # Deterministic recommendation metadata
+        'selection_explanation': recommendation['selection_explanation'],
+        'matching_reasons': recommendation['matching_reasons'],
+        'rejected_alternatives': recommendation['rejected_alternatives'],
     })
     
     if previous_fingerprint:
