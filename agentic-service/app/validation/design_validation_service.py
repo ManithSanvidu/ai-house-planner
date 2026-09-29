@@ -520,9 +520,11 @@ def _submit_validation_result(state: WorkflowState, val_result: ValidationResult
 
 def validation_node(state: WorkflowState) -> WorkflowState:
     """
-    LangGraph node function executing deterministic safety and compliance validation.
-    Sets status = "awaiting_approval" and approval_status = "pending" on pass,
-    or manages revision retry routing on failure.
+    LangGraph node function executing deterministic safety and compliance validation
+    against the selected catalogue design.
+    Sets status = "awaiting_approval" and approval_status = "pending" on pass.
+    On failure, terminates the workflow immediately with status = "failed" and a
+    categorised failure reason. No retry or revision routing is performed.
     """
     print(f"[Validation Agent] Validating constraints for workflow {state.workflow_id}...")
     val_result = validate_house_plan(state)
