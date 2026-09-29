@@ -3,6 +3,7 @@ import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { workflowService, type WorkflowStatusResponseDto } from '../services/workflowService';
 import { FloorPlanViewer, type FloorPlanData } from '../components/floorplan/FloorPlanViewer';
 import { Menu, Edit2, Trash2, Plus, Save, X } from 'lucide-react';
+import { AgentTimeline } from '../components/AgentTimeline';
 import useAuth from '../features/auth/useAuth';
 import { countLabel, formatArea, formatFloorName, formatFoundation, formatRoomName, formatTerrain, formatTopology, formatWorkflowStatus } from '../utils/presentation';
 
@@ -212,14 +213,16 @@ export const WorkflowReviewPage: React.FC = () => {
     <div className="flex justify-center gap-4">
       <Link to="/dashboard/new-project" className="px-5 py-2.5 rounded-xl border border-zinc-300 font-bold hover:bg-surface-elevated">Edit Land Details</Link>
     </div>
+    <AgentTimeline agentExecutionLog={workflow?.agentExecutionLog} />
    </div>;
   }
 
-  return <div role="alert" className="p-8 text-center mt-10">
+  return <div role="alert" className="p-8 text-center mt-10 max-w-md mx-auto bg-surface rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-red-100">
    <h2 className="text-2xl font-bold text-red-600 mb-3">Design generation could not complete</h2>
    <p className="text-text-secondary">{workflow.failureReason || (workflow.terrainType === 'unknown'
     ? 'Provide a manual terrain classification and submit again.'
     : 'No valid layout was saved. Review plot dimensions and room requirements, then submit again.')}</p>
+   <AgentTimeline agentExecutionLog={workflow?.agentExecutionLog} />
   </div>;
  }
 
@@ -242,6 +245,7 @@ export const WorkflowReviewPage: React.FC = () => {
       </span>
       <p className="text-xs text-text-secondary font-bold uppercase tracking-wider">{workflow?.status?.replace(/_/g, ' ') || 'initializing'}</p>
      </div>
+     <AgentTimeline agentExecutionLog={workflow?.agentExecutionLog} />
     </div>
    </div>
   );
