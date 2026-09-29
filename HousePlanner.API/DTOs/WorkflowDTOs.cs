@@ -17,8 +17,24 @@ public record WorkflowStatusResponseDto(
     Guid? PreferredHouseDesignId = null,
     string? ArchitectReviewStatus = null,
     string? ArchitectFeedback = null,
-    System.Text.Json.JsonElement? AgentExecutionLog = null
+    System.Text.Json.JsonElement? AgentExecutionLog = null,
+    string? LandSizeCategory = null,
+    decimal? LandSizePerches = null,
+    int? Bedrooms = null,
+    int? Bathrooms = null,
+    string? HouseType = null,
+    WorkflowRequirementsDto? Requirements = null
 );
+
+public class WorkflowRequirementsDto
+{
+    public string? LandSizeCategory { get; set; }
+    public decimal? LandSizePerches { get; set; }
+    public int? Bedrooms { get; set; }
+    public int? Bathrooms { get; set; }
+    public string? HouseType { get; set; }
+    public int? Floors { get; set; }
+}
 
 public record HouseDesignSummaryDto(
     Guid DesignId,

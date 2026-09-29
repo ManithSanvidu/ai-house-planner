@@ -68,6 +68,8 @@ const IntakeForm: React.FC = () => {
         houseType: houseType as 'simple' | 'modern'
       };
 
+      console.log('Frontend payload before POST:', payload);
+
       const result = await workflowService.startDesign(payload);
       setWorkflowId(result.workflowId);
       setIsSuccess(true);

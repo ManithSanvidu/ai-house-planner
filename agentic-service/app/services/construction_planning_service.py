@@ -100,7 +100,7 @@ def construction_planning_node(state:WorkflowState)->WorkflowState:
 
     # 4.Check user constraints
     # Target duration might be passed in preferences if implemented
-    target_duration=state.input_data.preferences.get("target_duration_days") if state.input_data else None
+    target_duration = getattr(state.input_data, "target_duration_days", None) if state.input_data else None
     status="ON_SCHEDULE"
     opt_notes=[]
 

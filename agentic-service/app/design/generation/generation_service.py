@@ -38,102 +38,83 @@ from app.land.land_math import MAX_COVERAGE_RATIO, SQFT_PER_PERCH
 logger = logging.getLogger(__name__)
 
 
+from app.design.program.models import DesignGenerationInput
+
 def prepare_inputs(
-
     land_size_perches: float,
-
     terrain_type: str,
-
-    preferences: dict,
-
+    preferences: dict | None = None,
     plot_constraints: dict | PlotConstraints | None = None,
-
     design_seed: int | None = None,
-
+    input_data: DesignGenerationInput | None = None
 ) -> tuple[Requirements, PlotConstraints]:
 
+    if input_data:
+        req = Requirements(
+            bedrooms=input_data.bedrooms,
+            bathrooms=input_data.bathrooms,
+            style=input_data.house_type,
+            floors=1,
+            design_seed=design_seed
+        )
+        raw = {
+            'land_size_perches': input_data.land_size_perches,
+            'terrain_type': input_data.terrain_type.lower(),
+            'parking_reserved': False
+        }
+        return req, PlotConstraints.model_validate(raw)
+
+    # LEGACY FALLBACK FOR TESTS
+    preferences = preferences or {}
     values = dict(preferences)
-
     if 'architecturalStyle' in values and 'style' not in values:
-
         values['style'] = values.pop('architecturalStyle')
-
     if 'style_preference' in values and 'style' not in values:
-
         values['style'] = values.pop('style_preference')
-
     if 'accessibility_preference' in values and 'accessibility' not in values:
-
         values['accessibility'] = values.pop('accessibility_preference')
 
     aliases = {
-
         'architectural_style': 'style',
-
         'master_ensuite': 'attached_bathroom',
-
         'separate_dining': 'dining_required',
-
         'parking_required': 'parking',
-
         'utility': 'utility_room',
-
     }
 
     for source_key, target_key in aliases.items():
-
         if source_key in values and target_key not in values:
-
             values[target_key] = values.pop(source_key)
 
     if values.get('space_priority') == 'outdoor_garden':
-
         values['garden_priority'] = True
-
     if values.get('space_priority') == 'compact_cost_efficient':
-
         values['compact_priority'] = True
-
     if values.get('attached_bathroom'):
-
         values['master_bedroom'] = True
-
     if design_seed is not None:
-
         values['design_seed'] = design_seed
 
     values = {key: value for key, value in values.items() if value is not None}
-
     req = Requirements.model_validate(values)
 
     source = plot_constraints if plot_constraints is not None else preferences.get('plot_constraints', {})
-
     if isinstance(source, PlotConstraints):
-
         source = source.model_dump(include=set(PlotConstraints.model_fields))
-
     raw = dict(source)
 
     if raw.get('entrance_side') == 'road_side':
-
         raw['entrance_side'] = raw.get('road_side', preferences.get('road_side', 'south'))
 
     for key in PlotConstraints.model_fields:
-
         if key in preferences and key not in raw:
-
             raw[key] = preferences[key]
 
     raw.update(
-
         land_size_perches=land_size_perches,
-
         terrain_type=terrain_type.lower(),
-
         parking_reserved=req.parking,
-
     )
-
     return req, PlotConstraints.model_validate(raw)
 
 

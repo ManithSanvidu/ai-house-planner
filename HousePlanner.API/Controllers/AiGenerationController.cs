@@ -29,6 +29,7 @@ public class AiGenerationController : ControllerBase
     [HttpPost("generate")]
     public async Task<IActionResult> Generate([FromBody] StartDesignRequest request, CancellationToken cancellationToken)
     {
+        Console.WriteLine($"[TRACE] received bathroom count: {request.Bathrooms}");
         var requirement = request.ToRequirement();
         var validation = await _designOptionsService.ValidateFinalSelectionAsync(requirement, cancellationToken);
         if (!validation.IsValid)
@@ -47,10 +48,12 @@ public class AiGenerationController : ControllerBase
             {
                 Id = Guid.NewGuid(), ClientId = client.Id, BudgetLkr = 0,
                 LandSizePerches = requirement.LandSizePerches, ManualTerrainType = "flat",
-                PreferredBedrooms = requirement.Bedrooms, PreferredFloors = requirement.Floors,
+                PreferredBedrooms = requirement.Bedrooms, PreferredBathrooms = requirement.Bathrooms,
+                PreferredFloors = requirement.Floors, LandSizeCategory = requirement.LandSizeCategory,
                 StylePreference = requirement.HouseType, CreatedAt = DateTimeOffset.UtcNow,
                 UpdatedAt = DateTimeOffset.UtcNow
             };
+            Console.WriteLine($"[TRACE] saved bathroom count: {submission.PreferredBathrooms}");
             workflow = new WorkflowState
             {
                 Id = Guid.NewGuid(), LandSubmissionId = submission.Id, Status = "running",

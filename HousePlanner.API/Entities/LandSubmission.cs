@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace HousePlanner.API.Entities
@@ -32,10 +32,16 @@ namespace HousePlanner.API.Entities
         public int PreferredBedrooms { get; set; }
 
         [Required]
+        public int PreferredBathrooms { get; set; }
+
+        [Required]
         public int PreferredFloors { get; set; }
 
         [StringLength(50)]
         public string? StylePreference { get; set; }
+
+        [StringLength(50)]
+        public string? LandSizeCategory { get; set; }
 
         public Guid? BasePreDesignedPlanId { get; set; }
 

@@ -68,6 +68,12 @@ public class WorkflowController : ControllerBase
                     w.FailureReason,
                     w.ConstructionPlan,
                     w.AgentExecutionLogJson,
+                    w.LandSubmission.LandSizeCategory,
+                    w.LandSubmission.LandSizePerches,
+                    w.LandSubmission.PreferredBedrooms,
+                    w.LandSubmission.PreferredBathrooms,
+                    w.LandSubmission.PreferredFloors,
+                    w.LandSubmission.StylePreference,
                     // Pick the current (or latest) design version
                     LatestDesign = w.HouseDesigns
                         .Where(d => !d.IsArchived && (designId == null || d.Id == designId))
@@ -240,8 +246,26 @@ public class WorkflowController : ControllerBase
                 ArchitectFeedback: designDto is null ? null : await _context.ValidationRequests.AsNoTracking()
                     .Where(r => r.WorkflowStateId == workflow.Id && r.HouseDesignId == designDto.DesignId)
                     .OrderByDescending(r => r.CreatedAt).Select(r => r.ArchitectReview).FirstOrDefaultAsync(),
-                AgentExecutionLog: parsedExecutionLog
+                AgentExecutionLog: parsedExecutionLog,
+                LandSizeCategory: workflow.LandSizeCategory,
+                LandSizePerches: workflow.LandSizePerches,
+                Bedrooms: workflow.PreferredBedrooms,
+                Bathrooms: workflow.PreferredBathrooms,
+                HouseType: workflow.StylePreference,
+                Requirements: new WorkflowRequirementsDto
+                {
+                    LandSizeCategory = workflow.LandSizeCategory,
+                    LandSizePerches = workflow.LandSizePerches,
+                    Bedrooms = workflow.PreferredBedrooms,
+                    Bathrooms = workflow.PreferredBathrooms,
+                    HouseType = workflow.StylePreference,
+                    Floors = workflow.PreferredFloors
+                }
             );
+
+            Console.WriteLine("REQUIREMENTS DUMP:");
+            Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(responseDto.Requirements));
+            Console.WriteLine($"[TRACE] response bathroom count: {responseDto.Requirements?.Bathrooms}");
 
             return Ok(responseDto);
         }

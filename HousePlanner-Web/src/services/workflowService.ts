@@ -107,6 +107,15 @@ export interface AgentExecutionLogEntry {
   message: string;
 }
 
+export interface WorkflowRequirementsDto {
+ landSizeCategory?: string;
+ landSizePerches?: number;
+ bedrooms?: number;
+ bathrooms?: number;
+ houseType?: string;
+ floors?: number;
+}
+
 export interface WorkflowStatusResponseDto {
  workflowId: string;
  status: string;
@@ -121,6 +130,12 @@ export interface WorkflowStatusResponseDto {
  architectFeedback?: string | null;
  constructionPlan?: ConstructionPlanSummaryDto | null;
  agentExecutionLog?: AgentExecutionLogEntry[] | null;
+ landSizeCategory?: string;
+ landSizePerches?: number;
+ bedrooms?: number;
+ bathrooms?: number;
+ houseType?: string;
+ requirements?: WorkflowRequirementsDto;
 }
 
 export interface DesignHistoryDto {

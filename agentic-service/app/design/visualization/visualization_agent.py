@@ -31,12 +31,12 @@ class VisualizationAgent:
         self.workflow_id = workflow_id
         self.service = OpenAIVisualizationService(api_key=self.api_key, workflow_id=workflow_id)
 
-    def process(self, validated_layout: dict) -> dict:
+    def process(self, validated_layout: dict, expected_bedrooms: int = None, expected_bathrooms: int = None) -> dict:
         """
         Accepts a validated layout JSON and returns a visualization response dict.
         The service layer checks ENABLE_OPENAI and the daily spend cap before calling OpenAI.
         """
-        result = self.service.generate_visualization(validated_layout)
+        result = self.service.generate_visualization(validated_layout, expected_bedrooms, expected_bathrooms)
         return result
 
 def visualization_node(state):
@@ -75,7 +75,7 @@ def visualization_node(state):
         logger.info("[VISUALIZATION CACHE] HIT")
         viz_result = {
             "image_url": existing,
-            "status": "success",
+            "status": "validated",
             "source": "persisted",
         }
     else:
@@ -92,14 +92,14 @@ def visualization_node(state):
             viz_result, _ = execute_once(
                 state.workflow_id,
                 "visualization",
-                lambda: agent.process(state.design_result),
+                lambda: agent.process(state.design_result, expected_bedrooms, expected_bathrooms),
             )
         except DuplicateAIRequest:
             state.design_result["ai_visualization"] = {
                 "image_url": None, "status": "pending", "source": "ai_guard"
             }
             return state
-        if viz_result.get("status") == "success":
+        if viz_result.get("status") == "validated":
             try:
                 image_url = _save_generated_image(viz_result)
                 viz_result["image_url"] = image_url

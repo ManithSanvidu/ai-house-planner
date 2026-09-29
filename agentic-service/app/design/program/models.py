@@ -9,6 +9,14 @@ FamilyName = Literal['LINEAR', 'COMPACT_RECTANGLE', 'L_SHAPE', 'T_SHAPE',
                      'HILLSIDE_STEPPED', 'COASTAL_RAISED_COMPACT']
 
 
+class DesignGenerationInput(BaseModel):
+    land_size_perches: int
+    bedrooms: int
+    bathrooms: int
+    house_type: str
+    terrain_type: str
+
+
 class Requirements(BaseModel):
     # Retain photo/plot/future fields, and report unhandled fields in the result.
     model_config = ConfigDict(extra='allow', allow_inf_nan=False)

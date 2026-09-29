@@ -231,9 +231,17 @@ def execute_once_db(
     except (DuplicateAIRequest, DailyLimitExceeded):
         raise
     except Exception as exc:
-        logger.warning("[AIGuardDB] DB guard unavailable (%s); executing without guard.", exc)
-        result = operation()
-        return result, False
+        logger.warning("[AIGuardDB] DB guard unavailable (%s); failing closed.", exc)
+        return {"status": "blocked", "reason": "AI protection unavailable"}, False
+
+import hashlib
+
+def create_ai_execution_key(project_id: str, purpose: str, payload: dict) -> str:
+    """Generate a stable cache key based on the payload."""
+    payload_hash = hashlib.sha256(
+        json.dumps(payload, sort_keys=True).encode("utf-8")
+    ).hexdigest()[:8]
+    return f"{project_id}:{purpose}:{payload_hash}"
 
 
 def _execute_with_db(wid: str, purpose: str, operation: Callable[[], T]) -> tuple[T, bool]:

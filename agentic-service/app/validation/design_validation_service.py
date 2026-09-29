@@ -326,11 +326,7 @@ def extract_validation_input_from_state(state: Any) -> HousePlanValidationInput:
     elif not isinstance(input_data, dict):
         input_data = {}
 
-    preferences = input_data.get("preferences") or state_dict.get("preferences") or {}
-    if not isinstance(preferences, dict) and hasattr(preferences, "model_dump"):
-        preferences = preferences.model_dump()
-    elif not isinstance(preferences, dict):
-        preferences = {}
+    # Removed legacy preferences parsing
 
     terrain_result = state_dict.get("terrain_result") or {}
     design_result = state_dict.get("design_result") or {}
@@ -403,18 +399,15 @@ def extract_validation_input_from_state(state: Any) -> HousePlanValidationInput:
         or state_dict.get("estimated_cost_lkr")
     )
 
-    requested_bedrooms = (
-        preferences.get("preferred_bedrooms")
-        or preferences.get("bedrooms")
-        or input_data.get("preferred_bedrooms")
-        or state_dict.get("requested_bedrooms")
-    )
-    requested_floors = (
-        preferences.get("preferred_floors")
-        or preferences.get("floors")
-        or input_data.get("preferred_floors")
-        or state_dict.get("requested_floors")
-    )
+    requested_bedrooms = None
+    requested_floors = None
+    if input_data:
+        requested_bedrooms = getattr(input_data, "bedrooms", None) or (input_data.get("bedrooms") if isinstance(input_data, dict) else None)
+        # Floors are now implicitly 1 in the new deterministic pipeline, but let's check if requested_floors exists
+        requested_floors = getattr(input_data, "floors", None) or (input_data.get("floors") if isinstance(input_data, dict) else 1)
+        
+    requested_bedrooms = requested_bedrooms or state_dict.get("requested_bedrooms")
+    requested_floors = requested_floors or state_dict.get("requested_floors") or 1
 
     return HousePlanValidationInput(
         land_size_perches=float(land_size) if land_size is not None else None,

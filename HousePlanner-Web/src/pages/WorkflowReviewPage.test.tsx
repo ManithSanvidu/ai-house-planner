@@ -44,25 +44,27 @@ describe('WorkflowReviewPage revision refresh', () => {
   vi.stubGlobal('alert', vi.fn());
  });
 
- it('requests Generate Another and refreshes to the newly persisted current version', async () => {
+ it('displays Your House Requirements and prevents generating another design to save AI costs', async () => {
   vi.mocked(workflowService.getWorkflowStatus)
-   .mockResolvedValueOnce(status(1))
-   .mockResolvedValue(status(2));
+   .mockResolvedValueOnce(status(1));
   vi.mocked(workflowService.regenerateDesign).mockResolvedValue({});
 
   render(<MemoryRouter initialEntries={['/dashboard/workflows/workflow-1']}>
    <Routes><Route path="/dashboard/workflows/:id" element={<WorkflowReviewPage />} /></Routes>
   </MemoryRouter>);
 
-  expect(await screen.findByText('AI Architectural Visualization')).toBeDefined();
-  await waitFor(() => expect(workflowService.getDesignVisualization).toHaveBeenCalledWith('design-1'));
-  fireEvent.click(screen.getByRole('button', { name: 'Generate Another Design' }));
+  expect(await screen.findByText('AI Visualization of Your Requested Home')).toBeDefined();
+  expect(screen.getByText('Your House Requirements')).toBeDefined();
+  
+  // Checking requirement values
+  expect(screen.getByText('3 Bedrooms')).toBeDefined();
+  expect(screen.getByText('1 Bathroom')).toBeDefined();
 
-  await waitFor(() => expect(workflowService.regenerateDesign)
-   .toHaveBeenCalledWith('workflow-1', 'design-1'));
-  await waitFor(() => expect(workflowService.getDesignVisualization).toHaveBeenCalledWith('design-2'));
-  expect(screen.getByText('Compact Rectangle')).toBeDefined();
-  expect(screen.getByText('Architectural quality score: 91')).toBeDefined();
+  const generateBtn = screen.getByRole('button', { name: 'Generate Another Design' });
+  expect(generateBtn.hasAttribute('disabled')).toBe(true);
+
+  fireEvent.click(generateBtn);
+  expect(workflowService.regenerateDesign).not.toHaveBeenCalled();
  });
 
  it('shows a homeowner summary and friendly workflow status', async () => {
@@ -86,7 +88,8 @@ describe('WorkflowReviewPage revision refresh', () => {
    <Routes><Route path="/dashboard/workflows/:id" element={<WorkflowReviewPage />} /></Routes>
   </MemoryRouter>);
 
-  const image = await screen.findByRole('img', { name: 'AI Architectural Visualization' });
+  const image = await screen.findByRole('img');
+  expect(image.getAttribute('alt')).toBe('AI Architectural Visualization');
   expect(image.getAttribute('src')).toBe('http://localhost:8001/visualizations/example.png');
   expect(screen.queryByText('Generating AI architectural visualization...')).toBeNull();
  });
@@ -100,7 +103,7 @@ describe('WorkflowReviewPage revision refresh', () => {
    <Routes><Route path="/dashboard/workflows/:id" element={<WorkflowReviewPage />} /></Routes>
   </MemoryRouter>);
 
-  expect(await screen.findByRole('img', { name: 'AI Architectural Visualization' })).toBeTruthy();
+  expect(await screen.findByRole('img')).toBeTruthy();
   expect(screen.queryByText('Technical Floor Plan')).toBeNull();
   expect(screen.queryByText('viewer:design-1')).toBeNull();
   expect(screen.queryByText('Rooms')).toBeNull();

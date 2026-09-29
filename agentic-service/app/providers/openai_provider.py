@@ -15,6 +15,10 @@ from app.providers.base_provider import (
     ProviderUnavailableError,
     ProviderUnknownError,
 )
+from app.services.openai_audit_logger import log_ai_call
+
+MAX_INPUT_TOKENS = 4000
+MAX_OUTPUT_TOKENS = 1000
 
 
 class OpenAIProvider(ModelProvider):
@@ -99,8 +103,8 @@ class OpenAIProvider(ModelProvider):
             f"messages={len(payload['messages'])}"
         )
 
-        if est_tokens > 1500:
-            print("WARNING: design_strategy request exceeds expected token budget!")
+        if est_tokens > MAX_INPUT_TOKENS:
+            raise ProviderQuotaError(f"Request exceeds MAX_INPUT_TOKENS ({est_tokens} > {MAX_INPUT_TOKENS})")
 
         try:
             response = requests.post(url, headers=headers, json=payload, timeout=60)
@@ -145,6 +149,7 @@ class OpenAIProvider(ModelProvider):
         try:
             from app.services.ai_guard_db import log_ai_cost
             log_ai_cost(workflow_id, purpose, self.model_name, input_tokens, output_tokens)
+            log_ai_call(workflow_id, purpose, self.model_name, input_tokens, output_tokens)
         except Exception:
             pass  # Non-fatal
 

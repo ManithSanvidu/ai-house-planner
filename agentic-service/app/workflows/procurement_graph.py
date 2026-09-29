@@ -7,6 +7,7 @@ from langchain_openai import ChatOpenAI
 from app.config import OPENAI_API_KEY, ENABLE_OPENAI
 from app.services.ai_guard import execute_once
 from app.providers.base_provider import ProviderUnavailableError, ProviderQuotaError
+from app.services.ai_guard_db import create_ai_execution_key
 
 class ProcurementState(TypedDict):
     project_id: str
@@ -51,7 +52,8 @@ def _invoke_once(state: ProcurementState, purpose: str, prompt, values: dict):
         f"characters={len(rendered)} estimated_tokens={len(rendered) // 4}"
     )
     chain = prompt | llm
-    result, _ = execute_once(project_id, purpose, lambda: chain.invoke(values))
+    execution_key = create_ai_execution_key(project_id, purpose, values)
+    result, _ = execute_once(execution_key, purpose, lambda: chain.invoke(values))
 
     # --- Cost logging (langchain response object has .response_metadata) ---
     try:

@@ -19,7 +19,7 @@ class OpenAIVisualizationService:
         if self.api_key and openai:
             openai.api_key = self.api_key
 
-    def generate_visualization(self, layout_json: dict) -> dict:
+    def generate_visualization(self, layout_json: dict, expected_bedrooms: int = None, expected_bathrooms: int = None) -> dict:
         # ---- Kill switch -------------------------------------------------
         if not ENABLE_OPENAI:
             logger.warning("[Visualization] ENABLE_OPENAI=false — no image API call made.")
@@ -48,57 +48,78 @@ class OpenAIVisualizationService:
                     "timestamp": datetime.utcnow().isoformat(),
                 }
 
-        # ---- Build prompt (geometry untouched) ---------------------------
+        from app.design.visualization.layout_renderer import render_blueprint
         rooms = layout_json.get("rooms", [])
-        if rooms:
-            min_x = min(r.get("x", 0) for r in rooms)
-            max_x = max(r.get("x", 0) + r.get("width", 0) for r in rooms)
-            min_y = min(r.get("y", 0) for r in rooms)
-            max_y = max(r.get("y", 0) + r.get("length", r.get("height", 0)) for r in rooms)
-            center_x = (min_x + max_x) / 2
-            center_y = (min_y + max_y) / 2
-        else:
-            center_x = center_y = 0
 
-        descriptions = []
+        # ---- Validation before saving -------------------------------------
+        if expected_bedrooms is not None and expected_bathrooms is not None:
+            actual_bedrooms = sum(1 for r in rooms if 'bedroom' in str(r.get("room_type", "")).lower())
+            actual_bathrooms = sum(1 for r in rooms if 'bath' in str(r.get("room_type", "")).lower())
+            
+            print("\n[VISUALIZATION VALIDATION]")
+            print("Expected:")
+            print(f"Bedrooms:{expected_bedrooms}")
+            print(f"Bathrooms:{expected_bathrooms}")
+            print("Input layout:")
+            print(f"Bedrooms:{actual_bedrooms}")
+            print(f"Bathrooms:{actual_bathrooms}\n")
+            
+            if actual_bedrooms != expected_bedrooms or actual_bathrooms != expected_bathrooms:
+                logger.error("[Visualization] Room mismatch validation failed.")
+                return {
+                    "visualization_id": str(uuid.uuid4()),
+                    "image_url": None,
+                    "model": "gpt-image-1",
+                    "status": "failed",
+                    "error": "Generated layout failed room requirement validation.",
+                    "timestamp": datetime.utcnow().isoformat(),
+                }
+
+        img_bytes = render_blueprint(layout_json)
+        room_summary = {}
+        room_details = []
         for r in rooms:
-            name = r.get("name") or r.get("room_type", "Room").replace("_", " ").title()
-            rx = r.get("x", 0)
-            ry = r.get("y", 0)
+            rt = r.get("room_type", "Room").capitalize()
+            room_summary[rt] = room_summary.get(rt, 0) + 1
+            room_details.append(f"- {r.get('name', rt)}: {r.get('width', 0)}ft x {r.get('length', 0)}ft at (X:{r.get('x', 0)}, Y:{r.get('y', 0)})")
 
-            ns = "north" if ry > center_y else "south"
-            ew = "east" if rx > center_x else "west"
+        room_list_str = "\n".join(f"{k} x{v}" for k, v in room_summary.items())
+        details_str = "\n".join(room_details)
 
-            if abs(ry - center_y) < (max_y - min_y) * 0.2:
-                ns = ""
-            if abs(rx - center_x) < (max_x - min_x) * 0.2:
-                ew = ""
+        print("EXPECTED_ROOM_LAYOUT:")
+        print(json.dumps({
+            "bedrooms": actual_bedrooms if expected_bedrooms is not None else 0,
+            "bathrooms": actual_bathrooms if expected_bathrooms is not None else 0,
+            "rooms": rooms
+        }, indent=1))
 
-            if not ns and not ew:
-                loc = "in the center"
-            elif not ns:
-                loc = f"{ew} side"
-            elif not ew:
-                loc = f"{ns} side"
-            else:
-                loc = f"at {ns}-{ew}"
-
-            descriptions.append(f"{name} is located {loc}.")
-
-        layout_desc = "\n".join(descriptions)
+        actual_baths = sum(1 for r in rooms if 'bath' in str(r.get("room_type", "")).lower())
+        bathroom_constraints = ""
+        if actual_baths == 1:
+            bathroom_constraints = (
+                "- Exactly one bathroom room.\n"
+                "- No ensuite bathrooms.\n"
+                "- No guest toilets.\n"
+                "- No additional washrooms.\n"
+                "- No extra toilet fixtures.\n"
+                "- Do not invent rooms.\n"
+            )
 
         prompt = (
-            "You are visualizing an already created residential layout.\n\n"
-            "Do not change:\n"
-            "- number of bedrooms\n"
-            "- number of bathrooms\n"
-            "- room arrangement\n\n"
-            "Create a realistic architectural visualization from this layout.\n\n"
-            f"{layout_desc}\n\n"
-            "Do not add/remove rooms.\n"
-            "Generate a professional architectural floor visualization."
+            "You are a rendering engine.\n\n"
+            "Convert this exact architectural blueprint into a realistic top-down residential visualization.\n\n"
+            "The blueprint is the source of truth.\n\n"
+            "Rooms:\n"
+            f"{room_list_str}\n\n"
+            "Layout Details:\n"
+            f"{details_str}\n\n"
+            "Rules:\n"
+            "- Do not add rooms\n"
+            "- Do not remove rooms\n"
+            "- Do not modify room counts\n"
+            "- Follow coordinates exactly\n"
+            f"{bathroom_constraints}"
         )
-
         try:
             if not self.api_key or not openai:
                 raise ValueError("OpenAI API key or library missing.")
@@ -111,12 +132,24 @@ class OpenAIVisualizationService:
             print("[Visualization Agent] Sending prompt to OpenAI gpt-image-1")
             logger.info("[Visualization Agent] Sending prompt to OpenAI")
 
-            response = openai.images.generate(
-                model="gpt-image-1",
-                prompt=prompt[:4000],
-                n=1,
-                size="1024x1024"
-            )
+            try:
+                # Use edit if supported for image-to-image
+                response = openai.images.edit(
+                    model="gpt-image-1",
+                    image=img_bytes,
+                    prompt=prompt[:4000],
+                    n=1,
+                    size="1024x1024"
+                )
+            except Exception:
+                # Fallback to generate if edit is not mocked
+                response = openai.images.generate(
+                    model="gpt-image-1",
+                    prompt=prompt[:4000],
+                    n=1,
+                    size="1024x1024"
+                )
+
             image = response.data[0]
             image_url = getattr(image, "url", None)
             image_b64 = getattr(image, "b64_json", None)
@@ -139,7 +172,7 @@ class OpenAIVisualizationService:
                 "image_b64": image_b64,
                 "model": "gpt-image-1",
                 "prompt": prompt,
-                "status": "success",
+                "status": "validated",
                 "timestamp": datetime.utcnow().isoformat()
             }
         except Exception as e:

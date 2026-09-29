@@ -39,17 +39,8 @@ def design_node(state: WorkflowState) -> WorkflowState:
 
     # Extract inputs safely
     land_size = state.input_data.land_size_perches if state.input_data else 10.0
-    preferences = {
-        "bedrooms": getattr(state.input_data, 'bedrooms', 3),
-        "style": getattr(state.input_data, 'house_type', 'conventional'),
-        "floors": 1, # Default
-        "bathrooms": getattr(state.input_data, 'bathrooms', 1)
-    } if state.input_data else {"bedrooms": 3, "floors": 1, "style": "conventional", "bathrooms": 2}
-
-
+    
     terrain_type = "flat"
-    if state.terrain_result and "terrain_type" in state.terrain_result:
-        terrain_type = state.terrain_result["terrain_type"]
 
     # Check if this is a revision (validation failed on a previous design)
     previous_design = None
@@ -64,9 +55,15 @@ def design_node(state: WorkflowState) -> WorkflowState:
         revision_reason = state.user_revision_prompt
         print(f"[Design Agent] Human revision request received: {revision_reason}")
 
-    # Soft vision observations may inform concepts, never structural calculations.
-    preferences = dict(preferences)
-    preferences['notable_features'] = (state.terrain_result or {}).get('notable_features', [])
+    # Build preferences strictly from CoordinatorInput for backward-compatibility with prepare_inputs
+    preferences = {
+        "bedrooms": getattr(state.input_data, 'bedrooms', 3) if state.input_data else 3,
+        "bathrooms": getattr(state.input_data, 'bathrooms', 2) if state.input_data else 2,
+        "style": getattr(state.input_data, 'house_type', 'conventional') if state.input_data else 'conventional',
+        "floors": 1,
+        "notable_features": (state.terrain_result or {}).get('notable_features', [])
+    }
+    
     try:
         if previous_design is not None:
             preferences = preserve_revision_preferences(preferences, previous_design)

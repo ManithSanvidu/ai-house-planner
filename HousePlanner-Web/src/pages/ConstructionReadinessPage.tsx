@@ -47,6 +47,7 @@ export const ConstructionReadinessPage: React.FC = () => {
   const [materials, setMaterials] = useState<Material[]>([]);
   const [readinessPlan, setReadinessPlan] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const [error, setError] = useState<string | null>(null);
 
@@ -119,7 +120,9 @@ export const ConstructionReadinessPage: React.FC = () => {
   };
 
   const generatePlan = async () => {
+    if (isGenerating) return;
     if (!projectId) return;
+    setIsGenerating(true);
     setLoading(true);
     try {
       const res = await apiClient.post(`/readiness/${projectId}/plan`);
@@ -133,6 +136,7 @@ export const ConstructionReadinessPage: React.FC = () => {
       }
       alert(`Error: ${errorMessage}`);
     } finally {
+      setIsGenerating(false);
       setLoading(false);
     }
   };
@@ -167,18 +171,6 @@ export const ConstructionReadinessPage: React.FC = () => {
   useEffect(() => {
     if (projectId) {
       fetchMaterials();
-      // Auto-fetch the plan for customers so they see the agent outputs comparing constructor's data
-      if (user?.role === 'Customer') {
-        const fetchPlan = async () => {
-          try {
-            const res = await apiClient.post(`/readiness/${projectId}/plan`);
-            setReadinessPlan(res.data);
-          } catch (e) {
-            console.error("Auto-fetch plan failed", e);
-          }
-        };
-        fetchPlan();
-      }
     }
   }, [projectId, user?.role]);
 
@@ -459,7 +451,12 @@ export const ConstructionReadinessPage: React.FC = () => {
                       <div className="text-center py-20 bg-gray-50 dark:bg-surface-elevated rounded-3xl border border-dashed border-border dark:border-border-strong transition-colors">
                         <List className="mx-auto text-gray-400 dark:text-gray-600 mb-5" size={40} />
                         <p className="text-text-secondary font-semibold mb-6">No procurement plan generated yet.</p>
-                        <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={generatePlan} className="px-8 py-3.5 bg-white dark:bg-surface border border-border dark:border-border-strong text-gray-900 dark:text-text-primary font-bold rounded-xl shadow-sm transition-colors text-sm tracking-wide">Generate Plan</motion.button>
+                        <div className="flex flex-col items-center">
+                          <motion.button disabled={isGenerating} whileHover={!isGenerating ? { scale: 1.02 } : {}} whileTap={!isGenerating ? { scale: 0.98 } : {}} onClick={generatePlan} className={`px-8 py-3.5 bg-white dark:bg-surface border border-border dark:border-border-strong text-gray-900 dark:text-text-primary font-bold rounded-xl shadow-sm transition-colors text-sm tracking-wide ${isGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                            {isGenerating ? 'Generating...' : 'Generate Construction Plan'}
+                          </motion.button>
+                          <p className="text-xs text-text-secondary mt-2">AI construction planning uses resources. Generate only when required.</p>
+                        </div>
                       </div>
                     )}
                   </div>

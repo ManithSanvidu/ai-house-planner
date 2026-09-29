@@ -20,6 +20,9 @@ namespace HousePlanner.API.Controllers
     [Authorize]
     public class ConstructionReadinessController : ControllerBase
     {
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, DateTime> _userRateLimits = new();
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<Guid, bool> _activeGenerations = new();
+        
         private readonly ApplicationDbContext _context;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IConfiguration _configuration;
@@ -182,7 +185,27 @@ namespace HousePlanner.API.Controllers
         [HttpPost("plan")]
         public async Task<ActionResult> GenerateReadinessPlan(Guid referenceId)
         {
-            var project = await _context.Projects
+            var userId = User.Claims.FirstOrDefault(c => c.Type == "id")?.Value ?? "anonymous";
+            
+            // Rate limit: 1 request per minute per user
+            if (_userRateLimits.TryGetValue(userId, out var lastRequest))
+            {
+                if (DateTime.UtcNow - lastRequest < TimeSpan.FromMinutes(1))
+                {
+                    return StatusCode(429, "Too many requests. Please wait a minute before requesting another plan.");
+                }
+            }
+            _userRateLimits[userId] = DateTime.UtcNow;
+
+            // Project concurrency limit
+            if (!_activeGenerations.TryAdd(referenceId, true))
+            {
+                return StatusCode(429, "A generation for this project is already in progress.");
+            }
+
+            try
+            {
+                var project = await _context.Projects
                 .Include(p => p.ConstructionPhases)
                 .FirstOrDefaultAsync(p => p.Id == referenceId);
 
@@ -291,6 +314,11 @@ namespace HousePlanner.API.Controllers
 
             var plan = await response.Content.ReadAsStringAsync();
             return Content(plan, "application/json");
+            }
+            finally
+            {
+                _activeGenerations.TryRemove(referenceId, out _);
+            }
         }
     }
 }
