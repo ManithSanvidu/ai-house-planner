@@ -376,16 +376,65 @@ public class WorkflowController : ControllerBase
         var user = await _currentUserService.GetAsync(HttpContext);
         if (user?.Id is null) return Unauthorized(new { message = "User not identified." });
         if (!string.Equals(user.Role, "Customer", StringComparison.OrdinalIgnoreCase)) return Forbid();
-        var workflows = await _context.WorkflowStates.AsNoTracking()
+
+        var workflowsData = await _context.WorkflowStates.AsNoTracking()
             .Where(w => w.LandSubmission.ClientId == user.Id.Value)
-            .Include(w => w.HouseDesigns).ThenInclude(d => d.Rooms)
             .OrderByDescending(w => w.UpdatedAt)
+            .Select(w => new
+            {
+                w.Id,
+                w.Status,
+                w.PreferredHouseDesignId,
+                w.CreatedAt,
+                Designs = w.HouseDesigns.Where(d => !d.IsArchived).OrderByDescending(d => d.Version).Select(d => new
+                {
+                    d.Id,
+                    d.Version,
+                    d.IsCurrent,
+                    d.IsArchived,
+                    d.TemplateId,
+                    d.FloorCount,
+                    d.TotalBuiltUpAreaSqft,
+                    d.FoundationType,
+                    d.CreatedAt,
+                    Bedrooms = d.Rooms.Count(r => r.RoomType.ToLower().Contains("bedroom")),
+                    Bathrooms = d.Rooms.Count(r => r.RoomType.ToLower().Contains("bathroom"))
+                }).ToList()
+            })
             .ToListAsync();
-        var workflowIds = workflows.Select(w => w.Id).ToList();
-        var projects = await _context.Projects.AsNoTracking().Where(p => workflowIds.Contains(p.WorkflowStateId)).ToDictionaryAsync(p => p.WorkflowStateId, p => p.Id);
-        var reviews = await _context.ValidationRequests.AsNoTracking().Where(r => workflowIds.Contains(r.WorkflowStateId))
-            .OrderByDescending(r => r.CreatedAt).ToListAsync();
-        return Ok(workflows.Select(w => { var review = reviews.FirstOrDefault(r => r.WorkflowStateId == w.Id); var approved = reviews.FirstOrDefault(r => r.WorkflowStateId == w.Id && r.Status == "Approved")?.HouseDesignId; return ToHistory(w, false, projects.TryGetValue(w.Id, out var pid) ? pid : null, review?.Status, review?.ArchitectReview, approved); }).Where(w => w.Designs.Count > 0));
+
+        var workflowIds = workflowsData.Select(w => w.Id).ToList();
+        var projects = await _context.Projects.AsNoTracking()
+            .Where(p => workflowIds.Contains(p.WorkflowStateId))
+            .ToDictionaryAsync(p => p.WorkflowStateId, p => p.Id);
+
+        var reviews = await _context.ValidationRequests.AsNoTracking()
+            .Where(r => workflowIds.Contains(r.WorkflowStateId))
+            .Select(r => new { r.WorkflowStateId, r.Status, r.ArchitectReview, r.HouseDesignId, r.CreatedAt })
+            .ToListAsync();
+
+        var latestReviewsByWorkflow = reviews
+            .GroupBy(r => r.WorkflowStateId)
+            .ToDictionary(g => g.Key, g => g.OrderByDescending(r => r.CreatedAt).First());
+
+        var result = workflowsData.Select(w =>
+        {
+            var hasReview = latestReviewsByWorkflow.TryGetValue(w.Id, out var review);
+            var approvedDesignId = hasReview && review.Status == "Approved" ? review.HouseDesignId : (Guid?)null;
+            var pid = projects.TryGetValue(w.Id, out var id) ? id : (Guid?)null;
+
+            var designs = w.Designs.Select(d => new DesignHistoryDto(
+                d.Id, d.Version, d.IsCurrent, w.PreferredHouseDesignId == d.Id, d.IsArchived, approvedDesignId == d.Id,
+                d.TemplateId, d.Bedrooms, d.Bathrooms, d.FloorCount, d.TotalBuiltUpAreaSqft, d.FoundationType,
+                null, null, null, null, null, new List<DesignPreviewRoomDto>(), d.CreatedAt
+            )).ToList();
+
+            return new WorkflowDesignHistoryDto(
+                w.Id, w.Status, w.PreferredHouseDesignId, w.CreatedAt, designs, pid, hasReview ? review.Status : null, hasReview ? review.ArchitectReview : null
+            );
+        }).Where(w => w.Designs.Count > 0).ToList();
+
+        return Ok(result);
     }
 
     [HttpPost("{id:guid}/designs/{designId:guid}/select")]

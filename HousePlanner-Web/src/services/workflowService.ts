@@ -1,3 +1,4 @@
+import type { AxiosRequestConfig } from 'axios';
 import apiClient from './apiClient';
 
 export interface OpeningDto {
@@ -192,8 +193,8 @@ export const workflowService = {
  },
  checkCompatibility: async (payload: any) =>
   (await apiClient.post('/design-compatibility/options', payload)).data,
- getMyDesigns: async (): Promise<WorkflowDesignHistoryDto[]> =>
-  (await apiClient.get<WorkflowDesignHistoryDto[]>('/workflows/designs')).data,
+ getMyDesigns: async (config?: AxiosRequestConfig): Promise<WorkflowDesignHistoryDto[]> =>
+  (await apiClient.get<WorkflowDesignHistoryDto[]>('/workflows/designs', config)).data,
  getDesigns: async (id: string): Promise<WorkflowDesignHistoryDto> =>
   (await apiClient.get<WorkflowDesignHistoryDto>(`/workflows/${id}/designs`)).data,
  selectDesign: async (workflowId: string, designId: string) =>

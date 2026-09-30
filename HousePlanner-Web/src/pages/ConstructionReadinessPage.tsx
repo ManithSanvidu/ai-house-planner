@@ -61,6 +61,7 @@ export const ConstructionReadinessPage: React.FC = () => {
   });
 
   useEffect(() => {
+    const controller = new AbortController();
     const initializeProject = async () => {
       try {
         const projectsList: { id: string, name: string }[] = [];
@@ -75,7 +76,7 @@ export const ConstructionReadinessPage: React.FC = () => {
             }
           })(),
           (async () => {
-            const designs = await workflowService.getMyDesigns();
+            const designs = await workflowService.getMyDesigns({ signal: controller.signal });
             designs.forEach((w: any) => {
               w.designs.forEach((d: any) => {
                 projectsList.push({ id: d.designId, name: `Project ${d.designId.substring(0, 8)}` });
@@ -102,11 +103,14 @@ export const ConstructionReadinessPage: React.FC = () => {
             setError("No active construction projects or designs found.");
           }
         }
-      } catch (e) {
-        setError("Failed to load projects.");
+      } catch (e: any) {
+        if (e.name !== 'CanceledError' && e.name !== 'AbortError') {
+          setError("Failed to load projects.");
+        }
       }
     };
     initializeProject();
+    return () => { controller.abort(); };
   }, [urlProjectId]);
 
   const fetchMaterials = async () => {

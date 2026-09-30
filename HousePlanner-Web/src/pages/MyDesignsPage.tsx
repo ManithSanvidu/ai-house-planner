@@ -22,7 +22,24 @@ const MyDesignsPage: React.FC = () => {
   catch (err: any) { setError(err.message || 'Could not load saved designs.'); }
   finally { setLoading(false); }
  };
- useEffect(() => { void load(); }, []);
+ useEffect(() => {
+  const controller = new AbortController();
+  const fetchInitial = async () => {
+   setLoading(true);
+   try {
+    const data = await workflowService.getMyDesigns({ signal: controller.signal });
+    setProjects(data); setError('');
+   } catch (err: any) {
+    if (err.name !== 'CanceledError' && err.name !== 'AbortError') {
+     setError(err.message || 'Could not load saved designs.');
+    }
+   } finally {
+    setLoading(false);
+   }
+  };
+  void fetchInitial();
+  return () => { controller.abort(); };
+ }, []);
 
  const select = async (workflowId: string, designId: string) => {
   await workflowService.selectDesign(workflowId, designId); await load();
