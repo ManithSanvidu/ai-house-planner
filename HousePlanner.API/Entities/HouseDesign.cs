@@ -82,4 +82,7 @@ public class HouseDesign
 
     // Relational navigation to cost estimate rows
     public virtual ICollection<CostEstimate> CostEstimates { get; set; } = new List<CostEstimate>();
+
+    // Relational navigation to validation reports
+    public virtual ICollection<DesignValidationReport> ValidationReports { get; set; } = new List<DesignValidationReport>();
 }

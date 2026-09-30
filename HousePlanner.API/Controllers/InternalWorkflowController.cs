@@ -217,6 +217,102 @@ public class InternalWorkflowController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Internal endpoint for the Validation Agent to submit the full design validation report.
+    /// This provides a comprehensive overview of geometry and business rules compliance for the current design version.
+    /// </summary>
+    [HttpPost("{id:guid}/validation-report")]
+    public async Task<IActionResult> SaveValidationReport(Guid id, [FromBody] CreateDesignValidationReportRequest request)
+    {
+        try
+        {
+            var workflow = await FindWorkflowState(id);
+            if (workflow is null) return NotFound(new { message = $"Unknown workflow {id}." });
+
+            var currentDesign = workflow.HouseDesigns.FirstOrDefault(d => d.IsCurrent && !d.IsArchived);
+            if (currentDesign is null)
+                return Conflict(new { message = "No current house design exists for this workflow." });
+
+            var attemptNumber = Math.Max(1, request.AttemptNumber);
+            var validationSummary = request.ValidationSummary?[..Math.Min(request.ValidationSummary.Length, 2000)];
+            var validationSourceVersion = request.ValidationSourceVersion?[..Math.Min(request.ValidationSourceVersion.Length, 50)];
+
+            var overallPassed = request.GeometryPassed && request.BusinessPassed;
+
+            // Simple idempotency check
+            var existingReport = await _context.DesignValidationReports
+                .FirstOrDefaultAsync(r => r.HouseDesignId == currentDesign.Id 
+                                       && r.AttemptNumber == attemptNumber 
+                                       && r.ValidationSourceVersion == validationSourceVersion);
+
+            if (existingReport != null)
+            {
+                return Ok(new 
+                {
+                    ValidationReportId = existingReport.Id,
+                    HouseDesignId = existingReport.HouseDesignId,
+                    DesignVersion = existingReport.DesignVersion,
+                    OverallPassed = existingReport.OverallPassed,
+                    GeometryPassed = existingReport.GeometryPassed,
+                    BusinessPassed = existingReport.BusinessPassed,
+                    AttemptNumber = existingReport.AttemptNumber,
+                    ValidatedAt = existingReport.ValidatedAt
+                });
+            }
+
+            var report = new DesignValidationReport
+            {
+                HouseDesignId = currentDesign.Id,
+                OverallPassed = overallPassed,
+                GeometryPassed = request.GeometryPassed,
+                BusinessPassed = request.BusinessPassed,
+                GeometryFailuresJson = JsonSerializer.Serialize(request.GeometryFailures ?? new List<string>()),
+                GeometryFailedRulesJson = JsonSerializer.Serialize(request.GeometryFailedRules ?? new List<string>()),
+                BusinessRulesJson = request.BusinessRules.ValueKind == JsonValueKind.Undefined || request.BusinessRules.ValueKind == JsonValueKind.Null ? "[]" : request.BusinessRules.GetRawText(),
+                ValidationSummary = validationSummary,
+                AttemptNumber = attemptNumber,
+                DesignVersion = currentDesign.Version,
+                ValidationSourceVersion = validationSourceVersion,
+                ValidatedAt = DateTimeOffset.UtcNow
+            };
+
+            _context.DesignValidationReports.Add(report);
+
+            if (overallPassed)
+            {
+                workflow.Status = "awaiting_approval";
+                workflow.ApprovalStatus = "pending";
+                workflow.FailureReason = null;
+            }
+            else
+            {
+                string? reason = request.ValidationSummary ?? "Validation failed";
+                workflow.FailureReason = reason[..Math.Min(reason.Length, 1000)];
+            }
+
+            workflow.UpdatedAt = DateTimeOffset.UtcNow;
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Validation report saved for workflow {WorkflowId}: passed={Passed}, status={Status}", id, overallPassed, workflow.Status);
+            return Ok(new 
+            {
+                ValidationReportId = report.Id,
+                HouseDesignId = report.HouseDesignId,
+                DesignVersion = report.DesignVersion,
+                OverallPassed = report.OverallPassed,
+                GeometryPassed = report.GeometryPassed,
+                BusinessPassed = report.BusinessPassed,
+                AttemptNumber = report.AttemptNumber,
+                ValidatedAt = report.ValidatedAt
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error saving validation report for workflow {WorkflowId}", id);
+            return StatusCode(StatusCodes.Status500InternalServerError, new { message = "An error occurred saving the validation report." });
+        }
+    }
+
     [HttpPatch("{id:guid}/status")]
     public async Task<IActionResult> UpdateGenerationStatus(Guid id, [FromBody] JsonElement data)
     {

@@ -26,6 +26,7 @@ namespace HousePlanner.API.Data
         public DbSet<CostEstimate> CostEstimates { get; set; }
         public DbSet<CostEstimationRun> CostEstimationRuns { get; set; }
         public DbSet<ConstructionMaterial> ConstructionMaterials { get; set; }
+        public DbSet<DesignValidationReport> DesignValidationReports { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -106,6 +107,17 @@ namespace HousePlanner.API.Data
                 {
                     // Ignore for in-memory provider
                 }
+            });
+
+            modelBuilder.Entity<DesignValidationReport>(entity =>
+            {
+                entity.HasIndex(e => e.HouseDesignId).HasDatabaseName("IX_DesignValidationReports_HouseDesignId");
+                entity.HasIndex(e => new { e.HouseDesignId, e.ValidatedAt }).HasDatabaseName("IX_DesignValidationReports_Design_ValidatedAt");
+                entity.HasOne(e => e.HouseDesign)
+                    .WithMany(d => d.ValidationReports)
+                    .HasForeignKey(e => e.HouseDesignId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.Property(e => e.ValidatedAt).HasDefaultValueSql("now()");
             });
 
             modelBuilder.Entity<WorkflowState>()
