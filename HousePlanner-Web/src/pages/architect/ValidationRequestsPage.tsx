@@ -5,18 +5,21 @@ import type { ValidationRequest } from '../../types/validation.types';
 import { Eye } from 'lucide-react';
 // Force Vite HMR
 
-const ValidationRequestsPage: React.FC = () => {
- const [requests, setRequests] = useState<ValidationRequest[]>([]);
- const [loading, setLoading] = useState(true);
- const [error, setError] = useState<string | null>(null);
- const navigate = useNavigate();
+ const ValidationRequestsPage: React.FC = () => {
+  const [requests, setRequests] = useState<ValidationRequest[]>([]);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
- useEffect(() => {
+  useEffect(() => {
   const fetchRequests = async () => {
    try {
-    const pending = await validationRequestService.getAll('Pending');
-    const underReview = await validationRequestService.getAll('Under Review');
-    setRequests([...pending, ...underReview]);
+    setLoading(true);
+    const response = await validationRequestService.getAll(['Pending', 'Under Review'], page);
+    setRequests(response.items);
+    setTotalPages(response.totalPages);
    } catch {
     setError('Failed to load validation requests.');
    } finally {
@@ -24,7 +27,7 @@ const ValidationRequestsPage: React.FC = () => {
    }
   };
   fetchRequests();
- }, []);
+ }, [page]);
 
  const formatDate = (dateString?: string) => {
   if (!dateString) return 'N/A';
@@ -122,6 +125,28 @@ const ValidationRequestsPage: React.FC = () => {
        )}
       </tbody>
      </table>
+    </div>
+    
+    <div className="px-6 py-4 border-t border-border dark:border-border-strong flex items-center justify-between">
+     <div className="text-sm text-text-secondary">
+      Page {page} of {Math.max(1, totalPages)}
+     </div>
+     <div className="flex gap-2">
+      <button
+       onClick={() => setPage(p => Math.max(1, p - 1))}
+       disabled={page === 1}
+       className="px-3 py-1 text-sm border rounded-md disabled:opacity-50 dark:border-border-strong text-text-primary"
+      >
+       Previous
+      </button>
+      <button
+       onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+       disabled={page >= totalPages}
+       className="px-3 py-1 text-sm border rounded-md disabled:opacity-50 dark:border-border-strong text-text-primary"
+      >
+       Next
+      </button>
+     </div>
     </div>
    </div>
   </div>

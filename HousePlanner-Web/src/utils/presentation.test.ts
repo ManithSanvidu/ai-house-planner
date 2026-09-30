@@ -5,7 +5,7 @@ describe('customer presentation helpers', () => {
  it('formats topology and workflow values without changing source data', () => {
   expect(formatTopology('CENTRAL_CORE')).toBe('Central Core');
   expect(formatTopology('L_SHAPE')).toBe('L-Shaped');
-  expect(formatWorkflowStatus('DESIGN_GENERATED')).toBe('Design Ready');
+  expect(formatWorkflowStatus('DESIGN_GENERATED')).toBe('Ready for Architect Review');
  });
 
  it('derives a friendly catalogue name from the stable design code', () => {

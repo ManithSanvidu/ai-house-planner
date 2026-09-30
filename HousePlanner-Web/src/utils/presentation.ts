@@ -15,12 +15,12 @@ const topologyLabels: Record<string, string> = {
 };
 
 const statusLabels: Record<string, string> = {
- DESIGN_GENERATED: 'Design Ready',
+ DESIGN_GENERATED: 'Ready for Architect Review',
  SELECTED_BY_CLIENT: 'Design Selected',
  AWAITING_APPROVAL: 'Ready for Your Review',
  CLIENT_REVIEW: 'Ready for Your Review',
- SUBMITTED_FOR_ARCHITECT_REVIEW: 'Sent to Architect',
- AWAITING_ARCHITECT_REVIEW: 'Sent to Architect',
+ SUBMITTED_FOR_ARCHITECT_REVIEW: 'Awaiting Architect Review',
+ AWAITING_ARCHITECT_REVIEW: 'Awaiting Architect Review',
  APPROVED: 'Approved',
  REVISION_REQUESTED: 'Revision Requested',
  RUNNING: 'Creating Your Design',

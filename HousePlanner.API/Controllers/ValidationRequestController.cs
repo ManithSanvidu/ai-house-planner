@@ -59,25 +59,52 @@ namespace HousePlanner.API.Controllers
             return Ok(new { message = "Validation request submitted.", id = request.Id });
         }
 
+        [HttpGet("summary")]
+        [Authorize(Roles = "Architect")]
+        public async Task<IActionResult> GetSummary()
+        {
+            var userCtx = await _currentUser.GetAsync(HttpContext);
+            if (userCtx == null || userCtx.Id == null) return Unauthorized();
+            if (userCtx.Role != "Architect")
+                return StatusCode(403, new { message = "Unauthorized access." });
+
+            var counts = await _context.ValidationRequests
+                .AsNoTracking()
+                .GroupBy(v => v.Status)
+                .Select(g => new { Status = g.Key, Count = g.Count() })
+                .ToListAsync();
+
+            int Get(string s) => counts.FirstOrDefault(c => c.Status == s)?.Count ?? 0;
+
+            return Ok(new
+            {
+                pending    = Get("Pending"),
+                underReview = Get("Under Review"),
+                approved   = Get("Approved"),
+                rejected   = Get("Rejected")
+            });
+        }
+
         [HttpGet]
-        public async Task<IActionResult> GetRequests([FromQuery] string? status)
+        public async Task<IActionResult> GetRequests(
+            [FromQuery] string[]? status,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 50)
         {
             var userCtx = await _currentUser.GetAsync(HttpContext);
             if (userCtx == null || userCtx.Id == null) return Unauthorized();
             var role = userCtx.Role;
             var userId = userCtx.Id;
 
-            IQueryable<ValidationRequest> query = _context.ValidationRequests
-                .Include(v => v.Client)
-                .Include(v => v.WorkflowState)
-                    .ThenInclude(w => w.LandSubmission)
-                .Include(v => v.HouseDesign).ThenInclude(d => d!.Rooms)
-                .OrderByDescending(v => v.CreatedAt);
+            if (page < 1) page = 1;
+            if (pageSize < 1 || pageSize > 100) pageSize = 100;
+
+            IQueryable<ValidationRequest> query = _context.ValidationRequests.AsNoTracking();
 
             if (role == "Architect")
             {
-                if (!string.IsNullOrEmpty(status))
-                    query = query.Where(v => v.Status == status);
+                if (status != null && status.Length > 0)
+                    query = query.Where(v => status.Contains(v.Status));
             }
             else if (role == "Customer")
             {
@@ -88,8 +115,38 @@ namespace HousePlanner.API.Controllers
                 return StatusCode(403, new { message = "Unauthorized access." });
             }
 
-            var requests = await query.ToListAsync();
-            return Ok(requests.Select(MapToDto));
+            var totalCount = await query.CountAsync();
+
+            var items = await query
+                .OrderByDescending(v => v.CreatedAt)
+                .ThenByDescending(v => v.Id)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(req => new
+                {
+                    id = req.Id,
+                    clientName = req.Client.FullName,
+                    submissionDate = req.CreatedAt,
+                    status = req.Status,
+                    budget = req.WorkflowState.LandSubmission.BudgetLkr,
+                    landSize = req.WorkflowState.LandSubmission.LandSizePerches,
+                    bedrooms = req.WorkflowState.LandSubmission.PreferredBedrooms,
+                    floors = req.WorkflowState.LandSubmission.PreferredFloors,
+                    style = req.WorkflowState.LandSubmission.StylePreference,
+                    designVersion = req.HouseDesign != null ? req.HouseDesign.Version : (int?)null,
+                    bathrooms = req.HouseDesign != null ? req.HouseDesign.Rooms.Count(r => r.RoomType.Contains("bathroom")) : 0,
+                    area = req.HouseDesign != null ? req.HouseDesign.TotalBuiltUpAreaSqft : (decimal?)null
+                })
+                .ToListAsync();
+
+            return Ok(new
+            {
+                items,
+                page,
+                pageSize,
+                totalCount,
+                totalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
+            });
         }
 
         [HttpGet("{id}")]

@@ -404,9 +404,6 @@ public class WorkflowController : ControllerBase
             .ToListAsync();
 
         var workflowIds = workflowsData.Select(w => w.Id).ToList();
-        var projects = await _context.Projects.AsNoTracking()
-            .Where(p => workflowIds.Contains(p.WorkflowStateId))
-            .ToDictionaryAsync(p => p.WorkflowStateId, p => p.Id);
 
         var reviews = await _context.ValidationRequests.AsNoTracking()
             .Where(r => workflowIds.Contains(r.WorkflowStateId))
@@ -421,7 +418,7 @@ public class WorkflowController : ControllerBase
         {
             var hasReview = latestReviewsByWorkflow.TryGetValue(w.Id, out var review);
             var approvedDesignId = hasReview && review.Status == "Approved" ? review.HouseDesignId : (Guid?)null;
-            var pid = projects.TryGetValue(w.Id, out var id) ? id : (Guid?)null;
+            var pid = (Guid?)null;
 
             var designs = w.Designs.Select(d => new DesignHistoryDto(
                 d.Id, d.Version, d.IsCurrent, w.PreferredHouseDesignId == d.Id, d.IsArchived, approvedDesignId == d.Id,

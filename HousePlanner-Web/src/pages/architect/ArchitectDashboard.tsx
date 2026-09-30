@@ -10,16 +10,12 @@ const ArchitectDashboard: React.FC = () => {
  useEffect(() => {
   const fetchStats = async () => {
    try {
-    const pending = await validationRequestService.getAll('Pending');
-    const underReview = await validationRequestService.getAll('Under Review');
-    const approved = await validationRequestService.getAll('Approved');
-    const rejected = await validationRequestService.getAll('Rejected');
-    
+    const summary = await validationRequestService.getSummary();
     setStats({
-     pending: pending.length,
-     underReview: underReview.length,
-     approved: approved.length,
-     rejected: rejected.length
+     pending: summary.pending,
+     underReview: summary.underReview,
+     approved: summary.approved,
+     rejected: summary.rejected
     });
    } catch {
     setError('Failed to load dashboard statistics.');

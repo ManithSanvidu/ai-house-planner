@@ -2,21 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { workflowService, type WorkflowStatusResponseDto } from '../services/workflowService';
 import { FloorPlanViewer, type FloorPlanData } from '../components/floorplan/FloorPlanViewer';
-import { Menu, Edit2, Trash2, Plus, Save, X } from 'lucide-react';
+import { Edit2, Trash2, Plus, Save, X } from 'lucide-react';
 import { AgentTimeline } from '../components/AgentTimeline';
 import useAuth from '../features/auth/useAuth';
-import { countLabel, formatArea, formatFloorName, formatFoundation, formatRoomName, formatTerrain, formatTopology, formatWorkflowStatus } from '../utils/presentation';
+import { formatFloorName, formatRoomName, formatWorkflowStatus } from '../utils/presentation';
 import { SHOW_TECHNICAL_PLAN } from '../config/features';
-
-const roomGroup = (roomType: string) => {
-  const type = roomType.toLowerCase();
-  if (type.includes('bedroom')) return 'Bedrooms';
-  if (type.includes('bathroom') || type.includes('ensuite')) return 'Bathrooms';
-  if (['kitchen', 'utility', 'pantry', 'laundry'].some(value => type.includes(value))) return 'Kitchen & Utility';
-  if (['hall', 'stair', 'foyer', 'landing', 'corridor'].some(value => type.includes(value))) return 'Circulation';
-  if (['living', 'dining', 'lounge', 'family'].some(value => type.includes(value))) return 'Living Spaces';
-  return 'Other Spaces';
-};
 
 export const WorkflowReviewPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -26,10 +16,7 @@ export const WorkflowReviewPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedFloor, setSelectedFloor] = useState<number>(1);
-  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<'floorplan' | 'construction'>('floorplan');
-  const [pollCycle, setPollCycle] = useState(0);
-  const [actionLoading, setActionLoading] = useState(false);
   const [visualizationData, setVisualizationData] = useState<any>(null);
 
   useEffect(() => {
@@ -196,7 +183,7 @@ export const WorkflowReviewPage: React.FC = () => {
     fetchWorkflow();
     interval = setInterval(() => { fetchWorkflow(); }, 3000);
     return () => clearInterval(interval);
-  }, [id, pollCycle, previewDesignId]);
+  }, [id, previewDesignId]);
 
   if (loading) {
     return (
@@ -301,48 +288,14 @@ export const WorkflowReviewPage: React.FC = () => {
 
   const floorNumbers = Array.from({ length: workflow.design.floorCount }, (_, i) => i + 1);
   // Customer actions (approve/reject are architect-only; we don't show them here)
-  const sendToArchitect = async () => { if (!id || !workflow?.design || actionLoading) return; setActionLoading(true); try { await workflowService.submitArchitectReview(id, workflow.design.designId); setPollCycle(x => x + 1) } catch (e: any) { setError(e.response?.data?.message || 'Could not send this design to the architect.') } finally { setActionLoading(false) } };
 
-  const generateAnother = async () => {
-    if (!id || !workflow?.design || actionLoading) return;
-    setActionLoading(true);
-    try {
-      await workflowService.regenerateDesign(id, workflow.design.designId);
-      setWorkflow(current => current ? { ...current, status: 'running' } : current);
-      setPollCycle(x => x + 1);
-    } catch (e: any) {
-      alert(`Error: ${e.response?.data?.message || e.message}`);
-    } finally {
-      setActionLoading(false);
-    }
-  };
 
   const bedroomCount = workflow.design.rooms.filter(r => r.roomType?.toLowerCase() === "bedroom").length;
   const bathroomCount = workflow.design.rooms.filter(r => r.roomType?.toLowerCase() === "bathroom").length;
 
   console.log("Extracted generated rooms:", workflow.design.rooms);
-  const groups = workflow.design.rooms.reduce<Record<string, typeof workflow.design.rooms>>((result, room) => {
-    const group = roomGroup(room.roomType);
-    (result[group] ||= []).push(room);
-    return result;
-  }, {});
-  const groupOrder = ['Bedrooms', 'Living Spaces', 'Kitchen & Utility', 'Bathrooms', 'Circulation', 'Other Spaces'];
-  const topology = formatTopology(workflow.design.templateFamily);
-  const site = formatTerrain(workflow.terrainType);
-  const approved = workflow.status === 'approved' || workflow.architectReviewStatus === 'Approved';
-  const pendingReview = workflow.status === 'awaiting_architect_review' || workflow.architectReviewStatus === 'Pending' || workflow.architectReviewStatus === 'Under Review';
-  const rejected = workflow.architectReviewStatus === 'Rejected' || workflow.status === 'revision_requested';
 
   console.log("WORKFLOW RESPONSE", workflow);
-
-  interface WorkflowRequirements {
-    landSizeCategory: string;
-    landSizePerches: number;
-    bedrooms: number;
-    bathrooms: number;
-    houseType: string;
-    floors: number;
-  }
 
 
 

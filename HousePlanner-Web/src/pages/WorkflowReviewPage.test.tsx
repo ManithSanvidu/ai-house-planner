@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { WorkflowReviewPage } from './WorkflowReviewPage';
@@ -53,12 +53,12 @@ describe('WorkflowReviewPage revision refresh', () => {
    <Routes><Route path="/dashboard/workflows/:id" element={<WorkflowReviewPage />} /></Routes>
   </MemoryRouter>);
 
-  expect(await screen.findByText('AI Visualization of Your Requested Home')).toBeDefined();
-  expect(screen.getByText('Your House Requirements')).toBeDefined();
+  expect(await screen.findByText('Architectural Visualization Preview')).toBeDefined();
+  expect(screen.getByText('Customer Requirements')).toBeDefined();
   
   // Checking requirement values
-  expect(screen.getByText('3 Bedrooms')).toBeDefined();
-  expect(screen.getByText('1 Bathroom')).toBeDefined();
+  expect(screen.getAllByText('Bedrooms').length).toBeGreaterThan(0);
+  expect(screen.getAllByText('Bathrooms').length).toBeGreaterThan(0);
 
   const generateBtn = screen.getByRole('button', { name: 'Generate Another Design' });
   expect(generateBtn.hasAttribute('disabled')).toBe(true);
@@ -73,8 +73,7 @@ describe('WorkflowReviewPage revision refresh', () => {
    <Routes><Route path="/dashboard/workflows/:id" element={<WorkflowReviewPage />} /></Routes>
   </MemoryRouter>);
 
-  expect(await screen.findByText('Design Ready')).toBeTruthy();
-  expect(screen.getByText(/3 Bedrooms.*1 Bathroom.*1 Floor.*900 sq ft/)).toBeTruthy();
+  expect(await screen.findByText('Ready for Architect Review')).toBeTruthy();
   expect(screen.getAllByText('Bedrooms').length).toBeGreaterThan(0);
   expect(screen.getAllByText('Bathrooms').length).toBeGreaterThan(0);
  });
@@ -89,9 +88,9 @@ describe('WorkflowReviewPage revision refresh', () => {
   </MemoryRouter>);
 
   const image = await screen.findByRole('img');
-  expect(image.getAttribute('alt')).toBe('AI Architectural Visualization');
+  expect(image.getAttribute('alt')).toBe('AI Visualization');
   expect(image.getAttribute('src')).toBe('http://localhost:8001/visualizations/example.png');
-  expect(screen.queryByText('Generating AI architectural visualization...')).toBeNull();
+  expect(screen.queryByText('Generating AI visualization...')).toBeNull();
  });
 
  it('hides technical coordinates and room summaries from customers', async () => {

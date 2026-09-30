@@ -123,6 +123,9 @@ namespace HousePlanner.API.Data
             modelBuilder.Entity<ValidationRequest>()
                 .HasIndex(x => new { x.WorkflowStateId, x.HouseDesignId, x.Status })
                 .HasDatabaseName("IX_ValidationRequests_Workflow_Design_Status");
+            modelBuilder.Entity<ValidationRequest>()
+                .HasIndex(x => new { x.Status, x.CreatedAt })
+                .HasDatabaseName("IX_ValidationRequests_Status_CreatedAt");
 
             modelBuilder.Entity<Project>()
                 .HasOne(x => x.HouseDesign).WithMany().HasForeignKey(x => x.HouseDesignId)

@@ -4,22 +4,21 @@ import { useNavigate } from 'react-router-dom';
 import type { ValidationRequest } from '../../types/validation.types';
 import { Eye, CheckCircle2 } from 'lucide-react';
 
-const ApprovedRequestsPage: React.FC = () => {
- const [requests, setRequests] = useState<ValidationRequest[]>([]);
- const [loading, setLoading] = useState(true);
- const [error, setError] = useState<string | null>(null);
- const navigate = useNavigate();
+ const ApprovedRequestsPage: React.FC = () => {
+  const [requests, setRequests] = useState<ValidationRequest[]>([]);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
- useEffect(() => {
+  useEffect(() => {
   const fetchRequests = async () => {
    try {
-    const approved = await validationRequestService.getAll('Approved');
-    const rejected = await validationRequestService.getAll('Rejected');
-    // Sort by submission date descending
-    const allHistory = [...approved, ...rejected].sort((a, b) => 
-     new Date(b.submissionDate).getTime() - new Date(a.submissionDate).getTime()
-    );
-    setRequests(allHistory);
+    setLoading(true);
+    const response = await validationRequestService.getAll(['Approved', 'Rejected'], page);
+    setRequests(response.items);
+    setTotalPages(response.totalPages);
    } catch {
     setError('Failed to load request history.');
    } finally {
@@ -27,7 +26,7 @@ const ApprovedRequestsPage: React.FC = () => {
    }
   };
   fetchRequests();
- }, []);
+ }, [page]);
 
  const formatDate = (dateString?: string) => {
   if (!dateString) return 'N/A';
@@ -125,6 +124,27 @@ const ApprovedRequestsPage: React.FC = () => {
        )}
       </tbody>
      </table>
+    </div>
+    <div className="px-6 py-4 border-t border-border dark:border-border-strong flex items-center justify-between">
+     <div className="text-sm text-text-secondary">
+      Page {page} of {Math.max(1, totalPages)}
+     </div>
+     <div className="flex gap-2">
+      <button
+       onClick={() => setPage(p => Math.max(1, p - 1))}
+       disabled={page === 1}
+       className="px-3 py-1 text-sm border rounded-md disabled:opacity-50 dark:border-border-strong text-text-primary"
+      >
+       Previous
+      </button>
+      <button
+       onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+       disabled={page >= totalPages}
+       className="px-3 py-1 text-sm border rounded-md disabled:opacity-50 dark:border-border-strong text-text-primary"
+      >
+       Next
+      </button>
+     </div>
     </div>
    </div>
   </div>
