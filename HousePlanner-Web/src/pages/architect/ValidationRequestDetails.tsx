@@ -167,12 +167,8 @@ const ValidationRequestDetails: React.FC = () => {
     </div>
    </div>
 
-   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    
-    {/* Left Column: Details */}
-    <div className="lg:col-span-2 space-y-6">
-     
-     {/* Client & Land Details Card */}
+   <div className="space-y-6">
+    {/* Client & Land Details Card */}
      <div className="bg-surface border border-border dark:border-border-strong rounded-2xl shadow-sm p-6">
       <h2 className="text-lg font-bold text-gray-900 dark:text-text-primary flex items-center gap-2 mb-6">
        <FileText className="text-indigo-600" size={20} />
@@ -232,18 +228,18 @@ const ValidationRequestDetails: React.FC = () => {
       </div>
      </div>
 
-     <CostBreakdownCard cost={request.cost} />
-
+    {/* Main Review Area */}
+    <div className="space-y-6">
      {/* Architectural Visualization */}
      {request.design && (
-      <div className="bg-surface border border-border dark:border-border-strong rounded-2xl shadow-sm p-6">
-       <h2 className="text-lg font-bold text-gray-900 dark:text-text-primary mb-4">Architectural Visualization</h2>
-       <div className="bg-zinc-950 rounded-xl overflow-hidden min-h-[280px] flex items-center justify-center">
+      <div className="bg-white dark:bg-white border border-slate-200 dark:border-slate-200 rounded-2xl shadow-sm p-6 md:p-8">
+       <h2 className="text-lg font-bold text-slate-900 dark:text-slate-900 mb-5">Architectural Visualization</h2>
+       <div className="bg-white rounded-xl overflow-hidden min-h-[420px] md:min-h-[520px] flex items-center justify-center">
         {visualizationData?.status === 'completed' && visualizationData?.imageUrl ? (
          <img
           src={visualizationData.imageUrl}
           alt="AI Architectural Visualization"
-          className="w-full max-h-[400px] object-contain"
+          className="w-full max-h-[720px] object-contain"
          />
         ) : visualizationData?.status === 'generating' || visualizationData === null ? (
          <div className="text-zinc-500 flex flex-col items-center gap-3">
@@ -260,34 +256,43 @@ const ValidationRequestDetails: React.FC = () => {
       </div>
      )}
 
-     <section className="bg-surface border border-border dark:border-border-strong rounded-2xl shadow-sm p-6">
-      <h2 className="text-lg font-bold text-gray-900 dark:text-text-primary mb-1">Generated Floor Plan</h2>
-      <p className="text-sm text-text-secondary mb-4">Created by deterministic spatial planning engine</p>
+     <section className="bg-white dark:bg-white border border-slate-200 dark:border-slate-200 rounded-2xl shadow-sm p-6 md:p-8">
+      <h2 className="text-lg font-bold text-slate-900 dark:text-slate-900 mb-1">Generated Floor Plan</h2>
+      <p className="text-sm text-slate-500 dark:text-slate-500 mb-4">Created by deterministic spatial planning engine</p>
 
       {request.design?.rooms?.length ? (
-       <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-border dark:border-border-strong p-4 max-h-80 overflow-y-auto">
-        <ul className="space-y-4">
-         {request.design.rooms.map(room => (
-          <li key={room.roomId} className="flex flex-col gap-1 p-3 bg-surface border border-border dark:border-border-strong rounded-xl shadow-sm">
-           <span className="font-bold text-gray-900 dark:text-text-primary">{room.name || formatRoomName(room.roomType)}</span>
-           <span className="text-sm text-text-secondary">Size: {room.width} ft × {room.length} ft</span>
-           <span className="text-xs text-text-muted font-mono">Coordinates: X: {room.x} Y: {room.y}</span>
-          </li>
-         ))}
-        </ul>
+       <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-200">
+        <table className="w-full min-w-[440px] text-left text-sm">
+         <thead className="bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
+          <tr>
+           <th scope="col" className="px-4 py-3 font-bold">Room</th>
+           <th scope="col" className="px-4 py-3 font-bold">Size</th>
+           <th scope="col" className="px-4 py-3 font-bold">Position</th>
+          </tr>
+         </thead>
+         <tbody className="divide-y divide-slate-100">
+          {request.design.rooms.map(room => (
+           <tr key={room.roomId} className="bg-white transition-colors hover:bg-slate-50">
+            <td className="px-4 py-3 font-bold text-slate-800 whitespace-nowrap">{room.name || formatRoomName(room.roomType)}</td>
+            <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{room.width} ft × {room.length} ft</td>
+            <td className="px-4 py-3 font-mono text-xs text-slate-500 whitespace-nowrap">X: {room.x} · Y: {room.y}</td>
+           </tr>
+          ))}
+         </tbody>
+        </table>
        </div>
       ) : (
-       <div className="p-8 text-center text-text-secondary border border-dashed border-border dark:border-border-strong rounded-xl">
+       <div className="p-8 text-center text-slate-500 border border-dashed border-slate-200 rounded-xl">
         No active design generated for this request yet.
        </div>
       )}
      </section>
-
     </div>
 
-    {/* Right Column: Actions */}
-    <div className="space-y-6">
-     <div className="bg-surface border border-border dark:border-border-strong rounded-2xl shadow-sm p-6 sticky top-6">
+    <CostBreakdownCard cost={request.cost} />
+
+    {/* Architect Validation / Review Decision */}
+    <div className="bg-surface border border-border dark:border-border-strong rounded-2xl shadow-sm p-6">
       <h2 className="text-lg font-bold text-gray-900 dark:text-text-primary mb-4">Architect Validation</h2>
 
       {isPending && (
@@ -362,9 +367,7 @@ const ValidationRequestDetails: React.FC = () => {
        </div>
       )}
       
-     </div>
     </div>
-    
    </div>
   </div>
  );

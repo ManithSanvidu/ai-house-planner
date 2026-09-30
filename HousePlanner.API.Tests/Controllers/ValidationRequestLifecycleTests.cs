@@ -63,11 +63,14 @@ public sealed class ValidationRequestLifecycleTests
     }
 
     [Fact]
-    public async Task ArchitectCannotApproveUntilCostEstimateExists()
+    public async Task ArchitectCanApproveWithoutCostEstimate()
     {
         var (_, controller, request) = await Setup(includeCost: false);
-        var result = Assert.IsType<BadRequestObjectResult>(await controller.ApproveRequest(request.Id, new ArchitectReviewDto()));
-        using var json = JsonDocument.Parse(JsonSerializer.Serialize(result.Value));
-        Assert.Contains("cost estimate", json.RootElement.GetProperty("message").GetString(), StringComparison.OrdinalIgnoreCase);
+        var details = Assert.IsType<OkObjectResult>(await controller.GetRequestDetails(request.Id));
+        using var json = JsonDocument.Parse(JsonSerializer.Serialize(details.Value));
+        Assert.True(json.RootElement.GetProperty("approvalEligibility").GetProperty("canApprove").GetBoolean());
+        Assert.Equal(JsonValueKind.Null, json.RootElement.GetProperty("approvalEligibility").GetProperty("reason").ValueKind);
+
+        Assert.IsType<OkObjectResult>(await controller.ApproveRequest(request.Id, new ArchitectReviewDto { Review = "Approved without estimate." }));
     }
 }

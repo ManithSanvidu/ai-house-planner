@@ -205,7 +205,6 @@ namespace HousePlanner.API.Controllers
             if (request.Status is not ("Pending" or "Under Review")) return Conflict(new { message = "This request has already been finalized." });
             if (request.ArchitectId.HasValue && request.ArchitectId != userId) return StatusCode(403);
             if (request.HouseDesign is null) return BadRequest(new { message = "A selected design is required before approval." });
-            if (!request.HouseDesign.CostEstimates.Any()) return BadRequest(new { message = "A cost estimate is required before approval." });
 
             request.Status = "Approved";
             request.ArchitectReview = dto.Review;
@@ -302,7 +301,7 @@ namespace HousePlanner.API.Controllers
         {
             var design = req.HouseDesign ?? req.WorkflowState?.HouseDesigns?.OrderByDescending(d => d.Version).FirstOrDefault();
             var cost = design?.CostEstimates.OrderByDescending(c => c.CreatedAt).FirstOrDefault();
-            var canApprove = design is not null && cost is not null && req.Status is "Pending" or "Under Review";
+            var canApprove = design is not null && req.Status is ("Pending" or "Under Review");
             return new
             {
                 id = req.Id,
@@ -323,11 +322,9 @@ namespace HousePlanner.API.Controllers
                     canApprove,
                     reason = design is null
                         ? "A selected design is required before approval."
-                        : cost is null
-                            ? "A cost estimate is required before approval."
-                            : req.Status is not ("Pending" or "Under Review")
-                                ? "This request has already been finalized."
-                                : null,
+                        : req.Status is not ("Pending" or "Under Review")
+                            ? "This request has already been finalized."
+                            : null,
                     budgetStatus = cost?.BudgetDeltaPercent is decimal budgetPercent
                         ? budgetPercent < 100m ? "within_budget" : budgetPercent == 100m ? "at_budget" : "over_budget"
                         : "unavailable"
