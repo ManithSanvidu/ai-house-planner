@@ -23,8 +23,8 @@ export const validationRequestService = {
   return response.data;
  },
 
- getById: async (id: string) => {
-  const response = await apiClient.get(`${API_BASE_URL}/${id}`);
+ getById: async (id: string, signal?: AbortSignal) => {
+  const response = await apiClient.get(`${API_BASE_URL}/${id}`, { signal });
   return response.data;
  },
 

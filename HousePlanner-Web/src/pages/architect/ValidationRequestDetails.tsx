@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { validationRequestService } from '../../services/validationRequestService';
+import { workflowService } from '../../services/workflowService';
 import type { ValidationRequestDetails as ValidationRequestDetailsType } from '../../types/validation.types';
-import { ArrowLeft, CheckCircle, XCircle, Clock, Ruler, Home, Bed, User, Map, FileText } from 'lucide-react';
-import { FloorPlanViewer, type FloorPlanData } from '../../components/floorplan/FloorPlanViewer';
+import { ArrowLeft, CheckCircle, XCircle, Clock, Home, Bed, User, Map, FileText } from 'lucide-react';
 import CostBreakdownCard from '../../components/cost/CostBreakdownCard';
+import { formatRoomName } from '../../utils/presentation';
 
 const ValidationRequestDetails: React.FC = () => {
  const { id } = useParams<{ id: string }>();
@@ -17,21 +18,65 @@ const ValidationRequestDetails: React.FC = () => {
  const [reviewNote, setReviewNote] = useState('');
  const [isSubmitting, setIsSubmitting] = useState(false);
  const [actionError, setActionError] = useState<string | null>(null);
+ const [visualizationData, setVisualizationData] = useState<any>(null);
 
  useEffect(() => {
+  const controller = new AbortController();
+
   const fetchDetails = async () => {
    try {
-    if (!id) return;
-    const data = await validationRequestService.getById(id);
+    if (!id) {
+     setLoading(false);
+     return;
+    }
+    const data = await validationRequestService.getById(id, controller.signal);
+    if (controller.signal.aborted) return;
     setRequest(data);
    } catch {
+    if (controller.signal.aborted) return;
     setError('Failed to load validation request details.');
    } finally {
+    if (controller.signal.aborted) return;
     setLoading(false);
    }
   };
+
   fetchDetails();
+
+  return () => controller.abort();
  }, [id]);
+
+ // Poll visualization — mirrors WorkflowReviewPage behaviour exactly
+ useEffect(() => {
+  const designId = request?.design?.designId;
+  if (!designId) return;
+
+  const controller = new AbortController();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+
+  const loadVisualization = async () => {
+   if (controller.signal.aborted) return;
+
+   try {
+    const result = await workflowService.getDesignVisualization(designId, controller.signal);
+    if (controller.signal.aborted) return;
+    setVisualizationData(result);
+    if (result.status === 'generating' && !controller.signal.aborted) {
+     timer = setTimeout(loadVisualization, 3000);
+    }
+   } catch {
+    if (!controller.signal.aborted) setVisualizationData({ status: 'failed', imageUrl: null });
+   }
+  };
+
+  setVisualizationData(null);
+  loadVisualization();
+
+  return () => {
+   controller.abort();
+   if (timer) clearTimeout(timer);
+  };
+ }, [request?.design?.designId]);
 
  const handleApprove = async () => {
   if (!id) return;
@@ -96,7 +141,6 @@ const ValidationRequestDetails: React.FC = () => {
 
  const isPending = request.status === 'Pending' || request.status === 'Under Review';
  const canApprove = request.approvalEligibility.canApprove;
- let floorPlan:FloorPlanData|null=null;try{floorPlan=request.design?.layoutJson?JSON.parse(request.design.layoutJson):null}catch{floorPlan=null}
 
  return (
   <div className="p-6 md:p-8 max-w-5xl mx-auto space-y-6">
@@ -190,23 +234,55 @@ const ValidationRequestDetails: React.FC = () => {
 
      <CostBreakdownCard cost={request.cost} />
 
-     {/* Design Layout JSON Preview */}
-     <div className="bg-surface border border-border dark:border-border-strong rounded-2xl shadow-sm p-6">
-      <h2 className="text-lg font-bold text-gray-900 dark:text-text-primary flex items-center gap-2 mb-4">
-       <Ruler className="text-indigo-600" size={20} />
-       Proposed Design Layout
-      </h2>
-      
-      {request.design && floorPlan ? (
-       <div className="h-[520px] bg-gray-50 dark:bg-gray-800/50 border border-border dark:border-border-strong rounded-xl overflow-hidden">
-        <FloorPlanViewer data={floorPlan}/>
+     {/* Architectural Visualization */}
+     {request.design && (
+      <div className="bg-surface border border-border dark:border-border-strong rounded-2xl shadow-sm p-6">
+       <h2 className="text-lg font-bold text-gray-900 dark:text-text-primary mb-4">Architectural Visualization</h2>
+       <div className="bg-zinc-950 rounded-xl overflow-hidden min-h-[280px] flex items-center justify-center">
+        {visualizationData?.status === 'completed' && visualizationData?.imageUrl ? (
+         <img
+          src={visualizationData.imageUrl}
+          alt="AI Architectural Visualization"
+          className="w-full max-h-[400px] object-contain"
+         />
+        ) : visualizationData?.status === 'generating' || visualizationData === null ? (
+         <div className="text-zinc-500 flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-4 border-zinc-800 border-t-indigo-500 rounded-full animate-spin" />
+          <span className="text-sm font-medium">Generating AI visualization…</span>
+         </div>
+        ) : (
+         <div className="text-zinc-400 flex flex-col items-center gap-2 text-center p-6">
+          <span className="text-base font-bold text-zinc-300">AI visualization unavailable</span>
+          <span className="text-sm">The floor plan below is the validated deterministic layout.</span>
+         </div>
+        )}
+       </div>
+      </div>
+     )}
+
+     <section className="bg-surface border border-border dark:border-border-strong rounded-2xl shadow-sm p-6">
+      <h2 className="text-lg font-bold text-gray-900 dark:text-text-primary mb-1">Generated Floor Plan</h2>
+      <p className="text-sm text-text-secondary mb-4">Created by deterministic spatial planning engine</p>
+
+      {request.design?.rooms?.length ? (
+       <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-border dark:border-border-strong p-4 max-h-80 overflow-y-auto">
+        <ul className="space-y-4">
+         {request.design.rooms.map(room => (
+          <li key={room.roomId} className="flex flex-col gap-1 p-3 bg-surface border border-border dark:border-border-strong rounded-xl shadow-sm">
+           <span className="font-bold text-gray-900 dark:text-text-primary">{room.name || formatRoomName(room.roomType)}</span>
+           <span className="text-sm text-text-secondary">Size: {room.width} ft × {room.length} ft</span>
+           <span className="text-xs text-text-muted font-mono">Coordinates: X: {room.x} Y: {room.y}</span>
+          </li>
+         ))}
+        </ul>
        </div>
       ) : (
        <div className="p-8 text-center text-text-secondary border border-dashed border-border dark:border-border-strong rounded-xl">
         No active design generated for this request yet.
        </div>
       )}
-     </div>
+     </section>
+
     </div>
 
     {/* Right Column: Actions */}

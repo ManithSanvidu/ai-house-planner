@@ -6,6 +6,7 @@ using HousePlanner.API.DTOs;
 using System.Security.Claims;
 using HousePlanner.API.Services;
 using Microsoft.AspNetCore.Authorization;
+using System.Text.Json;
 
 namespace HousePlanner.API.Controllers
 {
@@ -350,10 +351,76 @@ namespace HousePlanner.API.Controllers
                     floorCount = design.FloorCount,
                     totalBuiltUpAreaSqft = design.TotalBuiltUpAreaSqft,
                     layoutJson = design.LayoutJson,
-
-
+                    rooms = ExtractRoomsWithOpenings(design)
                 } : null
             };
+        }
+
+        private static List<object> ExtractRoomsWithOpenings(HouseDesign design)
+        {
+            // Parse doors/windows from LayoutJson, keyed by (roomType, floor, x, y)
+            var openingsMap = new Dictionary<(string, int, decimal, decimal), (Guid? sourceId, List<object> doors, List<object> windows)>();
+            try
+            {
+                using var doc = JsonDocument.Parse(design.LayoutJson ?? "{}");
+                if (doc.RootElement.TryGetProperty("rooms", out var roomsEl) && roomsEl.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var roomEl in roomsEl.EnumerateArray())
+                    {
+                        var roomType = roomEl.TryGetProperty("room_type", out var rt) ? rt.GetString() ?? "" : "";
+                        var floor    = roomEl.TryGetProperty("floor",     out var fl) ? fl.GetInt32()    : 1;
+                        var x        = roomEl.TryGetProperty("x",         out var xp) ? xp.GetDecimal()  : 0m;
+                        var y        = roomEl.TryGetProperty("y",         out var yp) ? yp.GetDecimal()  : 0m;
+                        Guid? sourceId = roomEl.TryGetProperty("room_id", out var rid) && rid.TryGetGuid(out var g) ? g : null;
+
+                        var doors = new List<object>();
+                        if (roomEl.TryGetProperty("doors", out var doorsEl) && doorsEl.ValueKind == JsonValueKind.Array)
+                            foreach (var d in doorsEl.EnumerateArray())
+                                doors.Add(new
+                                {
+                                    wall   = d.TryGetProperty("wall",   out var dw) ? dw.GetString() ?? "" : "",
+                                    offset = d.TryGetProperty("offset", out var do_) ? do_.GetDecimal()    : 0m,
+                                    width  = d.TryGetProperty("width",  out var dwd) ? dwd.GetDecimal()    : 0m
+                                });
+
+                        var windows = new List<object>();
+                        if (roomEl.TryGetProperty("windows", out var winsEl) && winsEl.ValueKind == JsonValueKind.Array)
+                            foreach (var w in winsEl.EnumerateArray())
+                                windows.Add(new
+                                {
+                                    wall   = w.TryGetProperty("wall",   out var ww)  ? ww.GetString()  ?? "" : "",
+                                    offset = w.TryGetProperty("offset", out var wo)  ? wo.GetDecimal()       : 0m,
+                                    width  = w.TryGetProperty("width",  out var wwd) ? wwd.GetDecimal()      : 0m
+                                });
+
+                        openingsMap[(roomType, floor, x, y)] = (sourceId, doors, windows);
+                    }
+                }
+            }
+            catch (JsonException) { /* best-effort: proceed without openings */ }
+
+            return design.Rooms
+                .OrderBy(r => r.FloorNumber)
+                .ThenBy(r => r.RoomType)
+                .Select(r =>
+                {
+                    openingsMap.TryGetValue((r.RoomType, r.FloorNumber, r.X, r.Y), out var openings);
+                    return (object)new
+                    {
+                        roomId      = openings.sourceId ?? r.Id,
+                        roomType    = r.RoomType,
+                        name        = r.Name,
+                        floorNumber = r.FloorNumber,
+                        x           = r.X,
+                        y           = r.Y,
+                        width       = r.Width,
+                        length      = r.Length,
+                        wallHeight  = r.WallHeight,
+                        doors       = openings.doors   ?? new List<object>(),
+                        windows     = openings.windows ?? new List<object>()
+                    };
+                })
+                .ToList();
         }
     }
 

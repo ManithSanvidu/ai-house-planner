@@ -30,6 +30,19 @@ export interface ValidationRequestDetails extends ValidationRequest {
   floorCount: number;
   totalBuiltUpAreaSqft: number;
   layoutJson: string;
+  rooms: Array<{
+   roomId: string;
+   roomType: string;
+   name: string | null;
+   floorNumber: number;
+   x: number;
+   y: number;
+   width: number;
+   length: number;
+   wallHeight: number;
+   doors: Array<{ wall: string; offset: number; width: number }>;
+   windows: Array<{ wall: string; offset: number; width: number }>;
+  }>;
  } | null;
 }
 
