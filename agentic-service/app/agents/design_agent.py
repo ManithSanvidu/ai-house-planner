@@ -102,6 +102,10 @@ def design_node(state: WorkflowState) -> WorkflowState:
             raise GenerationFailure('Architectural quality validation failed.', [{'failures': quality.failures}])
         validation = validate_geometry(design.rooms, req.bedrooms, getattr(design, 'floor_count', req.floors), land_size,
                                        plot=plot, design=design)
+        
+        # Save geometry validation strictly into its own field before any exception is raised
+        state.geometry_validation_result = validation.to_dict()
+
         if not is_fallback and not validation.passed:
             raise GenerationFailure('Local geometry validation failed.', [{'failures': validation.failures}])
     except (GenerationFailure, ValueError) as exc:

@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using HousePlanner.API.Data;
@@ -128,6 +129,78 @@ namespace HousePlanner.API.Controllers
 
             return Ok(MapToDetailedDto(request));
         }
+
+        [HttpGet("{id}/validation-report")]
+        public async Task<IActionResult> GetValidationReport(Guid id)
+        {
+            var userCtx = await _currentUser.GetAsync(HttpContext);
+            if (userCtx == null || userCtx.Id == null) return Unauthorized();
+            var role = userCtx.Role;
+            var userId = userCtx.Id;
+
+            var request = await _context.ValidationRequests
+                .Include(v => v.HouseDesign).ThenInclude(d => d!.Rooms)
+                .FirstOrDefaultAsync(v => v.Id == id);
+
+            if (request == null) return NotFound(new { message = "Validation request not found." });
+
+            if (role != "Architect" && request.ClientId != userId.Value)
+            {
+                return StatusCode(403, new { message = "Unauthorized access." });
+            }
+
+            if (role == "Architect" && request.ArchitectId.HasValue && request.ArchitectId != userId.Value)
+                return StatusCode(403, new { message = "This request is assigned to another architect." });
+
+            if (request.HouseDesignId == null || request.HouseDesign == null)
+                return NotFound(new { message = "No house design is associated with this request." });
+
+            var report = await _context.DesignValidationReports
+                .Where(r => r.HouseDesignId == request.HouseDesignId)
+                .OrderByDescending(r => r.ValidatedAt)
+                .FirstOrDefaultAsync();
+
+            if (report == null)
+                return NotFound(new { message = "No validation report exists for this design." });
+
+            int bedroomCount = request.HouseDesign.Rooms.Count(r => r.RoomType != null && r.RoomType.ToLower().Contains("bedroom"));
+
+            return Ok(new ValidationReportDto
+            {
+                ValidationReportId = report.Id,
+                HouseDesignId = report.HouseDesignId,
+                DesignVersion = report.DesignVersion,
+                OverallPassed = report.OverallPassed,
+                GeometryPassed = report.GeometryPassed,
+                BusinessPassed = report.BusinessPassed,
+                AttemptNumber = report.AttemptNumber,
+                ValidatedAt = report.ValidatedAt,
+                ValidationSummary = report.ValidationSummary,
+                ValidationSourceVersion = report.ValidationSourceVersion,
+                GeometryFailures = DeserializeJson(report.GeometryFailuresJson),
+                GeometryFailedRules = DeserializeJson(report.GeometryFailedRulesJson),
+                BusinessRules = DeserializeJson(report.BusinessRulesJson),
+                Bedrooms = bedroomCount,
+                Floors = request.HouseDesign.FloorCount,
+                TotalBuiltUpAreaSqft = request.HouseDesign.TotalBuiltUpAreaSqft,
+                FoundationType = request.HouseDesign.FoundationType,
+                TerrainType = request.HouseDesign.TerrainType
+            });
+        }
+
+        private JsonElement? DeserializeJson(string? json)
+        {
+            if (string.IsNullOrWhiteSpace(json)) return null;
+            try
+            {
+                return JsonSerializer.Deserialize<JsonElement>(json);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
 
         [HttpPatch("{id}/approve")]
         public async Task<IActionResult> ApproveRequest(Guid id, [FromBody] ArchitectReviewDto dto)

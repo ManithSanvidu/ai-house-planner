@@ -38,6 +38,9 @@ class WorkflowState(BaseModel):
     design_result:dict[str, Any] | None=None
     construction_plan_result:dict[str, Any] | None=None
     cost_result:dict[str, Any] | None=None
+    geometry_validation_result:dict[str, Any] | None=None
+    business_validation_result:dict[str, Any] | None=None
+    # Kept temporarily for backward compatibility with old routing
     validation_result:dict[str, Any] | None=None
 
     approval_status:Literal["not_requested","pending","approved","rejected","revision_requested"]="not_requested"

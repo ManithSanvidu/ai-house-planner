@@ -494,21 +494,50 @@ class ValidationAgent:
         )
 
 
-def _submit_validation_result(state: WorkflowState, val_result: ValidationResult) -> None:
+def _submit_design_validation_report(state: WorkflowState, val_result: ValidationResult) -> bool:
+    geom_res = state.geometry_validation_result
+    if not geom_res:
+        print("[Validation Agent] Cannot submit report: geometry validation result is missing.")
+        return False
+
+    # Using retry_count + 1 since automatic retry is not yet fully implemented
+    attempt_number = (state.retry_count or 0) + 1
+
+    payload = {
+        "geometryPassed": geom_res.get("passed", False),
+        "geometryFailures": geom_res.get("failures", []),
+        "geometryFailedRules": geom_res.get("failed_rules", []),
+        "businessPassed": val_result.passed,
+        "businessRules": [r.model_dump() for r in val_result.rules],
+        "attemptNumber": attempt_number,
+        "validationSummary": val_result.summary or (val_result.revision_reason if not val_result.passed else "Geometry and business validation passed."),
+        "validationSourceVersion": "deterministic-validation-v1"
+    }
+
+    if not val_result.passed and geom_res.get("passed"):
+        payload["validationSummary"] = f"Geometry validation passed; business validation failed: {val_result.revision_reason}"
+    elif not geom_res.get("passed") and val_result.passed:
+        payload["validationSummary"] = f"Geometry validation failed; business validation passed."
+    elif not geom_res.get("passed") and not val_result.passed:
+        payload["validationSummary"] = f"Geometry and business validation failed."
+
     try:
         headers = {
             "X-Internal-API-Key": INTERNAL_API_KEY,
             "Content-Type": "application/json"
         }
-        requests.patch(
-            f"{ASPNET_API_URL}/internal/workflows/{state.workflow_id}/validation",
-            json=val_result.model_dump(),
+        response = requests.post(
+            f"{ASPNET_API_URL}/internal/workflows/{state.workflow_id}/validation-report",
+            json=payload,
             headers=headers,
             timeout=10,
             verify=False
         )
+        response.raise_for_status()
+        return True
     except requests.RequestException as e:
-        print(f"[Validation Agent] Could not sync validation status to ASP.NET Core: {e}")
+        print(f"[Validation Agent] Could not sync validation report to ASP.NET Core: {e}")
+        return False
 
 
 def validation_node(state: WorkflowState) -> WorkflowState:
@@ -521,11 +550,15 @@ def validation_node(state: WorkflowState) -> WorkflowState:
     """
     print(f"[Validation Agent] Validating constraints for workflow {state.workflow_id}...")
     val_result = validate_house_plan(state)
-    state.validation_result = val_result.model_dump()
+    state.business_validation_result = val_result.model_dump()
+    
     # Keep compatibility with consumers that use the earlier result field name.
+    state.validation_result = val_result.model_dump()
     state.validation_result["is_valid"] = val_result.passed
 
-    if val_result.passed:
+    overall_passed = val_result.passed and bool((state.geometry_validation_result or {}).get("passed", False))
+
+    if overall_passed:
         state.status = "awaiting_approval"
         state.approval_status = "pending"
         state.current_agent = "rendering"
@@ -539,12 +572,23 @@ def validation_node(state: WorkflowState) -> WorkflowState:
 
     from datetime import datetime, timezone
     from app.schemas.workflow_state import ExecutionLogEntry
+
+    persistence_success = _submit_design_validation_report(state, val_result)
+
+    if overall_passed and not persistence_success:
+        # Revert status if persistence fails
+        state.status = "failed"
+        state.approval_status = "not_requested"
+        state.current_agent = "failed"
+        state.validation_result["reason"] = "Validation report persistence failed"
+        log_message = "Design validation passed locally, but failed to sync report to ASP.NET Core"
+        overall_passed = False
+
     state.execution_log.append(ExecutionLogEntry(
         agent_name="ValidationAgent",
         action=log_message,
-        result="passed" if val_result.passed else "failed",
+        result="passed" if overall_passed else "failed",
         created_at_utc=datetime.now(timezone.utc).isoformat(),
     ))
 
-    _submit_validation_result(state, val_result)
     return state
