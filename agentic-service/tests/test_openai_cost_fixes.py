@@ -36,6 +36,7 @@ def test_db_unavailable_blocks_openai(mock_execute):
 @patch("requests.post")
 def test_token_limit_blocks_huge_prompts(mock_post):
     provider = OpenAIProvider()
+    provider.health_check = MagicMock(return_value=True)
     
     # 5000 characters is ~1250 tokens, but we want > 4000 tokens
     # so we need > 16000 characters

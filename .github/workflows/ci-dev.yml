@@ -49,9 +49,25 @@ jobs:
   agentic-service:
     name: Test Agentic Service (Python)
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: agentic_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     defaults:
       run:
         working-directory: ./agentic-service
+    env:
+      DATABASE_CONNECTION_STRING: "Host=localhost;Port=5432;Database=agentic_test;Username=postgres;Password=password;"
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
