@@ -10,7 +10,6 @@ final intakeProvider = StateNotifierProvider<IntakeNotifier, AsyncValue<LandSubm
 
 class IntakeNotifier extends StateNotifier<AsyncValue<LandSubmission>> {
   IntakeNotifier() : super(AsyncValue.data(LandSubmission(
-    landSizePerches: 15.0,
     preferredBedrooms: 3,
     preferredBathrooms: 1,
     preferredFloors: 1,
@@ -132,17 +131,17 @@ class IntakeNotifier extends StateNotifier<AsyncValue<LandSubmission>> {
           'bathrooms': data.preferredBathrooms ?? 1,
           'floors': data.preferredFloors ?? 1,
           'architecturalStyle': data.stylePreference == 'modern' ? 'Modern Minimalist' : data.stylePreference == 'traditional' ? 'Traditional' : data.stylePreference == 'contemporary' ? 'Contemporary' : 'Modern Minimalist',
-          'open_plan': data.openPlan,
-          'master_ensuite': data.masterEnsuite,
-          'separate_dining': data.separateDining,
-          'home_office': data.homeOffice,
+          'openPlan': data.openPlan,
+          'masterEnsuite': data.masterEnsuite,
+          'separateDining': data.separateDining,
+          'homeOffice': data.homeOffice,
           'balcony': data.balcony,
           'veranda': data.veranda,
-          'utility_room': data.utilityLaundry,
-          'parking_required': data.parkingRequired,
+          'utilityRoom': data.utilityLaundry,
+          'parkingRequired': data.parkingRequired,
           'accessibility': data.accessibility,
-          'space_priority': data.spacePriority ?? 'balanced',
-          'circulation_preference': 'space_efficient'
+          'spacePriority': data.spacePriority ?? 'balanced',
+          'circulationPreference': 'space_efficient'
         },
         'designSeed': DateTime.now().millisecondsSinceEpoch % 100000,
       };
