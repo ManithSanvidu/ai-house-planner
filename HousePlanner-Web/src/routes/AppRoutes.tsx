@@ -47,9 +47,9 @@ export const AppRoutes: React.FC = () => (
   <Route path="/dashboard/construction/:projectId/readiness" element={<ProtectedRoute allowedRoles={['Customer', 'Constructor', 'Admin']}><PageContainer><ConstructionReadinessPage /></PageContainer></ProtectedRoute>} />
   <Route path="/dashboard/readiness" element={<ProtectedRoute allowedRoles={['Customer', 'Constructor', 'Admin']}><PageContainer><ConstructionReadinessPage /></PageContainer></ProtectedRoute>} />
   <Route path="/dashboard/plans/:id" element={<ProtectedRoute allowedRoles={['Customer']}><PageContainer><PlanDetailPage /></PageContainer></ProtectedRoute>} />
-  <Route path="/dashboard/admin/plans" element={<ProtectedRoute allowedRoles={['Admin']}><PageContainer><AdminPlansPage /></PageContainer></ProtectedRoute>} />
-  <Route path="/dashboard/admin/plans/new" element={<ProtectedRoute allowedRoles={['Admin']}><PageContainer><AdminPlanFormPage /></PageContainer></ProtectedRoute>} />
-  <Route path="/dashboard/admin/plans/:id/edit" element={<ProtectedRoute allowedRoles={['Admin']}><PageContainer><AdminPlanFormPage /></PageContainer></ProtectedRoute>} />
+  <Route path="/dashboard/admin/plans" element={<ProtectedRoute allowedRoles={['Admin', 'Architect']}><PageContainer><AdminPlansPage /></PageContainer></ProtectedRoute>} />
+  <Route path="/dashboard/admin/plans/new" element={<ProtectedRoute allowedRoles={['Admin', 'Architect']}><PageContainer><AdminPlanFormPage /></PageContainer></ProtectedRoute>} />
+  <Route path="/dashboard/admin/plans/:id/edit" element={<ProtectedRoute allowedRoles={['Admin', 'Architect']}><PageContainer><AdminPlanFormPage /></PageContainer></ProtectedRoute>} />
   <Route path="/dashboard/admin/staff" element={<ProtectedRoute allowedRoles={['Admin']}><PageContainer><AdminStaffPage /></PageContainer></ProtectedRoute>} />
   <Route path="/dashboard/admin/workflows" element={<ProtectedRoute allowedRoles={['Admin']}><PageContainer><AdminWorkflowsPage /></PageContainer></ProtectedRoute>} />
   <Route path="/dashboard/workflows/:id" element={<ProtectedRoute allowedRoles={['Customer', 'Admin', 'Constructor']}><PageContainer><WorkflowReviewPage /></PageContainer></ProtectedRoute>} />

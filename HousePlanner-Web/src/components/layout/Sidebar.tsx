@@ -26,6 +26,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
    { to: '/architect/dashboard', label: 'Architect Dashboard', icon: LayoutDashboard },
    { to: '/architect/requests', label: 'Validation Requests', icon: Library },
    { to: '/architect/approved', label: 'Approved Requests', icon: Shield },
+   { to: '/dashboard/admin/plans', label: 'Manage Plans', icon: Shield },
   ]
   : user.role === 'Constructor'
   ? [

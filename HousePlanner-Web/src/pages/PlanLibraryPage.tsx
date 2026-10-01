@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Bath, BedDouble, House, Layers3, Ruler, Search } from 'lucide-react';
 import { preDesignedPlanService, type PlanFilters, type PreDesignedPlanSummary } from '../services/preDesignedPlanService';
 import { countLabel, formatArea, formatTerrain, formatTopology, getCustomerPlanName, getPlanTopology } from '../utils/presentation';
+import { getImageUrl } from '../utils/imageUtils';
 
 export default function PlanLibraryPage(){
  const [plans,setPlans]=useState<PreDesignedPlanSummary[]>([]), [filters,setFilters]=useState<PlanFilters>({}), [loading,setLoading]=useState(true), [error,setError]=useState('');
@@ -23,7 +24,13 @@ export default function PlanLibraryPage(){
   <label className="flex items-center gap-2 px-2"><input type="checkbox" onChange={e=>setFilters(f=>({...f,parking:e.target.checked||undefined}))}/> Parking</label><label className="flex items-center gap-2 px-2"><input type="checkbox" onChange={e=>setFilters(f=>({...f,office:e.target.checked||undefined}))}/> Office</label><label className="flex items-center gap-2 px-2"><input type="checkbox" onChange={e=>setFilters(f=>({...f,balcony:e.target.checked||undefined}))}/> Balcony</label><label className="flex items-center gap-2 px-2"><input type="checkbox" onChange={e=>setFilters(f=>({...f,accessible:e.target.checked||undefined}))}/> Accessible</label>
  </div>
  {loading?<p>Loading plans…</p>:error?<p role="alert">{error}</p>:plans.length===0?<div className="p-12 text-center border border-dashed rounded-2xl">No plans match these filters.</div>:<div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-5">{plans.map(p=>{const topology=getPlanTopology(p); return <Link aria-label={`View ${getCustomerPlanName(p)}`} key={p.id} to={`/dashboard/plans/${p.id}`} className="group bg-surface border border-border dark:border-border-strong rounded-2xl overflow-hidden hover:border-indigo-400 hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-300 transition">
-  <div className="h-36 bg-gradient-to-br from-indigo-50 via-white to-emerald-50 dark:from-indigo-950 dark:via-gray-900 dark:to-emerald-950 flex flex-col items-center justify-center gap-2 text-center"><House aria-hidden="true" className="text-indigo-600" size={34}/><strong className="text-zinc-800 dark:text-zinc-100">{countLabel(p.bedrooms,'Bedroom')}</strong><span className="text-sm text-text-muted dark:text-zinc-300">{countLabel(p.floorCount,'Floor')}</span>{topology&&<span className="text-xs font-semibold text-indigo-700 dark:text-indigo-300">{formatTopology(topology)}</span>}</div>
+  {p.thumbnailUrl ? (
+    <div className="h-36 bg-zinc-100 dark:bg-zinc-800">
+      <img src={getImageUrl(p.thumbnailUrl)} alt={p.name} className="w-full h-full object-cover" />
+    </div>
+  ) : (
+    <div className="h-36 bg-gradient-to-br from-indigo-50 via-white to-emerald-50 dark:from-indigo-950 dark:via-gray-900 dark:to-emerald-950 flex flex-col items-center justify-center gap-2 text-center"><House aria-hidden="true" className="text-indigo-600" size={34}/><strong className="text-zinc-800 dark:text-zinc-100">{countLabel(p.bedrooms,'Bedroom')}</strong><span className="text-sm text-text-muted dark:text-zinc-300">{countLabel(p.floorCount,'Floor')}</span>{topology&&<span className="text-xs font-semibold text-indigo-700 dark:text-indigo-300">{formatTopology(topology)}</span>}</div>
+  )}
   <div className="p-5"><h2 className="font-bold text-xl text-zinc-900 dark:text-text-primary">{getCustomerPlanName(p)}</h2><p className="text-sm text-text-muted dark:text-zinc-300 capitalize mt-1">{p.style}</p><div className="grid grid-cols-2 gap-3 mt-5 text-sm text-zinc-700 dark:text-gray-200"><span className="flex items-center gap-2"><BedDouble aria-hidden="true" size={18}/>{countLabel(p.bedrooms,'Bedroom')}</span><span className="flex items-center gap-2"><Bath aria-hidden="true" size={18}/>{countLabel(p.bathrooms,'Bathroom')}</span><span className="flex items-center gap-2"><Layers3 aria-hidden="true" size={18}/>{countLabel(p.floorCount,'Floor')}</span><span className="flex items-center gap-2"><Ruler aria-hidden="true" size={18}/>{formatArea(p.totalBuiltUpAreaSqft)}</span></div><div className="mt-5 pt-4 border-t border-zinc-100 border-border-strong flex items-center justify-between"><span className="text-sm text-text-muted">{topology?formatTopology(topology):formatTerrain(p.suitableTerrain)}</span><span className="font-semibold text-indigo-600 group-hover:underline">View Plan</span></div></div>
  </Link>})}</div>}
  </main>

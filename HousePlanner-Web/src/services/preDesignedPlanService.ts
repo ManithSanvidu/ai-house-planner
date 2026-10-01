@@ -9,7 +9,7 @@ export interface PreDesignedPlanSummary {
 }
 export interface PreDesignedPlanDetail extends PreDesignedPlanSummary {
  description?:string; minimumPlotWidthFt?:number; minimumPlotLengthFt?:number; hasUtilityRoom:boolean;
- layout:FloorPlanData; conceptualDisclaimer:string;
+ layout:FloorPlanData; conceptualDisclaimer:string; estimatedConstructionCost?: number;
 }
 export interface PlanFilters { bedrooms?:number; bathrooms?:number; floors?:number; style?:string; terrain?:string; minimumLandSizePerches?:number; maximumBuiltUpArea?:number; parking?:boolean; office?:boolean; balcony?:boolean; accessible?:boolean; category?:string; search?:string }
 export interface PlanCompatibility { compatible:boolean; issues:string[]; warnings:string[]; landSizePerches?:number; minimumLandSizePerches?:number }
@@ -25,5 +25,11 @@ export const preDesignedPlanService = {
  create: async (plan:SavePlan) => (await apiClient.post<PreDesignedPlanDetail>('/admin/pre-designed-plans',plan)).data,
  update: async (id:string, plan:SavePlan) => (await apiClient.put<PreDesignedPlanDetail>(`/admin/pre-designed-plans/${id}`,plan)).data,
  deactivate: async (id:string) => apiClient.delete(`/admin/pre-designed-plans/${id}`),
- setStatus: async (id:string,isActive:boolean) => apiClient.patch(`/admin/pre-designed-plans/${id}/status`,isActive),
+ setStatus: async (id:string,isActive:boolean) => apiClient.patch(`/admin/pre-designed-plans/${id}/status`,isActive, { headers: { 'Content-Type': 'application/json' } }),
+ uploadImage: async (id:string, file:File) => {
+   const formData = new FormData();
+   formData.append('image', file);
+   return (await apiClient.post<{url:string}>(`/admin/pre-designed-plans/${id}/image`, formData, { headers: { 'Content-Type': 'multipart/form-data' } })).data;
+ },
+ removeImage: async (id:string) => apiClient.delete(`/admin/pre-designed-plans/${id}/image`),
 };

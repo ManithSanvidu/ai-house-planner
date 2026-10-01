@@ -62,7 +62,27 @@ const MyDesignsPage: React.FC = () => {
  </div>;
 };
 
-const DesignCard = ({ design, workflow, onSubmit, onRemove }: { design: DesignHistoryDto; workflow: WorkflowDesignHistoryDto; onSubmit: () => void; onRemove: () => void }) => {
+const DesignCard = ({ design, workflow, onSubmit, onRemove }: { design: DesignHistoryDto; workflow: WorkflowDesignHistoryDto; onSubmit: () => Promise<void>; onRemove: () => void }) => {
+ const [isSubmitting, setIsSubmitting] = useState(false);
+ const [submitError, setSubmitError] = useState('');
+ const [submitSuccess, setSubmitSuccess] = useState(false);
+
+ const handleSubmit = async () => {
+  if (isSubmitting) return;
+  setIsSubmitting(true);
+  setSubmitError('');
+  setSubmitSuccess(false);
+  try {
+   await onSubmit();
+   setSubmitSuccess(true);
+   setTimeout(() => setSubmitSuccess(false), 3000);
+  } catch (err: any) {
+   setSubmitError(err?.response?.data?.message || err.message || 'Failed to send to architect');
+  } finally {
+   setIsSubmitting(false);
+  }
+ };
+
  const submitted = workflow.status === 'awaiting_architect_review' && design.isPreferred; const approved = design.isArchitectApproved;
  const rejected = workflow.architectReviewStatus === 'Rejected' && design.isPreferred;
  const managementLocked = workflow.status === 'approved' || workflow.status === 'awaiting_architect_review' || rejected;
@@ -70,9 +90,13 @@ const DesignCard = ({ design, workflow, onSubmit, onRemove }: { design: DesignHi
   <div className="mb-2"><span className="text-xs uppercase text-text-secondary font-bold">Version {design.version}</span><h3 className="font-bold leading-tight">{formatTopology(design.topology)}</h3></div>
   {SHOW_TECHNICAL_PLAN && <MiniPlan design={design}/>}
   <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-sm mb-3"><span>{countLabel(design.bedrooms,'Bedroom')}</span><span>{countLabel(design.bathrooms,'Bathroom')}</span><span>{countLabel(design.floorCount,'Floor')}</span><span>{formatArea(design.totalBuiltUpAreaSqft)}</span><span className="col-span-2 text-text-secondary">{formatGenerationMode(design.generationMode)}</span></div>
+
+  {submitSuccess && <div className="mb-3 rounded-lg bg-emerald-50 text-emerald-700 p-2 text-xs font-bold border border-emerald-200">Sent to architect successfully!</div>}
+  {submitError && <div className="mb-3 rounded-lg bg-red-50 text-red-700 p-2 text-xs font-bold border border-red-200">{submitError}</div>}
+
   {approved && <div className="mb-3 rounded-lg bg-emerald-500/10 px-3 py-2 text-xs font-bold text-emerald-500">✓ Architect Approved</div>}
   {submitted && <div className="mb-3 rounded-lg bg-amber-500/10 px-3 py-2 text-xs font-bold text-amber-500">Awaiting Architect Review</div>}
-  <div className="mt-auto flex flex-col gap-2"><div className="flex gap-2"><Link to={`/dashboard/workflows/${workflow.workflowId}?design=${design.designId}`} className="flex-1 text-center px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 transition-colors">Open Design</Link>{approved?<Link to={`/dashboard/construction?design=${design.designId}`} className="flex-1 text-center px-3 py-2 rounded-lg bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition-colors">Find Constructor</Link>:!managementLocked?<button onClick={onSubmit} className="flex-1 px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 transition-colors">Send to Architect</button>:null}</div><div className="flex flex-wrap items-center gap-2"><Link to={`/dashboard/construction/${design.designId}/readiness`} className="px-3 py-1.5 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/30 hover:bg-indigo-500/20 text-xs font-semibold transition-colors">Readiness Planner</Link>{!managementLocked && <button onClick={onRemove} className="px-3 py-1.5 rounded-lg border border-red-900/30 text-red-500 hover:bg-red-500/10 text-xs font-semibold ml-auto transition-colors" aria-label={`Delete Version ${design.version}`}>Delete</button>}</div></div>
+  <div className="mt-auto flex flex-col gap-2"><div className="flex gap-2"><Link to={`/dashboard/workflows/${workflow.workflowId}?design=${design.designId}`} className="flex-1 text-center px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 transition-colors">Open Design</Link>{approved?<Link to={`/dashboard/construction?design=${design.designId}`} className="flex-1 text-center px-3 py-2 rounded-lg bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition-colors">Find Constructor</Link>:!managementLocked?<button onClick={handleSubmit} disabled={isSubmitting} className="flex-1 px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 transition-colors disabled:opacity-50">{isSubmitting ? 'Sending...' : 'Send to Architect'}</button>:null}</div><div className="flex flex-wrap items-center gap-2"><Link to={`/dashboard/construction/${design.designId}/readiness`} className="px-3 py-1.5 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/30 hover:bg-indigo-500/20 text-xs font-semibold transition-colors">Readiness Planner</Link>{!managementLocked && <button onClick={onRemove} className="px-3 py-1.5 rounded-lg border border-red-900/30 text-red-500 hover:bg-red-500/10 text-xs font-semibold ml-auto transition-colors" aria-label={`Delete Version ${design.version}`}>Delete</button>}</div></div>
  </article>;
 };
 

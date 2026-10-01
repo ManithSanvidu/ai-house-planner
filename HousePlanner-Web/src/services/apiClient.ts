@@ -6,7 +6,7 @@ localStorage.removeItem('mockToken');
 localStorage.removeItem('mockUser');
 
 const apiClient = axios.create({
- baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5265/api/v1',
+ baseURL: import.meta.env.VITE_API_BASE_URL,
  headers: {
   'Content-Type': 'application/json',
  },

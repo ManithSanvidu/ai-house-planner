@@ -5,7 +5,7 @@ import { FloorPlanViewer, type FloorPlanData } from '../components/floorplan/Flo
 import { Edit2, Trash2, Plus, Save, X } from 'lucide-react';
 import { AgentTimeline } from '../components/AgentTimeline';
 import useAuth from '../features/auth/useAuth';
-import { formatFloorName, formatRoomName, formatWorkflowStatus } from '../utils/presentation';
+import { formatFloorName, formatRoomName } from '../utils/presentation';
 import { SHOW_TECHNICAL_PLAN } from '../config/features';
 
 export const WorkflowReviewPage: React.FC = () => {
@@ -54,6 +54,27 @@ export const WorkflowReviewPage: React.FC = () => {
   const [editingPhaseId, setEditingPhaseId] = useState<number | null>(null);
   const [phaseFormData, setPhaseFormData] = useState<any>({});
   const [isAddingPhase, setIsAddingPhase] = useState(false);
+
+  const [isSubmittingToArchitect, setIsSubmittingToArchitect] = useState(false);
+  const [submitArchitectSuccess, setSubmitArchitectSuccess] = useState(false);
+  const [submitArchitectError, setSubmitArchitectError] = useState('');
+
+  const handleSendToArchitect = async () => {
+    if (!id || !workflow?.design?.designId) return;
+    setIsSubmittingToArchitect(true);
+    setSubmitArchitectError('');
+    setSubmitArchitectSuccess(false);
+    try {
+      await workflowService.submitArchitectReview(id, workflow.design.designId);
+      setSubmitArchitectSuccess(true);
+      setWorkflow({ ...workflow, status: 'awaiting_architect_review' });
+      setTimeout(() => setSubmitArchitectSuccess(false), 4000);
+    } catch (err: any) {
+      setSubmitArchitectError(err?.response?.data?.message || err.message || 'Failed to submit design.');
+    } finally {
+      setIsSubmittingToArchitect(false);
+    }
+  };
 
   const startEditingPlan = () => {
     if (!workflow?.constructionPlan) return;
@@ -331,10 +352,18 @@ export const WorkflowReviewPage: React.FC = () => {
                   <p className="text-slate-500 mt-1">This image is a visual rendering generated from the validated deterministic floor plan.</p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-sm font-bold text-slate-500 uppercase tracking-widest">Status</span>
-                  <span className="px-4 py-2 bg-indigo-50 text-indigo-700 rounded-full text-sm font-bold border border-indigo-100">
-                    {formatWorkflowStatus(workflow.status)}
-                  </span>
+                  {submitArchitectSuccess && <span className="text-sm font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200 shadow-sm">Sent to Architect!</span>}
+                  {submitArchitectError && <span className="text-sm font-bold text-red-600 bg-red-50 px-3 py-1.5 rounded-xl border border-red-200 shadow-sm">{submitArchitectError}</span>}
+
+                  {!['awaiting_architect_review', 'approved'].includes(workflow.status) && workflow.architectReviewStatus !== 'Rejected' && (
+                    <button
+                      onClick={handleSendToArchitect}
+                      disabled={isSubmittingToArchitect}
+                      className="px-5 py-2 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-50 shadow-sm"
+                    >
+                      {isSubmittingToArchitect ? 'Sending...' : 'Send to Architect'}
+                    </button>
+                  )}
                 </div>
               </div>
 

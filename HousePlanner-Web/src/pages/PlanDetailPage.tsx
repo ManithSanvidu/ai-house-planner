@@ -4,6 +4,7 @@ import { FloorPlanViewer } from '../components/floorplan/FloorPlanViewer';
 import { preDesignedPlanService, type PreDesignedPlanDetail } from '../services/preDesignedPlanService';
 import { customerConstructionService, type ConstructorProfile } from '../services/customerConstructionService';
 import { countLabel, formatArea, formatFloorName, formatTerrain, formatTopology, getCustomerPlanName, getPlanTopology } from '../utils/presentation';
+import { getImageUrl } from '../utils/imageUtils';
 import type { CostSummaryDto } from '../services/workflowService';
 import { SHOW_TECHNICAL_PLAN } from '../config/features';
 
@@ -14,7 +15,7 @@ export default function PlanDetailPage() {
  const [plan, setPlan] = useState<PreDesignedPlanDetail & { estimatedCost?: CostSummaryDto | null } | null>(null);
  const [floor, setFloor] = useState(1);
  const [error, setError] = useState('');
- 
+
  const [constructionState, setConstructionState] = useState<'LOADING' | 'NO_REQUEST' | 'PENDING' | 'ACCEPTED_OR_ACTIVE' | 'DECLINED' | 'CANCELLED'>('LOADING');
 
  const [constructors, setConstructors] = useState<ConstructorProfile[]>([]);
@@ -41,7 +42,7 @@ export default function PlanDetailPage() {
     setConstructionState('NO_REQUEST');
     return;
    }
-   
+
    const activeProject = overview.activeProjects.find(p => p.houseDesignId === approvedDesigns.find(d => d.basePreDesignedPlanId === plan.id)?.designId);
    const pendingRequest = overview.pendingRequests.find(r => r.houseDesignId === approvedDesigns.find(d => d.basePreDesignedPlanId === plan.id)?.designId);
    const declinedRequest = overview.declinedRequests.find(r => r.houseDesignId === approvedDesigns.find(d => d.basePreDesignedPlanId === plan.id)?.designId);
@@ -79,7 +80,7 @@ export default function PlanDetailPage() {
  if (!plan) return <p className="p-10 text-text-muted">Loading plan...</p>;
 
  const topology = getPlanTopology(plan);
- const displayCost = plan.estimatedCost;
+ const displayCostLkr = plan.estimatedConstructionCost ?? plan.estimatedCost?.totalCostLkr;
 
  return (
   <main className="p-4 md:p-8 lg:p-10 max-w-7xl mx-auto text-zinc-900 dark:text-text-primary space-y-8">
@@ -95,19 +96,25 @@ export default function PlanDetailPage() {
      </div>
      <p className="text-xs text-text-secondary mt-2">Plan reference: {plan.designCode}</p>
     </div>
+
+    {plan.thumbnailUrl && (
+     <div className="mt-6 mb-2">
+      <img src={getImageUrl(plan.thumbnailUrl)} alt={plan.name} className="max-w-full h-auto rounded-2xl border border-border shadow-sm max-h-[500px] object-cover" />
+     </div>
+    )}
    </div>
 
    <div className={SHOW_TECHNICAL_PLAN ? 'grid lg:grid-cols-[minmax(0,1fr)_340px] gap-8' : 'max-w-xl'}>
-    
+
     {/* LEFT COLUMN - VIEWER */}
     {SHOW_TECHNICAL_PLAN && <div className="space-y-6">
      <section className="h-[500px] md:h-[700px] min-w-0 rounded-2xl overflow-hidden border border-border dark:border-border-strong relative bg-surface bg-background shadow-sm">
       {plan.floorCount > 1 && (
        <div className="absolute z-10 m-4 flex flex-wrap gap-2">
         {Array.from({ length: plan.floorCount }, (_, i) => (
-         <button 
-          key={i} 
-          onClick={() => setFloor(i + 1)} 
+         <button
+          key={i}
+          onClick={() => setFloor(i + 1)}
           className={`px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-colors focus-visible:ring-4 focus-visible:ring-indigo-300 ${floor === i + 1 ? 'bg-indigo-600 text-text-primary border-transparent' : 'bg-surface text-zinc-700 dark:text-zinc-300 border border-border'}`}
          >
           {formatFloorName(i + 1)}
@@ -126,7 +133,7 @@ export default function PlanDetailPage() {
 
     {/* RIGHT COLUMN - SIDEBAR */}
     <aside className="space-y-6">
-     
+
      <section className="bg-surface border border-zinc-100 dark:border-border-strong rounded-2xl p-6 shadow-sm">
       <h2 className="text-lg font-bold mb-4">Plan Details</h2>
       <div className="space-y-3 text-sm">
@@ -167,10 +174,10 @@ export default function PlanDetailPage() {
 
      <section className="bg-surface border border-zinc-100 dark:border-border-strong rounded-2xl p-6 shadow-sm">
       <h2 className="text-lg font-bold mb-3">Estimated Construction Cost</h2>
-      {displayCost ? (
+      {displayCostLkr ? (
        <div>
         <p className="text-3xl font-bold text-zinc-900 dark:text-text-primary">
-         LKR {displayCost.totalCostLkr.toLocaleString()}
+         LKR {displayCostLkr.toLocaleString()}
         </p>
         <p className="text-xs text-text-muted mt-2 leading-relaxed">
          Estimated project cost based on the current design.
@@ -185,7 +192,7 @@ export default function PlanDetailPage() {
 
      <section className="bg-surface border border-zinc-100 dark:border-border-strong rounded-2xl p-6 shadow-sm">
       <h2 className="text-lg font-bold mb-3">Build This Design</h2>
-      
+
       {constructionState === 'LOADING' && (
        <p className="text-sm text-text-muted">Checking workflow status...</p>
       )}
@@ -207,7 +214,7 @@ export default function PlanDetailPage() {
       {showConstructorSelect && (
        <div className="space-y-4">
         <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">Select a Constructor</p>
-        <select 
+        <select
          className="w-full bg-surface bg-background border border-border rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
          value={selectedConstructor}
          onChange={(e) => setSelectedConstructor(e.target.value)}
