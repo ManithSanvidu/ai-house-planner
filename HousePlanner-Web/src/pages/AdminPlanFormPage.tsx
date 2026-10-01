@@ -1,8 +1,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { preDesignedPlanService, type SavePlan } from '../services/preDesignedPlanService';
-import { Plus, Trash, ChevronDown, ChevronRight } from 'lucide-react';
-import { FloorPlanViewer } from '../components/floorplan/FloorPlanViewer';
+import { Plus, Trash } from 'lucide-react';
+
 import { getImageUrl } from '../utils/imageUtils';
 
 const blank: any = {
@@ -34,8 +34,8 @@ export default function AdminPlanFormPage() {
   const [form, setForm] = useState<any>(blank);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [error, setError] = useState<string[]>([]);
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const [previewLayout, setPreviewLayout] = useState<any>(null);
+
+
 
   // Auto-init on new plan
   useEffect(() => {
@@ -52,6 +52,7 @@ export default function AdminPlanFormPage() {
 
   // Sync bedrooms count
   useEffect(() => {
+    if (rooms.length === 0) return;
     const beds = rooms.filter(r => r.room_type === 'bedroom');
     if (form.bedrooms > beds.length) {
       const toAdd = form.bedrooms - beds.length;
@@ -78,6 +79,7 @@ export default function AdminPlanFormPage() {
 
   // Sync bathrooms count
   useEffect(() => {
+    if (rooms.length === 0) return;
     const baths = rooms.filter(r => r.room_type === 'bathroom');
     if (form.bathrooms > baths.length) {
       const toAdd = form.bathrooms - baths.length;
@@ -225,11 +227,7 @@ export default function AdminPlanFormPage() {
     };
   }, [form.floorCount, form.totalBuiltUpAreaSqft, form.layout?.design_id, rooms]);
 
-  useEffect(() => {
-    const errs = validate();
-    if (errs.length === 0 && rooms.length > 0) setPreviewLayout(generateLayoutJson());
-    else setPreviewLayout(null);
-  }, [validate, generateLayoutJson, rooms.length]);
+
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
@@ -359,15 +357,12 @@ export default function AdminPlanFormPage() {
         </section>
 
         <section className="space-y-6">
-          <div className="bg-surface border rounded-2xl p-5">
+          <div>
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-bold">Rooms & Layout</h2>
-              <button type="button" onClick={addRoom} className="flex items-center gap-1.5 text-sm bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-lg font-medium hover:bg-indigo-100">
-                <Plus size={16} /> Add Room
-              </button>
             </div>
 
-            <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
+            <div className="space-y-4">
               {rooms.map(r => (
                 <div key={r.id} className="bg-surface-elevated bg-background p-3 rounded-xl border">
                   <div className="flex justify-between items-center mb-2">
@@ -386,20 +381,9 @@ export default function AdminPlanFormPage() {
               ))}
             </div>
 
-            {previewLayout && (
-              <div className="mt-6 border rounded-xl overflow-hidden h-64 bg-gray-50 dark:bg-gray-900">
-                <FloorPlanViewer data={previewLayout} />
-              </div>
-            )}
-
-            <div className="mt-4 border-t pt-4">
-              <button type="button" onClick={() => setShowAdvanced(!showAdvanced)} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700">
-                {showAdvanced ? <ChevronDown size={16} /> : <ChevronRight size={16} />} Advanced layout data
-              </button>
-              {showAdvanced && (
-                <textarea readOnly value={previewLayout ? JSON.stringify(previewLayout, null, 2) : 'Fix validation errors to generate JSON'} className="w-full h-40 mt-3 p-3 text-xs font-mono bg-gray-950 text-emerald-300 rounded-xl" />
-              )}
-            </div>
+            <button type="button" onClick={addRoom} className="mt-4 flex w-full justify-center items-center gap-2 text-sm bg-indigo-50 text-indigo-700 px-4 py-3 rounded-xl font-semibold hover:bg-indigo-100 border border-indigo-100 border-dashed transition-colors">
+              <Plus size={18} /> Add Room
+            </button>
           </div>
         </section>
 
