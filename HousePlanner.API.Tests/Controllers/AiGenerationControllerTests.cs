@@ -68,7 +68,7 @@ namespace HousePlanner.API.Tests.Controllers
                 Bathrooms = 2,
                 HouseType = "modern"
             };
-            _mockDesignOptionsService.Setup(s => s.ValidateFinalSelectionAsync(request, It.IsAny<CancellationToken>()))
+            _mockDesignOptionsService.Setup(s => s.ValidateFinalSelectionAsync(It.IsAny<HouseRequirement>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new DesignOptionsValidationResult { IsValid = true });
             _mockHttpMessageHandler.Protected()
                 .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
@@ -94,7 +94,7 @@ namespace HousePlanner.API.Tests.Controllers
                 HouseType = "Modern Minimalist"
             };
 
-            _mockDesignOptionsService.Setup(s => s.ValidateFinalSelectionAsync(req, It.IsAny<CancellationToken>()))
+            _mockDesignOptionsService.Setup(s => s.ValidateFinalSelectionAsync(It.IsAny<HouseRequirement>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new DesignOptionsValidationResult { IsValid = true });
 
             _mockHttpMessageHandler.Protected()
@@ -138,7 +138,7 @@ namespace HousePlanner.API.Tests.Controllers
                 }
             };
 
-            _mockDesignOptionsService.Setup(s => s.ValidateFinalSelectionAsync(req, It.IsAny<CancellationToken>()))
+            _mockDesignOptionsService.Setup(s => s.ValidateFinalSelectionAsync(It.IsAny<HouseRequirement>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(validationResult);
 
             // Act
@@ -165,7 +165,7 @@ namespace HousePlanner.API.Tests.Controllers
         public async Task Generate_AssignsLandSubmissionToAuthenticatedUser()
         {
             var request = new StartDesignRequest { LandSizeCategory = "medium", LandSizePerches = 15, Bedrooms = 3, Bathrooms = 2, HouseType = "modern" };
-            _mockDesignOptionsService.Setup(x => x.ValidateFinalSelectionAsync(request, It.IsAny<CancellationToken>()))
+            _mockDesignOptionsService.Setup(x => x.ValidateFinalSelectionAsync(It.IsAny<HouseRequirement>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new DesignOptionsValidationResult { IsValid = true });
             _mockHttpMessageHandler.Protected().Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
                 .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK));
@@ -185,7 +185,7 @@ namespace HousePlanner.API.Tests.Controllers
             await _dbContext.SaveChangesAsync();
 
             var request = new StartDesignRequest { LandSizeCategory = "medium", LandSizePerches = 15, Bedrooms = 3, Bathrooms = 2, HouseType = "modern" };
-            _mockDesignOptionsService.Setup(x => x.ValidateFinalSelectionAsync(request, It.IsAny<CancellationToken>()))
+            _mockDesignOptionsService.Setup(x => x.ValidateFinalSelectionAsync(It.IsAny<HouseRequirement>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new DesignOptionsValidationResult { IsValid = true });
             _mockHttpMessageHandler.Protected().Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
                 .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK));
@@ -215,7 +215,7 @@ namespace HousePlanner.API.Tests.Controllers
             };
 
             var request = new StartDesignRequest { LandSizeCategory = "medium", LandSizePerches = 15, Bedrooms = 3, Bathrooms = 2, HouseType = "modern" };
-            _mockDesignOptionsService.Setup(x => x.ValidateFinalSelectionAsync(request, It.IsAny<CancellationToken>()))
+            _mockDesignOptionsService.Setup(x => x.ValidateFinalSelectionAsync(It.IsAny<HouseRequirement>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new DesignOptionsValidationResult { IsValid = true });
 
             var result = await localController.Generate(request, CancellationToken.None);

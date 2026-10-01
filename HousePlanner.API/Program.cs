@@ -276,6 +276,9 @@ builder.Services.AddHttpClient("SupabaseAdmin", client =>
 
 var app = builder.Build();
 
+// Static files (for local uploads)
+app.UseStaticFiles();
+
 // CORS
 app.UseCors("AllowReactApp");
 
@@ -342,6 +345,9 @@ if (app.Environment.IsDevelopment())
         c.RoutePrefix = "swagger";
     });
 }
+
+// Serve static files (like uploaded images in wwwroot/uploads)
+app.UseStaticFiles();
 
 // Authentication and authorization
 // HTTPS redirection is intentionally disabled because

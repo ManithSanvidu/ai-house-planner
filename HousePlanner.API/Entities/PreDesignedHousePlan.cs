@@ -20,6 +20,7 @@ public class PreDesignedHousePlan
     [Column(TypeName = "decimal(8,2)")] public decimal? MinimumPlotWidthFt { get; set; }
     [Column(TypeName = "decimal(8,2)")] public decimal? MinimumPlotLengthFt { get; set; }
     [Required, MaxLength(30)] public string SuitableTerrain { get; set; } = "flat";
+    [Column(TypeName = "decimal(18,2)")] public decimal? EstimatedConstructionCost { get; set; }
     public int ParkingSpaces { get; set; }
     public bool HasBalcony { get; set; }
     public bool HasVeranda { get; set; }

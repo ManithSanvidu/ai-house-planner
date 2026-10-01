@@ -7,7 +7,7 @@ public record PreDesignedPlanSummaryDto(Guid Id, string Name, string Slug, strin
     string Style, int Bedrooms, int Bathrooms, int FloorCount, decimal TotalBuiltUpAreaSqft,
     decimal MinimumLandSizePerches, string SuitableTerrain, int ParkingSpaces, bool HasBalcony,
     bool HasVeranda, bool HasOffice, bool IsAccessibleFriendly, string? Category,
-    IReadOnlyList<string> Tags, string? ThumbnailUrl, bool IsActive, DateTimeOffset UpdatedAt);
+    IReadOnlyList<string> Tags, string? ThumbnailUrl, bool IsActive, DateTimeOffset UpdatedAt, decimal? EstimatedConstructionCost = null);
 
 public record PreDesignedPlanDetailDto(Guid Id, string Name, string Slug, string DesignCode,
     string? Description, string Style, int Bedrooms, int Bathrooms, int FloorCount,
@@ -16,7 +16,7 @@ public record PreDesignedPlanDetailDto(Guid Id, string Name, string Slug, string
     bool HasVeranda, bool HasOffice, bool HasUtilityRoom, bool IsAccessibleFriendly,
     string? Category, IReadOnlyList<string> Tags, string? ThumbnailUrl, JsonElement Layout,
     bool IsActive, DateTimeOffset CreatedAt, DateTimeOffset UpdatedAt, string ConceptualDisclaimer,
-    CostSummaryDto? EstimatedCost = null);
+    CostSummaryDto? EstimatedCost = null, decimal? EstimatedConstructionCost = null);
 
 public class SavePreDesignedPlanDto
 {
@@ -34,6 +34,7 @@ public class SavePreDesignedPlanDto
     public decimal? MinimumPlotLengthFt { get; set; }
     [Required] public string SuitableTerrain { get; set; } = "flat";
     [Range(0, 20)] public int ParkingSpaces { get; set; }
+    [Range(0, 10000000000)] public decimal? EstimatedConstructionCost { get; set; }
     public bool HasBalcony { get; set; }
     public bool HasVeranda { get; set; }
     public bool HasOffice { get; set; }

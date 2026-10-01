@@ -3,6 +3,7 @@ using HousePlanner.API.Controllers;
 using HousePlanner.API.Data;
 using HousePlanner.API.Entities;
 using HousePlanner.API.Services;
+using HousePlanner.API.DTOs;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;

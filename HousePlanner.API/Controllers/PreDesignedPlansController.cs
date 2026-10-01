@@ -98,11 +98,11 @@ public class PreDesignedPlansController : ControllerBase
             project.LandSizePerches, plan.MinimumLandSizePerches));
     }
 
-    internal static PreDesignedPlanSummaryDto MapSummary(PreDesignedHousePlan x) => new(x.Id, x.Name, x.Slug, x.DesignCode, x.Style, x.Bedrooms, x.Bathrooms, x.FloorCount, x.TotalBuiltUpAreaSqft, x.MinimumLandSizePerches, x.SuitableTerrain, x.ParkingSpaces, x.HasBalcony, x.HasVeranda, x.HasOffice, x.IsAccessibleFriendly, x.Category, ParseTags(x.TagsJson), x.ThumbnailUrl, x.IsActive, x.UpdatedAt);
+    internal static PreDesignedPlanSummaryDto MapSummary(PreDesignedHousePlan x) => new(x.Id, x.Name, x.Slug, x.DesignCode, x.Style, x.Bedrooms, x.Bathrooms, x.FloorCount, x.TotalBuiltUpAreaSqft, x.MinimumLandSizePerches, x.SuitableTerrain, x.ParkingSpaces, x.HasBalcony, x.HasVeranda, x.HasOffice, x.IsAccessibleFriendly, x.Category, ParseTags(x.TagsJson), x.ThumbnailUrl, x.IsActive, x.UpdatedAt, x.EstimatedConstructionCost);
     internal static PreDesignedPlanDetailDto MapDetail(PreDesignedHousePlan x, CostSummaryDto? cost = null)
     {
         using var document = JsonDocument.Parse(x.LayoutJson);
-        return new(x.Id, x.Name, x.Slug, x.DesignCode, x.Description, x.Style, x.Bedrooms, x.Bathrooms, x.FloorCount, x.TotalBuiltUpAreaSqft, x.MinimumLandSizePerches, x.MinimumPlotWidthFt, x.MinimumPlotLengthFt, x.SuitableTerrain, x.ParkingSpaces, x.HasBalcony, x.HasVeranda, x.HasOffice, x.HasUtilityRoom, x.IsAccessibleFriendly, x.Category, ParseTags(x.TagsJson), x.ThumbnailUrl, document.RootElement.Clone(), x.IsActive, x.CreatedAt, x.UpdatedAt, "Architect-validated design. Construction estimates may vary based on site conditions, materials, and final contractor pricing.", cost);
+        return new(x.Id, x.Name, x.Slug, x.DesignCode, x.Description, x.Style, x.Bedrooms, x.Bathrooms, x.FloorCount, x.TotalBuiltUpAreaSqft, x.MinimumLandSizePerches, x.MinimumPlotWidthFt, x.MinimumPlotLengthFt, x.SuitableTerrain, x.ParkingSpaces, x.HasBalcony, x.HasVeranda, x.HasOffice, x.HasUtilityRoom, x.IsAccessibleFriendly, x.Category, ParseTags(x.TagsJson), x.ThumbnailUrl, document.RootElement.Clone(), x.IsActive, x.CreatedAt, x.UpdatedAt, "Architect-validated design. Construction estimates may vary based on site conditions, materials, and final contractor pricing.", cost, x.EstimatedConstructionCost);
     }
     internal static IReadOnlyList<string> ParseTags(string json) { try { return JsonSerializer.Deserialize<string[]>(json) ?? []; } catch { return []; } }
 
