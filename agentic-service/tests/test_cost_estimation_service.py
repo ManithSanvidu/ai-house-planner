@@ -466,19 +466,60 @@ def test_incompatible_material_unit():
 
 
 def test_missing_terrain():
-    """Agent must fail safely when terrain_result is None."""
+    """Agent must fail safely when both supported terrain sources are absent."""
+    design_without_terrain = _make_state().design_result.copy()
+    design_without_terrain.pop("terrain_type")
     with patch(PATCH_TARGET, return_value=STANDARD_PRICING):
-        state = cost_estimation_node(_make_state(no_terrain=True))
+        state = cost_estimation_node(
+            _make_state(no_terrain=True, design_result_override=design_without_terrain)
+        )
     _assert_failed(state)
 
 
 def test_unsupported_terrain():
-    """terrain_type='unknown' must trigger a controlled failure."""
+    """An unsupported terrain on the validated design must fail explicitly."""
+    design_with_unknown_terrain = _make_state().design_result.copy()
+    design_with_unknown_terrain["terrain_type"] = "unknown"
     with patch(PATCH_TARGET, return_value=STANDARD_PRICING):
         state = cost_estimation_node(
-            _make_state(terrain_result_override={"terrain_type": "unknown"})
+            _make_state(
+                terrain_result_override={"terrain_type": "flat"},
+                design_result_override=design_with_unknown_terrain,
+            )
         )
     _assert_failed(state)
+
+
+def test_validated_design_terrain_takes_precedence():
+    """The terrain attached to the current design is authoritative."""
+    with patch(PATCH_TARGET, return_value=STANDARD_PRICING):
+        state = cost_estimation_node(
+            _make_state(
+                terrain_type="coastal",
+                terrain_result_override={"terrain_type": "flat"},
+            )
+        )
+
+    assert state.status != "failed"
+    assert state.cost_result["terrain_type"] == "coastal"
+    assert state.cost_result["material_cost_lkr"] == pytest.approx(113_400.0)
+
+
+def test_legacy_terrain_result_is_used_when_design_terrain_is_absent():
+    """Older workflow states remain compatible when only terrain_result exists."""
+    design_without_terrain = _make_state().design_result.copy()
+    design_without_terrain.pop("terrain_type")
+    with patch(PATCH_TARGET, return_value=STANDARD_PRICING):
+        state = cost_estimation_node(
+            _make_state(
+                terrain_result_override={"terrain_type": "hillside"},
+                design_result_override=design_without_terrain,
+            )
+        )
+
+    assert state.status != "failed"
+    assert state.cost_result["terrain_type"] == "hillside"
+    assert state.cost_result["material_cost_lkr"] == pytest.approx(105_000.0)
 
 
 def test_zero_budget_still_returns_cost_without_budget_percentage():
