@@ -4,7 +4,8 @@ Cost Estimation Service — LangGraph node (Component C).
 Implements a fully deterministic cost calculation driven by:
   - Room geometry from state.design_result  (Component B output)
   - Live pricing from pricing_lookup_tool()  (ASP.NET pricing catalog)
-  - Terrain multipliers from state.terrain_result (Component A output)
+  - Validated terrain from state.design_result, with state.terrain_result kept
+    as a backward-compatible fallback
   - Project budget from state.input_data.budget_lkr
 
 Formula
@@ -212,7 +213,7 @@ def _run_estimation(state: WorkflowState) -> CostResult:
         raise _CostEstimationFailure("Design total_built_up_area_sqft must be greater than zero.")
 
     # ------------------------------------------------------------------
-    # 2. Terrain — authoritative source is state.terrain_result
+    # 2. Terrain — authoritative source is the validated design output
     # ------------------------------------------------------------------
     terrain_type = _resolve_terrain(state)
 
@@ -347,21 +348,28 @@ def _extract_room_area(room: dict, idx: int) -> float:
 
 def _resolve_terrain(state: WorkflowState) -> str:
     """
-    Extract terrain_type from state.terrain_result.
+    Resolve terrain_type from the design being estimated.
 
-    state.terrain_result is stored as a plain dict (model_dump() in the land agent).
-    Raises _CostEstimationFailure if missing or unsupported.
+    The current design pipeline records the validated terrain on design_result.
+    terrain_result remains a fallback for older workflow states. Missing and
+    unsupported values fail explicitly rather than silently defaulting to flat.
     """
-    if not state.terrain_result:
-        raise _CostEstimationFailure(
-            "state.terrain_result is None: land analysis agent must complete before cost estimation. "
-            "Cannot select terrain multiplier without a classified terrain type."
-        )
+    design_terrain = (
+        state.design_result.get("terrain_type")
+        if state.design_result
+        else None
+    )
+    legacy_terrain = (
+        state.terrain_result.get("terrain_type")
+        if state.terrain_result
+        else None
+    )
+    terrain_type = design_terrain or legacy_terrain
 
-    terrain_type = state.terrain_result.get("terrain_type")
     if not terrain_type:
         raise _CostEstimationFailure(
-            "state.terrain_result is present but 'terrain_type' key is missing or empty."
+            "No terrain_type is available on design_result or terrain_result; "
+            "cannot select a terrain multiplier for cost estimation."
         )
 
     terrain_norm = str(terrain_type).strip().lower()
@@ -369,7 +377,7 @@ def _resolve_terrain(state: WorkflowState) -> str:
         raise _CostEstimationFailure(
             f"Unsupported terrain_type='{terrain_type}'. "
             f"Accepted values: {sorted(_SUPPORTED_TERRAINS)}. "
-            "Update the land analysis result before running cost estimation."
+            "Update the validated design terrain before running cost estimation."
         )
 
     return terrain_norm
