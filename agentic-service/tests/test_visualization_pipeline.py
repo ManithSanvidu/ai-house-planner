@@ -32,7 +32,7 @@ def test_renderer_and_visualization():
         # Test valid room count
         result = service.generate_visualization(layout_json, expected_bedrooms=3, expected_bathrooms=1)
         
-        assert result["status"] == "success"
+        assert result["status"] == "validated"
         
         # Verify images.edit was called with image reference
         mock_openai.images.edit.assert_called_once()

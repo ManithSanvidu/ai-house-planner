@@ -30,6 +30,7 @@ def test_ai_failure_does_not_break_workflow():
     agent = VisualizationAgent(api_key="mock_key")
     with patch("app.design.visualization.openai_visualization_service.openai") as mock_openai:
         mock_openai.images.generate.side_effect = Exception("OpenAI outage")
+        mock_openai.images.edit.side_effect = Exception("OpenAI outage")
         
         # It should not raise an exception, but return a failed status
         result = agent.process({"rooms": []})
@@ -68,10 +69,11 @@ def test_visualization_node_reuses_persisted_image():
 def test_visualization_node_persists_new_image():
     state = _make_state()
     agent = MagicMock()
-    agent.process.return_value = {"status": "success", "image_url": "https://example.com/new.png"}
+    agent.process.return_value = {"status": "validated", "image_url": "https://example.com/new.png"}
     with patch("app.design.visualization.visualization_agent._existing_visualization", return_value=None), \
          patch("app.design.visualization.visualization_agent.ENABLE_AI_VISUALIZATION", True), \
          patch("app.design.visualization.visualization_agent.VisualizationAgent", return_value=agent), \
+         patch("app.design.visualization.visualization_agent.execute_once", lambda wf, purp, fn: (fn(), False)), \
          patch("app.design.visualization.visualization_agent._save_generated_image", return_value="http://localhost:8001/visualizations/stable.png"), \
          patch("app.design.visualization.visualization_agent._persist_visualization") as persist:
         visualization_node(state)
