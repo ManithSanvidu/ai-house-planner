@@ -4,6 +4,16 @@ import requests
 
 from app.config import ASPNET_API_URL, INTERNAL_API_KEY
 from app.schemas.workflow_state import ExecutionLogEntry, WorkflowState
+from app.orchestration.tool_governance import (
+    ToolAuthorizationError,
+    assert_tool_allowed,
+    mark_tool_authorization_failure,
+)
+from app.orchestration.tool_audit import (
+    log_tool_failure,
+    log_tool_success,
+    start_tool_timer,
+)
 
 
 def get_construction_phases()->list:
@@ -65,52 +75,31 @@ def calculate_schedule(phases_list:list)->dict:
 
     return {"phases":phases_list,"total_duration":total_duration}
 
-def construction_planning_node(state:WorkflowState)->WorkflowState:
-    """LangGraph node for construction planning generation."""
-    start_time=datetime.now(timezone.utc)
-
-    if state.construction_plan_result:
-        print("[Construction Planning Service] Existing plan reused")
-        return state
-
-    if not state.design_result:
-        print(f"[Construction Planning Service] Planning for workflow {state.workflow_id}...")
-        return state
-    print(f"[Construction Planning Service] Planning for workflow {state.workflow_id}...")
-
-    # 1.Analyze House
-    design=state.design_result
-    floor_count=design.get("floor_count",1)
-    total_area=design.get("total_built_up_area_sqft",1000)
-    terrain=state.terrain_result.get("terrain_type","flat") if state.terrain_result else "flat"
-    bathrooms = len([r for r in design.get("rooms", []) if "bath" in r.get("room_type", "").lower()])
-
-    # 2.Determine Phases and Estimate Duration
+def _build_construction_plan(
+    floor_count: int,
+    total_area: float,
+    bathrooms: int,
+    terrain: str,
+    target_duration: int | None,
+) -> dict:
     phases=get_construction_phases()
     for p in phases:
         p["duration_days"] = estimate_phase_duration(p["name"], floor_count, total_area, bathrooms, terrain)
         p["description"] = f"Estimated based on {floor_count} floors and {total_area} sqft."
         p["status"] = "planned"
 
-    # 3.Build Schedule
     schedule_result=calculate_schedule(phases)
     estimate_duration_days=schedule_result["total_duration"]
-
-    # 4.Check user constraints
-    # Target duration might be passed in preferences if implemented
-    target_duration = getattr(state.input_data, "target_duration_days", None) if state.input_data else None
     status="ON_SCHEDULE"
     opt_notes=[]
 
-    # 5.Optimize/Replan if needed
     if target_duration and estimate_duration_days>target_duration:
         status="DELAYED"
         opt_notes.append(f"Target is {target_duration}  days but estimate is {estimate_duration_days} days.")
 
-    #Simple optimization: overlap some parallel work by reducing dependencies if possible
     for p in schedule_result["phases"]:
         if p["name"] in ["Electrical","Plumbing","Painting"]:
-            p["duration_days"]=max(5,int(p["duration_days"]*0.8))  #20% faster
+            p["duration_days"]=max(5,int(p["duration_days"]*0.8))
 
     schedule_result=calculate_schedule(schedule_result["phases"])
     estimate_duration_days=schedule_result["total_duration"]
@@ -119,12 +108,11 @@ def construction_planning_node(state:WorkflowState)->WorkflowState:
     if target_duration and estimate_duration_days<=target_duration:
         status="ON_SCHEDULE"
 
-    # 6.Structured Final Output
     critical_path=[p["name"] for p in schedule_result["phases"] if p["depends_on"]]
     if "Site Preparation" not in critical_path:
         critical_path.insert(0,"Site Preparation")
 
-    construction_plan={
+    return {
         "project_summary": {
             "estimated_duration_days": estimate_duration_days,
             "estimated_duration_months": round(estimate_duration_days / 30.0, 1),
@@ -140,6 +128,85 @@ def construction_planning_node(state:WorkflowState)->WorkflowState:
         ],
         "optimization_notes": opt_notes
     }
+
+
+def construction_planning_node(state:WorkflowState)->WorkflowState:
+    """LangGraph node for construction planning generation."""
+    start_time=datetime.now(timezone.utc)
+
+    if state.construction_plan_result:
+        print("[Construction Planning Service] Existing plan reused")
+        return state
+
+    print(f"[Construction Planning Service] Planning for workflow {state.workflow_id}...")
+
+    try:
+        assert_tool_allowed("construction_planning", "construction_scheduler")
+    except ToolAuthorizationError as exc:
+        return mark_tool_authorization_failure(
+            state, "ConstructionPlanningAgent", "construction_scheduler", exc
+        )
+
+    # 1.Analyze House
+    floor_count = 1
+    total_area = 1000
+    bathrooms = 2
+
+    if state.design_result:
+        design = state.design_result
+        floor_count = design.get("floor_count", 1)
+        total_area = design.get("total_built_up_area_sqft", 1000)
+        bathrooms = len([r for r in design.get("rooms", []) if "bath" in r.get("room_type", "").lower()])
+    elif state.input_data:
+        floor_count = 1
+        bathrooms = getattr(state.input_data, "bathrooms", 2)
+        total_area = 500 + (getattr(state.input_data, "bedrooms", 2) * 200)
+
+    terrain=state.terrain_result.get("terrain_type","flat") if state.terrain_result else "flat"
+    target_duration = getattr(state.input_data, "target_duration_days", None) if state.input_data else None
+    
+    room_count = 0
+    if state.design_result:
+        room_count = len(state.design_result.get("rooms", []))
+    elif state.input_data:
+        room_count = getattr(state.input_data, "bedrooms", 2) + bathrooms + 2
+
+    tool_input = {
+        "floor_count": floor_count,
+        "total_area_sqft": total_area,
+        "terrain_type": terrain,
+        "target_duration_days": target_duration,
+        "room_count": room_count,
+        "bathroom_count": bathrooms,
+    }
+    started_at = start_tool_timer()
+    try:
+        construction_plan = _build_construction_plan(
+            floor_count, total_area, bathrooms, terrain, target_duration
+        )
+    except Exception as exc:
+        log_tool_failure(
+            state=state,
+            agent_name="construction_planning",
+            tool_name="construction_scheduler",
+            started_at=started_at,
+            input_summary=tool_input,
+            error=exc,
+        )
+        raise
+    log_tool_success(
+        state=state,
+        agent_name="construction_planning",
+        tool_name="construction_scheduler",
+        started_at=started_at,
+        input_summary=tool_input,
+        output_summary={
+            "phase_count": len(construction_plan["phases"]),
+            "total_duration_days": construction_plan["project_summary"]["estimated_duration_days"],
+            "schedule_status": construction_plan["project_summary"]["schedule_status"],
+            "critical_path_length": len(construction_plan["critical_path"]),
+        },
+    )
 
     state.construction_plan_result=construction_plan
 

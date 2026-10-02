@@ -5,6 +5,7 @@ using HousePlanner.API.Entities;
 using HousePlanner.API.Models;
 using HousePlanner.API.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace HousePlanner.API.Controllers;
 
@@ -44,6 +45,30 @@ public class AiGenerationController : ControllerBase
             var client = await _context.Users.FindAsync(identity.Id);
             if (client is null) return Unauthorized(new { Message = "Authentication required. Application profile not found." });
 
+            var activeStatuses = new[] { "running", "processing" };
+            var activeWorkflow = await _context.WorkflowStates
+                .AsNoTracking()
+                .Where(w => w.LandSubmission.ClientId == client.Id
+                    && activeStatuses.Contains(w.Status.ToLower())
+                    && w.LandSubmission.LandSizeCategory == requirement.LandSizeCategory
+                    && w.LandSubmission.LandSizePerches == requirement.LandSizePerches
+                    && w.LandSubmission.PreferredBedrooms == requirement.Bedrooms
+                    && w.LandSubmission.PreferredBathrooms == requirement.Bathrooms
+                    && w.LandSubmission.PreferredFloors == requirement.Floors
+                    && w.LandSubmission.StylePreference == requirement.HouseType)
+                .OrderByDescending(w => w.CreatedAt)
+                .FirstOrDefaultAsync(cancellationToken);
+            if (activeWorkflow is not null)
+            {
+                Console.WriteLine($"[Workflow Guard] Duplicate generation ignored for workflow {activeWorkflow.Id}");
+                return Ok(new
+                {
+                    Message = "Workflow already running",
+                    WorkflowId = activeWorkflow.Id,
+                    Reused = true
+                });
+            }
+
             var submission = new LandSubmission
             {
                 Id = Guid.NewGuid(), ClientId = client.Id, BudgetLkr = 0,
@@ -77,7 +102,8 @@ public class AiGenerationController : ControllerBase
             land_size_perches = requirement.LandSizePerches,
             bedrooms = requirement.Bedrooms,
             bathrooms = requirement.Bathrooms,
-            house_type = requirement.HouseType
+            house_type = requirement.HouseType,
+            target_duration_days = requirement.TargetDurationDays
         };
         var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
         try

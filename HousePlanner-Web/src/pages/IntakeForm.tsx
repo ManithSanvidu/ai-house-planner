@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { CheckCircle2, ChevronRight, ChevronLeft } from 'lucide-react';
@@ -11,6 +11,7 @@ const IntakeForm: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [workflowId, setWorkflowId] = useState<string | null>(null);
+  const submitLockRef = useRef(false);
 
   // Step 1: Land Information
   const [landSizeCategory, setLandSizeCategory] = useState<'small' | 'medium' | ''>('');
@@ -21,6 +22,9 @@ const IntakeForm: React.FC = () => {
 
   // Step 3: House Style
   const [houseType, setHouseType] = useState<'simple' | 'modern' | ''>('');
+  
+  // Step 4 (Optional): Target Duration
+  const [targetDuration, setTargetDuration] = useState<number | ''>('');
 
   const steps = [
     { id: 1, title: 'Land' },
@@ -51,8 +55,10 @@ const IntakeForm: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitLockRef.current) return;
     if (!validateStep(3)) return;
 
+    submitLockRef.current = true;
     setIsSubmitting(true);
 
     let landSizePerches = 15;
@@ -65,7 +71,8 @@ const IntakeForm: React.FC = () => {
         landSizePerches,
         bedrooms: bedrooms!,
         bathrooms: bathrooms!,
-        houseType: houseType as 'simple' | 'modern'
+        houseType: houseType as 'simple' | 'modern',
+        targetDurationDays: targetDuration === '' ? undefined : targetDuration
       };
 
       console.log('Frontend payload before POST:', payload);
@@ -76,6 +83,7 @@ const IntakeForm: React.FC = () => {
     } catch (err: any) {
       console.error('Failed to generate plan.', err);
     } finally {
+      submitLockRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -196,6 +204,23 @@ const IntakeForm: React.FC = () => {
                       </button>
                     ))}
                   </div>
+                </div>
+
+                <div className="pt-6 border-t border-border mt-8">
+                  <h3 className="text-lg font-bold text-text-primary mb-2">Target Construction Duration (Optional)</h3>
+                  <p className="text-sm text-text-secondary mb-4">Let us know if you have a specific timeline in days.</p>
+                  <input
+                    type="number"
+                    value={targetDuration}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (!val) setTargetDuration('');
+                      else if (Number(val) > 0) setTargetDuration(Number(val));
+                    }}
+                    className="w-full p-4 bg-surface-elevated border border-border rounded-xl text-text-primary focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g. 120"
+                    min="1"
+                  />
                 </div>
 
               </motion.div>

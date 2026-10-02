@@ -13,6 +13,11 @@ class ExecutionLogEntry(BaseModel):
     duration_ms:int | None=None
     result:str
     created_at_utc:str
+    event_status:Literal["succeeded","failed"] | None=None
+    input_summary:dict[str, Any] | None=None
+    output_summary:dict[str, Any] | None=None
+    error_type:str | None=None
+    error_summary:str | None=None
 
 class CoordinatorInput(BaseModel):
     submission_id:UUID
@@ -31,6 +36,7 @@ class CoordinatorInput(BaseModel):
     quality_level:str | None=None
     natural_language_prompt: str | None = None
     preferences: dict[str, Any] | None = None
+    target_duration_days: int | None = None
 
 
 class WorkflowState(BaseModel):
