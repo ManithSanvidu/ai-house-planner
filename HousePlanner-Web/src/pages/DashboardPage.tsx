@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Plus, Sparkles, Library, FolderKanban, Shield, UserCog, CheckCircle, HardHat, Clock, MessageSquare, ArrowRight, LayoutTemplate } from 'lucide-react';
 import useAuth from '../features/auth/useAuth';
 import { customerConstructionService, type ApprovedDesign, type CustomerConstruction } from '../services/customerConstructionService';
+import { AIArchitectChat } from '../components/AIArchitectChat';
 
 const DashboardPage: React.FC = () => {
     const { user } = useAuth();
@@ -11,6 +12,8 @@ const DashboardPage: React.FC = () => {
     const [approvedDesigns, setApprovedDesigns] = useState<ApprovedDesign[]>([]);
     const [construction, setConstruction] = useState<CustomerConstruction | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [isChatOpen, setIsChatOpen] = useState(false);
+    const [prompt, setPrompt] = useState('');
 
     // Role-aware redirect
     useEffect(() => {
@@ -132,7 +135,10 @@ const DashboardPage: React.FC = () => {
                     </div>
 
                     <div className="flex flex-wrap gap-3">
-                        <button className="flex items-center gap-2 px-5 py-3 border border-border rounded-xl font-semibold text-xs tracking-wider text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                        <button
+                            onClick={() => setIsChatOpen(true)}
+                            className="flex items-center gap-2 px-5 py-3 border border-border rounded-xl font-semibold text-xs tracking-wider text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                        >
                             <MessageSquare size={16} />
                             ASK AI ARCHITECT
                         </button>
@@ -326,6 +332,13 @@ const DashboardPage: React.FC = () => {
 
                 </div>
             </div>
+            <AIArchitectChat
+                isOpen={isChatOpen}
+                setIsOpen={setIsChatOpen}
+                prompt={prompt}
+                setPrompt={setPrompt}
+                showFab={false}
+            />
         </div>
     );
 };
