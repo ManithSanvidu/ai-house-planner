@@ -80,6 +80,13 @@ def test_visualization_node_persists_new_image():
         visualization_node(state)
 
     persist.assert_called_once_with("workflow-1", "http://localhost:8001/visualizations/stable.png")
+    agent.process.assert_called_once_with(
+        state.design_result,
+        1,
+        1,
+        "medium",
+        "conventional",
+    )
     assert state.design_result["ai_visualization"]["image_url"].endswith("stable.png")
 
 

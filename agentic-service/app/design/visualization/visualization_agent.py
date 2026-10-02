@@ -41,12 +41,25 @@ class VisualizationAgent:
         self.workflow_id = workflow_id
         self.service = OpenAIVisualizationService(api_key=self.api_key, workflow_id=workflow_id)
 
-    def process(self, validated_layout: dict, expected_bedrooms: int = None, expected_bathrooms: int = None) -> dict:
+    def process(
+        self,
+        validated_layout: dict,
+        expected_bedrooms: int = None,
+        expected_bathrooms: int = None,
+        land_size_category: str = None,
+        house_style: str = None,
+    ) -> dict:
         """
         Accepts a validated layout JSON and returns a visualization response dict.
         The service layer checks ENABLE_OPENAI and the daily spend cap before calling OpenAI.
         """
-        result = self.service.generate_visualization(validated_layout, expected_bedrooms, expected_bathrooms)
+        result = self.service.generate_visualization(
+            validated_layout,
+            expected_bedrooms,
+            expected_bathrooms,
+            land_size_category,
+            house_style,
+        )
         return result
 
 def visualization_node(state):
@@ -70,6 +83,8 @@ def visualization_node(state):
     
     expected_bedrooms = getattr(getattr(state, "input_data", None), "bedrooms", None)
     expected_bathrooms = getattr(getattr(state, "input_data", None), "bathrooms", None)
+    land_size_category = getattr(getattr(state, "input_data", None), "land_size_category", None)
+    house_style = getattr(getattr(state, "input_data", None), "house_type", None)
     if (expected_bedrooms is None or expected_bathrooms is None or
             not _room_program_matches(rooms, expected_bedrooms, expected_bathrooms)):
         logger.error("[Visualization Agent] %s", ROOM_VALIDATION_ERROR)
@@ -119,7 +134,13 @@ def visualization_node(state):
             viz_result, _ = execute_once(
                 state.workflow_id,
                 "visualization",
-                lambda: agent.process(state.design_result, expected_bedrooms, expected_bathrooms),
+                lambda: agent.process(
+                    state.design_result,
+                    expected_bedrooms,
+                    expected_bathrooms,
+                    land_size_category,
+                    house_style,
+                ),
             )
         except DuplicateAIRequest:
             log_tool_failure(
