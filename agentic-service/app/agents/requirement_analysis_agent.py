@@ -23,6 +23,11 @@ from app.providers.openai_provider import OpenAIProvider
 from app.providers.base_provider import ProviderError
 from app.schemas.workflow_state import ExecutionLogEntry, WorkflowState
 from app.services.ai_guard import execute_once
+from app.orchestration.tool_governance import (
+    ToolAuthorizationError,
+    assert_tool_allowed,
+    mark_tool_authorization_failure,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -90,6 +95,7 @@ def requirement_analysis_node(state: WorkflowState) -> WorkflowState:
     print(f"[Requirement Analysis] Processing prompt ({len(prompt)} chars)")
 
     try:
+        assert_tool_allowed("requirement_analysis", "requirement_extractor")
         raw, _ = execute_once(
             state.workflow_id,
             "requirement_analysis",
@@ -100,6 +106,10 @@ def requirement_analysis_node(state: WorkflowState) -> WorkflowState:
                 max_tokens=400,
                 purpose="requirement_analysis",
             ),
+        )
+    except ToolAuthorizationError as exc:
+        return mark_tool_authorization_failure(
+            state, "RequirementAnalysisAgent", "requirement_extractor", exc
         )
     except ProviderError as exc:
         logger.warning("[RequirementAnalysis] Provider unavailable (%s) — state unchanged.", exc)

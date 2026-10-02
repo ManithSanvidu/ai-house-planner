@@ -32,6 +32,11 @@ from app.schemas.cost_result import CostResult
 from app.schemas.pricing_data import PricingItem
 from app.schemas.workflow_state import ExecutionLogEntry, WorkflowState
 from app.tools.pricing_lookup_tool import PricingLookupError, pricing_lookup_tool
+from app.orchestration.tool_governance import (
+    ToolAuthorizationError,
+    assert_tool_allowed,
+    mark_tool_authorization_failure,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +75,10 @@ def cost_estimation_node(state: WorkflowState) -> WorkflowState:
     try:
         result = _run_estimation(state)
         _persist_cost_estimate(state, result)
+    except ToolAuthorizationError as exc:
+        return mark_tool_authorization_failure(
+            state, "CostEstimationAgent", "pricing_lookup", exc
+        )
     except _CostEstimationFailure as exc:
         _record_run(state, "failed", started_at, failure_reason=str(exc))
         _persist_failure(state, str(exc))
@@ -218,6 +227,7 @@ def _run_estimation(state: WorkflowState) -> CostResult:
     # 3. Pricing lookup
     # ------------------------------------------------------------------
     pricing_region, quality_level = _resolve_pricing_context(state)
+    assert_tool_allowed("cost_estimation", "pricing_lookup")
     try:
         pricing_items: list[PricingItem] = pricing_lookup_tool(
             region=pricing_region,

@@ -12,6 +12,16 @@ import requests
 from app.config import ASPNET_API_URL, INTERNAL_API_KEY
 from app.schemas.workflow_state import ExecutionLogEntry, WorkflowState
 from app.tools.vision_classification_tool import vision_classification_tool
+from app.orchestration.tool_governance import (
+    ToolAuthorizationError,
+    assert_tool_allowed,
+    mark_tool_authorization_failure,
+)
+
+
+def _photo_url_for_state(state: WorkflowState) -> str | None:
+    """Current workflow input has no photo URL; retain the existing fallback path."""
+    return None
 
 
 def land_analysis_node(state: WorkflowState) -> WorkflowState:
@@ -33,7 +43,7 @@ def land_analysis_node(state: WorkflowState) -> WorkflowState:
         action = f"Skipped vision — manual terrain '{state.terrain_result['terrain_type']}' already set"
     else:
         # No photo URL in current deterministic input flow
-        photo_url = None
+        photo_url = _photo_url_for_state(state)
 
         if not photo_url:
             # No photo available — use safe default
@@ -45,6 +55,12 @@ def land_analysis_node(state: WorkflowState) -> WorkflowState:
             action = "No photo URL available — defaulted to flat terrain"
         else:
             # Call the vision classification tool with retry logic
+            try:
+                assert_tool_allowed("land_analysis", "terrain_classifier")
+            except ToolAuthorizationError as exc:
+                return mark_tool_authorization_failure(
+                    state, "LandAnalysisAgent", "terrain_classifier", exc
+                )
             success = False
             for attempt in range(2): # 1 retry
                 try:

@@ -17,6 +17,11 @@ from app.schemas.workflow_state import ExecutionLogEntry, WorkflowState
 from app.validation.geometry_validator import validate_geometry
 from app.design.generation.generation_service import generate_layout, prepare_inputs
 from app.design.visualization import VisualizationAgent
+from app.orchestration.tool_governance import (
+    ToolAuthorizationError,
+    assert_tool_allowed,
+    mark_tool_authorization_failure,
+)
 
 
 def design_node(state: WorkflowState) -> WorkflowState:
@@ -63,6 +68,13 @@ def design_node(state: WorkflowState) -> WorkflowState:
         "notable_features": (state.terrain_result or {}).get('notable_features', [])
     }
     
+    try:
+        assert_tool_allowed("design", "geometry_generator")
+    except ToolAuthorizationError as exc:
+        return mark_tool_authorization_failure(
+            state, "DesignAgent", "geometry_generator", exc
+        )
+
     try:
         if previous_design is not None:
             preferences = preserve_revision_preferences(preferences, previous_design)

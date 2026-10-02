@@ -4,6 +4,11 @@ import requests
 
 from app.config import ASPNET_API_URL, INTERNAL_API_KEY
 from app.schemas.workflow_state import ExecutionLogEntry, WorkflowState
+from app.orchestration.tool_governance import (
+    ToolAuthorizationError,
+    assert_tool_allowed,
+    mark_tool_authorization_failure,
+)
 
 
 def get_construction_phases()->list:
@@ -77,6 +82,13 @@ def construction_planning_node(state:WorkflowState)->WorkflowState:
         print(f"[Construction Planning Service] Planning for workflow {state.workflow_id}...")
         return state
     print(f"[Construction Planning Service] Planning for workflow {state.workflow_id}...")
+
+    try:
+        assert_tool_allowed("construction_planning", "construction_scheduler")
+    except ToolAuthorizationError as exc:
+        return mark_tool_authorization_failure(
+            state, "ConstructionPlanningAgent", "construction_scheduler", exc
+        )
 
     # 1.Analyze House
     design=state.design_result

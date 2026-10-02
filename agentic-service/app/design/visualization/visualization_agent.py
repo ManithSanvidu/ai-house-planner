@@ -12,6 +12,11 @@ from app.config import (
     VISUALIZATIONS_DIR,
 )
 from app.services.ai_guard import DuplicateAIRequest, execute_once
+from app.orchestration.tool_governance import (
+    ToolAuthorizationError,
+    assert_tool_allowed,
+    mark_tool_authorization_failure,
+)
 
 logger = logging.getLogger(__name__)
 ROOM_VALIDATION_ERROR = "Generated layout failed room requirement validation."
@@ -87,6 +92,12 @@ def visualization_node(state):
                 "image_url": None, "status": "disabled", "source": "technical_floor_plan"
             }
             return state
+        try:
+            assert_tool_allowed("visualization", "visualization_generator")
+        except ToolAuthorizationError as exc:
+            return mark_tool_authorization_failure(
+                state, "VisualizationAgent", "visualization_generator", exc
+            )
         agent = VisualizationAgent(workflow_id=str(state.workflow_id))
         try:
             viz_result, _ = execute_once(
