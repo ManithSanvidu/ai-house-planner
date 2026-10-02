@@ -162,7 +162,8 @@ class OpenAIVisualizationService:
                     image=img_bytes,
                     prompt=prompt[:4000],
                     n=1,
-                    size="1024x1024"
+                    size="1024x1024",
+                    quality="medium",
                 )
             except BadRequestError as exc:
                 if not _is_edit_incompatibility(exc):
@@ -177,7 +178,8 @@ class OpenAIVisualizationService:
                     model="gpt-image-1",
                     prompt=prompt[:4000],
                     n=1,
-                    size="1024x1024"
+                    size="1024x1024",
+                    quality="medium",
                 )
             except (RateLimitError, AuthenticationError, PermissionDeniedError):
                 logger.warning(
