@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 from app.schemas.workflow_state import ExecutionLogEntry, WorkflowState
+from app.utils.tool_audit_persistence import persist_tool_audit_log
 
 
 AGENT_TOOL_ALLOWLIST: dict[str, frozenset[str]] = {
@@ -79,4 +80,5 @@ def mark_tool_authorization_failure(
             created_at_utc=datetime.now(timezone.utc).isoformat(),
         )
     )
+    persist_tool_audit_log(state.workflow_id, state.execution_log)
     return state

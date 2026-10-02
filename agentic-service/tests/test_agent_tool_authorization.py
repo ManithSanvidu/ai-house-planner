@@ -33,6 +33,10 @@ def _assert_denied(state: WorkflowState, tool_name: str) -> None:
     assert entry.action == "tool_authorization_denied"
     assert entry.tool_called == tool_name
     assert entry.result == "authorization denied for test"
+    assert not any(
+        item.action in {"tool_call_succeeded", "tool_call_failed"}
+        for item in state.execution_log
+    )
 
 
 def test_requirement_denial_prevents_provider_call(monkeypatch):

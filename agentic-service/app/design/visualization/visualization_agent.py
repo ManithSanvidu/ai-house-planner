@@ -17,6 +17,11 @@ from app.orchestration.tool_governance import (
     assert_tool_allowed,
     mark_tool_authorization_failure,
 )
+from app.orchestration.tool_audit import (
+    log_tool_failure,
+    log_tool_success,
+    start_tool_timer,
+)
 
 logger = logging.getLogger(__name__)
 ROOM_VALIDATION_ERROR = "Generated layout failed room requirement validation."
@@ -98,6 +103,17 @@ def visualization_node(state):
             return mark_tool_authorization_failure(
                 state, "VisualizationAgent", "visualization_generator", exc
             )
+        floor_count = len({room.get("floor", 1) for room in rooms})
+        tool_input = {
+            "room_count": len(rooms),
+            "bedroom_count": expected_bedrooms,
+            "bathroom_count": expected_bathrooms,
+            "floor_count": floor_count,
+            "blueprint_input_present": bool(rooms),
+            "model": "gpt-image-1",
+            "image_size": "1024x1024",
+        }
+        started_at = start_tool_timer()
         agent = VisualizationAgent(workflow_id=str(state.workflow_id))
         try:
             viz_result, _ = execute_once(
@@ -106,10 +122,33 @@ def visualization_node(state):
                 lambda: agent.process(state.design_result, expected_bedrooms, expected_bathrooms),
             )
         except DuplicateAIRequest:
+            log_tool_failure(
+                state=state,
+                agent_name="visualization",
+                tool_name="visualization_generator",
+                started_at=started_at,
+                input_summary=tool_input,
+                error=DuplicateAIRequest("visualization request already running"),
+            )
             state.design_result["ai_visualization"] = {
                 "image_url": None, "status": "pending", "source": "ai_guard"
             }
             return state
+        except Exception as exc:
+            log_tool_failure(
+                state=state,
+                agent_name="visualization",
+                tool_name="visualization_generator",
+                started_at=started_at,
+                input_summary=tool_input,
+                error=exc,
+            )
+            raise
+        result_transport = (
+            "base64" if viz_result.get("image_b64")
+            else "temporary_url" if viz_result.get("image_url")
+            else "none"
+        )
         if viz_result.get("status") == "validated":
             try:
                 image_url = _save_generated_image(viz_result)
@@ -126,6 +165,34 @@ def visualization_node(state):
                 }
         else:
             _persist_visualization_status(state.workflow_id, "failed")
+        tool_output = {
+            "status": viz_result.get("status", "failed"),
+            "model": viz_result.get("model", "gpt-image-1"),
+            "image_generated": result_transport != "none",
+            "result_transport": result_transport,
+            "storage_reference_present": bool(
+                viz_result.get("status") == "validated" and viz_result.get("image_url")
+            ),
+        }
+        if viz_result.get("status") == "validated":
+            log_tool_success(
+                state=state,
+                agent_name="visualization",
+                tool_name="visualization_generator",
+                started_at=started_at,
+                input_summary=tool_input,
+                output_summary=tool_output,
+            )
+        else:
+            log_tool_failure(
+                state=state,
+                agent_name="visualization",
+                tool_name="visualization_generator",
+                started_at=started_at,
+                input_summary=tool_input,
+                output_summary=tool_output,
+                error=RuntimeError("visualization generation failed"),
+            )
     state.design_result["ai_visualization"] = viz_result
     
     return state
