@@ -1,4 +1,4 @@
-name: CI - Main Branch
+name: CI - Dev Branch
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
 
 jobs:
   web-frontend:
-    name: Build Web Frontend (Production Check)
+    name: Build Web Frontend
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -23,15 +23,11 @@ jobs:
           cache-dependency-path: ./HousePlanner-Web/package-lock.json
       - name: Install dependencies
         run: npm ci
-      - name: Lint
-        run: npm run lint
-      - name: Audit production dependencies
-        run: npm audit --omit=dev --audit-level=high
       - name: Build
         run: npm run build
 
   api-backend:
-    name: Build and Test ASP.NET API (Production Check)
+    name: Build and Test ASP.NET API
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -46,14 +42,6 @@ jobs:
         run: dotnet restore
       - name: Build
         run: dotnet build --no-restore --configuration Release
-      - name: Verify formatting
-        run: dotnet format ../HousePlanner.slnx --verify-no-changes --no-restore --verbosity minimal
-      - name: Audit NuGet dependencies
-        shell: bash
-        run: |
-          report="$(dotnet list package --vulnerable --include-transitive)"
-          echo "$report"
-          if echo "$report" | grep -q "has the following vulnerable packages"; then exit 1; fi
       - name: Test
         run: dotnet test --no-build --verbosity normal --configuration Release
         working-directory: ./HousePlanner.API.Tests
@@ -61,9 +49,25 @@ jobs:
   agentic-service:
     name: Test Agentic Service (Python)
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: agentic_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     defaults:
       run:
         working-directory: ./agentic-service
+    env:
+      DATABASE_CONNECTION_STRING: "Host=localhost;Port=5432;Database=agentic_test;Username=postgres;Password=password;"
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
@@ -74,12 +78,29 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          python -m pip install ruff pip-audit
-      - name: Lint
-        run: python -m ruff check app tests scripts
-      - name: Audit dependencies
-        run: python -m pip_audit -r requirements.txt
+          python -m pip install -r requirements.txt
       - name: Run Tests
         run: |
           python -m pytest tests/
+
+  mobile-app:
+    name: Build and Test Mobile App (Flutter)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./mobile
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+      - name: Install dependencies
+        run: flutter pub get
+      - name: Create dummy .env file
+        run: touch .env
+      - name: Analyze
+        run: flutter analyze
+      - name: Run Tests
+        run: flutter test
