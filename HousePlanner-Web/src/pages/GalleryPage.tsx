@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Box, Sparkles, X, Sun, Moon, ArrowRight, Menu } from 'lucide-react';
 import { preDesignedPlanService, type PreDesignedPlanSummary } from '../services/preDesignedPlanService';
 import { getCustomerPlanName } from '../utils/presentation';
+import { getImageUrl } from '../utils/imageUtils';
 
 const GalleryPage: React.FC = () => {
  const [isDark, setIsDark] = useState(() => {
@@ -100,32 +101,46 @@ const GalleryPage: React.FC = () => {
 
    {/* MASONRY GRID */}
    <section className="max-w-[1400px] mx-auto px-6 relative z-10">
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-     {plans.map((item, index) => {
-      const imgSrc = `/designs/${item.designCode}-F1.svg.png`;
-      return (
-      <motion.div
-       initial={{ opacity: 0, y: 20 }}
-       animate={{ opacity: 1, y: 0 }}
-       transition={{ delay: index * 0.05 }}
-       key={item.id}
-       className="relative group cursor-pointer rounded-2xl overflow-hidden aspect-square bg-surface-elevated border border-gray-100 dark:border-border-strong"
-       onClick={() => setSelectedImg(item)}
-      >
-       <div className="w-full h-full p-8 flex items-center justify-center">
-        <img src={imgSrc} alt={item.name} className="w-full h-full object-contain transition-transform duration-700 group-hover:scale-105" />
-       </div>
-       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/60 transition-colors duration-300 flex flex-col items-center justify-center p-6 text-center">
-        <span className="text-text-primary opacity-0 group-hover:opacity-100 font-bold tracking-widest text-lg transition-opacity duration-300 mb-2">
-         {getCustomerPlanName(item)}
-        </span>
-        <span className="text-gray-300 opacity-0 group-hover:opacity-100 text-sm transition-opacity duration-300 delay-75">
-         VIEW DETAILS
-        </span>
-       </div>
-      </motion.div>
-     )})}
-    </div>
+    {plans.length === 0 ? (
+     <div className="text-center py-20 px-6 border border-dashed border-border rounded-2xl bg-surface-elevated">
+      <h3 className="text-xl font-bold text-text-primary mb-2">No designs available yet.</h3>
+      <p className="text-text-secondary">Please check back later as our architects add new plans to the collection.</p>
+     </div>
+    ) : (
+     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {plans.map((item, index) => {
+       return (
+       <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: index * 0.05 }}
+        key={item.id}
+        className="relative group cursor-pointer rounded-2xl overflow-hidden aspect-square bg-surface-elevated border border-gray-100 dark:border-border-strong"
+        onClick={() => setSelectedImg(item)}
+       >
+        <div className="w-full h-full p-8 flex items-center justify-center">
+         {item.thumbnailUrl ? (
+          <img src={getImageUrl(item.thumbnailUrl)} alt={item.name} className="w-full h-full object-contain transition-transform duration-700 group-hover:scale-105" />
+         ) : (
+          <div className="flex flex-col items-center justify-center text-center gap-3 opacity-60">
+           <Box size={48} className="text-text-secondary" />
+           <span className="text-lg font-bold text-text-primary">{getCustomerPlanName(item)}</span>
+           <span className="text-sm text-text-muted">{item.bedrooms} Bed • {item.bathrooms} Bath • {item.floorCount} Story</span>
+          </div>
+         )}
+        </div>
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/60 transition-colors duration-300 flex flex-col items-center justify-center p-6 text-center">
+         <span className="text-text-primary opacity-0 group-hover:opacity-100 font-bold tracking-widest text-lg transition-opacity duration-300 mb-2">
+          {getCustomerPlanName(item)}
+         </span>
+         <span className="text-gray-300 opacity-0 group-hover:opacity-100 text-sm transition-opacity duration-300 delay-75">
+          VIEW DETAILS
+         </span>
+        </div>
+       </motion.div>
+      )})}
+     </div>
+    )}
    </section>
 
    {/* MODAL */}
@@ -146,7 +161,14 @@ const GalleryPage: React.FC = () => {
        onClick={e => e.stopPropagation()}
       >
        <div className="h-[300px] md:h-[500px] p-8 bg-gray-50 dark:bg-gray-800/50 flex items-center justify-center">
-        <img src={`/designs/${selectedImg.designCode}-F1.svg.png`} alt={selectedImg.name} className="w-full h-full object-contain" />
+        {selectedImg.thumbnailUrl ? (
+         <img src={getImageUrl(selectedImg.thumbnailUrl)} alt={selectedImg.name} className="w-full h-full object-contain" />
+        ) : (
+         <div className="flex flex-col items-center justify-center text-center gap-4 opacity-50">
+          <Box size={64} className="text-text-secondary" />
+          <span className="text-xl font-bold text-text-primary">{getCustomerPlanName(selectedImg)}</span>
+         </div>
+        )}
        </div>
        <div className="p-8 md:p-12 flex flex-col justify-center relative">
         <button onClick={() => setSelectedImg(null)} className="absolute top-6 right-6 text-text-secondary hover:text-gray-900 dark:hover:text-text-primary transition-colors">
