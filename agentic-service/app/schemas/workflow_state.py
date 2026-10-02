@@ -3,6 +3,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
+from app.schemas.workflow_plan import WorkflowPlan
+
 
 class ExecutionLogEntry(BaseModel):
     agent_name:str
@@ -47,6 +49,12 @@ class WorkflowState(BaseModel):
     #Internal routing data
     input_data:CoordinatorInput | None=None
     current_agent:str="coordinator"
+    
+    #Structured plan
+    plan:WorkflowPlan | None=None
+    current_step_id:str | None=None
+    completed_step_ids:list[str]=Field(default_factory=list)
+    
     ai_design_generated:bool=False
     design_version:int | None=None
 

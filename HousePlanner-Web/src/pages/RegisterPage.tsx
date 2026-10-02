@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { ArrowRight, Box, Lock, Mail, Sparkles, User } from 'lucide-react';
-import { googleLoginAsync, registerAsync } from '../features/auth/authSlice';
+import { registerAsync } from '../features/auth/authSlice';
 import type { AppDispatch } from '../store';
 import useAuth from '../features/auth/useAuth';
 import { roleHomePath } from '../utils/roleNavigation';
@@ -29,12 +29,6 @@ const RegisterPage: React.FC = () => {
   else setError((result.payload as string) || 'Registration failed. Please try again.');
  };
 
- const continueWithGoogle = async () => {
-  setError('');
-  const result = await dispatch(googleLoginAsync());
-  if (googleLoginAsync.fulfilled.match(result)) navigate(roleHomePath(result.payload.user.role));
-  else setError((result.payload as string) || 'Google sign-in failed.');
- };
 
  const fieldClass = 'block w-full pl-11 pr-4 py-3.5 bg-surface-elevated border border-border dark:border-border-strong rounded-xl text-text-primary focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none';
  return <div className="min-h-screen bg-background flex items-center justify-center p-6 relative overflow-hidden">
@@ -51,8 +45,7 @@ const RegisterPage: React.FC = () => {
     <label className="block text-sm font-medium text-text-secondary">Confirm Password<div className="relative mt-1.5"><Lock className="absolute left-4 top-3.5 text-text-secondary" size={20}/><input id="reg-confirm-password" required type="password" autoComplete="new-password" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} className={fieldClass} placeholder="••••••••"/></div></label>
     <button id="register-submit" className="w-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold py-4 rounded-xl flex items-center justify-center gap-2 focus-visible:ring-4 focus-visible:ring-blue-300">Create Account <ArrowRight size={18}/></button>
    </form>
-   <div className="flex items-center gap-3 my-6"><span className="h-px bg-gray-200 dark:bg-gray-700 flex-1"/><span className="text-xs text-text-secondary">OR</span><span className="h-px bg-gray-200 dark:bg-gray-700 flex-1"/></div>
-   <button type="button" onClick={continueWithGoogle} className="w-full border border-border dark:border-border-strong py-3 rounded-xl font-semibold focus-visible:ring-4 focus-visible:ring-blue-200">Continue with Google</button>
+
    <p className="text-xs text-text-muted text-center mt-5">Architect and Constructor accounts are created by the HousePlanner administrator.</p>
    <p className="text-sm text-text-muted text-center mt-5">Already have an account? <Link to="/login" className="font-semibold text-blue-600">Sign in</Link></p>
   </main>
