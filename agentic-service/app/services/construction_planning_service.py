@@ -75,7 +75,6 @@ def calculate_schedule(phases_list:list)->dict:
 
     return {"phases":phases_list,"total_duration":total_duration}
 
-
 def _build_construction_plan(
     floor_count: int,
     total_area: float,
@@ -130,6 +129,7 @@ def _build_construction_plan(
         "optimization_notes": opt_notes
     }
 
+
 def construction_planning_node(state:WorkflowState)->WorkflowState:
     """LangGraph node for construction planning generation."""
     start_time=datetime.now(timezone.utc)
@@ -138,9 +138,6 @@ def construction_planning_node(state:WorkflowState)->WorkflowState:
         print("[Construction Planning Service] Existing plan reused")
         return state
 
-    if not state.design_result:
-        print(f"[Construction Planning Service] Planning for workflow {state.workflow_id}...")
-        return state
     print(f"[Construction Planning Service] Planning for workflow {state.workflow_id}...")
 
     try:
@@ -150,18 +147,36 @@ def construction_planning_node(state:WorkflowState)->WorkflowState:
             state, "ConstructionPlanningAgent", "construction_scheduler", exc
         )
 
-    design=state.design_result
-    floor_count=design.get("floor_count",1)
-    total_area=design.get("total_built_up_area_sqft",1000)
+    # 1.Analyze House
+    floor_count = 1
+    total_area = 1000
+    bathrooms = 2
+
+    if state.design_result:
+        design = state.design_result
+        floor_count = design.get("floor_count", 1)
+        total_area = design.get("total_built_up_area_sqft", 1000)
+        bathrooms = len([r for r in design.get("rooms", []) if "bath" in r.get("room_type", "").lower()])
+    elif state.input_data:
+        floor_count = 1
+        bathrooms = getattr(state.input_data, "bathrooms", 2)
+        total_area = 500 + (getattr(state.input_data, "bedrooms", 2) * 200)
+
     terrain=state.terrain_result.get("terrain_type","flat") if state.terrain_result else "flat"
-    bathrooms = len([r for r in design.get("rooms", []) if "bath" in r.get("room_type", "").lower()])
     target_duration = getattr(state.input_data, "target_duration_days", None) if state.input_data else None
+    
+    room_count = 0
+    if state.design_result:
+        room_count = len(state.design_result.get("rooms", []))
+    elif state.input_data:
+        room_count = getattr(state.input_data, "bedrooms", 2) + bathrooms + 2
+
     tool_input = {
         "floor_count": floor_count,
         "total_area_sqft": total_area,
         "terrain_type": terrain,
         "target_duration_days": target_duration,
-        "room_count": len(design.get("rooms", [])),
+        "room_count": room_count,
         "bathroom_count": bathrooms,
     }
     started_at = start_tool_timer()

@@ -36,6 +36,7 @@ class CoordinatorInput(BaseModel):
     quality_level:str | None=None
     natural_language_prompt: str | None = None
     preferences: dict[str, Any] | None = None
+    target_duration_days: int | None = None
 
 
 class WorkflowState(BaseModel):

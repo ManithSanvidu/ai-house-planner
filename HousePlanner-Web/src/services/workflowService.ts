@@ -178,6 +178,7 @@ export interface StartDesignRequest {
  bedrooms: number;
  bathrooms: number;
  houseType: 'simple' | 'modern';
+ targetDurationDays?: number;
 }
 
 export const workflowService = {

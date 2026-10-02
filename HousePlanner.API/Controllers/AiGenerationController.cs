@@ -102,7 +102,8 @@ public class AiGenerationController : ControllerBase
             land_size_perches = requirement.LandSizePerches,
             bedrooms = requirement.Bedrooms,
             bathrooms = requirement.Bathrooms,
-            house_type = requirement.HouseType
+            house_type = requirement.HouseType,
+            target_duration_days = requirement.TargetDurationDays
         };
         var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
         try

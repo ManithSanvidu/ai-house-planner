@@ -24,6 +24,7 @@ class StartWorkflowRequest(BaseModel):
     bedrooms: int
     bathrooms: int
     house_type: str
+    target_duration_days: int | None = None
 
 class ResumeWorkflowRequest(BaseModel):
     workflow_id: UUID
