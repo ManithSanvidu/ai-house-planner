@@ -9,8 +9,8 @@ public sealed class HouseRequirement
     public int LandSizePerches { get; init; }
     public int Bedrooms { get; init; }
     public int Bathrooms { get; init; }
-    [Required]
     public string HouseType { get; init; } = string.Empty;
+    public int? TargetDurationDays { get; init; }
     public int Floors => 1;
 }
 
@@ -23,6 +23,7 @@ public sealed class StartDesignRequest
     public int Bathrooms { get; init; }
     [Required]
     public string HouseType { get; init; } = string.Empty;
+    public int? TargetDurationDays { get; init; }
 
     public HouseRequirement ToRequirement() => new()
     {
@@ -30,6 +31,7 @@ public sealed class StartDesignRequest
         LandSizePerches = LandSizePerches,
         Bedrooms = Bedrooms,
         Bathrooms = Bathrooms,
-        HouseType = HouseType
+        HouseType = HouseType,
+        TargetDurationDays = TargetDurationDays
     };
 }

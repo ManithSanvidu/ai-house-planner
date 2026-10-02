@@ -22,10 +22,14 @@ const IntakeForm: React.FC = () => {
   // Step 3: House Style
   const [houseType, setHouseType] = useState<'simple' | 'modern' | ''>('');
 
+  // Step 4: Target Duration
+  const [targetDurationMonths, setTargetDurationMonths] = useState<number | null>(6);
+
   const steps = [
     { id: 1, title: 'Land' },
     { id: 2, title: 'Rooms' },
-    { id: 3, title: 'Style' }
+    { id: 3, title: 'Style' },
+    { id: 4, title: 'Timeline' }
   ];
 
   const validateStep = (step: number) => {
@@ -34,12 +38,13 @@ const IntakeForm: React.FC = () => {
       return bedrooms !== null && bedrooms >= 1 && bedrooms <= 3 && bathrooms !== null && bathrooms >= 1 && bathrooms <= 2;
     }
     if (step === 3) return houseType !== '';
+    if (step === 4) return targetDurationMonths !== null && targetDurationMonths >= 3 && targetDurationMonths <= 24;
     return true;
   };
 
   const handleNext = () => {
     if (validateStep(currentStep)) {
-      setCurrentStep((prev) => Math.min(prev + 1, 3));
+      setCurrentStep((prev) => Math.min(prev + 1, 4));
       window.scrollTo(0, 0);
     }
   };
@@ -51,7 +56,7 @@ const IntakeForm: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateStep(3)) return;
+    if (!validateStep(4)) return;
 
     setIsSubmitting(true);
 
@@ -65,7 +70,8 @@ const IntakeForm: React.FC = () => {
         landSizePerches,
         bedrooms: bedrooms!,
         bathrooms: bathrooms!,
-        houseType: houseType as 'simple' | 'modern'
+        houseType: houseType as 'simple' | 'modern',
+        targetDurationDays: targetDurationMonths ? targetDurationMonths * 30 : undefined
       };
 
       console.log('Frontend payload before POST:', payload);
@@ -74,7 +80,7 @@ const IntakeForm: React.FC = () => {
       setWorkflowId(result.workflowId);
       setIsSuccess(true);
     } catch (err: any) {
-      console.error('Failed to generate plan.', err);
+      console.error('Failed to generate plan.', err.response?.data || err.message || err);
     } finally {
       setIsSubmitting(false);
     }
@@ -201,6 +207,42 @@ const IntakeForm: React.FC = () => {
               </motion.div>
             )}
 
+            {/* STEP 4: TIMELINE */}
+            {currentStep === 4 && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
+                <div>
+                  <h2 className="text-2xl sm:text-3xl font-bold text-text-primary mb-2">Construction Timeline</h2>
+                  <p className="text-text-secondary">How soon do you want to complete the construction?</p>
+                </div>
+
+                <div>
+                  <div className="flex flex-col gap-6 max-w-md mx-auto mt-8">
+                    <div className="text-center">
+                      <div className="text-5xl font-black text-indigo-600 mb-2">
+                        {targetDurationMonths} <span className="text-2xl text-slate-500 font-medium">months</span>
+                      </div>
+                      <p className="text-sm text-text-muted">Target Duration (~{targetDurationMonths! * 30} days)</p>
+                    </div>
+                    <input 
+                      type="range" 
+                      min="3" 
+                      max="24" 
+                      step="1"
+                      value={targetDurationMonths || 6} 
+                      onChange={(e) => setTargetDurationMonths(parseInt(e.target.value))}
+                      className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                    />
+                    <div className="flex justify-between text-xs text-text-muted font-semibold px-1">
+                      <span>Fast (3m)</span>
+                      <span>Normal (6m)</span>
+                      <span>Relaxed (24m)</span>
+                    </div>
+                  </div>
+                </div>
+
+              </motion.div>
+            )}
+
           </div>
 
           {/* FOOTER NAVIGATION */}
@@ -214,7 +256,7 @@ const IntakeForm: React.FC = () => {
               <ChevronLeft size={18} /> Back
             </button>
             
-            {currentStep < 3 ? (
+            {currentStep < 4 ? (
               <button 
                 type="button" 
                 onClick={handleNext}
@@ -227,7 +269,7 @@ const IntakeForm: React.FC = () => {
               <button 
                 type="button" 
                 onClick={handleSubmit}
-                disabled={isSubmitting || !validateStep(3)}
+                disabled={isSubmitting || !validateStep(4)}
                 className="flex items-center justify-center gap-3 px-8 py-3 bg-green-600 dark:bg-green-500 hover:bg-green-700 dark:hover:bg-green-600 text-white rounded-xl font-bold text-sm transition-colors shadow-sm disabled:opacity-70 disabled:cursor-not-allowed min-w-[200px]"
               >
                 {isSubmitting ? 'Generating...' : 'Generate AI Plan'}

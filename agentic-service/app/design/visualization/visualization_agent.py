@@ -53,7 +53,8 @@ def visualization_node(state):
     if isinstance(getattr(state, "design_result", None), str):
         print("[Visualization Agent] design_result is a string?!")
         import json
-        rooms = json.loads(state.design_result).get("rooms", [])
+        state.design_result = json.loads(state.design_result)
+        rooms = state.design_result.get("rooms", [])
 
     print(f"[Visualization Agent] Layout received: {len(rooms)} rooms")
     logger.info(f"[Visualization Agent] Layout received: {len(rooms)} rooms")
@@ -99,6 +100,12 @@ def visualization_node(state):
                 "image_url": None, "status": "pending", "source": "ai_guard"
             }
             return state
+        except Exception as e:
+            print(f"[Visualization Agent] AI visualization failed: {e}")
+            logger.error(f"[Visualization Agent] AI visualization failed: {e}")
+            viz_result = {
+                "image_url": None, "status": "failed", "source": "ai_generator", "error": str(e)
+            }
         if viz_result.get("status") == "validated":
             try:
                 image_url = _save_generated_image(viz_result)

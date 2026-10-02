@@ -82,8 +82,17 @@ def construction_planning_node(state:WorkflowState)->WorkflowState:
 
     # 1.Analyze House
     design=state.design_result
-    floor_count=design.get("floor_count",1)
-    total_area=design.get("total_built_up_area_sqft",1000)
+    if isinstance(design, str):
+        import json
+        design = json.loads(design)
+        state.design_result = design
+        
+    _total = design.get("total_built_up_area_sqft")
+    total_area = float(_total) if _total is not None else 1000.0
+    
+    _floors = design.get("floor_count")
+    floor_count = int(_floors) if _floors is not None else 1
+    
     terrain=state.terrain_result.get("terrain_type","flat") if state.terrain_result else "flat"
     bathrooms = len([r for r in design.get("rooms", []) if "bath" in r.get("room_type", "").lower()])
 
@@ -101,6 +110,8 @@ def construction_planning_node(state:WorkflowState)->WorkflowState:
     # 4.Check user constraints
     # Target duration might be passed in preferences if implemented
     target_duration = getattr(state.input_data, "target_duration_days", None) if state.input_data else None
+    if target_duration is not None:
+        target_duration = int(target_duration)
     status="ON_SCHEDULE"
     opt_notes=[]
 
@@ -152,7 +163,7 @@ def construction_planning_node(state:WorkflowState)->WorkflowState:
             f"{ASPNET_API_URL}/internal/workflows/{state.workflow_id}/construction-plan",
             json=construction_plan,
             headers={"X-Internal-API-Key":INTERNAL_API_KEY,"Content-Type":"application/json"},
-            timeout=10,
+            timeout=30,
             verify=False
         )
         if response.ok:

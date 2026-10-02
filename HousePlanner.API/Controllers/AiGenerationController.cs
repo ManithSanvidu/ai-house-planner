@@ -77,12 +77,14 @@ public class AiGenerationController : ControllerBase
             land_size_perches = requirement.LandSizePerches,
             bedrooms = requirement.Bedrooms,
             bathrooms = requirement.Bathrooms,
-            house_type = requirement.HouseType
+            house_type = requirement.HouseType,
+            target_duration_days = requirement.TargetDurationDays
         };
         var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
         try
         {
-            var response = await _agenticServiceClient.PostAsync("/workflows/start", content, cancellationToken);
+            using var requestMessage = new HttpRequestMessage(HttpMethod.Post, "/workflows/start") { Content = content };
+            var response = await _agenticServiceClient.SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
             if (!response.IsSuccessStatusCode)
                 return BadRequest(new { Message = $"Agentic service returned an error: {response.StatusCode}" });
         }

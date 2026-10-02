@@ -20,6 +20,7 @@ class CoordinatorInput(BaseModel):
     bathrooms:int = 1
     house_type:str = "conventional"
     budget_lkr:float | None=None
+    target_duration_days:int | None=None
     design_seed:int | None=None
     preferred_plan_code:str | None=None
     regeneration:bool=False
