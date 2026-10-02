@@ -82,7 +82,6 @@ def land_analysis_node(state: WorkflowState) -> WorkflowState:
         created_at_utc=datetime.now(timezone.utc).isoformat()
     ))
 
-    state.current_agent = "design"
     return state
 
 

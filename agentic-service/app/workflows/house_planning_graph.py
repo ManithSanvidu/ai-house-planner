@@ -2,7 +2,7 @@ from __future__ import annotations
 from langgraph.graph import END, StateGraph
 
 from app.services.construction_planning_service import construction_planning_node
-from app.orchestration.workflow_router import coordinator_node
+from app.orchestration.workflow_router import coordinator_node, is_agent_failed
 from app.services.cost_estimation_service import cost_estimation_node
 from app.agents.design_agent import design_node
 from app.agents.land_analysis_agent import land_analysis_node
@@ -12,24 +12,24 @@ from app.design.visualization.visualization_agent import visualization_node
 from app.validation.design_validation_service import validation_node
 from app.schemas.workflow_state import WorkflowState
 
-
 def route_from_coordinator(state: WorkflowState) -> str:
-    """Route execution to the agent selected by the coordinator."""
-    return state.current_agent
+    """Plan-driven dynamic router."""
+    if is_agent_failed(state):
+        return END
+        
+    # Check if a step is currently running
+    if state.current_step_id is not None and state.plan:
+        current_step = next((s for s in state.plan.steps if s.step_id == state.current_step_id), None)
+        if current_step and current_step.assigned_agent:
+            return current_step.assigned_agent
+            
+    # If no step is running and we didn't fail, we are done with the plan. Route to rendering.
+    return "rendering"
 
 
 def route_after_cost_estimation(state: WorkflowState) -> str:
     """Stop when cost calculation or persistence fails."""
-    return "failed" if state.status == "failed" or state.current_agent == "failed" else "validation"
-
-
-def route_from_validation(state: WorkflowState) -> str:
-    """Render a valid design, retry an invalid one, or stop on failure."""
-    if state.validation_result and state.validation_result.get("passed", False):
-        return "rendering"
-    if state.status == "failed" or state.current_agent == "failed":
-        return "failed"
-    return "failed"
+    return "failed" if state.status == "failed" or getattr(state, "current_agent", None) == "failed" else "validation"
 
 
 workflow = StateGraph(WorkflowState)
@@ -42,38 +42,40 @@ workflow.add_node("cost_estimation", cost_estimation_node)
 workflow.add_node("validation", validation_node)
 workflow.add_node("rendering", rendering_node)
 workflow.add_node("visualization", visualization_node)
-workflow.set_entry_point("design")
 
-# coordinator decides whether land analysis is needed;
-# kept for future chat-based requests
-workflow.add_edge("coordinator", "requirement_analysis")
-workflow.add_conditional_edges(
+workflow.set_entry_point("coordinator")
+
+# Every plan agent returns to coordinator
+plan_agents = [
     "requirement_analysis",
-    lambda state: state.current_agent,
+    "land_analysis",
+    "design",
+    "visualization",
+    "construction_planning",
+    "cost_estimation",
+    "validation"
+]
+
+for agent in plan_agents:
+    workflow.add_edge(agent, "coordinator")
+
+# Coordinator routes to the next agent, rendering, or END
+workflow.add_conditional_edges(
+    "coordinator",
+    route_from_coordinator,
     {
+        "requirement_analysis": "requirement_analysis",
         "land_analysis": "land_analysis",
         "design": "design",
+        "visualization": "visualization",
+        "construction_planning": "construction_planning",
+        "cost_estimation": "cost_estimation",
+        "validation": "validation",
         "rendering": "rendering",
-    },
+        END: END
+    }
 )
-workflow.add_edge("land_analysis", "design")
-workflow.add_conditional_edges(
-    "design",
-    lambda state: "failed" if state.status == "failed" else "visualization",
-    {"failed": END, "visualization": "visualization"},
-)
-workflow.add_edge("visualization", "construction_planning")
-workflow.add_edge("construction_planning", "cost_estimation")
-workflow.add_conditional_edges(
-    "cost_estimation",
-    route_after_cost_estimation,
-    {"failed": END, "validation": "validation"},
-)
-workflow.add_conditional_edges(
-    "validation",
-    route_from_validation,
-    {"rendering": "rendering", "design": "design", "failed": END},
-)
+
 workflow.add_edge("rendering", END)
 
 app_graph = workflow.compile()

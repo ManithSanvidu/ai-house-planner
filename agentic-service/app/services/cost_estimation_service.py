@@ -62,7 +62,6 @@ def cost_estimation_node(state: WorkflowState) -> WorkflowState:
     """
     if state.cost_result:
         print("[Cost Estimation Service] Existing estimate reused")
-        state.current_agent = "validation"
         return state
 
     print(f"[Cost Estimation Service] Starting for workflow {state.workflow_id} …")
@@ -79,7 +78,6 @@ def cost_estimation_node(state: WorkflowState) -> WorkflowState:
     _record_run(state, "success", started_at, result=result)
 
     state.cost_result = result.model_dump()
-    state.current_agent = "validation"
     budget_message = (
         f" ({result.budget_delta_percent:.2f}% of budget)"
         if result.budget_delta_percent is not None
@@ -167,7 +165,6 @@ def _fail(state: WorkflowState, reason: str) -> WorkflowState:
     print(f"[Cost Estimation Service] FAILED — {reason}")
     logger.error("[Cost Estimation Service] FAILED — %s", reason)
     state.status = "failed"
-    state.current_agent = "failed"
     state.execution_log.append(
         ExecutionLogEntry(
             agent_name="CostEstimationAgent",

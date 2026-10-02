@@ -153,7 +153,6 @@ def _make_state(
             bathrooms=1,
             house_type="conventional"
         ),
-        current_agent="cost_estimation",
     )
 
 
@@ -257,7 +256,6 @@ def test_flat_terrain_calculation():
         state = cost_estimation_node(_make_state(terrain_type="flat"))
 
     assert state.status == "running"
-    assert state.current_agent == "validation"
     r = state.cost_result
 
     assert r["material_cost_lkr"] == pytest.approx(84_000.00, rel=1e-6)
@@ -404,7 +402,6 @@ def test_cost_result_stored_in_state():
 def _assert_failed(state: WorkflowState) -> None:
     """Common assertions for a safely failed state."""
     assert state.status == "failed", f"Expected 'failed', got '{state.status}'"
-    assert state.current_agent == "failed"
     # At least one execution log entry with actionable message
     assert any(
         "cost estimation failed" in (e.action or "").lower()

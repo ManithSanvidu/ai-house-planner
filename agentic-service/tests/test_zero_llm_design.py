@@ -15,7 +15,6 @@ def test_design_workflow_makes_zero_llm_calls(mock_generate, mock_submit):
     state = WorkflowState(
         workflow_id="11111111-1111-1111-1111-111111111111",
         status="running",
-        current_agent="design",
         input_data=CoordinatorInput(
             submission_id="123e4567-e89b-12d3-a456-426614174000",
             land_size_category="medium",
@@ -38,7 +37,6 @@ def test_design_workflow_makes_zero_llm_calls(mock_generate, mock_submit):
         print("Failure Reason:", new_state.validation_result)
     assert new_state.status != "failed"
     assert new_state.design_result is not None
-    assert new_state.current_agent == "cost_estimation"
     
     # Assert geometry fingerprint equality
     final_design = DesignResult.model_validate(new_state.design_result)

@@ -34,7 +34,6 @@ def design_node(state: WorkflowState) -> WorkflowState:
 
     if state.ai_design_generated and state.design_result and state.design_version is not None:
         print("[AI DESIGN] Existing design reused")
-        state.current_agent = "cost_estimation"
         return state
 
     # Extract inputs safely
@@ -107,7 +106,6 @@ def design_node(state: WorkflowState) -> WorkflowState:
     except (GenerationFailure, ValueError) as exc:
         state.design_result = None
         state.status = 'failed'
-        state.current_agent = 'failed'
         state.approval_status = 'not_requested'
         state.validation_result = {
             'passed': False, 
@@ -150,7 +148,6 @@ def design_node(state: WorkflowState) -> WorkflowState:
         created_at_utc=datetime.now(timezone.utc).isoformat()
     ))
 
-    state.current_agent = "cost_estimation"
     return state
 
 

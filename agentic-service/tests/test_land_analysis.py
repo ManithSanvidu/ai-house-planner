@@ -27,7 +27,6 @@ def test_land_analysis_node_skip_if_manual():
 
     # Should stay hillside
     assert updated_state.terrain_result["terrain_type"] == "hillside"
-    assert updated_state.current_agent == "design"
     assert "Skipped vision" in updated_state.execution_log[-1].action
 
 def test_land_analysis_node_fallback_no_photo():
@@ -46,5 +45,4 @@ def test_land_analysis_node_fallback_no_photo():
 
     assert updated_state.terrain_result["terrain_type"] == "flat"
     assert updated_state.terrain_result["slope_estimate"] == "flat"
-    assert updated_state.current_agent == "design"
     assert "No photo URL" in updated_state.execution_log[-1].action

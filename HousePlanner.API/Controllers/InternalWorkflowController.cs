@@ -258,6 +258,32 @@ public class InternalWorkflowController : ControllerBase
         return Ok(new { message = "Execution log saved.", count = logData.GetArrayLength() });
     }
 
+    /// <summary>
+    /// Internal endpoint to persist workflow orchestrator plan state.
+    /// </summary>
+    [HttpPatch("{id:guid}/plan")]
+    public async Task<IActionResult> UpdatePlan(Guid id, [FromBody] WorkflowPlanStateRequest request)
+    {
+        try
+        {
+            var workflow = await FindWorkflowState(id);
+            if (workflow is null) return NotFound(new { message = $"Unknown workflow {id}." });
+
+            workflow.PlanJson = JsonSerializer.Serialize(request);
+            workflow.UpdatedAt = DateTimeOffset.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Workflow plan saved for workflow {WorkflowId}", id);
+            return Ok(new { message = "Workflow plan saved." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error saving plan for workflow {WorkflowId}", id);
+            return StatusCode(StatusCodes.Status500InternalServerError, new { message = "An error occurred saving the plan." });
+        }
+    }
+
 
     /// <summary>
     /// Internal endpoint for the Land Analysis Agent to update terrain results.

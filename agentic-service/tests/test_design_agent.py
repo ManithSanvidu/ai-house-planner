@@ -37,7 +37,6 @@ def test_design_node_generation(mock_submit):
     # "AI_GENERATED" is returned when the LLM succeeds. Either is valid.
     template_id = updated_state.design_result["template_id"]
     assert template_id is not None and len(template_id) > 0, "template_id must always be set"
-    assert updated_state.current_agent == "cost_estimation"
     assert mock_submit.called
 
 @patch('app.agents.design_agent.validate_geometry')
@@ -70,7 +69,6 @@ def test_design_node_revision_flow(mock_submit, mock_generate, mock_quality, moc
     updated_state = design_node(state)
 
     assert updated_state.design_result is not None
-    assert updated_state.current_agent == "cost_estimation"
     assert mock_submit.called
     assert "Revised design" in updated_state.execution_log[-1].action
     assert mock_generate.call_args.kwargs['preferences']['bathrooms'] == 2

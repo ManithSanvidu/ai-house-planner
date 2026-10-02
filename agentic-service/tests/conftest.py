@@ -1,3 +1,15 @@
+import pytest
+from unittest.mock import patch
+
+@pytest.fixture(autouse=True)
+def mock_plan_persistence(request):
+    if request.module.__name__ == "tests.test_plan_persistence":
+        yield None
+        return
+    with patch("app.orchestration.workflow_router.persist_workflow_plan_state") as m:
+        yield m
+
+
 """Unit tests never call paid APIs or write workflow state to a local server."""
 import os
 

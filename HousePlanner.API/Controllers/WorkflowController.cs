@@ -675,7 +675,8 @@ public class WorkflowController : ControllerBase
                                 },
                                 previous_design = root.Clone(),
                                 plot_constraints = GetMetadata(root, "plot_constraints"),
-                                design_seed = nextSeed
+                                design_seed = nextSeed,
+                                persisted_plan_json = workflow.PlanJson,
                             };
 
                             var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
@@ -778,6 +779,7 @@ public class WorkflowController : ControllerBase
             previous_design = root.Clone(),
             plot_constraints = GetMetadata(root, "plot_constraints"),
             design_seed = nextSeed,
+            persisted_plan_json = workflow.PlanJson,
             regeneration = true,
             previous_base_plan_code = previousPlanCode,
             previous_design_fingerprint = previousFingerprint

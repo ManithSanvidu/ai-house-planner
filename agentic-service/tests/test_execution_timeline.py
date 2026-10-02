@@ -68,20 +68,20 @@ def test_coordinator_node_appends_log_entry():
 
     result = coordinator_node(state)
 
-    assert len(result.execution_log) == 1
-    entry = result.execution_log[0]
+    assert len(result.execution_log) == 2
+    entry = result.execution_log[1]
     assert entry.agent_name == "CoordinatorAgent"
-    assert "Workflow initialised" in entry.action
-    assert "next_agent=" in entry.result
+    assert "workflow_step_selected" in entry.action
+    assert "assigned_agent=" in entry.result
 
 
 def test_coordinator_log_entry_contains_routing_decision():
     """The log message should mention which path was taken."""
     state = _make_state()
     result = coordinator_node(state)
-    entry = result.execution_log[0]
-    # now it always routes to land_analysis
-    assert "land_analysis" in entry.result or "Land Analysis" in entry.action
+    entry = result.execution_log[1]
+    # now it routes to requirement_analysis
+    assert "requirement_analysis" in entry.result or "workflow_step_selected" in entry.action
 
 
 # ─────────────────────────────────────────────────────────────────
@@ -100,7 +100,6 @@ def test_logs_accumulate_across_nodes():
 
     # Simulate a state field update (as nodes do) — list must be unchanged
     state.status = "design_generated"
-    state.current_agent = "cost_estimation"
 
     assert len(state.execution_log) == 3
     assert state.execution_log[2].agent_name == "DesignAgent"

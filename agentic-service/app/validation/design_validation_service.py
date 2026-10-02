@@ -528,12 +528,10 @@ def validation_node(state: WorkflowState) -> WorkflowState:
     if val_result.passed:
         state.status = "awaiting_approval"
         state.approval_status = "pending"
-        state.current_agent = "rendering"
         log_message = "Design validation passed — all safety and compliance rules satisfied"
     else:
         state.status = "failed"
         state.approval_status = "not_requested"
-        state.current_agent = "failed"
         state.validation_result["reason"] = "Selected catalogue plan failed validation"
         log_message = f"Design validation failed — {val_result.revision_reason or 'see details'}"
 

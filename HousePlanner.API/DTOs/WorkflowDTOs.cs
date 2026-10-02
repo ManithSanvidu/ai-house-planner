@@ -196,3 +196,10 @@ public record AdminWorkflowSummaryDto(
     string ApprovalStatus,
     DateTimeOffset CreatedAt
 );
+
+public sealed class WorkflowPlanStateRequest
+{
+    public System.Text.Json.JsonElement Plan { get; set; }
+    public string? CurrentStepId { get; set; }
+    public List<string> CompletedStepIds { get; set; } = new();
+}

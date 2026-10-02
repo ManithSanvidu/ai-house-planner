@@ -31,6 +31,9 @@ public class WorkflowState
     [Column(TypeName = "jsonb")]
     public string? ConstructionPlan { get; set; }
 
+    [Column(TypeName = "jsonb")]
+    public string? PlanJson { get; set; }
+
     [Required]
     [MaxLength(30)]
     public string ApprovalStatus { get; set; } = "not_requested";

@@ -32,7 +32,6 @@ def test_construction_planning_no_preferences():
     result_state = construction_planning_node(state)
     
     # Assertions
-    assert result_state.current_agent == "cost_estimation"
     assert result_state.construction_plan_result is not None
     assert "phases" in result_state.construction_plan_result
     assert "project_summary" in result_state.construction_plan_result

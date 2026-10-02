@@ -71,12 +71,10 @@ def construction_planning_node(state:WorkflowState)->WorkflowState:
 
     if state.construction_plan_result:
         print("[Construction Planning Service] Existing plan reused")
-        state.current_agent="cost_estimation"
         return state
 
     if not state.design_result:
         print(f"[Construction Planning Service] Planning for workflow {state.workflow_id}...")
-        state.current_agent="cost_estimation"
         return state
     print(f"[Construction Planning Service] Planning for workflow {state.workflow_id}...")
 
@@ -172,5 +170,4 @@ def construction_planning_node(state:WorkflowState)->WorkflowState:
         created_at_utc=datetime.now(timezone.utc).isoformat()
     ))
 
-    state.current_agent="cost_estimation"
     return state
