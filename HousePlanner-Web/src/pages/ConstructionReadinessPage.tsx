@@ -181,7 +181,7 @@ export const ConstructionReadinessPage: React.FC = () => {
   if (error) {
     return (
       <div className="p-6 max-w-7xl mx-auto text-center py-20">
-        <h2 className="text-xl font-bold text-gray-700">{error}</h2>
+        <h2 className="text-xl font-bold text-text-secondary">{error}</h2>
         <button onClick={() => navigate('/dashboard')} className="mt-4 text-blue-600 hover:underline">Return to Dashboard</button>
       </div>
     );
@@ -198,7 +198,7 @@ export const ConstructionReadinessPage: React.FC = () => {
           className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 bg-surface p-8 rounded-3xl border border-border dark:border-border-strong shadow-sm transition-colors"
         >
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-text-primary tracking-tight mb-2 transition-colors">
+            <h1 className="text-3xl font-bold text-text-primary tracking-tight mb-2 transition-colors">
               Construction Readiness
             </h1>
             <p className="text-text-secondary transition-colors font-medium">AI-powered material & task planning</p>
@@ -209,7 +209,7 @@ export const ConstructionReadinessPage: React.FC = () => {
               <select
                 value={projectId || ''}
                 onChange={(e) => { setProjectId(e.target.value); setReadinessPlan(null); }}
-                className="block w-full py-3.5 px-4 border border-border dark:border-border-strong bg-white dark:bg-surface-elevated text-gray-900 dark:text-text-primary rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors sm:text-sm font-semibold"
+                className="block w-full py-3.5 px-4 border border-border dark:border-border-strong bg-surface-elevated text-text-primary rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors sm:text-sm font-semibold"
               >
                 {availableProjects.map(p => (
                   <option key={p.id} value={p.id}>{p.name}</option>
@@ -220,7 +220,7 @@ export const ConstructionReadinessPage: React.FC = () => {
         </motion.div>
 
         <div className="bg-surface rounded-3xl shadow-sm border border-border dark:border-border-strong overflow-hidden mb-6 transition-colors">
-          <div className="flex flex-wrap p-3 gap-2 border-b border-border dark:border-border-strong bg-gray-50/50 dark:bg-surface-elevated transition-colors">
+          <div className="flex flex-wrap p-3 gap-2 border-b border-border dark:border-border-strong bg-surface-elevated transition-colors">
             {[
               { id: 'overview', icon: <BarChart3 size={18} />, label: 'Overview' },
               { id: 'materials', icon: <Package size={18} />, label: 'Materials' },
@@ -231,8 +231,8 @@ export const ConstructionReadinessPage: React.FC = () => {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-2 px-6 py-3 font-bold text-sm rounded-xl transition-all ${activeTab === tab.id
-                  ? 'bg-white dark:bg-surface shadow-sm text-blue-600 dark:text-blue-400 border border-gray-200 dark:border-border-strong'
-                  : 'text-text-secondary hover:text-gray-900 dark:hover:text-text-primary hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent'
+                  ? 'bg-surface shadow-sm text-blue-600 dark:text-blue-400 border border-border-strong'
+                  : 'text-text-secondary hover:text-text-primary dark:hover:text-text-primary hover:bg-gray-100 dark:hover:bg-gray-800 border border-transparent'
                   }`}
               >
                 {tab.icon}
@@ -310,7 +310,7 @@ export const ConstructionReadinessPage: React.FC = () => {
                         <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl flex items-center justify-center text-indigo-600 dark:text-indigo-400 shadow-sm">
                           <Package size={24} />
                         </div>
-                        <h3 className="text-2xl font-bold text-gray-900 dark:text-text-primary">Materials Inventory</h3>
+                        <h3 className="text-2xl font-bold text-text-primary">Materials Inventory</h3>
                       </div>
 
                       {user?.role === 'Constructor' && (
@@ -330,7 +330,7 @@ export const ConstructionReadinessPage: React.FC = () => {
                     <div className="overflow-hidden border border-border dark:border-border-strong rounded-3xl shadow-sm">
                       <div className="overflow-x-auto">
                         <table className="min-w-full divide-y divide-border dark:divide-border-strong text-left">
-                          <thead className="bg-gray-50 dark:bg-surface-elevated">
+                          <thead className="bg-surface-elevated">
                             <tr>
                               <th className="px-6 py-5 text-xs font-bold text-text-secondary uppercase tracking-wider">Material</th>
                               <th className="px-6 py-5 text-xs font-bold text-text-secondary uppercase tracking-wider">Required</th>
@@ -343,8 +343,8 @@ export const ConstructionReadinessPage: React.FC = () => {
                             {materials.map(m => {
                               const shortage = m.requiredQuantity - m.availableQuantity - m.orderedQuantity;
                               return (
-                                <tr key={m.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                                  <td className="px-6 py-5 whitespace-nowrap text-sm font-bold text-gray-900 dark:text-text-primary">{m.materialName}</td>
+                                <tr key={m.id} className="hover:bg-surface-elevated dark:hover:bg-gray-800/50 transition-colors">
+                                  <td className="px-6 py-5 whitespace-nowrap text-sm font-bold text-text-primary">{m.materialName}</td>
                                   <td className="px-6 py-5 whitespace-nowrap text-sm font-semibold text-text-secondary">{m.requiredQuantity} {m.unit}</td>
                                   <td className="px-6 py-5 whitespace-nowrap text-sm font-semibold text-text-secondary">{m.availableQuantity} {m.unit}</td>
                                   <td className="px-6 py-5 whitespace-nowrap text-sm font-semibold text-text-secondary">{m.orderedQuantity || 0} {m.unit}</td>
@@ -368,16 +368,16 @@ export const ConstructionReadinessPage: React.FC = () => {
                   </div>
 
                   {user?.role === 'Constructor' && (
-                    <div className="bg-gray-50 dark:bg-surface-elevated p-8 rounded-3xl border border-border dark:border-border-strong mt-8 transition-colors shadow-sm">
-                      <h4 className="text-lg font-bold text-gray-900 dark:text-text-primary mb-6">Add Material</h4>
+                    <div className="bg-surface-elevated p-8 rounded-3xl border border-border dark:border-border-strong mt-8 transition-colors shadow-sm">
+                      <h4 className="text-lg font-bold text-text-primary mb-6">Add Material</h4>
                       <form onSubmit={addMaterial} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-5">
-                        <input type="text" placeholder="Material Name" required value={newMaterial.materialName} onChange={e => setNewMaterial({ ...newMaterial, materialName: e.target.value })} className="lg:col-span-2 border border-border dark:border-border-strong bg-white dark:bg-surface p-3.5 rounded-xl focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-text-primary transition-colors text-sm font-semibold shadow-sm" />
-                        <input type="number" placeholder="Required" required value={newMaterial.requiredQuantity || ''} onChange={e => setNewMaterial({ ...newMaterial, requiredQuantity: Number(e.target.value) })} className="border border-border dark:border-border-strong bg-white dark:bg-surface p-3.5 rounded-xl focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-text-primary transition-colors text-sm font-semibold shadow-sm" />
-                        <input type="number" placeholder="Available" required value={newMaterial.availableQuantity || ''} onChange={e => setNewMaterial({ ...newMaterial, availableQuantity: Number(e.target.value) })} className="border border-border dark:border-border-strong bg-white dark:bg-surface p-3.5 rounded-xl focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-text-primary transition-colors text-sm font-semibold shadow-sm" />
-                        <input type="number" placeholder="Ordered" value={newMaterial.orderedQuantity || ''} onChange={e => setNewMaterial({ ...newMaterial, orderedQuantity: Number(e.target.value) })} className="border border-border dark:border-border-strong bg-white dark:bg-surface p-3.5 rounded-xl focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-text-primary transition-colors text-sm font-semibold shadow-sm" />
+                        <input type="text" placeholder="Material Name" required value={newMaterial.materialName} onChange={e => setNewMaterial({ ...newMaterial, materialName: e.target.value })} className="lg:col-span-2 border border-border dark:border-border-strong bg-surface p-3.5 rounded-xl focus:ring-2 focus:ring-blue-500 text-text-primary transition-colors text-sm font-semibold shadow-sm" />
+                        <input type="number" placeholder="Required" required value={newMaterial.requiredQuantity || ''} onChange={e => setNewMaterial({ ...newMaterial, requiredQuantity: Number(e.target.value) })} className="border border-border dark:border-border-strong bg-surface p-3.5 rounded-xl focus:ring-2 focus:ring-blue-500 text-text-primary transition-colors text-sm font-semibold shadow-sm" />
+                        <input type="number" placeholder="Available" required value={newMaterial.availableQuantity || ''} onChange={e => setNewMaterial({ ...newMaterial, availableQuantity: Number(e.target.value) })} className="border border-border dark:border-border-strong bg-surface p-3.5 rounded-xl focus:ring-2 focus:ring-blue-500 text-text-primary transition-colors text-sm font-semibold shadow-sm" />
+                        <input type="number" placeholder="Ordered" value={newMaterial.orderedQuantity || ''} onChange={e => setNewMaterial({ ...newMaterial, orderedQuantity: Number(e.target.value) })} className="border border-border dark:border-border-strong bg-surface p-3.5 rounded-xl focus:ring-2 focus:ring-blue-500 text-text-primary transition-colors text-sm font-semibold shadow-sm" />
                         <div className="flex gap-3 lg:col-span-1">
-                          <input type="text" placeholder="Unit" required value={newMaterial.unit} onChange={e => setNewMaterial({ ...newMaterial, unit: e.target.value })} className="w-1/2 border border-border dark:border-border-strong bg-white dark:bg-surface p-3.5 rounded-xl focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-text-primary transition-colors text-sm font-semibold shadow-sm" />
-                          <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} type="submit" className="w-1/2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl font-bold shadow-sm hover:opacity-90 transition-colors">Add</motion.button>
+                          <input type="text" placeholder="Unit" required value={newMaterial.unit} onChange={e => setNewMaterial({ ...newMaterial, unit: e.target.value })} className="w-1/2 border border-border dark:border-border-strong bg-surface p-3.5 rounded-xl focus:ring-2 focus:ring-blue-500 text-text-primary transition-colors text-sm font-semibold shadow-sm" />
+                          <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} type="submit" className="w-1/2 bg-gray-900 dark:bg-white text-white dark:text-text-primary rounded-xl font-bold shadow-sm hover:opacity-90 transition-colors">Add</motion.button>
                         </div>
                       </form>
                     </div>
@@ -393,21 +393,21 @@ export const ConstructionReadinessPage: React.FC = () => {
                       <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 rounded-2xl flex items-center justify-center text-blue-600 dark:text-blue-400 shadow-sm">
                         <List size={24} />
                       </div>
-                      <h3 className="text-2xl font-bold text-gray-900 dark:text-text-primary">Procurement Priority</h3>
+                      <h3 className="text-2xl font-bold text-text-primary">Procurement Priority</h3>
                     </div>
                     {readinessPlan?.procurement_priorities ? (
                       <div className="bg-surface border border-border dark:border-border-strong rounded-3xl shadow-sm overflow-hidden transition-colors">
                         <table className="min-w-full divide-y divide-border dark:divide-border-strong text-left">
-                          <tbody className="divide-y divide-border dark:divide-border-strong bg-white dark:bg-surface">
+                          <tbody className="divide-y divide-border dark:divide-border-strong bg-surface">
                             {readinessPlan.procurement_priorities.map((item: ProcurementPriority, idx: number) => (
-                              <tr key={idx} className="hover:bg-gray-50/50 dark:hover:bg-surface-elevated transition-colors">
+                              <tr key={idx} className="hover:bg-surface-elevated/50 dark:hover:bg-surface-elevated transition-colors">
                                 <td className="px-6 py-4 whitespace-nowrap">
                                   <div className="flex items-center gap-3">
                                     {item.priority === 'Critical' && <span className="text-red-500">🔴</span>}
                                     {item.priority === 'Upcoming' && <span className="text-orange-500">🟠</span>}
                                     {item.priority === 'Ready' && <span className="text-emerald-500">🟢</span>}
                                     {item.priority === 'Later' && <span className="text-gray-400">⚪</span>}
-                                    <span className="font-bold text-gray-900 dark:text-text-primary">{item.item}</span>
+                                    <span className="font-bold text-text-primary">{item.item}</span>
                                   </div>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-text-secondary">{item.status}</td>
@@ -427,7 +427,7 @@ export const ConstructionReadinessPage: React.FC = () => {
                       <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl flex items-center justify-center text-emerald-600 dark:text-emerald-400 shadow-sm">
                         <Truck size={24} />
                       </div>
-                      <h3 className="text-2xl font-bold text-gray-900 dark:text-text-primary">Procurement Plan</h3>
+                      <h3 className="text-2xl font-bold text-text-primary">Procurement Plan</h3>
                     </div>
 
                     {readinessPlan?.procurement_plan ? (
@@ -435,7 +435,7 @@ export const ConstructionReadinessPage: React.FC = () => {
                         {readinessPlan.procurement_plan.map((item: ProcurementItem, idx: number) => (
                           <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 bg-surface border border-border dark:border-border-strong rounded-3xl shadow-sm transition-colors hover:border-emerald-200 dark:hover:border-emerald-900/50 group">
                             <div>
-                              <h4 className="font-bold text-gray-900 dark:text-text-primary mb-1.5 text-lg group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">{item.item}</h4>
+                              <h4 className="font-bold text-text-primary mb-1.5 text-lg group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">{item.item}</h4>
                               {item.message ? (
                                 <p className="text-sm font-semibold text-red-600 dark:text-red-400">{item.message}</p>
                               ) : (
@@ -452,11 +452,11 @@ export const ConstructionReadinessPage: React.FC = () => {
                         ))}
                       </div>
                     ) : (
-                      <div className="text-center py-20 bg-gray-50 dark:bg-surface-elevated rounded-3xl border border-dashed border-border dark:border-border-strong transition-colors">
+                      <div className="text-center py-20 bg-surface-elevated rounded-3xl border border-dashed border-border dark:border-border-strong transition-colors">
                         <List className="mx-auto text-gray-400 dark:text-gray-600 mb-5" size={40} />
                         <p className="text-text-secondary font-semibold mb-6">No procurement plan generated yet.</p>
                         <div className="flex flex-col items-center">
-                          <motion.button disabled={isGenerating} whileHover={!isGenerating ? { scale: 1.02 } : {}} whileTap={!isGenerating ? { scale: 0.98 } : {}} onClick={generatePlan} className={`px-8 py-3.5 bg-white dark:bg-surface border border-border dark:border-border-strong text-gray-900 dark:text-text-primary font-bold rounded-xl shadow-sm transition-colors text-sm tracking-wide ${isGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                          <motion.button disabled={isGenerating} whileHover={!isGenerating ? { scale: 1.02 } : {}} whileTap={!isGenerating ? { scale: 0.98 } : {}} onClick={generatePlan} className={`px-8 py-3.5 bg-surface border border-border dark:border-border-strong text-text-primary font-bold rounded-xl shadow-sm transition-colors text-sm tracking-wide ${isGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}>
                             {isGenerating ? 'Generating...' : 'Generate Construction Plan'}
                           </motion.button>
                           <p className="text-xs text-text-secondary mt-2">AI construction planning uses resources. Generate only when required.</p>
@@ -471,7 +471,7 @@ export const ConstructionReadinessPage: React.FC = () => {
                       <div className="w-12 h-12 bg-red-50 dark:bg-red-900/20 rounded-2xl flex items-center justify-center text-red-600 dark:text-red-400 shadow-sm">
                         <AlertTriangle size={24} />
                       </div>
-                      <h3 className="text-2xl font-bold text-gray-900 dark:text-text-primary">Risk Agent Analysis</h3>
+                      <h3 className="text-2xl font-bold text-text-primary">Risk Agent Analysis</h3>
                     </div>
                     {readinessPlan?.risks && readinessPlan.risks.length > 0 ? (
                       <div className="grid sm:grid-cols-2 gap-5">
@@ -505,7 +505,7 @@ export const ConstructionReadinessPage: React.FC = () => {
                     <div className="w-12 h-12 bg-purple-50 dark:bg-purple-900/20 rounded-2xl flex items-center justify-center text-purple-600 dark:text-purple-400 shadow-sm">
                       <Zap size={24} />
                     </div>
-                    <h3 className="text-2xl font-bold text-gray-900 dark:text-text-primary">AI Acceleration Plan</h3>
+                    <h3 className="text-2xl font-bold text-text-primary">AI Acceleration Plan</h3>
                   </div>
 
                   {readinessPlan?.acceleration_opportunities ? (
@@ -514,11 +514,11 @@ export const ConstructionReadinessPage: React.FC = () => {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 bg-white/50 dark:bg-surface/50 p-6 rounded-2xl border border-purple-100/50 dark:border-purple-900/30">
                           <div>
                             <div className="text-sm font-bold text-purple-700/80 dark:text-purple-400/80 mb-1">Current estimated completion</div>
-                            <div className="text-2xl font-black text-gray-900 dark:text-white">{readinessPlan.acceleration_opportunities.current_estimated_completion}</div>
+                            <div className="text-2xl font-black text-text-primary dark:text-white">{readinessPlan.acceleration_opportunities.current_estimated_completion}</div>
                           </div>
                           <div>
                             <div className="text-sm font-bold text-purple-700/80 dark:text-purple-400/80 mb-1">Potential optimized completion</div>
-                            <div className="text-2xl font-black text-gray-900 dark:text-white">{readinessPlan.acceleration_opportunities.potential_optimized_completion}</div>
+                            <div className="text-2xl font-black text-text-primary dark:text-white">{readinessPlan.acceleration_opportunities.potential_optimized_completion}</div>
                           </div>
                           <div>
                             <div className="text-sm font-bold text-emerald-700/80 dark:text-emerald-400/80 mb-1">Potential schedule improvement</div>
@@ -545,7 +545,7 @@ export const ConstructionReadinessPage: React.FC = () => {
                       </p>
                     </div>
                   ) : (
-                    <div className="text-center py-20 bg-gray-50 dark:bg-surface-elevated rounded-3xl border border-dashed border-border dark:border-border-strong transition-colors">
+                    <div className="text-center py-20 bg-surface-elevated rounded-3xl border border-dashed border-border dark:border-border-strong transition-colors">
                       <Zap className="mx-auto text-gray-400 dark:text-gray-600 mb-5" size={40} />
                       <p className="text-text-secondary font-semibold mb-6">Run the AI optimizer to find acceleration opportunities.</p>
                       <motion.button
@@ -553,7 +553,7 @@ export const ConstructionReadinessPage: React.FC = () => {
                         whileTap={{ scale: 0.98 }}
                         onClick={generatePlan}
                         disabled={loading}
-                        className="px-8 py-3.5 bg-white dark:bg-surface border border-border dark:border-border-strong text-gray-900 dark:text-text-primary font-bold rounded-xl shadow-sm transition-colors disabled:opacity-50 text-sm tracking-wide"
+                        className="px-8 py-3.5 bg-surface border border-border dark:border-border-strong text-text-primary font-bold rounded-xl shadow-sm transition-colors disabled:opacity-50 text-sm tracking-wide"
                       >
                         {loading ? 'Analyzing...' : 'Generate Acceleration Plan'}
                       </motion.button>

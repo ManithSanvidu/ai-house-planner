@@ -67,10 +67,10 @@ const LoginPage: React.FC = () => {
 
    <Link to="/" className="absolute top-8 left-8 flex items-center gap-3 hover:opacity-80 transition-opacity z-10">
     <div className="w-8 h-8 relative flex items-center justify-center">
-     <Box className="absolute text-gray-900 dark:text-text-primary transition-colors" size={24} strokeWidth={1.5} />
+     <Box className="absolute text-text-primary transition-colors" size={24} strokeWidth={1.5} />
      <Sparkles className="absolute text-yellow-600 -top-1 -right-1" size={12} />
     </div>
-    <span className="text-sm font-bold text-gray-900 dark:text-text-primary tracking-[0.2em] transition-colors">HOMEPLANNER<span className="text-text-secondary">AI</span></span>
+    <span className="text-sm font-bold text-text-primary tracking-[0.2em] transition-colors">HOMEPLANNER<span className="text-text-secondary">AI</span></span>
    </Link>
 
    <motion.div 
@@ -82,7 +82,7 @@ const LoginPage: React.FC = () => {
     <div className="bg-surface rounded-3xl p-8 sm:p-10 custom-shadow-xl border border-gray-100 dark:border-border-strong relative overflow-hidden">
      
      <div className="text-center mb-10">
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-text-primary mb-2">Welcome Back</h1>
+      <h1 className="text-2xl font-bold text-text-primary mb-2">Welcome Back</h1>
       <p className="text-sm text-text-secondary">Sign in to access your HousePlanner workspace.</p>
      </div>
 
@@ -95,7 +95,7 @@ const LoginPage: React.FC = () => {
       )}
 
       <div className="space-y-2">
-       <label className="text-sm font-medium text-gray-700 dark:text-gray-300 ml-1">Email Address</label>
+       <label className="text-sm font-medium text-text-secondary ml-1">Email Address</label>
        <div className="relative">
         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
          <Mail className="h-5 w-5 text-text-secondary" />
@@ -105,7 +105,7 @@ const LoginPage: React.FC = () => {
          value={email}
          onChange={(e) => setEmail(e.target.value)}
          required
-         className="block w-full pl-11 pr-4 py-3.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all outline-none"
+         className="block w-full pl-11 pr-4 py-3.5 bg-surface-elevated border border-border rounded-xl text-text-primary focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all outline-none"
          placeholder="name@example.com"
         />
        </div>
@@ -113,7 +113,7 @@ const LoginPage: React.FC = () => {
 
       <div className="space-y-2">
        <div className="flex items-center justify-between ml-1">
-        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Password</label>
+        <label className="text-sm font-medium text-text-secondary">Password</label>
         <a href="#" className="text-xs font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400">Forgot password?</a>
        </div>
        <div className="relative">
@@ -125,7 +125,7 @@ const LoginPage: React.FC = () => {
          value={password}
          onChange={(e) => setPassword(e.target.value)}
          required
-         className="block w-full pl-11 pr-4 py-3.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all outline-none"
+         className="block w-full pl-11 pr-4 py-3.5 bg-surface-elevated border border-border rounded-xl text-text-primary focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all outline-none"
          placeholder="••••••••"
         />
        </div>
@@ -155,7 +155,7 @@ const LoginPage: React.FC = () => {
 
      <button 
       onClick={handleGoogleLogin}
-      className="w-full bg-surface-elevated border border-border hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-text-primary font-semibold py-3.5 rounded-xl flex items-center justify-center gap-3 transition-colors mb-3"
+      className="w-full bg-surface-elevated border border-border hover:bg-surface-muted text-gray-700 dark:text-text-primary font-semibold py-3.5 rounded-xl flex items-center justify-center gap-3 transition-colors mb-3"
      >
       <svg viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>

@@ -82,13 +82,13 @@ const IntakeForm: React.FC = () => {
 
   if (isSuccess) {
     return (
-      <div className="min-h-[calc(100vh-65px)] flex items-center justify-center p-6 bg-gray-50">
-        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white rounded-[2rem] p-10 max-w-md w-full text-center shadow-xl border border-gray-100">
+      <div className="min-h-[calc(100vh-65px)] flex items-center justify-center p-6 bg-surface-elevated">
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-surface rounded-[2rem] p-10 max-w-md w-full text-center shadow-xl border border-border">
           <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <CheckCircle2 size={40} className="text-green-600" />
           </div>
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">Project Created!</h2>
-          <p className="text-gray-500 mb-8 leading-relaxed">
+          <h2 className="text-3xl font-bold text-text-primary mb-4">Project Created!</h2>
+          <p className="text-text-muted mb-8 leading-relaxed">
             AI will optimize the design based on your land size.
           </p>
           <button 
@@ -103,20 +103,20 @@ const IntakeForm: React.FC = () => {
   }
 
   return (
-    <div className="min-h-[calc(100vh-65px)] bg-gray-50 p-4 sm:p-8 flex items-start justify-center transition-colors">
+    <div className="min-h-[calc(100vh-65px)] bg-surface-elevated p-4 sm:p-8 flex items-start justify-center transition-colors">
       <div className="max-w-3xl w-full">
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-[2rem] shadow-sm border border-gray-200 overflow-hidden flex flex-col min-h-[500px]">
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-surface rounded-[2rem] shadow-sm border border-border overflow-hidden flex flex-col min-h-[500px]">
           
           <div className="p-6 sm:p-10 flex-1 relative">
             {/* Step Indicator */}
             <div className="flex items-center justify-between mb-8 max-w-2xl mx-auto px-2 relative">
-              <div className="absolute top-1/2 left-0 right-0 h-[2px] bg-gray-200 -z-10 -translate-y-1/2"></div>
+              <div className="absolute top-1/2 left-0 right-0 h-[2px] bg-surface-muted -z-10 -translate-y-1/2"></div>
               {steps.map((step) => (
                 <div key={step.id} className="flex flex-col items-center gap-2">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${currentStep >= step.id ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-400 border border-gray-200'}`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${currentStep >= step.id ? 'bg-blue-600 text-white' : 'bg-surface-muted text-text-muted border border-border'}`}>
                     {currentStep > step.id ? <CheckCircle2 size={16} /> : step.id}
                   </div>
-                  <span className={`text-[10px] uppercase font-bold tracking-wider hidden sm:block ${currentStep >= step.id ? 'text-gray-900' : 'text-gray-400'}`}>
+                  <span className={`text-[10px] uppercase font-bold tracking-wider hidden sm:block ${currentStep >= step.id ? 'text-text-primary' : 'text-text-muted'}`}>
                     {step.title}
                   </span>
                 </div>
@@ -127,21 +127,21 @@ const IntakeForm: React.FC = () => {
             {currentStep === 1 && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
                 <div>
-                  <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">How big is your land?</h2>
-                  <p className="text-gray-500">Choose a supported single-floor residential plot size.</p>
+                  <h2 className="text-2xl sm:text-3xl font-bold text-text-primary mb-2">How big is your land?</h2>
+                  <p className="text-text-muted">Choose a supported single-floor residential plot size.</p>
                 </div>
 
                 <div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <button type="button" onClick={() => setLandSizeCategory('small')} className={`p-4 border rounded-xl text-left transition-all ${landSizeCategory === 'small' ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200' : 'border-gray-200 hover:border-blue-300'}`}>
-                      <h4 className="font-bold text-gray-900">Small Plot</h4>
+                    <button type="button" onClick={() => setLandSizeCategory('small')} className={`p-4 border rounded-xl text-left transition-all ${landSizeCategory === 'small' ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200' : 'border-border hover:border-blue-300'}`}>
+                      <h4 className="font-bold text-text-primary">Small Plot</h4>
                       <p className="text-xs text-blue-600 font-semibold mb-1">10 - 20 perches</p>
-                      <p className="text-xs text-gray-500">Compact family home</p>
+                      <p className="text-xs text-text-muted">Compact family home</p>
                     </button>
-                    <button type="button" onClick={() => setLandSizeCategory('medium')} className={`p-4 border rounded-xl text-left transition-all ${landSizeCategory === 'medium' ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200' : 'border-gray-200 hover:border-blue-300'}`}>
-                      <h4 className="font-bold text-gray-900">Medium Plot</h4>
+                    <button type="button" onClick={() => setLandSizeCategory('medium')} className={`p-4 border rounded-xl text-left transition-all ${landSizeCategory === 'medium' ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200' : 'border-border hover:border-blue-300'}`}>
+                      <h4 className="font-bold text-text-primary">Medium Plot</h4>
                       <p className="text-xs text-blue-600 font-semibold mb-1">20 - 35 perches</p>
-                      <p className="text-xs text-gray-500">Comfortable family home</p>
+                      <p className="text-xs text-text-muted">Comfortable family home</p>
                     </button>
                   </div>
                 </div>
@@ -152,8 +152,8 @@ const IntakeForm: React.FC = () => {
             {currentStep === 2 && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
                 <div>
-                  <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">How many rooms does your family need?</h2>
-                  <p className="text-gray-500">Choose the bedroom and bathroom counts for your single-floor home.</p>
+                  <h2 className="text-2xl sm:text-3xl font-bold text-text-primary mb-2">How many rooms does your family need?</h2>
+                  <p className="text-text-muted">Choose the bedroom and bathroom counts for your single-floor home.</p>
                 </div>
 
                 <div>
@@ -163,15 +163,15 @@ const IntakeForm: React.FC = () => {
                         key={num} 
                         type="button" 
                         onClick={() => { setBedrooms(num); if (num === 1 && bathrooms === null) setBathrooms(1); }}
-                        className={`p-4 border rounded-xl font-bold transition-all ${bedrooms === num ? 'border-blue-500 bg-blue-50 text-blue-700 ring-2 ring-blue-200' : 'border-gray-200 text-gray-700 hover:border-blue-300'}`}
+                        className={`p-4 border rounded-xl font-bold transition-all ${bedrooms === num ? 'border-blue-500 bg-blue-50 text-blue-700 ring-2 ring-blue-200' : 'border-border text-text-primary hover:border-blue-300'}`}
                       >
                         {num} Bedroom{num > 1 ? 's' : ''}
                       </button>
                     ))}
                   </div>
-                  <h3 className="text-lg font-bold text-gray-900 mt-8 mb-3">How many bathrooms do you need?</h3>
+                  <h3 className="text-lg font-bold text-text-primary mt-8 mb-3">How many bathrooms do you need?</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {[1, 2].map(num => <button key={num} type="button" onClick={() => setBathrooms(num)} className={`p-4 border rounded-xl font-bold transition-all ${bathrooms === num ? 'border-blue-500 bg-blue-50 text-blue-700 ring-2 ring-blue-200' : 'border-gray-200 text-gray-700 hover:border-blue-300'}`}>{num} Bathroom{num > 1 ? 's' : ''}{bedrooms === 1 && num === 1 ? ' (Recommended)' : ''}</button>)}
+                    {[1, 2].map(num => <button key={num} type="button" onClick={() => setBathrooms(num)} className={`p-4 border rounded-xl font-bold transition-all ${bathrooms === num ? 'border-blue-500 bg-blue-50 text-blue-700 ring-2 ring-blue-200' : 'border-border text-text-primary hover:border-blue-300'}`}>{num} Bathroom{num > 1 ? 's' : ''}{bedrooms === 1 && num === 1 ? ' (Recommended)' : ''}</button>)}
                   </div>
                 </div>
               </motion.div>
@@ -181,8 +181,8 @@ const IntakeForm: React.FC = () => {
             {currentStep === 3 && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
                 <div>
-                  <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Choose your home style</h2>
-                  <p className="text-gray-500">Choose one of the supported family-home styles.</p>
+                  <h2 className="text-2xl sm:text-3xl font-bold text-text-primary mb-2">Choose your home style</h2>
+                  <p className="text-text-muted">Choose one of the supported family-home styles.</p>
                 </div>
 
                 <div>
@@ -191,8 +191,8 @@ const IntakeForm: React.FC = () => {
                       { id: 'simple', label: 'Simple Family Home', description: 'Practical single-floor home with essential spaces: Living room, kitchen, dining area, bedrooms and bathrooms.' },
                       { id: 'modern', label: 'Modern Family Home', description: 'Comfortable modern single-floor home with an open living area, modern kitchen, better room spacing and natural lighting.' },
                     ].map(style => (
-                      <button key={style.id} type="button" onClick={() => setHouseType(style.id as any)} className={`p-4 border rounded-xl text-left font-bold transition-all ${houseType === style.id ? 'border-blue-500 bg-blue-50 text-blue-700 ring-2 ring-blue-200' : 'border-gray-200 text-gray-700 hover:border-blue-300'}`}>
-                        <span className="block">{style.label}</span><span className="block mt-1 text-sm font-normal text-gray-500">{style.description}</span>
+                      <button key={style.id} type="button" onClick={() => setHouseType(style.id as any)} className={`p-4 border rounded-xl text-left font-bold transition-all ${houseType === style.id ? 'border-blue-500 bg-blue-50 text-blue-700 ring-2 ring-blue-200' : 'border-border text-text-primary hover:border-blue-300'}`}>
+                        <span className="block">{style.label}</span><span className="block mt-1 text-sm font-normal text-text-muted">{style.description}</span>
                       </button>
                     ))}
                   </div>
@@ -204,12 +204,12 @@ const IntakeForm: React.FC = () => {
           </div>
 
           {/* FOOTER NAVIGATION */}
-          <div className="p-6 sm:p-10 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+          <div className="p-6 sm:p-10 bg-surface-elevated border-t border-border flex items-center justify-between">
             <button 
               type="button" 
               onClick={handleBack} 
               disabled={currentStep === 1 || isSubmitting}
-              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-colors ${currentStep === 1 || isSubmitting ? 'opacity-0 pointer-events-none' : 'text-gray-500 hover:bg-gray-200 border border-gray-300'}`}
+              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-colors ${currentStep === 1 || isSubmitting ? 'opacity-0 pointer-events-none' : 'text-text-muted hover:bg-surface-muted border border-border-strong'}`}
             >
               <ChevronLeft size={18} /> Back
             </button>
