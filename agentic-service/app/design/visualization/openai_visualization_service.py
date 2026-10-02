@@ -4,12 +4,36 @@ import logging
 from datetime import datetime
 try:
     import openai
+    from openai import AuthenticationError, BadRequestError, PermissionDeniedError, RateLimitError
 except ImportError:
     openai = None
+    AuthenticationError = PermissionDeniedError = RateLimitError = BadRequestError = Exception
 
 from app.config import ENABLE_OPENAI
 
 logger = logging.getLogger(__name__)
+
+
+def _is_edit_incompatibility(error: BadRequestError) -> bool:
+    """Allow generate fallback only when the edit-specific input/feature is incompatible."""
+    code = str(getattr(error, "code", "") or "").lower()
+    param = str(getattr(error, "param", "") or "").lower()
+    message = str(error).lower()
+    if code in {
+        "invalid_image",
+        "invalid_image_format",
+        "unsupported_image",
+        "unsupported_model",
+        "unsupported_operation",
+    }:
+        return True
+    if param in {"image", "mask"} and any(
+        marker in message for marker in ("invalid", "format", "unsupported", "not supported")
+    ):
+        return True
+    return "edit" in message and any(
+        marker in message for marker in ("unsupported", "not supported", "unavailable", "incompatible")
+    )
 
 
 class OpenAIVisualizationService:
@@ -133,7 +157,6 @@ class OpenAIVisualizationService:
             logger.info("[Visualization Agent] Sending prompt to OpenAI")
 
             try:
-                # Use edit if supported for image-to-image
                 response = openai.images.edit(
                     model="gpt-image-1",
                     image=img_bytes,
@@ -141,14 +164,26 @@ class OpenAIVisualizationService:
                     n=1,
                     size="1024x1024"
                 )
-            except Exception:
-                # Fallback to generate if edit is not mocked
+            except BadRequestError as exc:
+                if not _is_edit_incompatibility(exc):
+                    logger.warning(
+                        "[Visualization] Non-retryable OpenAI bad-request error; fallback suppressed."
+                    )
+                    raise
+                logger.info(
+                    "[Visualization] Image edit is incompatible; using one fresh-generation fallback."
+                )
                 response = openai.images.generate(
                     model="gpt-image-1",
                     prompt=prompt[:4000],
                     n=1,
                     size="1024x1024"
                 )
+            except (RateLimitError, AuthenticationError, PermissionDeniedError):
+                logger.warning(
+                    "[Visualization] Non-retryable OpenAI quota/auth/permission error; fallback suppressed."
+                )
+                raise
 
             image = response.data[0]
             image_url = getattr(image, "url", None)
@@ -176,7 +211,7 @@ class OpenAIVisualizationService:
                 "timestamp": datetime.utcnow().isoformat()
             }
         except Exception as e:
-            logger.error(f"[Visualization Agent] AI visualization failed: {e}")
+            logger.error("[Visualization Agent] AI visualization failed (%s).", type(e).__name__)
             return {
                 "visualization_id": str(uuid.uuid4()),
                 "image_url": None,

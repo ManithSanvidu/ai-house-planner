@@ -244,10 +244,14 @@ def test_visualization_cache_hit_emits_no_tool_event(monkeypatch):
 
 
 def test_visualization_edit_generate_fallback_is_one_logical_event(monkeypatch):
+    import httpx
     from app.design.visualization import openai_visualization_service as service_module
 
     fake_openai = Mock()
-    fake_openai.images.edit.side_effect = RuntimeError("edit unsupported")
+    response = httpx.Response(400, request=httpx.Request("POST", "https://api.openai.test/images/edits"))
+    fake_openai.images.edit.side_effect = service_module.BadRequestError(
+        "Image edit is unsupported for this input", response=response, body={"code": "unsupported_operation"}
+    )
     fake_openai.images.generate.return_value = SimpleNamespace(
         data=[SimpleNamespace(url=None, b64_json="generated-base64")]
     )
