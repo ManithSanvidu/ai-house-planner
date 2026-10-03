@@ -1,17 +1,18 @@
 import logging
 import os
 import base64
-import uuid
 import requests
 from .openai_visualization_service import OpenAIVisualizationService
 from app.config import (
-    AGENTIC_PUBLIC_BASE_URL,
     ASPNET_API_URL,
     ENABLE_AI_VISUALIZATION,
     INTERNAL_API_KEY,
-    VISUALIZATIONS_DIR,
 )
 from app.services.ai_guard import DuplicateAIRequest, execute_once
+from app.services.visualization_image_storage import (
+    VisualizationImageStorage,
+    VisualizationStorageError,
+)
 from app.orchestration.tool_governance import (
     ToolAuthorizationError,
     assert_tool_allowed,
@@ -172,11 +173,13 @@ def visualization_node(state):
         )
         if viz_result.get("status") == "validated":
             try:
-                image_url = _save_generated_image(viz_result)
-                viz_result["image_url"] = image_url
+                image_object_key = _save_generated_image(viz_result, str(state.workflow_id))
+                # Keep the existing internal field name for compatibility. Its durable
+                # value is now a private-storage object key, never a signed/provider URL.
+                viz_result["image_url"] = image_object_key
                 viz_result.pop("image_b64", None)
-                _persist_visualization(state.workflow_id, image_url)
-            except (OSError, ValueError, requests.RequestException) as exc:
+                _persist_visualization(state.workflow_id, image_object_key)
+            except (OSError, ValueError, requests.RequestException, VisualizationStorageError) as exc:
                 logger.error("[Visualization] Generated image could not be saved: %s", type(exc).__name__)
                 _persist_visualization_status(state.workflow_id, "failed")
                 viz_result = {
@@ -223,8 +226,12 @@ def _headers() -> dict[str, str]:
     return {"X-Internal-API-Key": INTERNAL_API_KEY, "Content-Type": "application/json"}
 
 
-def _save_generated_image(result: dict) -> str:
-    """Materialize the temporary provider result and return its stable public URL."""
+def _save_generated_image(
+    result: dict,
+    workflow_id: str,
+    storage: VisualizationImageStorage | None = None,
+) -> str:
+    """Materialize provider image bytes and return a durable private-storage object key."""
     print("[Visualization] Downloading generated image")
     encoded = result.get("image_b64")
     if encoded:
@@ -243,15 +250,11 @@ def _save_generated_image(result: dict) -> str:
     if not image_bytes:
         raise ValueError("Downloaded image was empty.")
 
-    filename = f"{uuid.uuid4()}.png"
-    VISUALIZATIONS_DIR.mkdir(parents=True, exist_ok=True)
-    destination = VISUALIZATIONS_DIR / filename
-    temporary = destination.with_suffix(".tmp")
-    temporary.write_bytes(image_bytes)
-    temporary.replace(destination)
-    relative_path = f"storage/visualizations/{filename}"
-    print(f"[Visualization] Saved image: {relative_path}")
-    return f"{AGENTIC_PUBLIC_BASE_URL}/visualizations/{filename}"
+    object_key = (storage or VisualizationImageStorage()).upload_image(
+        workflow_id, image_bytes, extension="png"
+    )
+    print("[Visualization] Stored generated image in private object storage")
+    return object_key
 
 
 def _existing_visualization(workflow_id) -> str | None:

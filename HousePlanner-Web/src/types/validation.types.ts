@@ -13,11 +13,30 @@ export interface ValidationRequest {
  area?: number | null;
 }
 
+ export interface ValidationResultRule {
+  ruleName: string | null;
+  passed: boolean;
+  status?: "PASS" | "FAIL" | "NOT_APPLICABLE";
+  reason: string | null;
+ expected: any;
+ actual: any;
+}
+
+export interface ValidationResult {
+ passed: boolean;
+ rules: ValidationResultRule[];
+ errors: string[];
+ summary: string | null;
+ revisionReason: string | null;
+}
+
 export interface ValidationRequestDetails extends ValidationRequest {
  clientEmail: string | null;
  terrainType: string | null;
+ foundationType?: string | null;
  architectReview: string | null;
  decisionAt: string | null;
+ validationResult?: ValidationResult | null;
  cost: import('../services/workflowService').CostSummaryDto | null;
  approvalEligibility: {
   canApprove: boolean;

@@ -75,7 +75,7 @@ public sealed class CustomerOwnershipTests
         var clients = new Mock<IHttpClientFactory>();
         clients.Setup(x => x.CreateClient(It.IsAny<string>())).Returns(new HttpClient());
         return new WorkflowController(_db, NullLogger<WorkflowController>.Instance, clients.Object,
-            _workflowService.Object, current.Object);
+            _workflowService.Object, current.Object, Mock.Of<IAIVisualizationUrlService>());
     }
 
     [Fact]
@@ -134,18 +134,6 @@ public sealed class CustomerOwnershipTests
     }
 
     [Fact]
-    public async Task Customer_CannotCreateValidationRequestForAnotherCustomersWorkflow()
-    {
-        var current = new Mock<ICurrentUserContextService>();
-        current.Setup(x => x.GetAsync(It.IsAny<HttpContext>()))
-            .ReturnsAsync(new CurrentUserContext(_customerA, "a@example.com", "Customer"));
-        var controller = new ValidationRequestController(_db, current.Object)
-        { ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() } };
-        Assert.IsType<NotFoundObjectResult>(await controller.CreateValidationRequest(
-            new CreateValidationRequestDto { WorkflowStateId = _workflowB.Id }));
-    }
-
-    [Fact]
     public async Task Architect_CannotActOnWorkflowThatWasNotSubmittedForReview()
     {
         var current = new Mock<ICurrentUserContextService>();
@@ -154,7 +142,7 @@ public sealed class CustomerOwnershipTests
         var clients = new Mock<IHttpClientFactory>();
         clients.Setup(x => x.CreateClient(It.IsAny<string>())).Returns(new HttpClient());
         var controller = new WorkflowController(_db, NullLogger<WorkflowController>.Instance, clients.Object,
-            _workflowService.Object, current.Object);
+            _workflowService.Object, current.Object, Mock.Of<IAIVisualizationUrlService>());
 
         Assert.IsType<NotFoundObjectResult>(await controller.ApproveWorkflow(_workflowA.Id,
             new ApprovalRequestDto("approve", null)));

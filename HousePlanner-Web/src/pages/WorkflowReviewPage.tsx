@@ -258,6 +258,9 @@ export const WorkflowReviewPage: React.FC = () => {
       <p className="text-text-secondary">{workflow.failureReason || (workflow.terrainType === 'unknown'
         ? 'Provide a manual terrain classification and submit again.'
         : 'No valid layout was saved. Review plot dimensions and room requirements, then submit again.')}</p>
+      <Link to="/dashboard/new-project" className="mt-6 inline-flex px-5 py-2.5 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700">
+        Try Again
+      </Link>
       <AgentTimeline agentExecutionLog={workflow?.agentExecutionLog} />
     </div>;
   }

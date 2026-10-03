@@ -6,6 +6,7 @@ using HousePlanner.API.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Moq.Protected;
 using System.Net;
@@ -48,7 +49,7 @@ namespace HousePlanner.API.Tests.Controllers
             var currentUser = new Mock<ICurrentUserContextService>();
             currentUser.Setup(x => x.GetAsync(It.IsAny<HttpContext>()))
                 .ReturnsAsync(new CurrentUserContext(_clientId, "test@example.com", "Customer"));
-            _controller = new AiGenerationController(_dbContext, httpClientFactory.Object, _mockDesignOptionsService.Object, currentUser.Object)
+            _controller = new AiGenerationController(_dbContext, httpClientFactory.Object, _mockDesignOptionsService.Object, currentUser.Object, NullLogger<AiGenerationController>.Instance)
             {
                 ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
             };
@@ -143,6 +144,51 @@ namespace HousePlanner.API.Tests.Controllers
                 "SendAsync",
                 Times.Once(),
                 ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>());
+        }
+
+        [Fact]
+        public async Task Generate_StaleActiveRequestMarksItFailedAndStartsNewWorkflow()
+        {
+            var request = new StartDesignRequest
+            {
+                LandSizeCategory = "medium", LandSizePerches = 15,
+                Bedrooms = 3, Bathrooms = 2, HouseType = "modern"
+            };
+            var submission = new LandSubmission
+            {
+                Id = Guid.NewGuid(), ClientId = _clientId, LandSizeCategory = "medium",
+                LandSizePerches = 15, PreferredBedrooms = 3, PreferredBathrooms = 2,
+                PreferredFloors = 1, StylePreference = "modern"
+            };
+            var stale = new WorkflowState
+            {
+                Id = Guid.NewGuid(), LandSubmissionId = submission.Id, LandSubmission = submission,
+                Status = "running", ApprovalStatus = "pending",
+                CreatedAt = DateTimeOffset.UtcNow.Subtract(WorkflowExecutionPolicy.StaleAfter).AddMinutes(-1),
+                UpdatedAt = DateTimeOffset.UtcNow.Subtract(WorkflowExecutionPolicy.StaleAfter).AddMinutes(-1)
+            };
+            _dbContext.Add(stale);
+            await _dbContext.SaveChangesAsync();
+            _mockDesignOptionsService.Setup(s => s.ValidateFinalSelectionAsync(
+                    It.IsAny<HouseRequirement>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new DesignOptionsValidationResult { IsValid = true });
+            _mockHttpMessageHandler.Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK));
+
+            var result = Assert.IsType<OkObjectResult>(
+                await _controller.Generate(request, CancellationToken.None));
+            var response = JsonSerializer.Deserialize<JsonElement>(JsonSerializer.Serialize(result.Value));
+
+            Assert.NotEqual(stale.Id, response.GetProperty("WorkflowId").GetGuid());
+            Assert.False(response.TryGetProperty("Reused", out _));
+            Assert.Equal("failed", stale.Status);
+            Assert.Equal("not_requested", stale.ApprovalStatus);
+            Assert.Equal(WorkflowExecutionPolicy.IncompleteFailureReason, stale.FailureReason);
+            Assert.Equal(2, await _dbContext.WorkflowStates.CountAsync());
+            _mockHttpMessageHandler.Protected().Verify(
+                "SendAsync", Times.Once(), ItExpr.IsAny<HttpRequestMessage>(),
                 ItExpr.IsAny<CancellationToken>());
         }
 
@@ -271,7 +317,7 @@ namespace HousePlanner.API.Tests.Controllers
             var currentUser = new Mock<ICurrentUserContextService>();
             currentUser.Setup(x => x.GetAsync(It.IsAny<HttpContext>())).ReturnsAsync((CurrentUserContext?)null);
 
-            var localController = new AiGenerationController(_dbContext, new Mock<IHttpClientFactory>().Object, _mockDesignOptionsService.Object, currentUser.Object)
+            var localController = new AiGenerationController(_dbContext, new Mock<IHttpClientFactory>().Object, _mockDesignOptionsService.Object, currentUser.Object, NullLogger<AiGenerationController>.Instance)
             {
                 ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
             };
@@ -284,6 +330,127 @@ namespace HousePlanner.API.Tests.Controllers
 
             var unauthorizedResult = Assert.IsType<UnauthorizedObjectResult>(result);
             Assert.Empty(_dbContext.LandSubmissions);
+        }
+        [Fact]
+        public async Task Generate_RegressionTest_UserPayloadIsAccepted()
+        {
+            // The exact user request that previously resulted in a 400
+            // due to port misconfiguration masking as Bad Request
+            var request = new StartDesignRequest
+            {
+                LandSizeCategory = "medium",
+                LandSizePerches = 25,
+                Bedrooms = 3,
+                Bathrooms = 1,
+                HouseType = "simple",
+                TargetDurationDays = null
+            };
+
+            // Setup successful validation
+            _mockDesignOptionsService.Setup(s => s.ValidateFinalSelectionAsync(It.IsAny<HouseRequirement>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new DesignOptionsValidationResult { IsValid = true });
+
+            // Mock successful Fast API response
+            _mockHttpMessageHandler.Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK));
+
+            // Act
+            var result = await _controller.Generate(request, CancellationToken.None);
+
+            // Assert
+            Assert.IsType<OkObjectResult>(result); // Verify not 400
+        }
+
+        [Fact]
+        public void StartDesignRequest_OmittedTargetDuration_DeserializesAsNull()
+        {
+            var request = JsonSerializer.Deserialize<StartDesignRequest>(
+                """{"landSizeCategory":"medium","landSizePerches":25,"bedrooms":2,"bathrooms":1,"houseType":"modern"}""",
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+            Assert.NotNull(request);
+            Assert.Null(request.TargetDurationDays);
+        }
+
+        [Fact]
+        public async Task DesignOptions_AcceptsCurrentMediumModernUiCombination()
+        {
+            var service = new DesignOptionsService(_dbContext);
+
+            var result = await service.ValidateFinalSelectionAsync(new HouseRequirement
+            {
+                LandSizeCategory = "medium",
+                LandSizePerches = 25,
+                Bedrooms = 2,
+                Bathrooms = 1,
+                HouseType = "modern",
+                TargetDurationDays = null
+            });
+
+            Assert.True(result.IsValid);
+            Assert.Empty(result.Conflicts);
+        }
+
+        [Fact]
+        public async Task Generate_SendsExpectedSnakeCasePayloadWithNullableDuration()
+        {
+            string? sentBody = null;
+            _mockDesignOptionsService.Setup(s => s.ValidateFinalSelectionAsync(
+                    It.IsAny<HouseRequirement>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new DesignOptionsValidationResult { IsValid = true });
+            _mockHttpMessageHandler.Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .Callback<HttpRequestMessage, CancellationToken>((request, _) =>
+                    sentBody = request.Content!.ReadAsStringAsync().GetAwaiter().GetResult())
+                .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK));
+
+            var result = await _controller.Generate(new StartDesignRequest
+            {
+                LandSizeCategory = "medium", LandSizePerches = 25,
+                Bedrooms = 2, Bathrooms = 1, HouseType = "modern"
+            }, CancellationToken.None);
+
+            Assert.IsType<OkObjectResult>(result);
+            var payload = JsonDocument.Parse(sentBody!).RootElement;
+            Assert.Equal("medium", payload.GetProperty("land_size_category").GetString());
+            Assert.Equal(25, payload.GetProperty("land_size_perches").GetInt32());
+            Assert.Equal(2, payload.GetProperty("bedrooms").GetInt32());
+            Assert.Equal(1, payload.GetProperty("bathrooms").GetInt32());
+            Assert.Equal("modern", payload.GetProperty("house_type").GetString());
+            Assert.Equal(JsonValueKind.Null, payload.GetProperty("target_duration_days").ValueKind);
+        }
+
+        [Fact]
+        public async Task Generate_AgenticValidationRejection_ReturnsSafeDetailsAndMarksWorkflowFailed()
+        {
+            _mockDesignOptionsService.Setup(s => s.ValidateFinalSelectionAsync(
+                    It.IsAny<HouseRequirement>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new DesignOptionsValidationResult { IsValid = true });
+            _mockHttpMessageHandler.Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.UnprocessableEntity)
+                {
+                    Content = new StringContent(
+                        """{"detail":[{"loc":["body","house_type"],"msg":"Input should be 'simple' or 'modern'","type":"literal_error","input":"secret-raw-input"}]}""")
+                });
+
+            var result = await _controller.Generate(new StartDesignRequest
+            {
+                LandSizeCategory = "medium", LandSizePerches = 25,
+                Bedrooms = 2, Bathrooms = 1, HouseType = "modern"
+            }, CancellationToken.None);
+
+            var upstreamFailure = Assert.IsType<ObjectResult>(result);
+            Assert.Equal(StatusCodes.Status502BadGateway, upstreamFailure.StatusCode);
+            var response = JsonSerializer.Serialize(upstreamFailure.Value);
+            Assert.Contains("house_type", response);
+            Assert.Contains("422", response);
+            Assert.DoesNotContain("secret-raw-input", response);
+            var workflow = await _dbContext.WorkflowStates.SingleAsync();
+            Assert.Equal("failed", workflow.Status);
+            Assert.Equal("not_requested", workflow.ApprovalStatus);
+            Assert.Contains("HTTP 422", workflow.FailureReason);
         }
     }
 }

@@ -16,6 +16,7 @@ public partial class ConstructorWorkflowControllerTests
     private readonly ApplicationDbContext _db;
     private readonly Mock<ICurrentUserContextService> _mockUser;
     private readonly ConstructorWorkflowController _controller;
+    private readonly Mock<IAIVisualizationUrlService> _visualizationUrls = new();
     private readonly Guid _constructorId = Guid.NewGuid();
     private ApplicationDbContext _dbContext => _db;
 
@@ -29,14 +30,15 @@ public partial class ConstructorWorkflowControllerTests
         _mockUser = new Mock<ICurrentUserContextService>();
         var mockLogService = new Mock<IDailyConstructionLogService>();
         var service = new ConstructorWorkflowService(_db);
-        _controller = new ConstructorWorkflowController(service, _mockUser.Object, _db, mockLogService.Object);
+        _controller = new ConstructorWorkflowController(
+            service, _mockUser.Object, _db, mockLogService.Object, _visualizationUrls.Object);
         SetUser(_constructorId, "Constructor");
     }
 
     private void SetUser(Guid id, string role)
     {
         _mockUser.Setup(x => x.GetAsync(It.IsAny<HttpContext>()))
-            .ReturnsAsync(new CurrentUserContext(id, role, "test@test.com"));
+            .ReturnsAsync(new CurrentUserContext(id, "test@test.com", role));
     }
 
     [Fact]
@@ -132,7 +134,7 @@ public partial class ConstructorWorkflowControllerTests
         mockLogService.Setup(x => x.GetProjectCalendarAsync(projectId, constructorId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(events);
 
-        var controller = new ConstructorWorkflowController(new ConstructorWorkflowService(_db), _mockUser.Object, _db, mockLogService.Object);
+        var controller = new ConstructorWorkflowController(new ConstructorWorkflowService(_db), _mockUser.Object, _db, mockLogService.Object, Mock.Of<IAIVisualizationUrlService>());
         var result = await controller.GetProjectCalendar(projectId, CancellationToken.None);
 
         var ok = Assert.IsType<OkObjectResult>(result);
@@ -151,7 +153,7 @@ public partial class ConstructorWorkflowControllerTests
         mockLogService.Setup(x => x.GetProjectCalendarAsync(projectId, constructorId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<HousePlanner.API.DTOs.CalendarEventDto>());
 
-        var controller = new ConstructorWorkflowController(new ConstructorWorkflowService(_db), _mockUser.Object, _db, mockLogService.Object);
+        var controller = new ConstructorWorkflowController(new ConstructorWorkflowService(_db), _mockUser.Object, _db, mockLogService.Object, Mock.Of<IAIVisualizationUrlService>());
         var result = await controller.GetProjectCalendar(projectId, CancellationToken.None);
 
         var ok = Assert.IsType<OkObjectResult>(result);
@@ -170,7 +172,7 @@ public partial class ConstructorWorkflowControllerTests
         mockLogService.Setup(x => x.GetProjectCalendarAsync(projectId, constructorId, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new UnauthorizedAccessException("Project not found or not owned by the current constructor."));
 
-        var controller = new ConstructorWorkflowController(new ConstructorWorkflowService(_db), _mockUser.Object, _db, mockLogService.Object);
+        var controller = new ConstructorWorkflowController(new ConstructorWorkflowService(_db), _mockUser.Object, _db, mockLogService.Object, Mock.Of<IAIVisualizationUrlService>());
         var result = await controller.GetProjectCalendar(projectId, CancellationToken.None);
 
         Assert.IsType<NotFoundResult>(result);
@@ -394,22 +396,6 @@ public partial class ConstructorWorkflowControllerTests
     }
 
     [Fact(Skip="Broken test setup")]
-    public async Task ConstructorPendingRequest_ReturnsFloorPlanGeometry()
-    {
-        var workflow = new WorkflowState { Id = Guid.NewGuid(), Status = "approved" };
-        var design = new HouseDesign { Id = Guid.NewGuid(), WorkflowStateId = workflow.Id, LayoutJson = "{\"rooms\": []}", TotalBuiltUpAreaSqft = 1000 };
-        var project = new Project { Id = Guid.NewGuid(), WorkflowStateId = workflow.Id, Status = "pending" };
-        var req = new ConstructorProjectRequest { Id = Guid.NewGuid(), ProjectId = project.Id, HouseDesignId = design.Id, ConstructorId = _constructorId, Status = "Pending" };
-        _db.AddRange(workflow, design, project, req);
-        await _db.SaveChangesAsync();
-
-        var result = await _controller.GetConstructorRequest(req.Id);
-        var okResult = Assert.IsType<OkObjectResult>(result);
-        var json = JsonSerializer.Serialize(okResult.Value);
-        Assert.Contains("\"layoutJson\":\"{\\\"rooms\\\": []}\"", json);
-    }
-
-    [Fact(Skip="Broken test setup")]
     public async Task ConstructorPendingRequest_ReturnsEstimatedCost()
     {
         var workflow = new WorkflowState { Id = Guid.NewGuid(), Status = "approved" };
@@ -454,6 +440,81 @@ public partial class ConstructorWorkflowControllerTests
 
         var result = await _controller.GetConstructorRequest(req.Id);
         Assert.IsType<NotFoundResult>(result);
+    }
+
+    [Fact]
+    public async Task ConstructorRequest_ReturnsSignedAiVisualizationWithoutLegacyImageFields()
+    {
+        const string objectKey = "visualizations/workflow/image.png";
+        const string signedUrl = "https://project.supabase.co/storage/v1/object/sign/ai-visualizations/image.png?token=x";
+        var customerId = Guid.NewGuid();
+        var customerRole = new Role { Id = 100, Name = "Customer" };
+        var customer = new User { Id = customerId, Email = "customer@example.com", FullName = "Customer", RoleId = customerRole.Id, Role = customerRole };
+        var workflow = new WorkflowState { Id = Guid.NewGuid(), Status = "approved" };
+        var design = new HouseDesign
+        {
+            Id = Guid.NewGuid(), WorkflowStateId = workflow.Id,
+            LayoutJson = "{\"rooms\":[]}", TechnicalPlanImage = "/plans/legacy.png",
+            AIVisualizationImage = objectKey, AIVisualizationStatus = "completed"
+        };
+        var project = new Project { Id = Guid.NewGuid(), WorkflowStateId = workflow.Id, Status = "pending" };
+        var req = new ConstructorProjectRequest
+        {
+            Id = Guid.NewGuid(), ProjectId = project.Id, HouseDesignId = design.Id,
+            CustomerId = customerId, ConstructorId = _constructorId, Status = "Pending",
+            Project = project, HouseDesign = design, Customer = customer
+        };
+        _db.AddRange(customerRole, customer, workflow, design, project, req);
+        await _db.SaveChangesAsync();
+        _visualizationUrls.Setup(x => x.GetReadUrlAsync(objectKey, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(signedUrl);
+        Assert.True(await _db.ConstructorProjectRequests.AnyAsync(
+            x => x.Id == req.Id && x.ConstructorId == _constructorId));
+        Assert.Equal(_constructorId, (await _mockUser.Object.GetAsync(new DefaultHttpContext()))?.Id);
+
+        var result = Assert.IsType<OkObjectResult>(await _controller.GetConstructorRequest(req.Id));
+        var json = JsonSerializer.Serialize(result.Value);
+
+        Assert.Contains($"\"aiVisualizationUrl\":\"{signedUrl}\"", json);
+        Assert.Contains("\"aiVisualizationStatus\":\"completed\"", json);
+        Assert.DoesNotContain("technicalPlanImage", json, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("layoutJson", json, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(objectKey, design.AIVisualizationImage);
+        _visualizationUrls.Verify(x => x.GetReadUrlAsync(
+            objectKey, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task FailedAiVisualization_DoesNotPreventConstructorRequestDetails()
+    {
+        var customerId = Guid.NewGuid();
+        var customerRole = new Role { Id = 100, Name = "Customer" };
+        var customer = new User { Id = customerId, Email = "customer@example.com", FullName = "Customer", RoleId = customerRole.Id, Role = customerRole };
+        var workflow = new WorkflowState { Id = Guid.NewGuid(), Status = "approved" };
+        var design = new HouseDesign
+        {
+            Id = Guid.NewGuid(), WorkflowStateId = workflow.Id,
+            AIVisualizationImage = null, AIVisualizationStatus = "failed"
+        };
+        var project = new Project { Id = Guid.NewGuid(), WorkflowStateId = workflow.Id, Status = "pending" };
+        var req = new ConstructorProjectRequest
+        {
+            Id = Guid.NewGuid(), ProjectId = project.Id, HouseDesignId = design.Id,
+            CustomerId = customerId, ConstructorId = _constructorId, Status = "Pending",
+            Project = project, HouseDesign = design, Customer = customer
+        };
+        _db.AddRange(customerRole, customer, workflow, design, project, req);
+        await _db.SaveChangesAsync();
+        Assert.True(await _db.ConstructorProjectRequests.AnyAsync(
+            x => x.Id == req.Id && x.ConstructorId == _constructorId));
+        Assert.Equal(_constructorId, (await _mockUser.Object.GetAsync(new DefaultHttpContext()))?.Id);
+
+        var result = Assert.IsType<OkObjectResult>(await _controller.GetConstructorRequest(req.Id));
+        using var json = JsonDocument.Parse(JsonSerializer.Serialize(result.Value));
+        Assert.Equal("failed", json.RootElement.GetProperty("aiVisualizationStatus").GetString());
+        Assert.Equal(JsonValueKind.Null, json.RootElement.GetProperty("aiVisualizationUrl").ValueKind);
+        _visualizationUrls.Verify(x => x.GetReadUrlAsync(
+            It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]

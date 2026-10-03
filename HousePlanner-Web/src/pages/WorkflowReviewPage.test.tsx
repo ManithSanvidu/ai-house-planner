@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { WorkflowReviewPage } from './WorkflowReviewPage';
@@ -81,7 +81,7 @@ describe('WorkflowReviewPage revision refresh', () => {
  it('renders the persisted visualization URL when generation completes', async () => {
   vi.mocked(workflowService.getWorkflowStatus).mockResolvedValue(status(1));
   vi.mocked(workflowService.getDesignVisualization).mockResolvedValue({
-   status: 'completed', imageUrl: 'http://localhost:8001/visualizations/example.png',
+   status: 'completed', imageUrl: 'https://project.supabase.co/storage/v1/object/sign/ai-visualizations/example.png?token=test',
   });
   render(<MemoryRouter initialEntries={['/dashboard/workflows/workflow-1']}>
    <Routes><Route path="/dashboard/workflows/:id" element={<WorkflowReviewPage />} /></Routes>
@@ -89,14 +89,14 @@ describe('WorkflowReviewPage revision refresh', () => {
 
   const image = await screen.findByRole('img');
   expect(image.getAttribute('alt')).toBe('AI Visualization');
-  expect(image.getAttribute('src')).toBe('http://localhost:8001/visualizations/example.png');
+  expect(image.getAttribute('src')).toBe('https://project.supabase.co/storage/v1/object/sign/ai-visualizations/example.png?token=test');
   expect(screen.queryByText('Generating AI visualization...')).toBeNull();
  });
 
  it('hides technical coordinates and room summaries from customers', async () => {
   vi.mocked(workflowService.getWorkflowStatus).mockResolvedValue(status(1));
   vi.mocked(workflowService.getDesignVisualization).mockResolvedValue({
-   status: 'completed', imageUrl: 'http://localhost:8001/visualizations/example.png',
+   status: 'completed', imageUrl: 'https://project.supabase.co/storage/v1/object/sign/ai-visualizations/example.png?token=test',
   });
   render(<MemoryRouter initialEntries={['/dashboard/workflows/workflow-1']}>
    <Routes><Route path="/dashboard/workflows/:id" element={<WorkflowReviewPage />} /></Routes>
@@ -106,5 +106,25 @@ describe('WorkflowReviewPage revision refresh', () => {
   expect(screen.queryByText('Technical Floor Plan')).toBeNull();
   expect(screen.queryByText('viewer:design-1')).toBeNull();
   expect(screen.queryByText('Rooms')).toBeNull();
+ });
+
+ it('stops polling and offers retry when workflow fails', async () => {
+  vi.useFakeTimers();
+  vi.mocked(workflowService.getWorkflowStatus).mockResolvedValue({
+   ...status(1), design: null, status: 'failed',
+   failureReason: 'Workflow execution did not complete.',
+  } as any);
+
+  render(<MemoryRouter initialEntries={['/dashboard/workflows/workflow-1']}>
+   <Routes><Route path="/dashboard/workflows/:id" element={<WorkflowReviewPage />} /></Routes>
+  </MemoryRouter>);
+
+  await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+  expect(screen.getByText('Workflow execution did not complete.')).toBeTruthy();
+  expect(screen.getByRole('link', { name: 'Try Again' }).getAttribute('href')).toBe('/dashboard/new-project');
+
+  await act(async () => { await vi.advanceTimersByTimeAsync(6_000); });
+  expect(workflowService.getWorkflowStatus).toHaveBeenCalledTimes(1);
+  vi.useRealTimers();
  });
 });
