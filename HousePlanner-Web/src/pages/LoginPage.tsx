@@ -43,7 +43,7 @@ const LoginPage: React.FC = () => {
 
 
  return (
-  <div className="min-h-screen bg-background flex items-center justify-center p-6 relative overflow-hidden transition-colors">
+  <div className="min-h-screen bg-background flex items-center justify-center p-4 md:p-6 relative overflow-hidden transition-colors">
    
    {/* Decorative Background Elements */}
    <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
@@ -65,7 +65,7 @@ const LoginPage: React.FC = () => {
     transition={{ duration: 0.5 }}
     className="w-full max-w-md relative z-10"
    >
-    <div className="bg-surface rounded-3xl p-8 sm:p-10 custom-shadow-xl border border-gray-100 dark:border-border-strong relative overflow-hidden">
+    <div className="bg-surface rounded-3xl p-4 md:p-8 sm:p-10 custom-shadow-xl border border-gray-100 dark:border-border-strong relative overflow-hidden">
      
      <div className="text-center mb-10">
       <h1 className="text-2xl font-bold text-text-primary mb-2">Welcome Back</h1>

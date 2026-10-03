@@ -201,7 +201,7 @@ interface SummaryCardProps {
 }
 
 const SummaryCard: React.FC<SummaryCardProps> = ({ icon, label, value, sub }) => (
- <div className="bg-surface rounded-2xl border border-border-strong custom-shadow-sm px-6 py-5 flex items-center gap-4">
+ <div className="bg-surface rounded-2xl border border-border-strong custom-shadow-sm px-4 md:px-6 py-5 flex items-center gap-4">
   <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-surface-elevated border border-border-strong flex items-center justify-center text-text-secondary">
    {icon}
   </div>
@@ -328,7 +328,7 @@ const CreateModal: React.FC<CreateModalProps> = ({ onClose, onCreateSuccess }) =
     onClick={(e) => e.stopPropagation()}
    >
     {/* Modal Header */}
-    <div className="px-8 pt-8 pb-5 border-b border-border-strong flex-shrink-0">
+    <div className="px-4 md:px-8 pt-8 pb-5 border-b border-border-strong flex-shrink-0">
      <div className="flex items-start justify-between gap-4">
       <div>
        <p className="text-[10px] font-bold tracking-[0.18em] text-purple-400 uppercase mb-1">
@@ -358,13 +358,13 @@ const CreateModal: React.FC<CreateModalProps> = ({ onClose, onCreateSuccess }) =
     )}
 
     {/* Modal Body */}
-    <div className="px-8 py-5 space-y-4 overflow-y-auto">
+    <div className="px-4 md:px-8 py-5 space-y-4 overflow-y-auto">
      {/* Category Selector */}
      <div>
       <label className="block text-xs font-semibold text-text-secondary mb-1.5">
        Category (Machine Contract)
       </label>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
        <button
         type="button"
         onClick={() => handleCategoryChange('material')}
@@ -480,7 +480,7 @@ const CreateModal: React.FC<CreateModalProps> = ({ onClose, onCreateSuccess }) =
       <label className="block text-xs font-semibold text-text-secondary mb-1.5">
        Terrain Multipliers
       </label>
-      <div className="grid grid-cols-3 gap-2.5">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
        <div>
         <label htmlFor="create-flatMultiplier" className="block text-[11px] text-text-secondary mb-1 font-medium">Flat</label>
         <input
@@ -567,7 +567,7 @@ const CreateModal: React.FC<CreateModalProps> = ({ onClose, onCreateSuccess }) =
     </div>
 
     {/* Modal Footer */}
-    <div className="px-8 py-5 border-t border-border-strong flex items-center justify-end gap-3 flex-shrink-0 bg-surface-elevated/50">
+    <div className="px-4 md:px-8 py-5 border-t border-border-strong flex items-center justify-end gap-3 flex-shrink-0 bg-surface-elevated/50">
      <button
       onClick={onClose}
       disabled={submitting}
@@ -660,7 +660,7 @@ const EditModal: React.FC<EditModalProps> = ({ item, onClose, onSaveSuccess }) =
     onClick={(e) => e.stopPropagation()}
    >
     {/* Modal Header */}
-    <div className="px-8 pt-8 pb-6 border-b border-border-strong">
+    <div className="px-4 md:px-8 pt-8 pb-6 border-b border-border-strong">
      <div className="flex items-start justify-between gap-4">
       <div>
        <p className="text-[10px] font-bold tracking-[0.18em] text-purple-400 uppercase mb-1">
@@ -698,7 +698,7 @@ const EditModal: React.FC<EditModalProps> = ({ item, onClose, onSaveSuccess }) =
     )}
 
     {/* Modal Body */}
-    <div className="px-8 py-6 space-y-4">
+    <div className="px-4 md:px-8 py-4 md:py-6 space-y-4">
      <div>
       <label
        className="block text-xs font-semibold text-text-secondary mb-1.5"
@@ -732,7 +732,7 @@ const EditModal: React.FC<EditModalProps> = ({ item, onClose, onSaveSuccess }) =
       <label className="block text-xs font-semibold text-text-secondary mb-1.5">
        Terrain Multipliers
       </label>
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
        <div>
         <span className="block text-[11px] text-text-secondary mb-1 font-medium">Flat Multiplier</span>
         <input
@@ -789,7 +789,7 @@ const EditModal: React.FC<EditModalProps> = ({ item, onClose, onSaveSuccess }) =
     </div>
 
     {/* Modal Footer */}
-    <div className="px-8 pb-7 flex items-center justify-end gap-3">
+    <div className="px-4 md:px-8 pb-7 flex items-center justify-end gap-3">
      <button
       onClick={onClose}
       disabled={saving}
@@ -942,7 +942,7 @@ const PricingManagementPage: React.FC = () => {
     <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
      <div>
       <p className="text-[10px] font-bold tracking-[0.2em] text-purple-400 uppercase mb-2">Cost Estimator</p>
-      <h1 className="text-3xl font-bold text-text-primary tracking-tight mb-2">Pricing Management</h1>
+      <h1 className="text-2xl md:text-3xl font-bold text-text-primary tracking-tight mb-2">Pricing Management</h1>
       <p className="text-sm text-text-secondary font-light max-w-lg leading-relaxed">
        Manage base unit costs and terrain multipliers used by the AI Cost Estimation Agent.
       </p>
@@ -952,7 +952,7 @@ const PricingManagementPage: React.FC = () => {
       <span>LKR Pricing Table</span>
      </div>
     </div>
-    <div className="bg-surface rounded-2xl border border-border-strong custom-shadow-sm flex flex-col items-center justify-center py-24 gap-4">
+    <div className="bg-surface rounded-2xl border border-border-strong custom-shadow-sm flex flex-col items-center justify-center py-4 md:py-24 gap-4">
      <Loader2 size={32} className="animate-spin text-indigo-400" />
      <p className="text-sm font-medium text-text-secondary">Loading pricing data…</p>
      <p className="text-xs text-text-secondary">Fetching from the HousePlanner backend.</p>
@@ -968,10 +968,10 @@ const PricingManagementPage: React.FC = () => {
     <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
      <div>
       <p className="text-[10px] font-bold tracking-[0.2em] text-purple-400 uppercase mb-2">Cost Estimator</p>
-      <h1 className="text-3xl font-bold text-text-primary tracking-tight mb-2">Pricing Management</h1>
+      <h1 className="text-2xl md:text-3xl font-bold text-text-primary tracking-tight mb-2">Pricing Management</h1>
      </div>
     </div>
-    <div className="bg-surface rounded-2xl border border-red-100 custom-shadow-sm flex flex-col items-center justify-center py-24 gap-4">
+    <div className="bg-surface rounded-2xl border border-red-100 custom-shadow-sm flex flex-col items-center justify-center py-4 md:py-24 gap-4">
      <div className="w-12 h-12 rounded-2xl bg-red-50 border border-red-100 flex items-center justify-center">
       <AlertCircle size={22} className="text-red-400" />
      </div>
@@ -999,7 +999,7 @@ const PricingManagementPage: React.FC = () => {
      <p className="text-[10px] font-bold tracking-[0.2em] text-purple-400 uppercase mb-2">
       Cost Estimator
      </p>
-     <h1 className="text-3xl font-bold text-text-primary tracking-tight mb-2">
+     <h1 className="text-2xl md:text-3xl font-bold text-text-primary tracking-tight mb-2">
       Pricing Management
      </h1>
      <p className="text-sm text-text-secondary font-light max-w-lg leading-relaxed">
@@ -1058,7 +1058,7 @@ const PricingManagementPage: React.FC = () => {
    {/* ── Filters & Table Card ── */}
    <div className="bg-surface rounded-2xl border border-border-strong custom-shadow-sm overflow-hidden">
     {/* Toolbar */}
-    <div className="px-6 py-4 border-b border-slate-50 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+    <div className="px-4 md:px-6 py-4 border-b border-slate-50 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
      {/* Search */}
      <div className="relative w-full sm:max-w-xs">
       <Search
@@ -1141,7 +1141,7 @@ const PricingManagementPage: React.FC = () => {
        {items.length === 0 ? (
         /* Empty state */
         <tr>
-         <td colSpan={TABLE_COLUMNS.length} className="px-6 py-16 text-center">
+         <td colSpan={TABLE_COLUMNS.length} className="px-4 md:px-6 py-4 md:py-16 text-center">
           <div className="flex flex-col items-center gap-3 text-text-secondary">
            <div className="w-12 h-12 rounded-2xl bg-surface-elevated border border-border-strong flex items-center justify-center">
             <Box size={20} className="text-text-secondary" />
@@ -1163,7 +1163,7 @@ const PricingManagementPage: React.FC = () => {
        ) : filteredItems.length === 0 ? (
         /* Empty search results */
         <tr>
-         <td colSpan={TABLE_COLUMNS.length} className="px-6 py-16 text-center">
+         <td colSpan={TABLE_COLUMNS.length} className="px-4 md:px-6 py-4 md:py-16 text-center">
           <div className="flex flex-col items-center gap-3 text-text-secondary">
            <div className="w-12 h-12 rounded-2xl bg-surface-elevated border border-border-strong flex items-center justify-center">
             <Box size={20} className="text-text-secondary" />
@@ -1300,7 +1300,7 @@ const PricingManagementPage: React.FC = () => {
 
     {/* Table Footer */}
     {filteredItems.length > 0 && (
-     <div className="px-6 py-3 border-t border-slate-50 flex items-center justify-between">
+     <div className="px-4 md:px-6 py-3 border-t border-slate-50 flex items-center justify-between">
       <p className="text-xs text-text-secondary">
        Showing{' '}
        <span className="font-semibold text-text-secondary">{filteredItems.length}</span>
@@ -1335,7 +1335,7 @@ const PricingManagementPage: React.FC = () => {
 
    {historyItem && (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 p-4 backdrop-blur-sm" onClick={() => setHistoryItem(null)}>
-     <div className="w-full max-w-xl rounded-2xl border border-border bg-surface p-6 shadow-xl" onClick={(event) => event.stopPropagation()}>
+     <div className="w-full max-w-xl rounded-2xl border border-border bg-surface p-4 md:p-6 shadow-xl" onClick={(event) => event.stopPropagation()}>
       <div className="mb-5 flex items-start justify-between gap-4">
        <div>
         <p className="text-[10px] font-bold uppercase tracking-widest text-purple-400">Pricing history</p>
@@ -1343,7 +1343,7 @@ const PricingManagementPage: React.FC = () => {
        </div>
        <button onClick={() => setHistoryItem(null)} className="rounded-lg p-2 text-text-secondary hover:bg-surface-muted" aria-label="Close pricing history"><X size={16} /></button>
       </div>
-      {historyLoading ? <p className="py-8 text-center text-sm text-text-secondary">Loading history…</p> : history.length === 0 ? (
+      {historyLoading ? <p className="py-4 md:py-8 text-center text-sm text-text-secondary">Loading history…</p> : history.length === 0 ? (
        <p className="rounded-xl border border-border bg-surface-elevated p-5 text-sm text-text-secondary">No pricing changes recorded yet.</p>
       ) : (
        <div className="max-h-96 space-y-3 overflow-y-auto">

@@ -76,8 +76,8 @@ export default function PlanDetailPage() {
   }
  };
 
- if (error) return <div role="alert" className="p-10">{error} <Link className="text-indigo-500" to="/dashboard/plans">Back to library</Link></div>;
- if (!plan) return <p className="p-10 text-text-muted">Loading plan...</p>;
+ if (error) return <div role="alert" className="p-4 md:p-10">{error} <Link className="text-indigo-500" to="/dashboard/plans">Back to library</Link></div>;
+ if (!plan) return <p className="p-4 md:p-10 text-text-muted">Loading plan...</p>;
 
  const topology = getPlanTopology(plan);
  const displayCostLkr = plan.estimatedConstructionCost ?? plan.estimatedCost?.totalCostLkr;
@@ -89,7 +89,7 @@ export default function PlanDetailPage() {
      ← Back to Plan Library
     </Link>
     <div className="mt-6 mb-2">
-     <h1 className="text-3xl md:text-4xl font-bold">{getCustomerPlanName(plan)}</h1>
+     <h1 className="text-2xl md:text-3xl md:text-4xl font-bold">{getCustomerPlanName(plan)}</h1>
      <div className="flex items-center gap-3 mt-3 text-text-muted dark:text-text-secondary">
       <span>{plan.bedrooms} Bed • {plan.bathrooms} Bath • {plan.floorCount} Floor{plan.floorCount > 1 ? 's' : ''} • {formatArea(plan.totalBuiltUpAreaSqft)}</span>
       <span className="px-2 py-0.5 rounded text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">Architect Validated</span>
@@ -104,7 +104,7 @@ export default function PlanDetailPage() {
     )}
    </div>
 
-   <div className={SHOW_TECHNICAL_PLAN ? 'grid lg:grid-cols-[minmax(0,1fr)_340px] gap-8' : 'max-w-xl'}>
+   <div className={SHOW_TECHNICAL_PLAN ? 'grid lg:grid-cols-[minmax(0,1fr)_340px] gap-4 md:gap-8' : 'max-w-xl'}>
 
     {/* LEFT COLUMN - VIEWER */}
     {SHOW_TECHNICAL_PLAN && <div className="space-y-6">
@@ -134,7 +134,7 @@ export default function PlanDetailPage() {
     {/* RIGHT COLUMN - SIDEBAR */}
     <aside className="space-y-6">
 
-     <section className="bg-surface border border-zinc-100 dark:border-border-strong rounded-2xl p-6 shadow-sm">
+     <section className="bg-surface border border-zinc-100 dark:border-border-strong rounded-2xl p-4 md:p-6 shadow-sm">
       <h2 className="text-lg font-bold mb-4">Plan Details</h2>
       <div className="space-y-3 text-sm">
        {[
@@ -172,11 +172,11 @@ export default function PlanDetailPage() {
       </div>
      </section>
 
-     <section className="bg-surface border border-zinc-100 dark:border-border-strong rounded-2xl p-6 shadow-sm">
+     <section className="bg-surface border border-zinc-100 dark:border-border-strong rounded-2xl p-4 md:p-6 shadow-sm">
       <h2 className="text-lg font-bold mb-3">Estimated Construction Cost</h2>
       {displayCostLkr ? (
        <div>
-        <p className="text-3xl font-bold text-zinc-900 dark:text-text-primary">
+        <p className="text-2xl md:text-3xl font-bold text-zinc-900 dark:text-text-primary">
          LKR {displayCostLkr.toLocaleString()}
         </p>
         <p className="text-xs text-text-muted mt-2 leading-relaxed">
@@ -190,7 +190,7 @@ export default function PlanDetailPage() {
       )}
      </section>
 
-     <section className="bg-surface border border-zinc-100 dark:border-border-strong rounded-2xl p-6 shadow-sm">
+     <section className="bg-surface border border-zinc-100 dark:border-border-strong rounded-2xl p-4 md:p-6 shadow-sm">
       <h2 className="text-lg font-bold mb-3">Build This Design</h2>
 
       {constructionState === 'LOADING' && (

@@ -1,10 +1,13 @@
-
+import 'dart:async';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/workflow_provider.dart';
 import '../widgets/floor_plan_painter.dart';
 import '../core/theme/app_tokens.dart';
+import '../core/network/api_client.dart';
 
 class WorkflowStatusView extends ConsumerStatefulWidget {
   final String workflowId;
@@ -18,6 +21,50 @@ class _WorkflowStatusViewState extends ConsumerState<WorkflowStatusView> {
   int _selectedTab = 0; // 0 = Floor Plan, 1 = Construction Plan
   int _selectedFloor = 1;
   bool _actionLoading = false;
+  
+  Map<String, dynamic>? _visualizationData;
+  Timer? _vizTimer;
+  String? _currentDesignId;
+
+
+
+  void _loadVisualization(String designId) async {
+    if (_currentDesignId != designId) {
+      _currentDesignId = designId;
+      _visualizationData = null;
+      _vizTimer?.cancel();
+    }
+    if (_visualizationData?['status'] == 'completed') return;
+
+    final url = '/design/$designId/visualization';
+    debugPrint('➡️ [Visualization API] Requesting GET $url');
+    try {
+      final response = await ApiClient.instance.get(url);
+      debugPrint('⬅️ [Visualization API] Success! Status code: ${response.statusCode}');
+      debugPrint('⬅️ [Visualization API] Response body: ${response.data}');
+      if (mounted) {
+        setState(() {
+          _visualizationData = response.data is Map ? response.data : {'status': 'failed', 'error': 'Invalid format: ${response.data}'};
+        });
+        if (_visualizationData?['status'] == 'generating') {
+          _vizTimer = Timer(const Duration(seconds: 3), () => _loadVisualization(designId));
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ [Visualization API] Error: $e');
+      if (mounted) {
+        setState(() {
+          _visualizationData = {'status': 'failed', 'imageUrl': null, 'error': e.toString()};
+        });
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _vizTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -125,6 +172,12 @@ class _WorkflowStatusViewState extends ConsumerState<WorkflowStatusView> {
 
           final design = data.design;
           if (design == null) return const Center(child: Text('Design data missing'));
+
+          // Load Visualization if not loaded
+          final String dId = design['designId'];
+          if (_currentDesignId != dId) {
+            _loadVisualization(dId);
+          }
 
           // Normalize rooms
           final List<RoomLayout> rooms = (design['rooms'] as List<dynamic>?)?.map((r) => RoomLayout.fromJson(r as Map<String, dynamic>)).toList() ?? [];
@@ -322,32 +375,94 @@ class _WorkflowStatusViewState extends ConsumerState<WorkflowStatusView> {
               ),
             ),
           
-          // Canvas
+          // Visualization Image
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            child: Container(
-              height: 320,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(AppTokens.radiusCardSolid),
-                border: Border.all(color: AppTokens.line),
-                boxShadow: const [
-                  BoxShadow(color: Color(0x140B0B14), blurRadius: 16, offset: Offset(0, 8), spreadRadius: -8)
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(AppTokens.radiusCardSolid),
-                child: InteractiveViewer(
-                  minScale: 0.5,
-                  maxScale: 4.0,
-                  child: FloorPlanViewer(
-                    rooms: rooms,
-                    floorFilter: _selectedFloor,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Architectural Visualization', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTokens.ink)),
+                const SizedBox(height: 8),
+                Container(
+                  width: double.infinity,
+                  height: 350,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0F172A),
+                    borderRadius: BorderRadius.circular(AppTokens.radiusCardSolid),
+                    border: Border.all(color: AppTokens.line),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(AppTokens.radiusCardSolid),
+                    child: Builder(
+                      builder: (context) {
+                        final status = _visualizationData?['status']?.toString().toLowerCase() ?? _visualizationData?['Status']?.toString().toLowerCase();
+                        final imageUrl = _visualizationData?['imageUrl'] ?? _visualizationData?['ImageUrl'];
+                        final errorStr = _visualizationData?['error'] ?? _visualizationData?['Error'];
+                        
+                        return status == 'completed' && imageUrl != null
+                            ? Image.network(
+                                (!kIsWeb && Platform.isAndroid)
+                                    ? imageUrl.toString().replaceAll('localhost', '10.0.2.2').replaceAll('127.0.0.1', '10.0.2.2').replaceAll('0.0.0.0', '10.0.2.2')
+                                    : imageUrl.toString(),
+                                fit: BoxFit.contain,
+                                errorBuilder: (context, error, stackTrace) {
+                                  debugPrint('🖼️ [Image.network] Failed to load image: $error');
+                                  return Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Icon(Icons.broken_image_outlined, color: Colors.white54, size: 48),
+                                      const SizedBox(height: 16),
+                                      const Text('Failed to load image', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+                                      const SizedBox(height: 8),
+                                      Text(error.toString(), style: const TextStyle(color: Colors.redAccent, fontSize: 10), textAlign: TextAlign.center),
+                                    ],
+                                  );
+                                },
+                              )
+                            : status == 'generating' || _visualizationData == null
+                                ? const Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      CircularProgressIndicator(color: AppTokens.accent),
+                                      SizedBox(height: 16),
+                                      Text('Generating AI visualization...', style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600)),
+                                    ],
+                                  )
+                                : Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Icon(Icons.image_not_supported_outlined, color: Colors.white54, size: 48),
+                                      const SizedBox(height: 16),
+                                      const Text('AI visualization unavailable', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+                                      if (errorStr != null)
+                                        Padding(
+                                          padding: const EdgeInsets.only(top: 8.0, left: 16, right: 16),
+                                          child: Text(
+                                            errorStr.toString(),
+                                            style: const TextStyle(color: Colors.redAccent, fontSize: 12),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ),
+                                      const SizedBox(height: 16),
+                                      ElevatedButton.icon(
+                                        onPressed: () => _loadVisualization(design['designId']),
+                                        icon: const Icon(Icons.refresh, size: 16),
+                                        label: const Text('Retry'),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.white12,
+                                          foregroundColor: Colors.white,
+                                        ),
+                                      )
+                                    ],
+                                  );
+                      }
+                    ),
                   ),
                 ),
-              ),
+              ],
             ),
           ),
+
 
           // Specs Grid
           Padding(

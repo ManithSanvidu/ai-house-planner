@@ -114,10 +114,12 @@ class _LoginViewState extends ConsumerState<LoginView> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Password', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF334155))),
-                      GestureDetector(
-                        onTap: () => context.go('/register'),
-                        child: const Text('Forgot password?', style: TextStyle(color: Color(0xFF2563EB), fontWeight: FontWeight.w600, fontSize: 13)),
+                      const Flexible(child: Text('Password', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF334155)), overflow: TextOverflow.ellipsis)),
+                      Flexible(
+                        child: GestureDetector(
+                          onTap: () => context.go('/register'),
+                          child: const Text('Forgot password?', style: TextStyle(color: Color(0xFF2563EB), fontWeight: FontWeight.w600, fontSize: 13), overflow: TextOverflow.ellipsis),
+                        ),
                       ),
                     ],
                   ),

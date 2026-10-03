@@ -20,7 +20,7 @@ export const CostBreakdownCard = ({ cost, hideTitle }: CostBreakdownCardProps) =
  if (!hasValidCostSummary(cost)) {
   return (
    <Card title={hideTitle ? undefined : "Cost Estimate"} subtitle={hideTitle ? undefined : "Current construction cost breakdown for this design."}>
-    <div className="rounded-lg border border-border bg-surface-elevated px-5 py-8 text-center">
+    <div className="rounded-lg border border-border bg-surface-elevated px-5 py-4 md:py-8 text-center">
      <p className="text-sm text-text-secondary">Cost estimate is not available yet.</p>
     </div>
    </Card>

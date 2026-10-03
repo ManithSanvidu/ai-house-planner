@@ -36,7 +36,7 @@ export const ConstructorRequestsView = ({ projectId }: { projectId: string }) =>
  
  if (requests.length === 0) {
   return (
-   <div className="mt-4 rounded-xl border border-dashed border-border-strong bg-gray-50 p-6 text-center border-border bg-surface-elevated/50">
+   <div className="mt-4 rounded-xl border border-dashed border-border-strong bg-gray-50 p-4 md:p-6 text-center border-border bg-surface-elevated/50">
     <p className="text-sm text-text-secondary">No constructor requests yet.</p>
     <p className="text-xs text-text-secondary mt-1">Share Project ID <strong>{projectId}</strong> with your constructor.</p>
    </div>

@@ -24,7 +24,7 @@ const FeaturesPage: React.FC = () => {
    
    {/* NAVIGATION */}
    <nav className="fixed top-0 w-full z-50 transition-all border-b border-border dark:border-border-strong bg-surface/90 bg-background/90 backdrop-blur-md">
-    <div className="max-w-[1600px] mx-auto px-8 h-24 flex items-center justify-between">
+    <div className="max-w-[1600px] mx-auto px-4 md:px-8 h-24 flex items-center justify-between">
      <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
       <div className="w-8 h-8 relative flex items-center justify-center">
        <Box className="absolute text-gray-900 dark:text-text-primary transition-colors" size={24} strokeWidth={1.5} />
@@ -33,7 +33,7 @@ const FeaturesPage: React.FC = () => {
       <span className="text-sm font-bold text-gray-900 dark:text-text-primary tracking-[0.2em]">HOMEPLANNER<span className="text-text-secondary">AI</span></span>
      </Link>
      
-     <div className="hidden lg:flex items-center gap-10 text-[11px] font-semibold tracking-[0.15em] text-text-secondary">
+     <div className="hidden lg:flex items-center gap-4 md:gap-10 text-[11px] font-semibold tracking-[0.15em] text-text-secondary">
       <Link to="/" className="hover:text-gray-900 dark:hover:text-text-primary transition-colors">HOME</Link>
       <Link to="/features" className="text-gray-900 dark:text-text-primary hover:text-blue-600 dark:hover:text-blue-400 transition-colors">FEATURES</Link>
       <Link to="/gallery" className="hover:text-gray-900 dark:hover:text-text-primary transition-colors">GALLERY</Link>
@@ -46,7 +46,7 @@ const FeaturesPage: React.FC = () => {
       <Link to="/login" className="hidden sm:block text-[11px] font-bold tracking-[0.15em] text-gray-900 dark:text-text-primary hover:text-text-secondary dark:hover:text-gray-300 transition-colors">
        SIGN IN
       </Link>
-      <Link to="/login" className="hidden sm:flex bg-gray-900 dark:bg-white hover:bg-black dark:hover:bg-gray-200 text-white dark:text-gray-900 px-7 py-3.5 rounded-none text-[11px] font-bold tracking-[0.15em] transition-all">
+      <Link to="/login" className="hidden sm:flex bg-gray-900 dark:bg-white hover:bg-black dark:hover:bg-gray-200 text-white dark:text-gray-900 px-4 md:px-7 py-3.5 rounded-none text-[11px] font-bold tracking-[0.15em] transition-all">
        START DESIGNING
       </Link>
       <button className="lg:hidden text-gray-900 dark:text-text-primary" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
@@ -62,13 +62,13 @@ const FeaturesPage: React.FC = () => {
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="fixed inset-0 z-40 bg-white/95 dark:bg-gray-950/95 backdrop-blur-xl flex flex-col items-center justify-center gap-8 lg:hidden"
+      className="fixed inset-0 z-40 bg-white/95 dark:bg-gray-950/95 backdrop-blur-xl flex flex-col items-center justify-center gap-4 md:gap-8 lg:hidden"
      >
       <Link to="/" onClick={() => setIsMobileMenuOpen(false)} className="text-2xl font-semibold tracking-widest text-gray-900 dark:text-text-primary">HOME</Link>
       <Link to="/features" onClick={() => setIsMobileMenuOpen(false)} className="text-2xl font-semibold tracking-widest text-gray-900 dark:text-text-primary">FEATURES</Link>
       <Link to="/gallery" onClick={() => setIsMobileMenuOpen(false)} className="text-2xl font-semibold tracking-widest text-gray-900 dark:text-text-primary">GALLERY</Link>
       <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} className="text-2xl font-semibold tracking-widest text-text-muted">SIGN IN</Link>
-      <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} className="mt-8 bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-8 py-4 text-sm font-bold tracking-[0.15em]">
+      <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} className="mt-8 bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-4 md:px-8 py-4 text-sm font-bold tracking-[0.15em]">
        START DESIGNING
       </Link>
      </motion.div>
@@ -76,10 +76,10 @@ const FeaturesPage: React.FC = () => {
    </AnimatePresence>
 
    {/* HERO SECTION */}
-   <section className="pt-40 pb-20 relative z-10 px-6">
+   <section className="pt-40 pb-20 relative z-10 px-4 md:px-6">
     <div className="max-w-[1400px] mx-auto text-center">
      <p className="text-[10px] font-bold tracking-[0.2em] text-text-secondary mb-6 uppercase">Platform Capabilities</p>
-     <h1 className="text-4xl sm:text-6xl font-medium text-gray-900 dark:text-text-primary tracking-tight mb-8 font-serif">
+     <h1 className="text-2xl md:text-4xl sm:text-6xl font-medium text-gray-900 dark:text-text-primary tracking-tight mb-8 font-serif">
       From Land to Construction
      </h1>
      <p className="text-lg text-text-secondary max-w-2xl mx-auto font-light leading-relaxed">
@@ -89,11 +89,11 @@ const FeaturesPage: React.FC = () => {
    </section>
 
    {/* CAPABILITY CARDS */}
-   <section className="py-12 relative z-10">
-    <div className="max-w-[1400px] mx-auto px-6">
-     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+   <section className="py-4 md:py-12 relative z-10">
+    <div className="max-w-[1400px] mx-auto px-4 md:px-6">
+     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8">
       
-      <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="bg-surface border border-gray-100 dark:border-border-strong p-8 rounded-3xl group hover:border-blue-500/50 transition-colors">
+      <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="bg-surface border border-gray-100 dark:border-border-strong p-4 md:p-8 rounded-3xl group hover:border-blue-500/50 transition-colors">
        <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 rounded-2xl flex items-center justify-center mb-6 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform">
         <Map size={24} />
        </div>
@@ -109,7 +109,7 @@ const FeaturesPage: React.FC = () => {
        </ul>
       </motion.div>
 
-      <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ delay: 0.1 }} className="bg-surface border border-gray-100 dark:border-border-strong p-8 rounded-3xl group hover:border-indigo-500/50 transition-colors">
+      <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ delay: 0.1 }} className="bg-surface border border-gray-100 dark:border-border-strong p-4 md:p-8 rounded-3xl group hover:border-indigo-500/50 transition-colors">
        <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl flex items-center justify-center mb-6 text-indigo-600 dark:text-indigo-400 group-hover:scale-110 transition-transform">
         <ClipboardCheck size={24} />
        </div>
@@ -125,7 +125,7 @@ const FeaturesPage: React.FC = () => {
        </ul>
       </motion.div>
 
-      <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ delay: 0.2 }} className="bg-surface border border-gray-100 dark:border-border-strong p-8 rounded-3xl group hover:border-purple-500/50 transition-colors">
+      <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ delay: 0.2 }} className="bg-surface border border-gray-100 dark:border-border-strong p-4 md:p-8 rounded-3xl group hover:border-purple-500/50 transition-colors">
        <div className="w-12 h-12 bg-purple-50 dark:bg-purple-900/20 rounded-2xl flex items-center justify-center mb-6 text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform">
         <Sparkles size={24} />
        </div>
@@ -141,7 +141,7 @@ const FeaturesPage: React.FC = () => {
        </ul>
       </motion.div>
 
-      <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ delay: 0.3 }} className="bg-surface border border-gray-100 dark:border-border-strong p-8 rounded-3xl group hover:border-emerald-500/50 transition-colors">
+      <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ delay: 0.3 }} className="bg-surface border border-gray-100 dark:border-border-strong p-4 md:p-8 rounded-3xl group hover:border-emerald-500/50 transition-colors">
        <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl flex items-center justify-center mb-6 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform">
         <ShieldCheck size={24} />
        </div>
@@ -157,7 +157,7 @@ const FeaturesPage: React.FC = () => {
        </ul>
       </motion.div>
 
-      <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ delay: 0.4 }} className="bg-surface border border-gray-100 dark:border-border-strong p-8 rounded-3xl group hover:border-amber-500/50 transition-colors">
+      <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ delay: 0.4 }} className="bg-surface border border-gray-100 dark:border-border-strong p-4 md:p-8 rounded-3xl group hover:border-amber-500/50 transition-colors">
        <div className="w-12 h-12 bg-amber-50 dark:bg-amber-900/20 rounded-2xl flex items-center justify-center mb-6 text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform">
         <PenTool size={24} />
        </div>
@@ -173,7 +173,7 @@ const FeaturesPage: React.FC = () => {
        </ul>
       </motion.div>
 
-      <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ delay: 0.5 }} className="bg-surface border border-gray-100 dark:border-border-strong p-8 rounded-3xl group hover:border-rose-500/50 transition-colors">
+      <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ delay: 0.5 }} className="bg-surface border border-gray-100 dark:border-border-strong p-4 md:p-8 rounded-3xl group hover:border-rose-500/50 transition-colors">
        <div className="w-12 h-12 bg-rose-50 dark:bg-rose-900/20 rounded-2xl flex items-center justify-center mb-6 text-rose-600 dark:text-rose-400 group-hover:scale-110 transition-transform">
         <HardHat size={24} />
        </div>
@@ -194,13 +194,13 @@ const FeaturesPage: React.FC = () => {
    </section>
 
    {/* HOW IT WORKS */}
-   <section className="py-24 relative z-10">
-    <div className="max-w-[1400px] mx-auto px-6">
+   <section className="py-4 md:py-24 relative z-10">
+    <div className="max-w-[1400px] mx-auto px-4 md:px-6">
      <div className="text-center mb-16">
-      <h2 className="text-3xl md:text-4xl font-serif text-gray-900 dark:text-text-primary">How the workflow works</h2>
+      <h2 className="text-2xl md:text-3xl md:text-4xl font-serif text-gray-900 dark:text-text-primary">How the workflow works</h2>
      </div>
      
-     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 lg:gap-4 relative">
+     <div className="grid grid-cols-1 md:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 md:gap-6 lg:gap-4 relative">
       {/* Timeline connection line (desktop only) */}
       <div className="hidden lg:block absolute top-12 left-[10%] right-[10%] h-0.5 bg-gray-200 bg-surface-elevated z-0"></div>
       
@@ -225,16 +225,16 @@ const FeaturesPage: React.FC = () => {
    </section>
 
    {/* VALIDATION / TRUST */}
-   <section className="py-24 relative z-10 bg-gray-50 dark:bg-gray-800/50">
-    <div className="max-w-[1000px] mx-auto px-6 text-center">
-     <h2 className="text-3xl md:text-4xl font-serif text-gray-900 dark:text-text-primary mb-6">
+   <section className="py-4 md:py-24 relative z-10 bg-gray-50 dark:bg-gray-800/50">
+    <div className="max-w-[1000px] mx-auto px-4 md:px-6 text-center">
+     <h2 className="text-2xl md:text-3xl md:text-4xl font-serif text-gray-900 dark:text-text-primary mb-6">
       AI Suggestions, Deterministic Validation
      </h2>
      <p className="text-lg text-text-secondary mb-10 leading-relaxed max-w-3xl mx-auto">
       HomePlannerAI uses AI for intelligent plan selection and design intent, while deterministic validation checks geometry, spatial constraints, and supported planning rules before a concept is accepted.
      </p>
      
-     <div className="flex flex-col sm:flex-row justify-center gap-6 sm:gap-12 mb-16">
+     <div className="flex flex-col sm:flex-row justify-center gap-4 md:gap-6 sm:gap-12 mb-16">
       <div className="flex items-center justify-center gap-3 text-gray-800 dark:text-gray-200 font-medium">
        <Cpu className="text-blue-500" size={20} />
        <span>AI-assisted decisions</span>
@@ -256,15 +256,15 @@ const FeaturesPage: React.FC = () => {
    </section>
 
    {/* FOOTER CTA */}
-   <section className="py-24 bg-gray-900 text-text-primary mt-12 relative overflow-hidden">
+   <section className="py-4 md:py-24 bg-gray-900 text-text-primary mt-12 relative overflow-hidden">
     <div className="absolute inset-0 opacity-10 bg-[url('https://images.unsplash.com/photo-1600607686527-6fb886090705?q=80&w=2000&auto=format&fit=crop')] bg-cover bg-center"></div>
-    <div className="max-w-[1400px] mx-auto px-6 text-center flex flex-col items-center relative z-10">
-     <h2 className="text-4xl font-medium mb-10 font-serif">Ready to plan your home?</h2>
+    <div className="max-w-[1400px] mx-auto px-4 md:px-6 text-center flex flex-col items-center relative z-10">
+     <h2 className="text-2xl md:text-4xl font-medium mb-10 font-serif">Ready to plan your home?</h2>
      <div className="flex flex-col sm:flex-row gap-4">
-      <Link to="/login" className="bg-surface hover:bg-gray-100 text-gray-900 px-10 py-5 text-xs font-bold tracking-[0.15em] transition-all flex items-center justify-center gap-3 rounded-none">
+      <Link to="/login" className="bg-surface hover:bg-gray-100 text-gray-900 px-4 md:px-10 py-5 text-xs font-bold tracking-[0.15em] transition-all flex items-center justify-center gap-3 rounded-none">
        START NEW PROJECT <ArrowRight size={16} />
       </Link>
-      <Link to="/gallery" className="bg-transparent border border-gray-600 hover:border-white text-text-primary px-10 py-5 text-xs font-bold tracking-[0.15em] transition-all flex items-center justify-center rounded-none">
+      <Link to="/gallery" className="bg-transparent border border-gray-600 hover:border-white text-text-primary px-4 md:px-10 py-5 text-xs font-bold tracking-[0.15em] transition-all flex items-center justify-center rounded-none">
        BROWSE PLANS
       </Link>
      </div>

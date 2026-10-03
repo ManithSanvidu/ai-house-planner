@@ -137,7 +137,7 @@ const ValidationRequestDetails: React.FC = () => {
 
  if (error || !request) {
   return (
-   <div className="p-6 max-w-5xl mx-auto">
+   <div className="p-4 md:p-6 max-w-5xl mx-auto">
     <div className="p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 border border-red-200">
      {error || 'Request not found'}
     </div>
@@ -157,7 +157,7 @@ const ValidationRequestDetails: React.FC = () => {
  );
 
  return (
-  <div className="p-6 md:p-8 max-w-5xl mx-auto space-y-6">
+  <div className="p-4 md:p-6 md:p-8 max-w-5xl mx-auto space-y-6">
    
    {/* Header */}
    <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
@@ -183,13 +183,13 @@ const ValidationRequestDetails: React.FC = () => {
 
    <div className="space-y-6">
     {/* Client & Land Details Card */}
-     <div className="bg-surface border border-border dark:border-border-strong rounded-2xl shadow-sm p-6">
+     <div className="bg-surface border border-border dark:border-border-strong rounded-2xl shadow-sm p-4 md:p-6">
       <h2 className="text-lg font-bold text-gray-900 dark:text-text-primary flex items-center gap-2 mb-6">
        <FileText className="text-indigo-600" size={20} />
        Project Constraints
       </h2>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
        
        <div className="space-y-4">
         <div className="flex items-start gap-3">
@@ -246,7 +246,7 @@ const ValidationRequestDetails: React.FC = () => {
     <div className="space-y-6">
      {/* Architectural Visualization */}
      {request.design && (
-      <div className="bg-white dark:bg-white border border-slate-200 dark:border-slate-200 rounded-2xl shadow-sm p-6 md:p-8">
+      <div className="bg-white dark:bg-white border border-slate-200 dark:border-slate-200 rounded-2xl shadow-sm p-4 md:p-6 md:p-8">
        <h2 className="text-lg font-bold text-slate-900 dark:text-slate-900 mb-5">Architectural Visualization</h2>
        <div className="bg-white rounded-xl overflow-hidden min-h-[420px] md:min-h-[520px] flex items-center justify-center">
         {visualizationData?.status === 'completed' && visualizationData?.imageUrl ? (
@@ -261,7 +261,7 @@ const ValidationRequestDetails: React.FC = () => {
           <span className="text-sm font-medium">Generating AI visualization…</span>
          </div>
         ) : (
-         <div className="text-zinc-400 flex flex-col items-center gap-2 text-center p-6">
+         <div className="text-zinc-400 flex flex-col items-center gap-2 text-center p-4 md:p-6">
           <span className="text-base font-bold text-zinc-300">AI visualization unavailable</span>
           <span className="text-sm">The floor plan below is the validated deterministic layout.</span>
          </div>
@@ -270,7 +270,7 @@ const ValidationRequestDetails: React.FC = () => {
       </div>
      )}
 
-     <section className="bg-white dark:bg-white border border-slate-200 dark:border-slate-200 rounded-2xl shadow-sm p-6 md:p-8">
+     <section className="bg-white dark:bg-white border border-slate-200 dark:border-slate-200 rounded-2xl shadow-sm p-4 md:p-6 md:p-8">
       <h2 className="text-lg font-bold text-slate-900 dark:text-slate-900 mb-1">Generated Floor Plan</h2>
       <p className="text-sm text-slate-500 dark:text-slate-500 mb-4">Created by deterministic spatial planning engine</p>
 
@@ -296,7 +296,7 @@ const ValidationRequestDetails: React.FC = () => {
         </table>
        </div>
       ) : (
-       <div className="p-8 text-center text-slate-500 border border-dashed border-slate-200 rounded-xl">
+       <div className="p-4 md:p-8 text-center text-slate-500 border border-dashed border-slate-200 rounded-xl">
         No active design generated for this request yet.
        </div>
       )}
@@ -382,7 +382,7 @@ const ValidationRequestDetails: React.FC = () => {
     </div>
 
     {/* Architect Validation / Review Decision */}
-    <div className="bg-surface border border-border dark:border-border-strong rounded-2xl shadow-sm p-6">
+    <div className="bg-surface border border-border dark:border-border-strong rounded-2xl shadow-sm p-4 md:p-6">
       <h2 className="text-lg font-bold text-gray-900 dark:text-text-primary mb-4">Architect Validation</h2>
 
       {isPending && (

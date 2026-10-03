@@ -266,8 +266,8 @@ export default function AdminPlanFormPage() {
   };
 
   return (
-    <main className="p-6 md:p-10 max-w-7xl mx-auto text-zinc-900 dark:text-text-primary">
-      <h1 className="text-3xl font-bold mb-6">{id ? 'Edit' : 'Add'} pre-designed plan</h1>
+    <main className="p-4 md:p-6 md:p-10 max-w-7xl mx-auto text-zinc-900 dark:text-text-primary">
+      <h1 className="text-2xl md:text-3xl font-bold mb-6">{id ? 'Edit' : 'Add'} pre-designed plan</h1>
 
       {error.length > 0 && (
         <div role="alert" className="bg-red-50 text-red-700 p-4 rounded-xl mb-6">
@@ -277,7 +277,7 @@ export default function AdminPlanFormPage() {
         </div>
       )}
 
-      <form onSubmit={save} className="grid lg:grid-cols-2 gap-8">
+      <form onSubmit={save} className="grid lg:grid-cols-2 gap-4 md:gap-8">
         <section className="space-y-6">
           <div className="bg-surface border rounded-2xl p-5">
             <h2 className="text-lg font-bold mb-1">Design Image</h2>
@@ -388,8 +388,8 @@ export default function AdminPlanFormPage() {
         </section>
 
         <div className="lg:col-span-2 flex justify-end gap-3 mt-4">
-          <button type="button" onClick={() => nav('/dashboard/admin/plans')} className="border px-6 py-2.5 rounded-xl font-medium">Cancel</button>
-          <button type="submit" className="bg-indigo-600 text-white px-6 py-2.5 rounded-xl font-medium shadow-sm hover:bg-indigo-700">Save Plan</button>
+          <button type="button" onClick={() => nav('/dashboard/admin/plans')} className="border px-4 md:px-6 py-2.5 rounded-xl font-medium">Cancel</button>
+          <button type="submit" className="bg-indigo-600 text-white px-4 md:px-6 py-2.5 rounded-xl font-medium shadow-sm hover:bg-indigo-700">Save Plan</button>
         </div>
       </form>
     </main>

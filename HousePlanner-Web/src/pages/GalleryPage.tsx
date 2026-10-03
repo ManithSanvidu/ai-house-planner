@@ -36,7 +36,7 @@ const GalleryPage: React.FC = () => {
    
    {/* NAVIGATION */}
    <nav className="fixed top-0 w-full z-50 transition-all border-b border-border dark:border-border-strong bg-surface/90 bg-background/90 backdrop-blur-md">
-    <div className="max-w-[1600px] mx-auto px-8 h-24 flex items-center justify-between">
+    <div className="max-w-[1600px] mx-auto px-4 md:px-8 h-24 flex items-center justify-between">
      <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
       <div className="w-8 h-8 relative flex items-center justify-center">
        <Box className="absolute text-gray-900 dark:text-text-primary transition-colors" size={24} strokeWidth={1.5} />
@@ -45,7 +45,7 @@ const GalleryPage: React.FC = () => {
       <span className="text-sm font-bold text-gray-900 dark:text-text-primary tracking-[0.2em]">HOMEPLANNER<span className="text-text-secondary">AI</span></span>
      </Link>
 
-     <div className="hidden lg:flex items-center gap-10 text-[11px] font-semibold tracking-[0.15em] text-text-secondary">
+     <div className="hidden lg:flex items-center gap-4 md:gap-10 text-[11px] font-semibold tracking-[0.15em] text-text-secondary">
       <Link to="/" className="hover:text-gray-900 dark:hover:text-text-primary transition-colors">HOME</Link>
       <Link to="/features" className="hover:text-gray-900 dark:hover:text-text-primary transition-colors">FEATURES</Link>
       <Link to="/gallery" className="text-gray-900 dark:text-text-primary hover:text-blue-600 dark:hover:text-blue-400 transition-colors">GALLERY</Link>
@@ -58,7 +58,7 @@ const GalleryPage: React.FC = () => {
       <Link to="/login" className="hidden sm:block text-[11px] font-bold tracking-[0.15em] text-gray-900 dark:text-text-primary hover:text-text-secondary dark:hover:text-gray-300 transition-colors">
        SIGN IN
       </Link>
-      <Link to="/login" className="hidden sm:flex bg-gray-900 dark:bg-white hover:bg-black dark:hover:bg-gray-200 text-white dark:text-gray-900 px-7 py-3.5 rounded-none text-[11px] font-bold tracking-[0.15em] transition-all">
+      <Link to="/login" className="hidden sm:flex bg-gray-900 dark:bg-white hover:bg-black dark:hover:bg-gray-200 text-white dark:text-gray-900 px-4 md:px-7 py-3.5 rounded-none text-[11px] font-bold tracking-[0.15em] transition-all">
        START DESIGNING
       </Link>
       <button className="lg:hidden text-gray-900 dark:text-text-primary" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
@@ -74,13 +74,13 @@ const GalleryPage: React.FC = () => {
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="fixed inset-0 z-40 bg-white/95 dark:bg-gray-950/95 backdrop-blur-xl flex flex-col items-center justify-center gap-8 lg:hidden"
+      className="fixed inset-0 z-40 bg-white/95 dark:bg-gray-950/95 backdrop-blur-xl flex flex-col items-center justify-center gap-4 md:gap-8 lg:hidden"
      >
       <Link to="/" onClick={() => setIsMobileMenuOpen(false)} className="text-2xl font-semibold tracking-widest text-gray-900 dark:text-text-primary">HOME</Link>
       <Link to="/features" onClick={() => setIsMobileMenuOpen(false)} className="text-2xl font-semibold tracking-widest text-gray-900 dark:text-text-primary">FEATURES</Link>
       <Link to="/gallery" onClick={() => setIsMobileMenuOpen(false)} className="text-2xl font-semibold tracking-widest text-gray-900 dark:text-text-primary">GALLERY</Link>
       <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} className="text-2xl font-semibold tracking-widest text-text-muted">SIGN IN</Link>
-      <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} className="mt-8 bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-8 py-4 text-sm font-bold tracking-[0.15em]">
+      <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} className="mt-8 bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-4 md:px-8 py-4 text-sm font-bold tracking-[0.15em]">
        START DESIGNING
       </Link>
      </motion.div>
@@ -88,9 +88,9 @@ const GalleryPage: React.FC = () => {
    </AnimatePresence>
 
    {/* HERO */}
-   <section className="pt-40 pb-12 relative z-10 px-6">
+   <section className="pt-40 pb-12 relative z-10 px-4 md:px-6">
     <div className="max-w-[1400px] mx-auto text-center">
-     <h1 className="text-4xl sm:text-6xl font-medium text-gray-900 dark:text-text-primary tracking-tight mb-6 font-serif">
+     <h1 className="text-2xl md:text-4xl sm:text-6xl font-medium text-gray-900 dark:text-text-primary tracking-tight mb-6 font-serif">
       Design Gallery
      </h1>
      <p className="text-lg text-text-secondary max-w-xl mx-auto font-light leading-relaxed">
@@ -100,14 +100,14 @@ const GalleryPage: React.FC = () => {
    </section>
 
    {/* MASONRY GRID */}
-   <section className="max-w-[1400px] mx-auto px-6 relative z-10">
+   <section className="max-w-[1400px] mx-auto px-4 md:px-6 relative z-10">
     {plans.length === 0 ? (
-     <div className="text-center py-20 px-6 border border-dashed border-border rounded-2xl bg-surface-elevated">
+     <div className="text-center py-4 md:py-20 px-4 md:px-6 border border-dashed border-border rounded-2xl bg-surface-elevated">
       <h3 className="text-xl font-bold text-text-primary mb-2">No designs available yet.</h3>
       <p className="text-text-secondary">Please check back later as our architects add new plans to the collection.</p>
      </div>
     ) : (
-     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
       {plans.map((item, index) => {
        return (
        <motion.div
@@ -118,7 +118,7 @@ const GalleryPage: React.FC = () => {
         className="relative group cursor-pointer rounded-2xl overflow-hidden aspect-square bg-surface-elevated border border-gray-100 dark:border-border-strong"
         onClick={() => setSelectedImg(item)}
        >
-        <div className="w-full h-full p-8 flex items-center justify-center">
+        <div className="w-full h-full p-4 md:p-8 flex items-center justify-center">
          {item.thumbnailUrl ? (
           <img src={getImageUrl(item.thumbnailUrl)} alt={item.name} className="w-full h-full object-contain transition-transform duration-700 group-hover:scale-105" />
          ) : (
@@ -129,7 +129,7 @@ const GalleryPage: React.FC = () => {
           </div>
          )}
         </div>
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/60 transition-colors duration-300 flex flex-col items-center justify-center p-6 text-center">
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/60 transition-colors duration-300 flex flex-col items-center justify-center p-4 md:p-6 text-center">
          <span className="text-text-primary opacity-0 group-hover:opacity-100 font-bold tracking-widest text-lg transition-opacity duration-300 mb-2">
           {getCustomerPlanName(item)}
          </span>
@@ -160,7 +160,7 @@ const GalleryPage: React.FC = () => {
        className="bg-surface rounded-3xl overflow-hidden max-w-4xl w-full grid md:grid-cols-2 shadow-2xl relative"
        onClick={e => e.stopPropagation()}
       >
-       <div className="h-[300px] md:h-[500px] p-8 bg-gray-50 dark:bg-gray-800/50 flex items-center justify-center">
+       <div className="h-[300px] md:h-[500px] p-4 md:p-8 bg-gray-50 dark:bg-gray-800/50 flex items-center justify-center">
         {selectedImg.thumbnailUrl ? (
          <img src={getImageUrl(selectedImg.thumbnailUrl)} alt={selectedImg.name} className="w-full h-full object-contain" />
         ) : (
@@ -170,7 +170,7 @@ const GalleryPage: React.FC = () => {
          </div>
         )}
        </div>
-       <div className="p-8 md:p-12 flex flex-col justify-center relative">
+       <div className="p-4 md:p-8 md:p-12 flex flex-col justify-center relative">
         <button onClick={() => setSelectedImg(null)} className="absolute top-6 right-6 text-text-secondary hover:text-gray-900 dark:hover:text-text-primary transition-colors">
          <X size={24} />
         </button>
@@ -182,7 +182,7 @@ const GalleryPage: React.FC = () => {
          {getCustomerPlanName(selectedImg)}
         </h2>
         
-        <div className="grid grid-cols-2 gap-y-4 gap-x-6 mb-8 text-sm text-text-secondary dark:text-gray-300">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-6 mb-8 text-sm text-text-secondary dark:text-gray-300">
          <div className="flex flex-col">
           <span className="text-[10px] text-text-secondary font-bold uppercase tracking-wider mb-1">Configuration</span>
           <span>{selectedImg.bedrooms} Bed, {selectedImg.bathrooms} Bath</span>
@@ -205,7 +205,7 @@ const GalleryPage: React.FC = () => {
          </div>
         </div>
 
-        <Link to={`/dashboard/plans/${selectedImg.id}`} className="bg-indigo-600 text-text-primary px-6 py-4 rounded-xl text-xs font-bold tracking-[0.1em] hover:bg-indigo-700 transition-colors text-center w-full shadow-md">
+        <Link to={`/dashboard/plans/${selectedImg.id}`} className="bg-indigo-600 text-text-primary px-4 md:px-6 py-4 rounded-xl text-xs font-bold tracking-[0.1em] hover:bg-indigo-700 transition-colors text-center w-full shadow-md">
          VIEW FULL PLAN
         </Link>
        </div>
@@ -225,7 +225,7 @@ const GalleryPage: React.FC = () => {
      <p className="text-gray-900 dark:text-white font-bold">Want to generate your own?</p>
      <p className="text-gray-500 dark:text-gray-400 text-sm">Join thousands of others today.</p>
     </div>
-    <Link to="/login" className="bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-6 py-3 rounded-xl text-xs font-bold tracking-[0.1em] hover:opacity-90 transition-all flex items-center gap-2 whitespace-nowrap shadow-md">
+    <Link to="/login" className="bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-4 md:px-6 py-3 rounded-xl text-xs font-bold tracking-[0.1em] hover:opacity-90 transition-all flex items-center gap-2 whitespace-nowrap shadow-md">
      SIGN UP NOW <ArrowRight size={14} />
     </Link>
    </motion.div>

@@ -43,7 +43,7 @@ const DashboardPage: React.FC = () => {
 
     if (isLoading) {
         return (
-            <div className="min-h-[calc(100vh-65px)] flex items-center justify-center p-6 bg-background transition-colors duration-300">
+            <div className="min-h-[calc(100vh-65px)] flex items-center justify-center p-4 md:p-6 bg-background transition-colors duration-300">
                 <div className="w-8 h-8 border-2 border-border-strong border-t-blue-600 rounded-full animate-spin"></div>
             </div>
         );
@@ -52,25 +52,25 @@ const DashboardPage: React.FC = () => {
     // Admin View
     if (user?.role === 'Admin') {
         return (
-            <div className="min-h-[calc(100vh-65px)] flex items-center justify-center p-6 bg-background transition-colors duration-300">
+            <div className="min-h-[calc(100vh-65px)] flex items-center justify-center p-4 md:p-6 bg-background transition-colors duration-300">
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="bg-surface border border-border dark:border-border-strong p-10 rounded-[2rem] max-w-2xl w-full text-center shadow-sm transition-colors"
+                    className="bg-surface border border-border dark:border-border-strong p-4 md:p-10 rounded-[2rem] max-w-2xl w-full text-center shadow-sm transition-colors"
                 >
                     <div className="mx-auto w-16 h-16 bg-blue-50 dark:bg-blue-900/20 rounded-2xl flex items-center justify-center mb-6 transition-colors">
                         <Shield className="text-blue-600 dark:text-blue-400" size={28} />
                     </div>
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-text-primary mb-3 tracking-tight transition-colors">Admin Dashboard</h1>
+                    <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-text-primary mb-3 tracking-tight transition-colors">Admin Dashboard</h1>
                     <p className="text-text-secondary mb-10 transition-colors">Manage the validated house-plan library and staff accounts.</p>
                     <div className="flex flex-col sm:flex-row gap-4 justify-center">
                         <Link to="/dashboard/admin/plans" className="flex-1">
-                            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl font-semibold shadow-sm transition-colors">
+                            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="w-full flex items-center justify-center gap-3 px-4 md:px-6 py-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl font-semibold shadow-sm transition-colors">
                                 <Library size={18} /><span>Manage Plans</span>
                             </motion.button>
                         </Link>
                         <Link to="/dashboard/admin/staff" className="flex-1">
-                            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="w-full flex items-center justify-center gap-3 px-6 py-4 border border-border hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-900 dark:text-text-primary rounded-xl font-semibold transition-colors">
+                            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="w-full flex items-center justify-center gap-3 px-4 md:px-6 py-4 border border-border hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-900 dark:text-text-primary rounded-xl font-semibold transition-colors">
                                 <UserCog size={18} /><span>Manage Staff</span>
                             </motion.button>
                         </Link>
@@ -123,10 +123,10 @@ const DashboardPage: React.FC = () => {
                 <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 bg-surface p-8 rounded-3xl border border-border dark:border-border-strong shadow-sm transition-colors"
+                    className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 md:gap-6 bg-surface p-4 md:p-8 rounded-3xl border border-border dark:border-border-strong shadow-sm transition-colors"
                 >
                     <div>
-                        <h1 className="text-3xl font-bold text-gray-900 dark:text-text-primary tracking-tight mb-2 transition-colors">
+                        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-text-primary tracking-tight mb-2 transition-colors">
                             Welcome back, {user?.fullName?.split(' ')[0] || 'there'}
                         </h1>
                         <p className="text-text-secondary transition-colors">
@@ -154,8 +154,8 @@ const DashboardPage: React.FC = () => {
                 </motion.div>
 
                 {/* SUMMARY CARDS */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-surface p-6 rounded-2xl border border-border dark:border-border-strong flex items-center gap-4 shadow-sm group transition-colors">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-surface p-4 md:p-6 rounded-2xl border border-border dark:border-border-strong flex items-center gap-4 shadow-sm group transition-colors">
                         <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl flex items-center justify-center text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform">
                             <CheckCircle size={24} />
                         </div>
@@ -165,7 +165,7 @@ const DashboardPage: React.FC = () => {
                         </div>
                     </motion.div>
 
-                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-surface p-6 rounded-2xl border border-border dark:border-border-strong flex items-center gap-4 shadow-sm group transition-colors">
+                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-surface p-4 md:p-6 rounded-2xl border border-border dark:border-border-strong flex items-center gap-4 shadow-sm group transition-colors">
                         <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl flex items-center justify-center text-indigo-600 dark:text-indigo-400 group-hover:scale-110 transition-transform">
                             <HardHat size={24} />
                         </div>
@@ -175,7 +175,7 @@ const DashboardPage: React.FC = () => {
                         </div>
                     </motion.div>
 
-                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="bg-surface p-6 rounded-2xl border border-border dark:border-border-strong flex items-center gap-4 shadow-sm group sm:col-span-2 lg:col-span-1 transition-colors">
+                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="bg-surface p-4 md:p-6 rounded-2xl border border-border dark:border-border-strong flex items-center gap-4 shadow-sm group sm:col-span-2 lg:col-span-1 transition-colors">
                         <div className="w-12 h-12 bg-amber-50 dark:bg-amber-900/20 rounded-xl flex items-center justify-center text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform">
                             <Clock size={24} />
                         </div>
@@ -186,7 +186,7 @@ const DashboardPage: React.FC = () => {
                     </motion.div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8">
                     {/* MAIN CONTENT AREA */}
                     <div className="lg:col-span-2 space-y-8">
 
@@ -194,8 +194,8 @@ const DashboardPage: React.FC = () => {
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>
                             <h2 className="text-lg font-bold text-gray-900 dark:text-text-primary mb-4 transition-colors">Current Project</h2>
                             {activeProject ? (
-                                <div className="bg-surface border border-border dark:border-border-strong rounded-3xl p-8 shadow-sm transition-colors">
-                                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+                                <div className="bg-surface border border-border dark:border-border-strong rounded-3xl p-4 md:p-8 shadow-sm transition-colors">
+                                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6 mb-8">
                                         <div>
                                             <div className="flex items-center gap-3 mb-2">
                                                 <h3 className="text-2xl font-bold text-gray-900 dark:text-text-primary transition-colors">
@@ -232,7 +232,7 @@ const DashboardPage: React.FC = () => {
                                     </div>
                                 </div>
                             ) : (
-                                <div className="bg-surface border border-border dark:border-border-strong border-dashed rounded-3xl p-12 text-center flex flex-col items-center justify-center transition-colors">
+                                <div className="bg-surface border border-border dark:border-border-strong border-dashed rounded-3xl p-4 md:p-12 text-center flex flex-col items-center justify-center transition-colors">
                                     <div className="w-16 h-16 bg-gray-50 dark:bg-gray-800/50 rounded-full flex items-center justify-center mb-4 transition-colors">
                                         <FolderKanban className="text-text-secondary" size={24} />
                                     </div>
@@ -253,7 +253,7 @@ const DashboardPage: React.FC = () => {
 
                             <div className="grid sm:grid-cols-2 gap-4">
                                 {!approvedDesigns.length ? (
-                                    <div className="sm:col-span-2 bg-surface border border-border dark:border-border-strong rounded-2xl p-8 text-center transition-colors">
+                                    <div className="sm:col-span-2 bg-surface border border-border dark:border-border-strong rounded-2xl p-4 md:p-8 text-center transition-colors">
                                         <p className="text-text-secondary text-sm transition-colors">No designs have been approved yet.</p>
                                     </div>
                                 ) : (
@@ -306,7 +306,7 @@ const DashboardPage: React.FC = () => {
 
                     {/* SIDEBAR */}
                     <div className="space-y-6">
-                        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.6 }} className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 border border-indigo-100 dark:border-indigo-900/50 rounded-3xl p-6 shadow-sm transition-colors">
+                        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.6 }} className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 border border-indigo-100 dark:border-indigo-900/50 rounded-3xl p-4 md:p-6 shadow-sm transition-colors">
                             <div className="w-10 h-10 bg-surface rounded-full flex items-center justify-center mb-4 shadow-sm text-indigo-600 dark:text-indigo-400 transition-colors">
                                 <Sparkles size={18} />
                             </div>
@@ -320,7 +320,7 @@ const DashboardPage: React.FC = () => {
                             </Link>
                         </motion.div>
 
-                        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.7 }} className="bg-surface border border-border dark:border-border-strong rounded-3xl p-6 shadow-sm transition-colors">
+                        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.7 }} className="bg-surface border border-border dark:border-border-strong rounded-3xl p-4 md:p-6 shadow-sm transition-colors">
                             <h3 className="font-bold text-gray-900 dark:text-text-primary mb-4 transition-colors">Quick Links</h3>
                             <ul className="space-y-3">
                                 <li><Link to="/dashboard/designs" className="text-sm text-text-secondary hover:text-blue-600 dark:hover:text-blue-400 flex items-center justify-between group transition-colors">My Designs <ArrowRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" /></Link></li>

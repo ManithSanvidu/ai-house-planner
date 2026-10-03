@@ -292,7 +292,7 @@ const HomePage: React.FC = () => {
     style={{ backgroundColor: navBackground, backdropFilter: navBackdrop, borderBottomColor: navBorder }}
     className="fixed top-0 w-full z-50 transition-all border-b border-transparent"
    >
-    <div className="max-w-[1600px] mx-auto px-8 h-24 flex items-center justify-between">
+    <div className="max-w-[1600px] mx-auto px-4 md:px-8 h-24 flex items-center justify-between">
      <div className="flex items-center gap-3">
       <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
        <div className="w-8 h-8 relative flex items-center justify-center">
@@ -303,7 +303,7 @@ const HomePage: React.FC = () => {
       </Link>
      </div>
      
-     <div className="hidden lg:flex items-center gap-10 text-[11px] font-semibold tracking-[0.15em] text-text-secondary">
+     <div className="hidden lg:flex items-center gap-4 md:gap-10 text-[11px] font-semibold tracking-[0.15em] text-text-secondary">
       <Link to="/" className="text-text-primary hover:text-blue-600 dark:hover:text-blue-400 transition-colors">HOME</Link>
       <Link to="/features" className="hover:text-gray-900 dark:hover:text-text-primary transition-colors">FEATURES</Link>
       <Link to="/gallery" className="hover:text-gray-900 dark:hover:text-text-primary transition-colors">GALLERY</Link>
@@ -318,7 +318,7 @@ const HomePage: React.FC = () => {
       </Link>
       <Link 
        to="/login" 
-       className="hidden sm:flex bg-gray-900 dark:bg-white hover:bg-black dark:hover:bg-gray-200 text-white dark:text-gray-900 px-7 py-3.5 rounded-none text-[11px] font-bold tracking-[0.15em] transition-all"
+       className="hidden sm:flex bg-gray-900 dark:bg-white hover:bg-black dark:hover:bg-gray-200 text-white dark:text-gray-900 px-4 md:px-7 py-3.5 rounded-none text-[11px] font-bold tracking-[0.15em] transition-all"
       >
        START DESIGNING
       </Link>
@@ -338,13 +338,13 @@ const HomePage: React.FC = () => {
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="fixed inset-0 z-40 bg-white/95 dark:bg-gray-950/95 backdrop-blur-xl flex flex-col items-center justify-center gap-8 lg:hidden"
+      className="fixed inset-0 z-40 bg-white/95 dark:bg-gray-950/95 backdrop-blur-xl flex flex-col items-center justify-center gap-4 md:gap-8 lg:hidden"
      >
       <Link to="/" onClick={() => setIsMobileMenuOpen(false)} className="text-2xl font-semibold tracking-widest text-text-primary">HOME</Link>
       <Link to="/features" onClick={() => setIsMobileMenuOpen(false)} className="text-2xl font-semibold tracking-widest text-text-primary">FEATURES</Link>
       <Link to="/gallery" onClick={() => setIsMobileMenuOpen(false)} className="text-2xl font-semibold tracking-widest text-text-primary">GALLERY</Link>
       <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} className="text-2xl font-semibold tracking-widest text-text-muted">SIGN IN</Link>
-      <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} className="mt-8 bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-8 py-4 text-sm font-bold tracking-[0.15em]">
+      <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} className="mt-8 bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-4 md:px-8 py-4 text-sm font-bold tracking-[0.15em]">
        START DESIGNING
       </Link>
      </motion.div>
@@ -375,9 +375,9 @@ const HomePage: React.FC = () => {
     {/* Hero Content on the Left (40% width) */}
     <motion.div 
      style={{ opacity: heroOpacity, y: heroY }}
-     className="relative z-10 w-full max-w-[1600px] mx-auto px-6 sm:px-8 pointer-events-none flex flex-col justify-center h-full order-1 lg:order-none mt-10 lg:mt-0"
+     className="relative z-10 w-full max-w-[1600px] mx-auto px-4 md:px-6 sm:px-8 pointer-events-none flex flex-col justify-center h-full order-1 lg:order-none mt-10 lg:mt-0"
     >
-     <div className="w-full lg:max-w-[45%] pointer-events-auto bg-background/70 bg-background/70 lg:bg-transparent lg:dark:bg-transparent backdrop-blur-md lg:backdrop-blur-none p-6 lg:p-0 rounded-3xl lg:rounded-none">
+     <div className="w-full lg:max-w-[45%] pointer-events-auto bg-background/70 bg-background/70 lg:bg-transparent lg:dark:bg-transparent backdrop-blur-md lg:backdrop-blur-none p-4 md:p-6 lg:p-0 rounded-3xl lg:rounded-none">
       <div className="inline-block mb-6">
        <p className="text-[10px] font-bold tracking-[0.2em] text-text-secondary flex items-center gap-2">
         <span className="w-8 h-[1px] bg-gray-300 dark:bg-gray-700 transition-colors"></span>
@@ -385,7 +385,7 @@ const HomePage: React.FC = () => {
        </p>
       </div>
       
-      <h1 className="text-4xl sm:text-5xl lg:text-[4.2rem] font-medium text-text-primary tracking-tight leading-[1.1] lg:leading-[1.05] mb-6 font-serif transition-colors">
+      <h1 className="text-2xl md:text-4xl sm:text-5xl lg:text-[4.2rem] font-medium text-text-primary tracking-tight leading-[1.1] lg:leading-[1.05] mb-6 font-serif transition-colors">
        Design Smarter.<br/>
        <span className="relative inline-block text-text-secondary transition-colors">
         Build with Confidence.
@@ -397,10 +397,10 @@ const HomePage: React.FC = () => {
       </p>
       
       <div className="flex flex-col sm:flex-row gap-4 mb-4">
-       <Link to="/login" className="bg-gray-900 dark:bg-white hover:bg-black dark:hover:bg-gray-200 text-white dark:text-gray-900 px-8 py-4 text-xs font-bold tracking-[0.15em] transition-all flex items-center justify-center gap-3 w-max rounded-xl lg:rounded-none">
+       <Link to="/login" className="bg-gray-900 dark:bg-white hover:bg-black dark:hover:bg-gray-200 text-white dark:text-gray-900 px-4 md:px-8 py-4 text-xs font-bold tracking-[0.15em] transition-all flex items-center justify-center gap-3 w-max rounded-xl lg:rounded-none">
         START DESIGNING <ArrowRight size={16} />
        </Link>
-       <button onClick={() => setIsChatOpen(true)} className="bg-transparent border border-border dark:border-border-strong hover:bg-gray-50 dark:hover:bg-gray-800 text-text-primary px-8 py-4 text-xs font-bold tracking-[0.15em] transition-all flex items-center justify-center gap-3 w-max rounded-xl lg:rounded-none">
+       <button onClick={() => setIsChatOpen(true)} className="bg-transparent border border-border dark:border-border-strong hover:bg-gray-50 dark:hover:bg-gray-800 text-text-primary px-4 md:px-8 py-4 text-xs font-bold tracking-[0.15em] transition-all flex items-center justify-center gap-3 w-max rounded-xl lg:rounded-none">
         ASK AI ARCHITECT <MessageSquare size={16} />
        </button>
       </div>
@@ -412,35 +412,35 @@ const HomePage: React.FC = () => {
    </section>
 
    {/* SECTION 2 - AI ARCHITECT ASSISTANT */}
-   <section className="py-24 bg-surface relative z-10 transition-colors duration-300 border-t border-border">
-    <div className="max-w-[1400px] mx-auto px-6 grid lg:grid-cols-2 gap-16 items-center">
+   <section className="py-4 md:py-24 bg-surface relative z-10 transition-colors duration-300 border-t border-border">
+    <div className="max-w-[1400px] mx-auto px-4 md:px-6 grid lg:grid-cols-2 gap-4 md:gap-16 items-center">
      <div>
       <p className="text-[10px] font-bold tracking-[0.2em] text-blue-600 dark:text-blue-400 mb-4 transition-colors">AI ARCHITECT ASSISTANT</p>
-      <h2 className="text-3xl sm:text-4xl lg:text-5xl font-medium text-text-primary tracking-tight font-serif mb-6 transition-colors">
+      <h2 className="text-2xl md:text-3xl sm:text-4xl lg:text-5xl font-medium text-text-primary tracking-tight font-serif mb-6 transition-colors">
        Talk to the AI Architect Before You Design
       </h2>
       <p className="text-base sm:text-lg text-text-secondary mb-8 leading-relaxed font-light transition-colors">
        Ask planning questions about land size, room counts, layout ideas, or construction-related decisions before starting a full design workflow.
       </p>
-      <button onClick={() => setIsChatOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-text-primary px-8 py-4 text-xs font-bold tracking-[0.15em] transition-all flex items-center justify-center gap-3 w-max rounded-xl shadow-lg shadow-blue-900/20">
+      <button onClick={() => setIsChatOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-text-primary px-4 md:px-8 py-4 text-xs font-bold tracking-[0.15em] transition-all flex items-center justify-center gap-3 w-max rounded-xl shadow-lg shadow-blue-900/20">
        OPEN AI ARCHITECT <MessageSquare size={16} />
       </button>
      </div>
      
      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <div onClick={() => { setPrompt("I have 25 perch land. How many bedrooms are suitable?"); setIsChatOpen(true); }} className="bg-surface-elevated p-6 rounded-2xl border border-border cursor-pointer hover:border-blue-300 dark:hover:border-blue-800 transition-colors group">
+      <div onClick={() => { setPrompt("I have 25 perch land. How many bedrooms are suitable?"); setIsChatOpen(true); }} className="bg-surface-elevated p-4 md:p-6 rounded-2xl border border-border cursor-pointer hover:border-blue-300 dark:hover:border-blue-800 transition-colors group">
        <MessageSquare className="text-text-secondary mb-4 group-hover:text-blue-500 transition-colors" size={20} />
        <p className="text-sm text-text-primary font-medium">"I have 25 perch land. How many bedrooms are suitable?"</p>
       </div>
-      <div onClick={() => { setPrompt("Is 2 bedrooms and 12 bathrooms realistic?"); setIsChatOpen(true); }} className="bg-surface-elevated p-6 rounded-2xl border border-border cursor-pointer hover:border-blue-300 dark:hover:border-blue-800 transition-colors group">
+      <div onClick={() => { setPrompt("Is 2 bedrooms and 12 bathrooms realistic?"); setIsChatOpen(true); }} className="bg-surface-elevated p-4 md:p-6 rounded-2xl border border-border cursor-pointer hover:border-blue-300 dark:hover:border-blue-800 transition-colors group">
        <MessageSquare className="text-text-secondary mb-4 group-hover:text-blue-500 transition-colors" size={20} />
        <p className="text-sm text-text-primary font-medium">"Is 2 bedrooms and 12 bathrooms realistic?"</p>
       </div>
-      <div onClick={() => { setPrompt("What house layout fits a narrow plot?"); setIsChatOpen(true); }} className="bg-surface-elevated p-6 rounded-2xl border border-border cursor-pointer hover:border-blue-300 dark:hover:border-blue-800 transition-colors group">
+      <div onClick={() => { setPrompt("What house layout fits a narrow plot?"); setIsChatOpen(true); }} className="bg-surface-elevated p-4 md:p-6 rounded-2xl border border-border cursor-pointer hover:border-blue-300 dark:hover:border-blue-800 transition-colors group">
        <MessageSquare className="text-text-secondary mb-4 group-hover:text-blue-500 transition-colors" size={20} />
        <p className="text-sm text-text-primary font-medium">"What house layout fits a narrow plot?"</p>
       </div>
-      <div onClick={() => { setPrompt("Can I build a 2-floor home on this site?"); setIsChatOpen(true); }} className="bg-surface-elevated p-6 rounded-2xl border border-border cursor-pointer hover:border-blue-300 dark:hover:border-blue-800 transition-colors group">
+      <div onClick={() => { setPrompt("Can I build a 2-floor home on this site?"); setIsChatOpen(true); }} className="bg-surface-elevated p-4 md:p-6 rounded-2xl border border-border cursor-pointer hover:border-blue-300 dark:hover:border-blue-800 transition-colors group">
        <MessageSquare className="text-text-secondary mb-4 group-hover:text-blue-500 transition-colors" size={20} />
        <p className="text-sm text-text-primary font-medium">"Can I build a 2-floor home on this site?"</p>
       </div>
@@ -449,46 +449,46 @@ const HomePage: React.FC = () => {
    </section>
 
    {/* SECTION 3 - CAPABILITIES GRID */}
-   <section className="py-24 bg-background relative z-10 transition-colors duration-300 border-t border-border">
-    <div className="max-w-[1400px] mx-auto px-6">
+   <section className="py-4 md:py-24 bg-background relative z-10 transition-colors duration-300 border-t border-border">
+    <div className="max-w-[1400px] mx-auto px-4 md:px-6">
      <div className="mb-16 text-center">
-      <h2 className="text-3xl sm:text-4xl lg:text-5xl font-medium text-text-primary tracking-tight font-serif transition-colors">
+      <h2 className="text-2xl md:text-3xl sm:text-4xl lg:text-5xl font-medium text-text-primary tracking-tight font-serif transition-colors">
        What HomePlannerAI Helps You Do
       </h2>
      </div>
      
-     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
-      <div className="bg-surface border border-border dark:border-border-strong p-8 rounded-3xl hover:border-blue-500/50 dark:hover:border-blue-500/50 transition-colors group">
+     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8">
+      <div className="bg-surface border border-border dark:border-border-strong p-4 md:p-8 rounded-3xl hover:border-blue-500/50 dark:hover:border-blue-500/50 transition-colors group">
        <Map className="text-blue-600 dark:text-blue-400 mb-6 group-hover:scale-110 transition-transform" size={32} />
        <h3 className="text-xl font-bold text-text-primary mb-3">Land Analysis</h3>
        <p className="text-sm text-text-secondary leading-relaxed">Capture site dimensions, land size, and planning context to understand what is realistically possible.</p>
       </div>
       
-      <div className="bg-surface border border-border dark:border-border-strong p-8 rounded-3xl hover:border-indigo-500/50 dark:hover:border-indigo-500/50 transition-colors group">
+      <div className="bg-surface border border-border dark:border-border-strong p-4 md:p-8 rounded-3xl hover:border-indigo-500/50 dark:hover:border-indigo-500/50 transition-colors group">
        <ClipboardCheck className="text-indigo-600 dark:text-indigo-400 mb-6 group-hover:scale-110 transition-transform" size={32} />
        <h3 className="text-xl font-bold text-text-primary mb-3">Requirement Validation</h3>
        <p className="text-sm text-text-secondary leading-relaxed">Check whether requested bedrooms, bathrooms, floors, and features are suitable for the land.</p>
       </div>
       
-      <div className="bg-surface border border-border dark:border-border-strong p-8 rounded-3xl hover:border-purple-500/50 dark:hover:border-purple-500/50 transition-colors group">
+      <div className="bg-surface border border-border dark:border-border-strong p-4 md:p-8 rounded-3xl hover:border-purple-500/50 dark:hover:border-purple-500/50 transition-colors group">
        <Home className="text-purple-600 dark:text-purple-400 mb-6 group-hover:scale-110 transition-transform" size={32} />
        <h3 className="text-xl font-bold text-text-primary mb-3">AI-Assisted Design</h3>
        <p className="text-sm text-text-secondary leading-relaxed">Explore home design options that align with validated land and requirement inputs.</p>
       </div>
       
-      <div className="bg-surface border border-border dark:border-border-strong p-8 rounded-3xl hover:border-amber-500/50 dark:hover:border-amber-500/50 transition-colors group">
+      <div className="bg-surface border border-border dark:border-border-strong p-4 md:p-8 rounded-3xl hover:border-amber-500/50 dark:hover:border-amber-500/50 transition-colors group">
        <PenTool className="text-amber-600 dark:text-amber-400 mb-6 group-hover:scale-110 transition-transform" size={32} />
        <h3 className="text-xl font-bold text-text-primary mb-3">Architect Review</h3>
        <p className="text-sm text-text-secondary leading-relaxed">Send selected designs for review and track approval status through the workflow.</p>
       </div>
       
-      <div className="bg-surface border border-border dark:border-border-strong p-8 rounded-3xl hover:border-rose-500/50 dark:hover:border-rose-500/50 transition-colors group">
+      <div className="bg-surface border border-border dark:border-border-strong p-4 md:p-8 rounded-3xl hover:border-rose-500/50 dark:hover:border-rose-500/50 transition-colors group">
        <HardHat className="text-rose-600 dark:text-rose-400 mb-6 group-hover:scale-110 transition-transform" size={32} />
        <h3 className="text-xl font-bold text-text-primary mb-3">Constructor Workflow</h3>
        <p className="text-sm text-text-secondary leading-relaxed">Request construction support and manage project progress after approval.</p>
       </div>
       
-      <div className="bg-surface border border-border dark:border-border-strong p-8 rounded-3xl hover:border-emerald-500/50 dark:hover:border-emerald-500/50 transition-colors group">
+      <div className="bg-surface border border-border dark:border-border-strong p-4 md:p-8 rounded-3xl hover:border-emerald-500/50 dark:hover:border-emerald-500/50 transition-colors group">
        <Activity className="text-emerald-600 dark:text-emerald-400 mb-6 group-hover:scale-110 transition-transform" size={32} />
        <h3 className="text-xl font-bold text-text-primary mb-3">Progress Tracking</h3>
        <p className="text-sm text-text-secondary leading-relaxed">Follow phases, daily logs, and schedule updates during construction.</p>
@@ -498,15 +498,15 @@ const HomePage: React.FC = () => {
    </section>
 
    {/* SECTION 4 - HOW IT WORKS */}
-   <section className="py-24 bg-surface relative z-10 transition-colors duration-300">
-    <div className="max-w-[1400px] mx-auto px-6">
+   <section className="py-4 md:py-24 bg-surface relative z-10 transition-colors duration-300">
+    <div className="max-w-[1400px] mx-auto px-4 md:px-6">
      <div className="mb-16 text-center">
-      <h2 className="text-3xl sm:text-4xl lg:text-5xl font-medium text-text-primary tracking-tight font-serif transition-colors">
+      <h2 className="text-2xl md:text-3xl sm:text-4xl lg:text-5xl font-medium text-text-primary tracking-tight font-serif transition-colors">
        How It Works
       </h2>
      </div>
      
-     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 relative">
+     <div className="grid grid-cols-1 md:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 md:gap-6 relative">
       <div className="hidden lg:block absolute top-12 left-[10%] right-[10%] h-[1px] bg-gray-200 bg-surface-elevated z-0"></div>
       
       {[
@@ -518,7 +518,7 @@ const HomePage: React.FC = () => {
        { num: '06', title: 'Start Construction Tracking', desc: 'Move into construction requests, phases, and daily tracking.' }
       ].map((step, i) => (
        <div key={i} className="relative z-10 flex flex-col items-center text-center">
-        <div className="w-24 h-24 bg-background border-4 border-white dark:border-gray-900 rounded-full flex items-center justify-center shadow-lg mb-6 text-gray-300 dark:text-gray-700 text-3xl font-bold font-serif">
+        <div className="w-24 h-24 bg-background border-4 border-white dark:border-gray-900 rounded-full flex items-center justify-center shadow-lg mb-6 text-gray-300 dark:text-gray-700 text-2xl md:text-3xl font-bold font-serif">
          {step.num}
         </div>
         <h4 className="text-sm font-bold text-text-primary mb-3 tracking-wide">{step.title}</h4>
@@ -530,25 +530,25 @@ const HomePage: React.FC = () => {
    </section>
 
    {/* SECTION 5 - VALIDATION / TRUST */}
-   <section className="py-24 bg-surface-elevated relative z-10 transition-colors duration-300">
-    <div className="max-w-[1000px] mx-auto px-6 text-center">
-     <h2 className="text-3xl lg:text-4xl font-medium text-text-primary tracking-tight font-serif mb-6 transition-colors">
+   <section className="py-4 md:py-24 bg-surface-elevated relative z-10 transition-colors duration-300">
+    <div className="max-w-[1000px] mx-auto px-4 md:px-6 text-center">
+     <h2 className="text-2xl md:text-3xl lg:text-4xl font-medium text-text-primary tracking-tight font-serif mb-6 transition-colors">
       AI Guidance with Smart Validation
      </h2>
      <p className="text-lg text-text-secondary mb-12 leading-relaxed max-w-3xl mx-auto transition-colors">
       HomePlannerAI does not generate blindly. It helps assess whether a request is suitable for the land and planning context before moving users into design workflows.
      </p>
      
-     <div className="flex flex-col sm:flex-row justify-center gap-6 sm:gap-12 mb-16">
-      <div className="flex items-center justify-center gap-3 text-text-primary font-medium bg-surface px-6 py-3 rounded-full border border-border dark:border-border-strong shadow-sm">
+     <div className="flex flex-col sm:flex-row justify-center gap-4 md:gap-6 sm:gap-12 mb-16">
+      <div className="flex items-center justify-center gap-3 text-text-primary font-medium bg-surface px-4 md:px-6 py-3 rounded-full border border-border dark:border-border-strong shadow-sm">
        <ShieldCheck className="text-blue-500" size={20} />
        <span className="text-sm">Feasibility-aware guidance</span>
       </div>
-      <div className="flex items-center justify-center gap-3 text-text-primary font-medium bg-surface px-6 py-3 rounded-full border border-border dark:border-border-strong shadow-sm">
+      <div className="flex items-center justify-center gap-3 text-text-primary font-medium bg-surface px-4 md:px-6 py-3 rounded-full border border-border dark:border-border-strong shadow-sm">
        <CheckCircle2 className="text-indigo-500" size={20} />
        <span className="text-sm">Requirement sanity checks</span>
       </div>
-      <div className="flex items-center justify-center gap-3 text-text-primary font-medium bg-surface px-6 py-3 rounded-full border border-border dark:border-border-strong shadow-sm">
+      <div className="flex items-center justify-center gap-3 text-text-primary font-medium bg-surface px-4 md:px-6 py-3 rounded-full border border-border dark:border-border-strong shadow-sm">
        <PenTool className="text-amber-500" size={20} />
        <span className="text-sm">Architect review support</span>
       </div>
@@ -563,18 +563,18 @@ const HomePage: React.FC = () => {
    {/* SECTION 6 - CTA */}
    <section className="py-32 bg-gray-900 text-text-primary relative overflow-hidden">
     <div className="absolute inset-0 opacity-10 pointer-events-none bg-[url('https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=2000&auto=format&fit=crop')] bg-cover bg-center mix-blend-overlay"></div>
-    <div className="max-w-[1400px] mx-auto px-6 relative z-10 text-center flex flex-col items-center">
-     <h2 className="text-4xl lg:text-6xl font-medium tracking-tight mb-12 font-serif">
+    <div className="max-w-[1400px] mx-auto px-4 md:px-6 relative z-10 text-center flex flex-col items-center">
+     <h2 className="text-2xl md:text-4xl lg:text-6xl font-medium tracking-tight mb-12 font-serif">
       Ready to start planning your home?
      </h2>
      <div className="flex flex-col sm:flex-row gap-4">
-      <Link to="/login" className="bg-surface hover:bg-gray-100 text-gray-900 px-10 py-5 text-xs font-bold tracking-[0.15em] transition-all flex items-center justify-center gap-3 w-max">
+      <Link to="/login" className="bg-surface hover:bg-gray-100 text-gray-900 px-4 md:px-10 py-5 text-xs font-bold tracking-[0.15em] transition-all flex items-center justify-center gap-3 w-max">
        START NEW PROJECT <ArrowRight size={16} />
       </Link>
-      <Link to="/gallery" className="bg-transparent border border-gray-600 hover:border-white text-text-primary px-10 py-5 text-xs font-bold tracking-[0.15em] transition-all flex items-center justify-center gap-3 w-max">
+      <Link to="/gallery" className="bg-transparent border border-gray-600 hover:border-white text-text-primary px-4 md:px-10 py-5 text-xs font-bold tracking-[0.15em] transition-all flex items-center justify-center gap-3 w-max">
        BROWSE PLANS
       </Link>
-      <button onClick={() => setIsChatOpen(true)} className="bg-transparent border border-gray-600 hover:border-white text-text-primary px-10 py-5 text-xs font-bold tracking-[0.15em] transition-all flex items-center justify-center gap-3 w-max">
+      <button onClick={() => setIsChatOpen(true)} className="bg-transparent border border-gray-600 hover:border-white text-text-primary px-4 md:px-10 py-5 text-xs font-bold tracking-[0.15em] transition-all flex items-center justify-center gap-3 w-max">
        ASK AI ARCHITECT <MessageSquare size={16} />
       </button>
      </div>
@@ -583,8 +583,8 @@ const HomePage: React.FC = () => {
 
    {/* FOOTER */}
    <footer className="bg-surface bg-background border-t border-border pt-20 pb-10 transition-colors duration-300">
-    <div className="max-w-[1400px] mx-auto px-6">
-     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-10 mb-16">
+    <div className="max-w-[1400px] mx-auto px-4 md:px-6">
+     <div className="grid grid-cols-1 md:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-10 mb-16">
       <div className="col-span-2 lg:col-span-2">
        <div className="flex items-center gap-2 mb-6">
         <Box className="text-text-primary transition-colors" size={20} strokeWidth={2} />
