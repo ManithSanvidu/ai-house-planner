@@ -86,13 +86,16 @@ const ValidationRequestDetails: React.FC = () => {
 
  const handleApprove = async () => {
   if (!id) return;
-  if (!window.confirm('Approve this submitted design? This decision is final.')) return;
   setIsSubmitting(true);
   setActionError(null);
   try {
    await validationRequestService.approve(id, reviewNote);
    navigate('/architect/requests');
   } catch (err: any) {
+   console.error('[Architect Validation] Approval request failed', {
+    status: err.response?.status,
+    message: err.response?.data?.message || err.message,
+   });
    setActionError(err.response?.data?.message || 'Failed to approve request.');
   } finally {
    setIsSubmitting(false);
@@ -437,6 +440,7 @@ const ValidationRequestDetails: React.FC = () => {
 
         <div className="pt-2 flex flex-col gap-3">
          <button
+          type="button"
           onClick={handleApprove}
           disabled={isSubmitting || !canApprove}
           className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-transparent rounded-xl shadow-sm text-sm font-bold text-text-primary bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
@@ -444,6 +448,7 @@ const ValidationRequestDetails: React.FC = () => {
           {isSubmitting ? 'Processing...' : <><CheckCircle size={18} /> Approve Design</>}
          </button>
          <button
+          type="button"
           onClick={handleReject}
           disabled={isSubmitting}
           className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-border dark:border-border-strong rounded-xl shadow-sm text-sm font-bold text-gray-700 dark:text-gray-300 bg-surface-elevated hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"

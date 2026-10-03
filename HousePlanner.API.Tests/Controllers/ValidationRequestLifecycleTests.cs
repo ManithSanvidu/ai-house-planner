@@ -28,6 +28,7 @@ public sealed class ValidationRequestLifecycleTests
         { ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() } };
 
         Assert.IsType<ForbidResult>(await controller.GetSummary());
+        Assert.IsType<ForbidResult>(await controller.Approve(Guid.NewGuid(), new ArchitectReviewDto("Approved")));
     }
 
     private static async Task<(ApplicationDbContext Db, ArchitectValidationRequestsController Controller, ValidationRequest Request)> Setup(bool includeCost = true)
@@ -90,5 +91,28 @@ public sealed class ValidationRequestLifecycleTests
         Assert.Equal(JsonValueKind.Null, json.RootElement.GetProperty("approvalEligibility").GetProperty("reason").ValueKind);
 
         Assert.IsType<OkObjectResult>(await controller.Approve(request.Id, new ArchitectReviewDto("Approved without estimate.")));
+    }
+
+    [Fact]
+    public async Task UnderReviewRequestCanBeApprovedAndUpdatesValidationAndWorkflowState()
+    {
+        var (db, controller, request) = await Setup();
+        var details = Assert.IsType<OkObjectResult>(await controller.GetRequestDetails(request.Id));
+        Assert.NotNull(details.Value);
+        Assert.Equal("Under Review", request.Status);
+
+        Assert.IsType<OkObjectResult>(await controller.Approve(
+            request.Id, new ArchitectReviewDto("Approved by architect.")));
+
+        var saved = await db.ValidationRequests.SingleAsync(x => x.Id == request.Id);
+        var workflow = await db.WorkflowStates.SingleAsync(x => x.Id == request.WorkflowStateId);
+        Assert.Equal("Approved", saved.Status);
+        Assert.Equal("Approved by architect.", saved.ArchitectReview);
+        Assert.NotNull(saved.ArchitectId);
+        Assert.NotNull(saved.DecisionAt);
+        Assert.Equal("approved", workflow.Status);
+        Assert.Equal("approved", workflow.ApprovalStatus);
+        Assert.Equal(saved.ArchitectId, workflow.ApprovedByUserId);
+        Assert.NotNull(workflow.ApprovedAt);
     }
 }

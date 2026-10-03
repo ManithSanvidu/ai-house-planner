@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
@@ -171,5 +171,49 @@ describe('ValidationRequestDetails', () => {
     expect(screen.queryByText('geometry')).not.toBeInTheDocument();
     expect(screen.queryByText('Floor 1 has disconnected room components.')).not.toBeInTheDocument();
     expect(screen.queryByText('FAIL')).not.toBeInTheDocument();
+  });
+
+  test('Test G: Eligible Under Review request sends approval once with validation request ID', async () => {
+    (validationRequestService.getById as any).mockResolvedValue({
+      id: 'validation-request-from-api',
+      status: 'Under Review',
+      clientName: 'Test Client',
+      approvalEligibility: { canApprove: true, budgetStatus: 'within_budget', rulesPassed: true },
+      cost: { totalCostLkr: 1_000_000 },
+      validationResult: { passed: true, rules: [] }
+    });
+    (validationRequestService.approve as any).mockResolvedValue({ message: 'Request approved.' });
+
+    renderComponent();
+    const approve = await screen.findByRole('button', { name: /Approve Design/i });
+    expect(approve).toBeEnabled();
+
+    fireEvent.click(approve);
+
+    await waitFor(() => {
+      expect(validationRequestService.approve).toHaveBeenCalledTimes(1);
+      expect(validationRequestService.approve).toHaveBeenCalledWith('123', '');
+    });
+  });
+
+  test('Test H: Failed approval displays backend error and allows retry', async () => {
+    (validationRequestService.getById as any).mockResolvedValue({
+      id: '123',
+      status: 'Under Review',
+      clientName: 'Test Client',
+      approvalEligibility: { canApprove: true, budgetStatus: 'within_budget', rulesPassed: true },
+      cost: { totalCostLkr: 1_000_000 },
+      validationResult: { passed: true, rules: [] }
+    });
+    (validationRequestService.approve as any).mockRejectedValue({
+      response: { status: 409, data: { message: 'This request has already been finalized.' } }
+    });
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    renderComponent();
+    fireEvent.click(await screen.findByRole('button', { name: /Approve Design/i }));
+
+    expect(await screen.findByText('This request has already been finalized.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Approve Design/i })).toBeEnabled();
   });
 });
