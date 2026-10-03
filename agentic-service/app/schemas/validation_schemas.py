@@ -44,4 +44,5 @@ class HousePlanValidationInput(BaseModel):
     actual_bathrooms: int | None = Field(None, description="Bathrooms provided in the architectural design")
     requested_floors: int | None = Field(None, description="Floors requested by the client")
     actual_floors: int | None = Field(None, description="Floors provided in the architectural design")
+    rooms: list[Any] = Field(default_factory=list, description="List of generated rooms")
     additional_data: dict[str, Any] | None = Field(default_factory=dict, description="Any extra metadata")

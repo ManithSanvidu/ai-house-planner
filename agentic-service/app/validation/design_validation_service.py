@@ -28,6 +28,8 @@ from app.schemas.validation_schemas import (
     ValidationResult,
 )
 from app.schemas.workflow_state import WorkflowState
+from app.schemas.design_result import RoomLayout
+from app.validation.geometry_validator import validate_geometry
 
 # ---------------------------------------------------------------------------
 # Business Rule Constants & Configuration Defaults
@@ -444,8 +446,11 @@ def extract_validation_input_from_state(state: Any) -> HousePlanValidationInput:
         estimated_cost_lkr=float(estimated_cost) if estimated_cost is not None else None,
         requested_bedrooms=int(requested_bedrooms) if requested_bedrooms is not None else None,
         actual_bedrooms=int(actual_bedrooms) if actual_bedrooms is not None else None,
+        requested_bathrooms=int(requested_bathrooms) if requested_bathrooms is not None else None,
+        actual_bathrooms=int(actual_bathrooms) if actual_bathrooms is not None else None,
         requested_floors=int(requested_floors) if requested_floors is not None else None,
         actual_floors=int(actual_floors) if actual_floors is not None else None,
+        rooms=rooms_list,
     )
 
 
@@ -484,6 +489,37 @@ def validate_house_plan(
             actual_floors=val_input.actual_floors,
         ),
     ]
+
+    try:
+        rooms_parsed = []
+        if val_input.rooms:
+            for r in val_input.rooms:
+                if isinstance(r, dict):
+                    rooms_parsed.append(RoomLayout(**r))
+                else:
+                    rooms_parsed.append(r)
+        
+        geom_result = validate_geometry(
+            rooms=rooms_parsed,
+            expected_bedrooms=val_input.requested_bedrooms or val_input.actual_bedrooms or 0,
+            expected_floors=val_input.requested_floors or val_input.actual_floors or 1,
+            land_size_perches=val_input.land_size_perches or 0.0,
+        )
+        rule_results.append(RuleValidationResult(
+            rule_name="geometry",
+            passed=geom_result.passed,
+            reason="Geometry validation passed." if geom_result.passed else "; ".join(geom_result.failures),
+            actual="Valid geometry" if geom_result.passed else f"Failures: {geom_result.failures}",
+            expected="Valid layout, correct dimensions, within bounds, no overlap"
+        ))
+    except Exception as e:
+        rule_results.append(RuleValidationResult(
+            rule_name="geometry",
+            passed=False,
+            reason=f"Geometry validation encountered an error: {e}",
+            actual="Error",
+            expected="Valid layout, correct dimensions, within bounds, no overlap"
+        ))
 
     overall_passed = all(r.passed for r in rule_results)
     errors = [r.reason for r in rule_results if not r.passed]
