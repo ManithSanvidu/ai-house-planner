@@ -47,7 +47,7 @@ class MainScaffold extends ConsumerWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(32),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, 10)),
+            BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 20, offset: const Offset(0, 10)),
           ],
         ),
         child: SafeArea(
@@ -69,7 +69,7 @@ class MainScaffold extends ConsumerWidget {
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(colors: [Color(0xFF60A5FA), Color(0xFF3B82F6)], begin: Alignment.topLeft, end: Alignment.bottomRight),
                       shape: BoxShape.circle,
-                      boxShadow: [BoxShadow(color: const Color(0xFF3B82F6).withOpacity(0.4), blurRadius: 12, offset: const Offset(0, 6))],
+                      boxShadow: [BoxShadow(color: const Color(0xFF3B82F6).withValues(alpha: 0.4), blurRadius: 12, offset: const Offset(0, 6))],
                     ),
                     child: const Icon(Icons.add, color: Colors.white, size: 28),
                   ),
@@ -143,7 +143,7 @@ class MainScaffold extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text('HOMEPLANNER AI', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: AppTokens.navy, letterSpacing: 1.2)),
-                      Text('CONSOLE', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppTokens.primary.withOpacity(0.8), letterSpacing: 1.5)),
+                      Text('CONSOLE', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppTokens.primary.withValues(alpha: 0.8), letterSpacing: 1.5)),
                     ],
                   ),
                 ],

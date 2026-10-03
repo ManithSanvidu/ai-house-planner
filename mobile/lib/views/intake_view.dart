@@ -77,7 +77,6 @@ class _IntakeViewState extends ConsumerState<IntakeView> {
   @override
   Widget build(BuildContext context) {
     final intakeState = ref.watch(intakeProvider);
-    final data = intakeState.value ?? LandSubmission();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),

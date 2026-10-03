@@ -69,7 +69,7 @@ class DashboardView extends ConsumerWidget {
                         end: Alignment.bottomRight,
                       ),
                       borderRadius: BorderRadius.circular(24),
-                      boxShadow: [BoxShadow(color: const Color(0xFF3B82F6).withOpacity(0.3), blurRadius: 15, offset: const Offset(0, 8))],
+                      boxShadow: [BoxShadow(color: const Color(0xFF3B82F6).withValues(alpha: 0.3), blurRadius: 15, offset: const Offset(0, 8))],
                     ),
                     child: Row(
                       children: [
@@ -81,7 +81,7 @@ class DashboardView extends ConsumerWidget {
                                 children: [
                                   Container(
                                     padding: const EdgeInsets.all(6),
-                                    decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), shape: BoxShape.circle),
+                                    decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), shape: BoxShape.circle),
                                     child: const Icon(Icons.auto_awesome, color: Colors.white, size: 16),
                                   ),
                                   const SizedBox(width: 8),
@@ -91,7 +91,7 @@ class DashboardView extends ConsumerWidget {
                               const SizedBox(height: 12),
                               const Text('Create New Project', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
                               const SizedBox(height: 4),
-                              Text('Turn your dream home into reality with\nAI-powered planning.', style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 12, height: 1.4)),
+                              Text('Turn your dream home into reality with\nAI-powered planning.', style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 12, height: 1.4)),
                             ],
                           ),
                         ),
@@ -156,7 +156,7 @@ class DashboardView extends ConsumerWidget {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(24),
-                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))],
+                    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4))],
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -313,7 +313,7 @@ class DashboardView extends ConsumerWidget {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(20),
-                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))],
+                    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4))],
                   ),
                   child: Row(
                     children: [
@@ -378,7 +378,7 @@ class DashboardView extends ConsumerWidget {
           children: [
             Container(
               padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(color: fgColor.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+              decoration: BoxDecoration(color: fgColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
               child: Icon(icon, color: fgColor, size: 24),
             ),
             const Spacer(),

@@ -103,7 +103,7 @@ class _ReadinessViewState extends ConsumerState<ReadinessView> {
 
                   if (_availableProjects.isNotEmpty)
                     DropdownButtonFormField<String>(
-                      value: _projectId,
+                      initialValue: _projectId,
                       decoration: InputDecoration(
                         labelText: 'Select Project/Design', 
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppTokens.line)),

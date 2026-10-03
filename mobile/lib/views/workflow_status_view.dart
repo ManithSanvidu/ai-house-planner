@@ -26,12 +26,7 @@ class _WorkflowStatusViewState extends ConsumerState<WorkflowStatusView> {
   Timer? _vizTimer;
   String? _currentDesignId;
 
-  String _formatImageUrl(String url) {
-    if (!kIsWeb && Platform.isAndroid && url.contains('localhost')) {
-      return url.replaceAll('localhost', '10.0.2.2');
-    }
-    return url;
-  }
+
 
   void _loadVisualization(String designId) async {
     if (_currentDesignId != designId) {
