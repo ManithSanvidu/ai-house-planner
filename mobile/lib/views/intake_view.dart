@@ -94,6 +94,7 @@ class _IntakeViewState extends ConsumerState<IntakeView> {
           child: CircularProgressIndicator(color: Colors.blue),
         ),
         error: (err, stack) => Center(child: Text('Error: $err')),
+<<<<<<< HEAD
         data: (data) => SafeArea(
           child: Container(
             margin: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 16),
@@ -125,6 +126,46 @@ class _IntakeViewState extends ConsumerState<IntakeView> {
                 ),
                 _buildFooter(intakeState.isLoading, data),
               ],
+=======
+        data: (data) => Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 600),
+            child: Container(
+              margin: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x0A000000),
+                    blurRadius: 10,
+                    offset: Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  _buildStepIndicator(),
+                  Expanded(
+                    child: Form(
+                      key: _formKey,
+                      child: ListView(
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                        physics: const BouncingScrollPhysics(),
+                        children: [
+                          if (_currentStep == 1) _buildStep1(data),
+                          if (_currentStep == 2) _buildStep2(data),
+                          if (_currentStep == 3) _buildStep3(data),
+                          const SizedBox(height: 32),
+                        ],
+                      ),
+                    ),
+                  ),
+                  _buildFooter(intakeState.isLoading, data),
+                ],
+              ),
+>>>>>>> 42eb177d5935e86eb74e9ef36c1c8666e16dae01
             ),
           ),
         ),
@@ -192,6 +233,7 @@ class _IntakeViewState extends ConsumerState<IntakeView> {
         ),
       ),
       child: Row(
+<<<<<<< HEAD
         children: [
           if (_currentStep > 1)
             Expanded(
@@ -230,6 +272,35 @@ class _IntakeViewState extends ConsumerState<IntakeView> {
                   ]
                 ],
               ),
+=======
+        mainAxisAlignment: _currentStep > 1 ? MainAxisAlignment.spaceBetween : MainAxisAlignment.end,
+        children: [
+          if (_currentStep > 1)
+            TextButton(
+              onPressed: isSubmitting ? null : _prevStep,
+              child: const Text('Back', style: TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.bold, fontSize: 16)),
+            ),
+          ElevatedButton(
+            onPressed: isSubmitting || !canProceed ? null : _nextStep,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _currentStep == 3 ? const Color(0xFF16A34A) : const Color(0xFF0F172A),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _currentStep == 3 ? (isSubmitting ? 'Generating...' : 'Generate AI Plan') : 'Next',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                if (_currentStep < 3) ...[
+                  const SizedBox(width: 8),
+                  const Icon(Icons.chevron_right, size: 20),
+                ]
+              ],
+>>>>>>> 42eb177d5935e86eb74e9ef36c1c8666e16dae01
             ),
           ),
         ],
