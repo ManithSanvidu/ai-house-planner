@@ -148,6 +148,51 @@ namespace HousePlanner.API.Tests.Controllers
         }
 
         [Fact]
+        public async Task Generate_StaleActiveRequestMarksItFailedAndStartsNewWorkflow()
+        {
+            var request = new StartDesignRequest
+            {
+                LandSizeCategory = "medium", LandSizePerches = 15,
+                Bedrooms = 3, Bathrooms = 2, HouseType = "modern"
+            };
+            var submission = new LandSubmission
+            {
+                Id = Guid.NewGuid(), ClientId = _clientId, LandSizeCategory = "medium",
+                LandSizePerches = 15, PreferredBedrooms = 3, PreferredBathrooms = 2,
+                PreferredFloors = 1, StylePreference = "modern"
+            };
+            var stale = new WorkflowState
+            {
+                Id = Guid.NewGuid(), LandSubmissionId = submission.Id, LandSubmission = submission,
+                Status = "running", ApprovalStatus = "pending",
+                CreatedAt = DateTimeOffset.UtcNow.Subtract(WorkflowExecutionPolicy.StaleAfter).AddMinutes(-1),
+                UpdatedAt = DateTimeOffset.UtcNow.Subtract(WorkflowExecutionPolicy.StaleAfter).AddMinutes(-1)
+            };
+            _dbContext.Add(stale);
+            await _dbContext.SaveChangesAsync();
+            _mockDesignOptionsService.Setup(s => s.ValidateFinalSelectionAsync(
+                    It.IsAny<HouseRequirement>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new DesignOptionsValidationResult { IsValid = true });
+            _mockHttpMessageHandler.Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK));
+
+            var result = Assert.IsType<OkObjectResult>(
+                await _controller.Generate(request, CancellationToken.None));
+            var response = JsonSerializer.Deserialize<JsonElement>(JsonSerializer.Serialize(result.Value));
+
+            Assert.NotEqual(stale.Id, response.GetProperty("WorkflowId").GetGuid());
+            Assert.False(response.TryGetProperty("Reused", out _));
+            Assert.Equal("failed", stale.Status);
+            Assert.Equal("not_requested", stale.ApprovalStatus);
+            Assert.Equal(WorkflowExecutionPolicy.IncompleteFailureReason, stale.FailureReason);
+            Assert.Equal(2, await _dbContext.WorkflowStates.CountAsync());
+            _mockHttpMessageHandler.Protected().Verify(
+                "SendAsync", Times.Once(), ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>());
+        }
+
+        [Fact]
         public async Task Generate_CompletedWorkflow_AllowsNewGeneration()
         {
             var request = new StartDesignRequest

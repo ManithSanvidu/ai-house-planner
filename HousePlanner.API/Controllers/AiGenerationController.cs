@@ -48,11 +48,10 @@ public class AiGenerationController : ControllerBase
             var client = await _context.Users.FindAsync(identity.Id);
             if (client is null) return Unauthorized(new { Message = "Authentication required. Application profile not found." });
 
-            var activeStatuses = new[] { "running", "processing" };
-            var activeWorkflow = await _context.WorkflowStates
-                .AsNoTracking()
+            var now = DateTimeOffset.UtcNow;
+            var matchingWorkflows = await _context.WorkflowStates
                 .Where(w => w.LandSubmission.ClientId == client.Id
-                    && activeStatuses.Contains(w.Status.ToLower())
+                    && (w.Status.ToLower() == "running" || w.Status.ToLower() == "processing")
                     && w.LandSubmission.LandSizeCategory == requirement.LandSizeCategory
                     && w.LandSubmission.LandSizePerches == requirement.LandSizePerches
                     && w.LandSubmission.PreferredBedrooms == requirement.Bedrooms
@@ -60,7 +59,14 @@ public class AiGenerationController : ControllerBase
                     && w.LandSubmission.PreferredFloors == requirement.Floors
                     && w.LandSubmission.StylePreference == requirement.HouseType)
                 .OrderByDescending(w => w.CreatedAt)
-                .FirstOrDefaultAsync(cancellationToken);
+                .ToListAsync(cancellationToken);
+            foreach (var staleWorkflow in matchingWorkflows.Where(w => WorkflowExecutionPolicy.IsStale(w, now)))
+                WorkflowExecutionPolicy.MarkStaleFailed(staleWorkflow, now);
+            if (_context.ChangeTracker.HasChanges())
+                await _context.SaveChangesAsync(cancellationToken);
+
+            var activeWorkflow = matchingWorkflows.FirstOrDefault(w =>
+                WorkflowExecutionPolicy.IsActiveStatus(w.Status));
             if (activeWorkflow is not null)
             {
                 Console.WriteLine($"[Workflow Guard] Duplicate generation ignored for workflow {activeWorkflow.Id}");
@@ -78,15 +84,15 @@ public class AiGenerationController : ControllerBase
                 LandSizePerches = requirement.LandSizePerches, ManualTerrainType = "flat",
                 PreferredBedrooms = requirement.Bedrooms, PreferredBathrooms = requirement.Bathrooms,
                 PreferredFloors = requirement.Floors, LandSizeCategory = requirement.LandSizeCategory,
-                StylePreference = requirement.HouseType, CreatedAt = DateTimeOffset.UtcNow,
-                UpdatedAt = DateTimeOffset.UtcNow
+                StylePreference = requirement.HouseType, CreatedAt = now,
+                UpdatedAt = now
             };
             Console.WriteLine($"[TRACE] saved bathroom count: {submission.PreferredBathrooms}");
             workflow = new WorkflowState
             {
                 Id = Guid.NewGuid(), LandSubmissionId = submission.Id, Status = "running",
-                ApprovalStatus = "not_requested", CreatedAt = DateTimeOffset.UtcNow,
-                UpdatedAt = DateTimeOffset.UtcNow
+                ApprovalStatus = "not_requested", CreatedAt = now,
+                UpdatedAt = now
             };
             _context.LandSubmissions.Add(submission);
             _context.WorkflowStates.Add(workflow);

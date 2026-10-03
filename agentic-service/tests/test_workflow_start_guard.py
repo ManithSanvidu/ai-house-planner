@@ -68,3 +68,28 @@ def test_running_guard_is_released_when_execution_finishes(monkeypatch):
     restarted = workflow_routes.start_workflow(request, next_tasks, api_key="test")
     assert restarted["duplicate"] is False
     assert len(next_tasks.tasks) == 1
+
+
+def test_terminal_execution_exception_persists_failure_and_releases_guard(monkeypatch):
+    workflow_id = uuid4()
+    tasks = BackgroundTasks()
+    workflow_routes.start_workflow(_request(workflow_id), tasks, api_key="test")
+    monkeypatch.setattr(
+        workflow_routes.app_graph, "invoke",
+        lambda _state: (_ for _ in ()).throw(RuntimeError("private terminal details")),
+    )
+    response = type("Response", (), {"raise_for_status": lambda self: None})()
+    captured = {}
+    def fake_patch(url, **kwargs):
+        captured.update(url=url, **kwargs)
+        return response
+    monkeypatch.setattr(workflow_routes.requests, "patch", fake_patch)
+
+    with pytest.raises(RuntimeError, match="private terminal details"):
+        workflow_routes.execute_workflow(tasks.tasks[0].args[0])
+
+    assert str(workflow_id) not in workflow_routes._running_workflows
+    assert captured["url"].endswith(f"/internal/workflows/{workflow_id}/status")
+    assert captured["json"] == {
+        "status": "failed", "reason": "Workflow execution did not complete."
+    }

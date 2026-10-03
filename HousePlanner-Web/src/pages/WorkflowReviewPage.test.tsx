@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { WorkflowReviewPage } from './WorkflowReviewPage';
@@ -106,5 +106,25 @@ describe('WorkflowReviewPage revision refresh', () => {
   expect(screen.queryByText('Technical Floor Plan')).toBeNull();
   expect(screen.queryByText('viewer:design-1')).toBeNull();
   expect(screen.queryByText('Rooms')).toBeNull();
+ });
+
+ it('stops polling and offers retry when workflow fails', async () => {
+  vi.useFakeTimers();
+  vi.mocked(workflowService.getWorkflowStatus).mockResolvedValue({
+   ...status(1), design: null, status: 'failed',
+   failureReason: 'Workflow execution did not complete.',
+  } as any);
+
+  render(<MemoryRouter initialEntries={['/dashboard/workflows/workflow-1']}>
+   <Routes><Route path="/dashboard/workflows/:id" element={<WorkflowReviewPage />} /></Routes>
+  </MemoryRouter>);
+
+  await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+  expect(screen.getByText('Workflow execution did not complete.')).toBeTruthy();
+  expect(screen.getByRole('link', { name: 'Try Again' }).getAttribute('href')).toBe('/dashboard/new-project');
+
+  await act(async () => { await vi.advanceTimersByTimeAsync(6_000); });
+  expect(workflowService.getWorkflowStatus).toHaveBeenCalledTimes(1);
+  vi.useRealTimers();
  });
 });

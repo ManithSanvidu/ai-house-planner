@@ -138,6 +138,32 @@ public partial class WorkflowControllerTests
     }
 
     [Fact]
+    public async Task GetWorkflowStatus_MarksOrphanedRunningWorkflowFailed()
+    {
+        var submission = new LandSubmission
+        {
+            Id = Guid.NewGuid(), ClientId = _clientId, LandSizePerches = 10,
+            PreferredBedrooms = 3, PreferredFloors = 1
+        };
+        var workflow = new WorkflowState
+        {
+            Id = Guid.NewGuid(), LandSubmissionId = submission.Id, LandSubmission = submission,
+            Status = "running", ApprovalStatus = "pending",
+            UpdatedAt = DateTimeOffset.UtcNow.Subtract(WorkflowExecutionPolicy.StaleAfter).AddMinutes(-1)
+        };
+        _dbContext.Add(workflow);
+        await _dbContext.SaveChangesAsync();
+
+        var result = await _controller.GetWorkflowStatus(workflow.Id);
+        var ok = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<WorkflowStatusResponseDto>(ok.Value);
+
+        Assert.Equal("failed", response.Status);
+        Assert.Equal(WorkflowExecutionPolicy.IncompleteFailureReason, response.FailureReason);
+        Assert.Equal("not_requested", workflow.ApprovalStatus);
+    }
+
+    [Fact]
     public async Task GetWorkflowStatus_ReturnsWorkflow_WithLatestDesign()
     {
         // Arrange

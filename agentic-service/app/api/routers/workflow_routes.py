@@ -4,8 +4,10 @@ from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Security
 from pydantic import BaseModel, ConfigDict
+import requests
 
 from app.api.dependencies import verify_api_key
+from app.config import ASPNET_API_URL, INTERNAL_API_KEY
 from app.design.generation.revision import preserve_revision_preferences
 from app.schemas.workflow_state import CoordinatorInput, WorkflowState
 from app.schemas.workflow_plan import create_default_house_planning_plan, PlanStepStatus
@@ -50,6 +52,20 @@ def execute_workflow(initial_state: WorkflowState):
     try:
         print(f"Starting workflow execution for {workflow_id}")
         app_graph.invoke(initial_state)
+    except Exception:
+        try:
+            requests.patch(
+                f"{ASPNET_API_URL.rstrip('/')}/internal/workflows/{workflow_id}/status",
+                json={"status": "failed", "reason": "Workflow execution did not complete."},
+                headers={"X-Internal-API-Key": INTERNAL_API_KEY},
+                timeout=10,
+            ).raise_for_status()
+        except Exception as persistence_error:
+            print(
+                f"[Workflow] Could not persist terminal failure for {workflow_id}: "
+                f"{type(persistence_error).__name__}"
+            )
+        raise
     finally:
         with _running_workflows_lock:
             _running_workflows.discard(workflow_id)

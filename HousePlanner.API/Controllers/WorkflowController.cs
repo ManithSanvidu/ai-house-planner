@@ -57,6 +57,16 @@ public class WorkflowController : ControllerBase
         if (!isCustomer && !isAdmin && !isConstructor) return Forbid();
         try
         {
+            var now = DateTimeOffset.UtcNow;
+            var staleCandidate = await _context.WorkflowStates
+                .Where(w => w.Id == id && (!isCustomer || w.LandSubmission.ClientId == user.Id.Value))
+                .FirstOrDefaultAsync();
+            if (staleCandidate is not null && WorkflowExecutionPolicy.IsStale(staleCandidate, now))
+            {
+                WorkflowExecutionPolicy.MarkStaleFailed(staleCandidate, now);
+                await _context.SaveChangesAsync();
+            }
+
             var workflow = await _context.WorkflowStates
                 .AsNoTracking()
                 .Where(w => w.Id == id && (!isCustomer || w.LandSubmission.ClientId == user.Id.Value))
