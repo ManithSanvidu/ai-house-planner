@@ -37,11 +37,11 @@ const MyDesignsPage: React.FC = () => {
   }
  };
 
- if (loading) return <div className="p-10 text-center">Loading saved designs…</div>;
+ if (loading) return <div className="p-4 md:p-10 text-center">Loading saved designs…</div>;
  return <div className="max-w-5xl mx-auto p-4 sm:p-7 pb-28">
-  <div className="flex items-center justify-between mb-6"><div><h1 className="text-3xl font-extrabold">My Designs</h1><p className="text-text-muted mt-1">Review and manage your saved house designs.</p></div><button onClick={load} aria-label="Refresh designs" className="p-3 rounded-xl border"><RefreshCw size={18}/></button></div>
+  <div className="flex items-center justify-between mb-6"><div><h1 className="text-2xl md:text-3xl font-extrabold">My Designs</h1><p className="text-text-muted mt-1">Review and manage your saved house designs.</p></div><button onClick={load} aria-label="Refresh designs" className="p-3 rounded-xl border"><RefreshCw size={18}/></button></div>
   {error && <div role="alert" className="p-4 bg-red-50 text-red-700 rounded-xl">{error}</div>}
-  {!projects.length && !error && <div className="rounded-2xl border border-dashed p-10 text-center"><p className="font-semibold">No designs yet</p><Link to="/dashboard/new-project" className="text-indigo-600">Create your first project</Link></div>}
+  {!projects.length && !error && <div className="rounded-2xl border border-dashed p-4 md:p-10 text-center"><p className="font-semibold">No designs yet</p><Link to="/dashboard/new-project" className="text-indigo-600">Create your first project</Link></div>}
   <div className="space-y-6">{projects.map(project => {
    const submitted = project.status === 'awaiting_architect_review' || project.architectReviewStatus === 'Pending' || project.architectReviewStatus === 'Under Review';
    const approved = project.status === 'approved';
@@ -89,7 +89,7 @@ const DesignCard = ({ design, workflow, onSubmit, onRemove }: { design: DesignHi
  return <article className={`flex flex-col h-full rounded-xl bg-surface bg-background border p-3 border-border`}>
   <div className="mb-2"><span className="text-xs uppercase text-text-secondary font-bold">Version {design.version}</span><h3 className="font-bold leading-tight">{formatTopology(design.topology)}</h3></div>
   {SHOW_TECHNICAL_PLAN && <MiniPlan design={design}/>}
-  <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-sm mb-3"><span>{countLabel(design.bedrooms,'Bedroom')}</span><span>{countLabel(design.bathrooms,'Bathroom')}</span><span>{countLabel(design.floorCount,'Floor')}</span><span>{formatArea(design.totalBuiltUpAreaSqft)}</span><span className="col-span-2 text-text-secondary">{formatGenerationMode(design.generationMode)}</span></div>
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-2 gap-y-1 text-sm mb-3"><span>{countLabel(design.bedrooms,'Bedroom')}</span><span>{countLabel(design.bathrooms,'Bathroom')}</span><span>{countLabel(design.floorCount,'Floor')}</span><span>{formatArea(design.totalBuiltUpAreaSqft)}</span><span className="col-span-2 text-text-secondary">{formatGenerationMode(design.generationMode)}</span></div>
 
   {submitSuccess && <div className="mb-3 rounded-lg bg-emerald-50 text-emerald-700 p-2 text-xs font-bold border border-emerald-200">Sent to architect successfully!</div>}
   {submitError && <div className="mb-3 rounded-lg bg-red-50 text-red-700 p-2 text-xs font-bold border border-red-200">{submitError}</div>}
@@ -111,7 +111,7 @@ const MiniPlan = ({ design }: { design: DesignHistoryDto }) => {
 const RemovalModal = ({ pending, onCancel, onConfirm }: { pending: PendingRemoval; onCancel: () => void; onConfirm: () => void }) => {
  const archive = pending.workflow.status === 'awaiting_architect_review' || pending.design.isArchitectApproved;
  const isApproved = pending.design.isArchitectApproved;
- return <div role="dialog" aria-label={`Delete Version ${pending.design.version}`} className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"><div className="max-w-md bg-surface rounded-2xl p-6"><h2 className="text-xl font-bold">{archive ? 'Archive' : 'Delete'} Version {pending.design.version}?</h2>
+ return <div role="dialog" aria-label={`Delete Version ${pending.design.version}`} className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"><div className="max-w-md bg-surface rounded-2xl p-4 md:p-6"><h2 className="text-xl font-bold">{archive ? 'Archive' : 'Delete'} Version {pending.design.version}?</h2>
  {isApproved ? (
   <p className="text-text-secondary dark:text-zinc-300 mt-3">This design has been architect approved. Removing it will hide/archive it from My Designs, but approval history will be preserved.</p>
  ) : (

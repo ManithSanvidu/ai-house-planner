@@ -65,8 +65,8 @@ export default function CustomerConstructionPage() {
     }
   };
 
-  if (loading) return <main className="mx-auto max-w-7xl p-4 sm:p-8 space-y-8 text-center text-text-muted py-20">Loading construction information...</main>;
-  if (error) return <main className="mx-auto max-w-7xl p-4 sm:p-8 space-y-8 text-center py-20"><p className="text-red-500 mb-4">{error}</p><button onClick={() => void load()} className="rounded-xl border px-4 py-2 hover:bg-surface-elevated">Try Again</button></main>;
+  if (loading) return <main className="mx-auto max-w-7xl p-4 sm:p-8 space-y-8 text-center text-text-muted py-4 md:py-20">Loading construction information...</main>;
+  if (error) return <main className="mx-auto max-w-7xl p-4 sm:p-8 space-y-8 text-center py-4 md:py-20"><p className="text-red-500 mb-4">{error}</p><button onClick={() => void load()} className="rounded-xl border px-4 py-2 hover:bg-surface-elevated">Try Again</button></main>;
 
   const design = designs.find(d => d.designId === selectedDesign);
   const pendingRequests = data?.pendingRequests || [];
@@ -78,7 +78,7 @@ export default function CustomerConstructionPage() {
     <main className="mx-auto max-w-5xl p-4 sm:p-8 space-y-8">
       <header className="flex items-center justify-between border-b pb-6 dark:border-gray-800">
         <div>
-          <h1 className="text-3xl font-bold mb-2">Construction</h1>
+          <h1 className="text-2xl md:text-3xl font-bold mb-2">Construction</h1>
           <p className="text-text-muted text-sm sm:text-base">Choose a constructor for an approved house design and track your construction requests.</p>
         </div>
         <button aria-label="Refresh construction" onClick={() => void load()} className="rounded-xl border p-3 hover:bg-surface-elevated transition-colors shrink-0 ml-4">
@@ -179,11 +179,11 @@ export default function CustomerConstructionPage() {
       )}
 
       {/* APPROVED DESIGNS & CONSTRUCTOR SELECTION */}
-      <section className="bg-surface border rounded-3xl p-6 sm:p-8 shadow-sm">
+      <section className="bg-surface border rounded-3xl p-4 md:p-6 sm:p-8 shadow-sm">
         <h2 className="text-2xl font-bold mb-6">Start Construction</h2>
 
         {!designs.length ? (
-          <div className="text-center py-10 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-dashed border-gray-300 dark:border-gray-700">
+          <div className="text-center py-4 md:py-10 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-dashed border-gray-300 dark:border-gray-700">
             <p className="text-text-muted">No approved designs are available yet.</p>
             <p className="text-sm text-text-muted mt-2">Once an architect approves your design, it will appear here.</p>
           </div>

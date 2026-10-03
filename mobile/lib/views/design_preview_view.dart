@@ -140,19 +140,7 @@ class _DesignPreviewViewState extends ConsumerState<DesignPreviewView> {
                 ),
                 child: Column(
                   children: [
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.indigo,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        ),
-                        onPressed: () => _handleApproval('approve'),
-                        child: const Text('Approve & Proceed to Costing', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
+
                     SizedBox(
                       width: double.infinity,
                       height: 50,

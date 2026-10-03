@@ -209,7 +209,7 @@ export const WorkflowReviewPage: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[calc(100vh-65px)] bg-gradient-to-br from-slate-50 to-zinc-100">
-        <div className="text-center p-8 bg-surface/60 backdrop-blur-md rounded-2xl shadow-sm border border-white">
+        <div className="text-center p-4 md:p-8 bg-surface/60 backdrop-blur-md rounded-2xl shadow-sm border border-white">
           <div className="relative inline-block mb-4">
             <div className="w-12 h-12 border-4 border-indigo-200 rounded-full"></div>
             <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin absolute top-0 left-0"></div>
@@ -223,9 +223,9 @@ export const WorkflowReviewPage: React.FC = () => {
   if (error) {
     return (
       <div className="flex items-center justify-center h-[calc(100vh-65px)] bg-gradient-to-br from-red-50 to-red-100/50">
-        <div className="bg-surface/80 backdrop-blur-xl p-10 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-red-100 max-w-md text-center">
+        <div className="bg-surface/80 backdrop-blur-xl p-4 md:p-10 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-red-100 max-w-md text-center">
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
-            <div className="text-red-500 text-3xl font-bold">!</div>
+            <div className="text-red-500 text-2xl md:text-3xl font-bold">!</div>
           </div>
           <h2 className="text-2xl font-bold text-zinc-900 mb-3 tracking-tight">Error Loading Design</h2>
           <p className="text-red-600 text-sm font-medium bg-red-50 p-4 rounded-xl">{error}</p>
@@ -243,7 +243,7 @@ export const WorkflowReviewPage: React.FC = () => {
     }
 
     if (failureData?.code === 'BUILDABLE_ENVELOPE_VIOLATION') {
-      return <div role="alert" className="p-8 max-w-xl mx-auto text-center mt-10 bg-surface rounded-3xl shadow-sm border border-border">
+      return <div role="alert" className="p-4 md:p-8 max-w-xl mx-auto text-center mt-10 bg-surface rounded-3xl shadow-sm border border-border">
         <h2 className="text-2xl font-bold text-red-600 mb-3">Design generation could not complete</h2>
         <p className="text-text-secondary mb-6">{failureData.message}</p>
         <div className="flex justify-center gap-4">
@@ -253,7 +253,7 @@ export const WorkflowReviewPage: React.FC = () => {
       </div>;
     }
 
-    return <div role="alert" className="p-8 text-center mt-10 max-w-md mx-auto bg-surface rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-red-100">
+    return <div role="alert" className="p-4 md:p-8 text-center mt-10 max-w-md mx-auto bg-surface rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-red-100">
       <h2 className="text-2xl font-bold text-red-600 mb-3">Design generation could not complete</h2>
       <p className="text-text-secondary">{workflow.failureReason || (workflow.terrainType === 'unknown'
         ? 'Provide a manual terrain classification and submit again.'
@@ -265,10 +265,10 @@ export const WorkflowReviewPage: React.FC = () => {
   if (!workflow || !workflow.design) {
     return (
       <div className="flex items-center justify-center h-[calc(100vh-65px)] bg-gradient-to-br from-slate-50 to-zinc-100 relative overflow-hidden">
-        <div className="absolute top-1/4 right-1/3 w-64 h-64 bg-indigo-200/40 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-blob"></div>
-        <div className="bg-surface/90 backdrop-blur-xl p-12 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 max-w-md text-center relative z-10">
+        <div className="absolute top-1/4 right-1/3 w-full max-w-64 h-64 bg-indigo-200/40 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-blob"></div>
+        <div className="bg-surface/90 backdrop-blur-xl p-4 md:p-12 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 max-w-md text-center relative z-10">
           <div className="w-20 h-20 bg-indigo-50 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-inner border border-indigo-100/50">
-            <span className="text-4xl">🏗️</span>
+            <span className="text-2xl md:text-4xl">🏗️</span>
           </div>
           <h2 className="text-2xl font-bold text-zinc-900 mb-3 tracking-tight">Design In Progress</h2>
           <p className="text-text-muted text-sm leading-relaxed mb-6 font-medium">
@@ -322,19 +322,19 @@ export const WorkflowReviewPage: React.FC = () => {
 
   return (
     <div className="min-h-[calc(100vh-65px)] bg-slate-50 text-zinc-900">
-      <div className="max-w-6xl mx-auto px-4 py-8">
+      <div className="max-w-6xl mx-auto px-4 py-4 md:py-8">
         {/* Tabs for Design vs Construction Plan */}
         <div className="flex gap-2 mb-6 bg-slate-200/50 p-1.5 rounded-xl w-fit">
           <button
             onClick={() => setActiveTab('floorplan')}
-            className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'floorplan' ? 'bg-white text-indigo-600 shadow-sm' : 'text-text-muted hover:text-slate-700'
+            className={`px-4 md:px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'floorplan' ? 'bg-white text-indigo-600 shadow-sm' : 'text-text-muted hover:text-slate-700'
               }`}
           >
             Architectural Review
           </button>
           <button
             onClick={() => setActiveTab('construction')}
-            className={`px-6 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${activeTab === 'construction' ? 'bg-white text-indigo-600 shadow-sm' : 'text-text-muted hover:text-slate-700'
+            className={`px-4 md:px-6 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${activeTab === 'construction' ? 'bg-white text-indigo-600 shadow-sm' : 'text-text-muted hover:text-slate-700'
               }`}
           >
             🚧 Construction Plan
@@ -345,10 +345,10 @@ export const WorkflowReviewPage: React.FC = () => {
           <div className="space-y-8 animate-fade-in">
 
             {/* Section A: AI Home Design */}
-            <section className="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-slate-200">
+            <section className="bg-white rounded-3xl p-4 md:p-6 md:p-8 shadow-sm border border-slate-200">
               <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
                 <div>
-                  <h1 className="text-3xl font-bold tracking-tight text-slate-900">Architectural Visualization Preview</h1>
+                  <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900">Architectural Visualization Preview</h1>
                   <p className="text-slate-500 mt-1">This image is a visual rendering generated from the validated deterministic floor plan.</p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -376,7 +376,7 @@ export const WorkflowReviewPage: React.FC = () => {
                     <span className="text-sm font-medium">Generating AI visualization...</span>
                   </div>
                 ) : (
-                  <div className="text-zinc-400 flex flex-col items-center gap-2 text-center p-6">
+                  <div className="text-zinc-400 flex flex-col items-center gap-2 text-center p-4 md:p-6">
                     <span className="text-lg font-bold text-zinc-300">AI visualization unavailable</span>
                     <span className="text-sm">Your validated deterministic floor plan is available below.</span>
                   </div>
@@ -384,9 +384,9 @@ export const WorkflowReviewPage: React.FC = () => {
               </div>
             </section>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
               {/* Section B: Your Request */}
-              <section className="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-slate-200 h-fit">
+              <section className="bg-white rounded-3xl p-4 md:p-6 md:p-8 shadow-sm border border-slate-200 h-fit">
                 <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
                   <span className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">📋</span>
                   Your Home Requirements
@@ -424,7 +424,7 @@ export const WorkflowReviewPage: React.FC = () => {
               </section>
 
               {/* Section C: Generated Design */}
-              <section className="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-slate-200 h-fit">
+              <section className="bg-white rounded-3xl p-4 md:p-6 md:p-8 shadow-sm border border-slate-200 h-fit">
                 <h2 className="text-xl font-bold mb-1 flex items-center gap-2">
                   <span className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-500">✨</span>
                   Generated Floor Plan
@@ -448,7 +448,7 @@ export const WorkflowReviewPage: React.FC = () => {
             {showTechnicalPlan && (
               <section className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
                 <details className="group">
-                  <summary className="p-6 md:p-8 cursor-pointer list-none flex items-center justify-between font-bold text-xl hover:bg-slate-50 transition-colors focus-visible:outline-none">
+                  <summary className="p-4 md:p-6 md:p-8 cursor-pointer list-none flex items-center justify-between font-bold text-xl hover:bg-slate-50 transition-colors focus-visible:outline-none">
                     <div className="flex items-center gap-2">
                       <span className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-white text-sm">📐</span>
                       Architect / Developer View
@@ -456,7 +456,7 @@ export const WorkflowReviewPage: React.FC = () => {
                     <span className="text-slate-400 group-open:rotate-180 transition-transform duration-300">▼</span>
                   </summary>
 
-                  <div className="p-6 md:p-8 border-t border-slate-100 bg-slate-50">
+                  <div className="p-4 md:p-6 md:p-8 border-t border-slate-100 bg-slate-50">
                     <p className="text-sm text-slate-500 mb-6">Deterministic geometry generated from LayoutJson.</p>
 
                     <div className="overflow-x-auto bg-white rounded-xl border border-slate-200 shadow-sm mb-8">
@@ -507,16 +507,16 @@ export const WorkflowReviewPage: React.FC = () => {
           </div>
         ) : (
           // Construction Plan View
-          <div className="animate-fade-in bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-slate-200">
+          <div className="animate-fade-in bg-white rounded-3xl p-4 md:p-6 md:p-8 shadow-sm border border-slate-200">
             {!workflow.constructionPlan ? (
-              <div className="text-center p-12 bg-slate-50 rounded-2xl border border-dashed border-slate-300">
+              <div className="text-center p-4 md:p-12 bg-slate-50 rounded-2xl border border-dashed border-slate-300">
                 <p className="text-text-muted font-medium">No construction plan has been generated for this design yet.</p>
               </div>
             ) : (
               <div className="space-y-8">
 
                 {/* Summary Header */}
-                <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="bg-slate-50 p-4 md:p-6 rounded-2xl border border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div>
                     <div className="flex items-center gap-3 mb-1">
                       <h2 className="text-2xl font-bold text-slate-800">Project Timeline Estimate</h2>
@@ -529,7 +529,7 @@ export const WorkflowReviewPage: React.FC = () => {
                     <p className="text-slate-500 text-sm">AI-generated construction roadmap based on architectural design</p>
                   </div>
                   <div className="text-right">
-                    <div className="text-3xl font-black text-indigo-600">
+                    <div className="text-2xl md:text-3xl font-black text-indigo-600">
                       {workflow.constructionPlan.project_summary.estimated_duration_days} <span className="text-lg text-slate-500 font-medium">days</span>
                     </div>
                     <div className="text-sm font-bold text-slate-400">
@@ -539,7 +539,7 @@ export const WorkflowReviewPage: React.FC = () => {
                 </div>
 
                 {/* Target & Status */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
                     <h4 className="text-xs uppercase tracking-widest text-slate-400 font-bold mb-1">Target Duration</h4>
                     {isEditingPlan ? (
@@ -600,7 +600,7 @@ export const WorkflowReviewPage: React.FC = () => {
                           <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-3">
                               <div><label className="text-xs font-bold text-slate-500 uppercase">Phase Name</label><input type="text" value={phaseFormData.name} onChange={e => setPhaseFormData({ ...phaseFormData, name: e.target.value })} className="w-full border border-slate-200 bg-slate-50 rounded-lg px-3 py-2 text-sm mt-1" /></div>
-                              <div className="grid grid-cols-3 gap-2">
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                                 <div><label className="text-xs font-bold text-slate-500 uppercase">Duration</label><input type="number" value={phaseFormData.duration_days} onChange={e => setPhaseFormData({ ...phaseFormData, duration_days: Number(e.target.value) })} className="w-full border border-slate-200 bg-slate-50 rounded-lg px-3 py-2 text-sm mt-1" /></div>
                                 <div><label className="text-xs font-bold text-slate-500 uppercase">Start Day</label><input type="number" value={phaseFormData.start_day} onChange={e => setPhaseFormData({ ...phaseFormData, start_day: Number(e.target.value) })} className="w-full border border-slate-200 bg-slate-50 rounded-lg px-3 py-2 text-sm mt-1" /></div>
                                 <div><label className="text-xs font-bold text-slate-500 uppercase">End Day</label><input type="number" value={phaseFormData.end_day} onChange={e => setPhaseFormData({ ...phaseFormData, end_day: Number(e.target.value) })} className="w-full border border-slate-200 bg-slate-50 rounded-lg px-3 py-2 text-sm mt-1" /></div>
@@ -625,7 +625,7 @@ export const WorkflowReviewPage: React.FC = () => {
                                 </p>
                               </div>
                             </div>
-                            <div className="flex items-center gap-6">
+                            <div className="flex items-center gap-4 md:gap-6">
                               <div className="text-right">
                                 <div className="font-bold text-slate-800">{phase.duration_days} days</div>
                                 <div className="text-xs font-bold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-1 rounded-md mt-1 inline-block">
@@ -650,7 +650,7 @@ export const WorkflowReviewPage: React.FC = () => {
                         <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div className="space-y-3">
                             <div><label className="text-xs font-bold text-slate-500 uppercase">Phase Name</label><input type="text" value={phaseFormData.name} onChange={e => setPhaseFormData({ ...phaseFormData, name: e.target.value })} className="w-full border border-slate-200 bg-slate-50 rounded-lg px-3 py-2 text-sm mt-1" placeholder="e.g. Foundation" /></div>
-                            <div className="grid grid-cols-3 gap-2">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                               <div><label className="text-xs font-bold text-slate-500 uppercase">Duration</label><input type="number" value={phaseFormData.duration_days} onChange={e => setPhaseFormData({ ...phaseFormData, duration_days: Number(e.target.value) })} className="w-full border border-slate-200 bg-slate-50 rounded-lg px-3 py-2 text-sm mt-1" /></div>
                               <div><label className="text-xs font-bold text-slate-500 uppercase">Start Day</label><input type="number" value={phaseFormData.start_day} onChange={e => setPhaseFormData({ ...phaseFormData, start_day: Number(e.target.value) })} className="w-full border border-slate-200 bg-slate-50 rounded-lg px-3 py-2 text-sm mt-1" /></div>
                               <div><label className="text-xs font-bold text-slate-500 uppercase">End Day</label><input type="number" value={phaseFormData.end_day} onChange={e => setPhaseFormData({ ...phaseFormData, end_day: Number(e.target.value) })} className="w-full border border-slate-200 bg-slate-50 rounded-lg px-3 py-2 text-sm mt-1" /></div>
@@ -673,8 +673,8 @@ export const WorkflowReviewPage: React.FC = () => {
                 </div>
 
                 {/* Critical Path & Notes */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-                  <div className="bg-indigo-50 p-6 rounded-2xl border border-indigo-100">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mt-8">
+                  <div className="bg-indigo-50 p-4 md:p-6 rounded-2xl border border-indigo-100">
                     <h4 className="font-bold text-indigo-900 mb-4">Critical Path</h4>
                     <ol className="list-decimal list-inside text-sm text-indigo-800 space-y-2 font-medium">
                       {workflow.constructionPlan.critical_path.map((cp: any) => <li key={cp}>{cp}</li>)}
@@ -683,7 +683,7 @@ export const WorkflowReviewPage: React.FC = () => {
 
                   <div className="space-y-6">
                     {workflow.constructionPlan.optimization_notes.length > 0 && (
-                      <div className="bg-amber-50 p-6 rounded-2xl border border-amber-100">
+                      <div className="bg-amber-50 p-4 md:p-6 rounded-2xl border border-amber-100">
                         <h4 className="font-bold text-amber-900 mb-4">Optimization Notes</h4>
                         <ul className="list-disc list-inside text-sm text-amber-800 space-y-2 font-medium">
                           {workflow.constructionPlan.optimization_notes.map((note: any) => <li key={note}>{note}</li>)}
@@ -691,7 +691,7 @@ export const WorkflowReviewPage: React.FC = () => {
                       </div>
                     )}
 
-                    <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                    <div className="bg-slate-50 p-4 md:p-6 rounded-2xl border border-slate-200">
                       <h4 className="font-bold text-slate-700 mb-4">AI Assumptions</h4>
                       <ul className="list-disc list-inside text-sm text-slate-600 space-y-2 font-medium">
                         {workflow.constructionPlan.assumptions.map((assumption: any) => <li key={assumption}>{assumption}</li>)}

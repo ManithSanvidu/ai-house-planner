@@ -48,11 +48,11 @@ export default function AdminPlansPage() {
   }, [plans, searchQuery]);
 
   return (
-    <main className="p-6 md:p-10 max-w-7xl mx-auto text-zinc-900 dark:text-text-primary">
+    <main className="p-4 md:p-6 md:p-10 max-w-7xl mx-auto text-zinc-900 dark:text-text-primary">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
           <p className="text-indigo-500 font-semibold text-sm mb-1 uppercase tracking-wider">Admin</p>
-          <h1 className="text-3xl font-bold">Plan Catalogue</h1>
+          <h1 className="text-2xl md:text-3xl font-bold">Plan Catalogue</h1>
           <p className="text-sm text-text-secondary mt-1">Manage the house plans available in the system.</p>
         </div>
         <Link
@@ -95,12 +95,12 @@ export default function AdminPlansPage() {
 
       <div className="bg-surface border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden shadow-sm">
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 text-text-secondary">
+          <div className="flex flex-col items-center justify-center py-4 md:py-20 text-text-secondary">
             <Loader2 className="animate-spin mb-4" size={32} />
             <p>Loading catalogue...</p>
           </div>
         ) : filteredPlans.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-text-secondary text-center px-4">
+          <div className="flex flex-col items-center justify-center py-4 md:py-20 text-text-secondary text-center px-4">
             <div className="bg-gray-100 dark:bg-gray-800/50 p-4 rounded-full mb-4">
               <Search size={32} className="text-gray-400" />
             </div>
@@ -112,16 +112,16 @@ export default function AdminPlansPage() {
             <table className="w-full text-sm text-left">
               <thead className="bg-gray-50 dark:bg-gray-900/50 text-text-secondary border-b border-gray-200 dark:border-gray-800">
                 <tr>
-                  <th className="px-6 py-4 font-medium">Plan</th>
-                  <th className="px-6 py-4 font-medium">Configuration</th>
-                  <th className="px-6 py-4 font-medium">Status</th>
-                  <th className="px-6 py-4 font-medium text-right">Actions</th>
+                  <th className="px-4 md:px-6 py-4 font-medium">Plan</th>
+                  <th className="px-4 md:px-6 py-4 font-medium">Configuration</th>
+                  <th className="px-4 md:px-6 py-4 font-medium">Status</th>
+                  <th className="px-4 md:px-6 py-4 font-medium text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
                 {filteredPlans.map(p => (
                   <tr key={p.id} className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${!p.isActive ? 'opacity-75 bg-gray-50/50 dark:bg-gray-900/20' : ''}`}>
-                    <td className="px-6 py-4">
+                    <td className="px-4 md:px-6 py-4">
                       <div className="flex items-center gap-4">
                         <div className="w-16 h-16 rounded-lg bg-gray-100 dark:bg-gray-800 flex-shrink-0 flex items-center justify-center border border-gray-200 dark:border-gray-700 overflow-hidden">
                           {p.thumbnailUrl ? (
@@ -138,14 +138,14 @@ export default function AdminPlansPage() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 md:px-6 py-4">
                       <div className="flex flex-col gap-1.5 text-xs font-medium text-gray-600 dark:text-gray-300">
                         <span className="bg-gray-100 dark:bg-gray-800 px-2.5 py-1 rounded-md w-max">{p.bedrooms} {p.bedrooms === 1 ? 'Bedroom' : 'Bedrooms'}</span>
                         <span className="bg-gray-100 dark:bg-gray-800 px-2.5 py-1 rounded-md w-max">{p.bathrooms} {p.bathrooms === 1 ? 'Bathroom' : 'Bathrooms'}</span>
                         <span className="bg-gray-100 dark:bg-gray-800 px-2.5 py-1 rounded-md w-max">{p.floorCount} {p.floorCount === 1 ? 'Floor' : 'Floors'}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 md:px-6 py-4">
                       {p.isActive ? (
                         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50">
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
@@ -158,7 +158,7 @@ export default function AdminPlansPage() {
                         </span>
                       )}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 md:px-6 py-4">
                       <div className="flex items-center justify-end gap-3">
                         <Link
                           to={`/dashboard/admin/plans/${p.id}/edit`}

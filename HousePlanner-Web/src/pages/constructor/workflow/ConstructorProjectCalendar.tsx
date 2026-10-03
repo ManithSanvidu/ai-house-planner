@@ -156,7 +156,7 @@ export const ConstructorProjectCalendar: React.FC<ConstructorProjectCalendarProp
     </div>
    </div>
    
-   <div className="grid grid-cols-7 gap-0">
+   <div className="grid grid-cols-1 md:grid-cols-7 gap-0">
     {dayNames.map(day => (
      <div key={day} className="text-center font-semibold text-xs py-2 text-text-muted uppercase tracking-wider border border-border bg-gray-50 dark:bg-gray-800/50">
       {day}

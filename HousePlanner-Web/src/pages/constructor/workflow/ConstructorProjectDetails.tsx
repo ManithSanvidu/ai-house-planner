@@ -99,7 +99,7 @@ export const ConstructorProjectDetails: React.FC = () => {
   }
 
   if (!project) {
-    return <div className="p-8 text-center text-text-muted">Project not found or unauthorized.</div>;
+    return <div className="p-4 md:p-8 text-center text-text-muted">Project not found or unauthorized.</div>;
   }
 
   // Calculate Progress and Current Phase
@@ -124,9 +124,9 @@ export const ConstructorProjectDetails: React.FC = () => {
       </Link>
 
       {/* Project Overview */}
-      <div className="overflow-hidden rounded-2xl bg-surface border border-border-strong shadow-lg p-6">
+      <div className="overflow-hidden rounded-2xl bg-surface border border-border-strong shadow-lg p-4 md:p-6">
         <h2 className="text-xl font-bold text-text-primary mb-6">Project Overview</h2>
-        <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 sm:grid-cols-4">
           <div className="bg-surface-elevated/50 rounded-xl p-4 border border-border/50">
             <p className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1">Status</p>
             <p className="font-bold text-text-primary capitalize">{project.status}</p>
@@ -163,7 +163,7 @@ export const ConstructorProjectDetails: React.FC = () => {
 
       {/* Construction Phases */}
       <div className="overflow-hidden rounded-2xl bg-surface border border-border-strong shadow-lg">
-        <div className="px-6 py-5 border-b border-border-strong flex justify-between items-center bg-surface-elevated/30">
+        <div className="px-4 md:px-6 py-5 border-b border-border-strong flex justify-between items-center bg-surface-elevated/30">
           <h2 className="text-lg font-bold text-text-primary">Construction Phases Schedule</h2>
           <div className="text-xs font-medium text-text-secondary flex gap-4">
             <span>Total Planned: {project.plannedTotalDurationDays}d</span>
@@ -175,7 +175,7 @@ export const ConstructorProjectDetails: React.FC = () => {
 
         <div className="divide-y divide-border dark:divide-slate-800/50">
           {project.constructionPhases.map((phase: ConstructionPhase) => (
-            <div key={phase.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between px-6 py-5 gap-4 hover:bg-slate-50 dark:hover:bg-surface-elevated/30 transition-colors">
+            <div key={phase.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between px-4 md:px-6 py-5 gap-4 hover:bg-slate-50 dark:hover:bg-surface-elevated/30 transition-colors">
               <div className="flex items-start gap-4">
                 <div className="flex-shrink-0 w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-xs font-bold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-transparent shadow-sm">
                   {phase.sequenceOrder.toString().padStart(2, '0')}
@@ -205,7 +205,7 @@ export const ConstructorProjectDetails: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex items-center gap-6 sm:ml-auto">
+              <div className="flex items-center gap-4 md:gap-6 sm:ml-auto">
                 {/* Duration Edit Block */}
                 {editingPhaseId === phase.id ? (
                   <div className="flex items-center gap-2">
@@ -297,14 +297,14 @@ export const ConstructorProjectDetails: React.FC = () => {
             </div>
           ))}
           {project.constructionPhases.length === 0 && (
-            <div className="px-6 py-8 text-center text-text-muted">No phases defined.</div>
+            <div className="px-4 md:px-6 py-4 md:py-8 text-center text-text-muted">No phases defined.</div>
           )}
         </div>
       </div>
 
       {/* Daily Logbook */}
       <div className="overflow-hidden rounded-2xl bg-surface border border-border-strong shadow-lg">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-6 py-5 border-b border-border-strong gap-4 bg-surface-elevated/30">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-4 md:px-6 py-5 border-b border-border-strong gap-4 bg-surface-elevated/30">
           <div>
             <h2 className="text-lg font-bold text-text-primary">Daily Site Progress</h2>
             <p className="text-xs text-text-secondary mt-1">Record daily work, workforce, materials, challenges, and progress.</p>
@@ -345,7 +345,7 @@ export const ConstructorProjectDetails: React.FC = () => {
           </div>
         </div>
 
-        <div className="p-6">
+        <div className="p-4 md:p-6">
           {showForm ? (
             <DailyLogbookForm
               projectId={projectId!}
@@ -372,7 +372,7 @@ export const ConstructorProjectDetails: React.FC = () => {
           ) : (
             <div className="space-y-4">
               {logs.length === 0 ? (
-                <div className="text-center py-12 text-text-muted bg-surface-elevated/30 rounded-xl border border-border-strong border-dashed">
+                <div className="text-center py-4 md:py-12 text-text-muted bg-surface-elevated/30 rounded-xl border border-border-strong border-dashed">
                   No daily logs have been recorded yet.
                 </div>
               ) : (
@@ -413,7 +413,7 @@ export const ConstructorProjectDetails: React.FC = () => {
                           <p className="text-text-secondary">{log.workCompleted}</p>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                           {log.challenges && (
                             <div>
                               <span className="font-semibold text-text-secondary block mb-1 flex items-center gap-1.5">
@@ -432,7 +432,7 @@ export const ConstructorProjectDetails: React.FC = () => {
                           )}
                         </div>
 
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4 p-4 bg-background rounded-xl border border-border-strong/80">
+                        <div className="grid grid-cols-1 md:grid-cols-2 sm:grid-cols-4 gap-4 mt-4 p-4 bg-background rounded-xl border border-border-strong/80">
                           <div>
                             <p className="text-[10px] uppercase font-bold tracking-widest text-text-muted mb-1">Progress</p>
                             <p className="font-bold text-text-primary text-base">{log.progressPercentage}%</p>

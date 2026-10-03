@@ -78,7 +78,7 @@ export const ConstructorWorkflowDashboard: React.FC = () => {
  const completedCount = projects.length - activeProjects.length;
 
  return (
-  <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+  <div className="mx-auto max-w-7xl px-4 py-4 md:py-8 sm:px-6 lg:px-8">
    <div className="mb-8 flex items-center justify-between">
     <div>
      <h1 className="text-2xl font-bold text-gray-900 dark:text-text-primary">My Workflow</h1>
@@ -92,7 +92,7 @@ export const ConstructorWorkflowDashboard: React.FC = () => {
    </div>
 
    {/* Construction Requests Section */}
-   <section className="mb-8 rounded-2xl border bg-surface p-6 bg-surface dark:border-border-strong">
+   <section className="mb-8 rounded-2xl border bg-surface p-4 md:p-6 bg-surface dark:border-border-strong">
     <h2 className="text-lg font-semibold mb-4">Construction Requests</h2>
     {requestsError ? (
      <div className="text-center py-4">
@@ -133,8 +133,8 @@ export const ConstructorWorkflowDashboard: React.FC = () => {
    </section>
 
    {/* Stats */}
-   <div className="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-    <div className="rounded-2xl border border-gray-100 bg-surface p-6 shadow-sm dark:border-border-strong bg-surface">
+   <div className="mb-8 grid grid-cols-1 gap-4 md:gap-6 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="rounded-2xl border border-gray-100 bg-surface p-4 md:p-6 shadow-sm dark:border-border-strong bg-surface">
      <div className="flex items-center gap-4">
       <div className="rounded-xl bg-indigo-50 p-3 dark:bg-indigo-900/30">
        <Clock className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
@@ -146,7 +146,7 @@ export const ConstructorWorkflowDashboard: React.FC = () => {
      </div>
     </div>
 
-    <div className="rounded-2xl border border-gray-100 bg-surface p-6 shadow-sm dark:border-border-strong bg-surface">
+    <div className="rounded-2xl border border-gray-100 bg-surface p-4 md:p-6 shadow-sm dark:border-border-strong bg-surface">
      <div className="flex items-center gap-4">
       <div className="rounded-xl bg-blue-50 p-3 dark:bg-blue-900/30">
        <Briefcase className="h-6 w-6 text-blue-600 dark:text-blue-400" />
@@ -158,7 +158,7 @@ export const ConstructorWorkflowDashboard: React.FC = () => {
      </div>
     </div>
 
-    <div className="rounded-2xl border border-gray-100 bg-surface p-6 shadow-sm dark:border-border-strong bg-surface">
+    <div className="rounded-2xl border border-gray-100 bg-surface p-4 md:p-6 shadow-sm dark:border-border-strong bg-surface">
      <div className="flex items-center gap-4">
       <div className="rounded-xl bg-amber-50 p-3 dark:bg-amber-900/30">
        <AlertTriangle className="h-6 w-6 text-amber-600 dark:text-amber-400" />
@@ -170,7 +170,7 @@ export const ConstructorWorkflowDashboard: React.FC = () => {
      </div>
     </div>
     
-    <div className="rounded-2xl border border-gray-100 bg-surface p-6 shadow-sm dark:border-border-strong bg-surface">
+    <div className="rounded-2xl border border-gray-100 bg-surface p-4 md:p-6 shadow-sm dark:border-border-strong bg-surface">
      <div className="flex items-center gap-4">
       <div className="rounded-xl bg-green-50 p-3 dark:bg-green-900/30">
        <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-400" />
@@ -185,7 +185,7 @@ export const ConstructorWorkflowDashboard: React.FC = () => {
 
    {/* Active Projects List */}
    <div className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm dark:border-border-strong bg-surface">
-    <div className="border-b border-border bg-gray-50 px-6 py-4 dark:border-border-strong bg-surface-elevated/50">
+    <div className="border-b border-border bg-gray-50 px-4 md:px-6 py-4 dark:border-border-strong bg-surface-elevated/50">
      <h2 className="text-lg font-semibold text-gray-900 dark:text-text-primary">Active Projects</h2>
     </div>
     <ul className="divide-y divide-gray-200 dark:divide-gray-800">
@@ -193,7 +193,7 @@ export const ConstructorWorkflowDashboard: React.FC = () => {
       <li key={project.id}>
        <Link
         to={`/constructor/projects/${project.id}`}
-        className="block p-6 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+        className="block p-4 md:p-6 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
        >
         <div className="flex items-center justify-between">
          <div>
@@ -218,7 +218,7 @@ export const ConstructorWorkflowDashboard: React.FC = () => {
      ))}
      
      {projects.length === 0 && (
-      <li className="p-8 text-center text-text-secondary">
+      <li className="p-4 md:p-8 text-center text-text-secondary">
        No active projects. Accept a construction request above to get started.
       </li>
      )}
