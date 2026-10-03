@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
-import '../providers/workflow_provider.dart';
 
 class DashboardView extends ConsumerWidget {
   const DashboardView({super.key});
@@ -12,329 +11,359 @@ class DashboardView extends ConsumerWidget {
     final authState = ref.watch(authProvider);
     final email = authState.value?.email ?? 'User';
     final name = email.split('@').first;
-    final displayName = name[0].toUpperCase() + name.substring(1);
-    final dashboardDataState = ref.watch(customerDashboardProvider);
+    final displayName = name.isNotEmpty ? name[0].toUpperCase() + name.substring(1) : 'User';
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FB),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('Good afternoon', style: TextStyle(color: Color(0xFF8B92A5), fontSize: 14, fontWeight: FontWeight.w500)),
-                      Text(displayName, style: const TextStyle(color: Color(0xFF1E2332), fontSize: 28, fontWeight: FontWeight.w800)),
-                      const Text('Turn your land into a home', style: TextStyle(color: Color(0xFF8B92A5), fontSize: 14, fontWeight: FontWeight.w500)),
-                    ],
-                  ),
-                  CircleAvatar(
-                    radius: 24,
-                    backgroundColor: const Color(0xFFE8E5F7),
-                    child: Text(
-                      displayName[0],
-                      style: const TextStyle(color: Color(0xFF5D54C4), fontWeight: FontWeight.w700, fontSize: 18),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-
-              // Hero Card
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF2F1FA),
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          flex: 3,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Let’s plan your\ndream home',
-                                style: TextStyle(
-                                  fontSize: 26,
-                                  fontWeight: FontWeight.w800,
-                                  color: Color(0xFF1E2332),
-                                  height: 1.1,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              const Text(
-                                'From land details to architectural plans and construction timelines — all in one place.',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: Color(0xFF6B7280),
-                                  height: 1.4,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          flex: 2,
-                          child: Container(
-                            height: 100,
-                            decoration: const BoxDecoration(
-                              shape: BoxShape.circle,
-                              image: DecorationImage(
-                                image: NetworkImage('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80'),
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: () => context.go('/intake'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF1E2332),
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              elevation: 0,
-                            ),
-                            child: const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.add, size: 18),
-                                SizedBox(width: 6),
-                                Text('Start new project', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () => context.go('/plans'),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: const Color(0xFF4338CA),
-                              backgroundColor: Colors.transparent,
-                              side: const BorderSide(color: Color(0xFFE5E7EB), width: 1.5),
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                            ),
-                            child: const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.folder_outlined, size: 18),
-                                SizedBox(width: 6),
-                                Text('Browse library', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+      backgroundColor: const Color(0xFFF8FAFC),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Welcome Header
+            Text('Welcome back, $displayName', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+            const SizedBox(height: 4),
+            const Text('Here’s an overview of your home planning journey.', style: TextStyle(fontSize: 14, color: Color(0xFF64748B))),
+            const SizedBox(height: 24),
+            
+            // Call to Actions
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.chat_bubble_outline, size: 18),
+                label: const Text('ASK AI ARCHITECT', style: TextStyle(fontWeight: FontWeight.bold)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF4F46E5),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
                 ),
               ),
-              const SizedBox(height: 24),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => context.go('/plans'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF475569),
+                      side: const BorderSide(color: Color(0xFFCBD5E1)),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text('BROWSE PLANS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => context.go('/intake'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF0F172A),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
+                    ),
+                    child: const Text('START NEW PROJECT', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 32),
 
-              // Web-like Dashboard Content
-              dashboardDataState.when(
-                loading: () => const Center(child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator())),
-                error: (err, stack) => Center(child: Text('Failed to load dashboard data: $err')),
-                data: (data) {
-                  final List<dynamic> approvedDesigns = data['approvedDesigns'] ?? [];
-                  final List<dynamic> allDesigns = data['allDesigns'] ?? [];
-                  final pendingCount = allDesigns.where((p) => p['status'] == 'awaiting_architect_review').length;
+            // Stats
+            Row(
+              children: [
+                _buildStatCard('Approved Designs', '1', Icons.check_circle_outline, Colors.green),
+                const SizedBox(width: 12),
+                _buildStatCard('Active Construction', '1', Icons.construction, Colors.orange),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                _buildStatCard('Pending Requests', '0', Icons.pending_actions, Colors.blue),
+                const SizedBox(width: 12),
+                const Expanded(child: SizedBox()),
+              ],
+            ),
+            const SizedBox(height: 32),
 
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Stats Row
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Container(
-                              padding: const EdgeInsets.all(20),
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(colors: [Color(0xFF059669), Color(0xFF10B981)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-                                borderRadius: BorderRadius.circular(24),
-                                boxShadow: const [BoxShadow(color: Color(0x3310B981), blurRadius: 12, offset: Offset(0, 6))],
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(12)),
-                                    child: const Icon(Icons.check_circle_outline, color: Colors.white, size: 24),
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Text('${approvedDesigns.length}', style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: Colors.white)),
-                                  const Text('Approved Designs', style: TextStyle(fontSize: 12, color: Colors.white70, fontWeight: FontWeight.w500)),
-                                ],
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Container(
-                              padding: const EdgeInsets.all(20),
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(colors: [Color(0xFF4F46E5), Color(0xFF6366F1)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-                                borderRadius: BorderRadius.circular(24),
-                                boxShadow: const [BoxShadow(color: Color(0x334F46E5), blurRadius: 12, offset: Offset(0, 6))],
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(12)),
-                                    child: const Icon(Icons.hourglass_empty, color: Colors.white, size: 24),
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Text('$pendingCount', style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: Colors.white)),
-                                  const Text('Pending Designs', style: TextStyle(fontSize: 12, color: Colors.white70, fontWeight: FontWeight.w500)),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 32),
+            // Current Project
+            const Text('Current Project', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+            const SizedBox(height: 16),
+            _buildProjectCard(context),
+            const SizedBox(height: 16),
+            
+            // Construction Details
+            _buildConstructionCard(),
+            const SizedBox(height: 32),
 
-                      // Approved Designs Header
-                      const Text('Approved Designs', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Color(0xFF1E2332))),
-                      const SizedBox(height: 16),
+            // Approved Designs list
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Approved Designs', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+                TextButton(
+                  onPressed: () => context.go('/designs'),
+                  child: const Text('View all', style: TextStyle(color: Color(0xFF2563EB), fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            _buildApprovedDesignCard(context),
+            const SizedBox(height: 32),
 
-                      // Approved Designs List
-                      if (approvedDesigns.isEmpty)
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(32),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(24),
-                            border: Border.all(color: const Color(0xFFE5E7EB)),
-                          ),
-                          child: const Column(
-                            children: [
-                              Icon(Icons.architecture_outlined, size: 48, color: Color(0xFF9CA3AF)),
-                              SizedBox(height: 16),
-                              Text('No approved designs yet', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: Color(0xFF4B5563))),
-                              SizedBox(height: 8),
-                              Text('Submit a design to your architect to get approved.', textAlign: TextAlign.center, style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 13)),
-                            ],
-                          ),
-                        )
-                      else
-                        Column(
-                          children: approvedDesigns.take(5).map((d) {
-                            return Container(
-                              margin: const EdgeInsets.only(bottom: 16),
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(24),
-                                boxShadow: const [BoxShadow(color: Color(0x08000000), blurRadius: 15, offset: Offset(0, 5))],
-                                border: Border.all(color: const Color(0xFFF3F4F6)),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.all(10),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFFECFDF5),
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                        child: const Icon(Icons.check, color: Color(0xFF10B981), size: 20),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text('${d['title']}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: Color(0xFF1E2332))),
-                                            const SizedBox(height: 4),
-                                            Text('${d['bedrooms']} Bedrooms • ${d['bathrooms']} Baths • ${d['floorCount']} Floors', style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: OutlinedButton(
-                                          onPressed: () => context.push('/workflow/${d['workflowId']}'),
-                                          style: OutlinedButton.styleFrom(
-                                            foregroundColor: const Color(0xFF4B5563),
-                                            side: const BorderSide(color: Color(0xFFE5E7EB)),
-                                            padding: const EdgeInsets.symmetric(vertical: 12),
-                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                          ),
-                                          child: const Text('View Design', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: ElevatedButton(
-                                          onPressed: () {
-                                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Construction flow not implemented on mobile yet.')));
-                                          },
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: const Color(0xFF4F46E5),
-                                            foregroundColor: Colors.white,
-                                            padding: const EdgeInsets.symmetric(vertical: 12),
-                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                            elevation: 0,
-                                          ),
-                                          child: const Text('Find Constructor', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                    ],
-                  );
-                },
-              ),
-              const SizedBox(height: 80), // Bottom nav padding
-            ],
-          ),
+            // Next Step
+            const Text('Next Step', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+            const SizedBox(height: 16),
+            _buildNextStepCard(context),
+            const SizedBox(height: 32),
+
+            // Quick Links
+            const Text('Quick Links', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+            const SizedBox(height: 16),
+            _buildQuickLink(Icons.architecture, 'My Designs', () => context.go('/designs')),
+            _buildQuickLink(Icons.grid_view, 'Plan Catalogue', () => context.go('/plans')),
+            _buildQuickLink(Icons.settings_outlined, 'Account Settings', () => context.go('/profile')),
+            
+            const SizedBox(height: 48),
+          ],
         ),
       ),
     );
   }
 
+  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: color, size: 24),
+            const SizedBox(height: 12),
+            Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+            const SizedBox(height: 4),
+            Text(title, style: const TextStyle(fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProjectCard(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: const [BoxShadow(color: Color(0x05000000), blurRadius: 10, offset: Offset(0, 4))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Approved Design v1', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(color: const Color(0xFFECFDF5), borderRadius: BorderRadius.circular(8)),
+                child: const Text('In Progress', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF059669))),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Text('Architect Approved', style: TextStyle(fontSize: 14, color: Color(0xFF64748B))),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => context.go('/designs'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF475569),
+                    side: const BorderSide(color: Color(0xFFCBD5E1)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  child: const Text('VIEW DESIGN', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () => context.go('/construction'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0F172A),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  child: const Text('VIEW CONSTRUCTION', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildConstructionCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        children: [
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Constructor', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                SizedBox(height: 4),
+                Text('Dinuki', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+              ],
+            ),
+          ),
+          Container(height: 30, width: 1, color: const Color(0xFFE2E8F0)),
+          const Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(left: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Current Phase', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                  SizedBox(height: 4),
+                  Text('Site Preparation', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildApprovedDesignCard(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Approved Design v1', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(color: const Color(0xFFEFF6FF), borderRadius: BorderRadius.circular(8)),
+                child: const Text('Approved', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF2563EB))),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Text('3 Beds • 1 Baths • 1 Flrs', style: TextStyle(fontSize: 14, color: Color(0xFF64748B))),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => context.go('/designs'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF475569),
+                    side: const BorderSide(color: Color(0xFFCBD5E1)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  child: const Text('View', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => context.go('/construction'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF4F46E5),
+                    side: const BorderSide(color: Color(0xFF4F46E5)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  child: const Text('In Construction', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNextStepCard(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFFBEB), // light amber
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFFDE68A)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Construction is underway. View progress and daily updates.', style: TextStyle(fontSize: 14, color: Color(0xFF92400E))),
+          const SizedBox(height: 12),
+          ElevatedButton(
+            onPressed: () => context.go('/construction'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFD97706),
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: const Text('View Construction', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickLink(IconData icon, String title, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: const Color(0xFF64748B), size: 20),
+            const SizedBox(width: 12),
+            Expanded(child: Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)))),
+            const Icon(Icons.chevron_right, color: Color(0xFF94A3B8), size: 20),
+          ],
+        ),
+      ),
+    );
+  }
 }
