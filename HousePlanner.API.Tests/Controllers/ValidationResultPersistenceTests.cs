@@ -121,7 +121,7 @@ public class ValidationResultPersistenceTests
         var first = rules[0];
         Assert.Equal("coverage",       first.GetProperty("rule_name").GetString());
         Assert.True(first.GetProperty("passed").GetBoolean());
-        Assert.Contains("51.4%",       first.GetProperty("actual").GetString());
+        Assert.Contains("51.40%",      first.GetProperty("actual").GetString());
         Assert.Contains("65.00%",      first.GetProperty("expected").GetString());
         Assert.False(string.IsNullOrEmpty(first.GetProperty("reason").GetString()));
 
