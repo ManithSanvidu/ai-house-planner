@@ -29,9 +29,9 @@ from app.workflows.house_planning_graph import route_from_coordinator
 GOVERNED_PAIRS = {
     "requirement_analysis": "requirement_extractor",
     "land_analysis": "terrain_classifier",
-    "construction_planning": "construction_scheduler",
     "design": "geometry_generator",
     "visualization": "visualization_generator",
+    "construction_planning": "construction_scheduler",
     "cost_estimation": "pricing_lookup",
 }
 
@@ -240,12 +240,11 @@ def test_workflow_stops_when_design_geometry_is_unauthorized(monkeypatch):
     nodes = {
         "requirement_analysis": requirement_analysis_agent.requirement_analysis_node,
         "land_analysis": land_analysis_agent.land_analysis_node,
-        "construction_planning": construction_planning_service.construction_planning_node,
         "design": design_agent.design_node,
     }
 
     state = _state()
-    for expected_agent in ("requirement_analysis", "land_analysis", "construction_planning", "design"):
+    for expected_agent in ("requirement_analysis", "land_analysis", "design"):
         state = coordinator_node(state)
         assert route_from_coordinator(state) == expected_agent
         state = _run_selected_agent(state, nodes)
@@ -257,9 +256,8 @@ def test_workflow_stops_when_design_geometry_is_unauthorized(monkeypatch):
     state = coordinator_node(state)
     assert state.plan.steps[0].status == PlanStepStatus.COMPLETED
     assert state.plan.steps[1].status == PlanStepStatus.COMPLETED
-    assert state.plan.steps[2].status == PlanStepStatus.COMPLETED
-    assert state.plan.steps[3].status == PlanStepStatus.FAILED
-    assert all(step.status == PlanStepStatus.PENDING for step in state.plan.steps[4:])
+    assert state.plan.steps[2].status == PlanStepStatus.FAILED
+    assert all(step.status == PlanStepStatus.PENDING for step in state.plan.steps[3:])
     assert route_from_coordinator(state) == END
 
     denial = next(entry for entry in state.execution_log if entry.action == "tool_authorization_denied")
