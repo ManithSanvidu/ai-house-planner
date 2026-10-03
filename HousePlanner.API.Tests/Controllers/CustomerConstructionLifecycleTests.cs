@@ -350,7 +350,7 @@ public sealed partial class CustomerConstructionLifecycleTests
     {
         var current = Current(id, "Constructor");
         var logServiceMock = new Mock<IDailyConstructionLogService>();
-        return new ConstructorWorkflowController(new ConstructorWorkflowService(_db), current.Object, _db, logServiceMock.Object)
+        return new ConstructorWorkflowController(new ConstructorWorkflowService(_db), current.Object, _db, logServiceMock.Object, Mock.Of<IAIVisualizationUrlService>())
         { ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() } };
     }
     private static Mock<ICurrentUserContextService> Current(Guid id, string role)
@@ -371,4 +371,3 @@ public sealed partial class CustomerConstructionLifecycleTests
         return design;
     }
 }
-

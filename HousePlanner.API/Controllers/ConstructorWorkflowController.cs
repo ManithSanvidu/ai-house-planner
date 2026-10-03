@@ -17,17 +17,20 @@ namespace HousePlanner.API.Controllers
         private readonly ICurrentUserContextService _currentUserContext;
         private readonly ApplicationDbContext _db;
         private readonly IDailyConstructionLogService _logService;
+        private readonly IAIVisualizationUrlService _visualizationUrls;
 
         public ConstructorWorkflowController(
             IConstructorWorkflowService workflowService,
             ICurrentUserContextService currentUserContext,
             ApplicationDbContext db,
-            IDailyConstructionLogService logService)
+            IDailyConstructionLogService logService,
+            IAIVisualizationUrlService visualizationUrls)
         {
             _workflowService = workflowService;
             _currentUserContext = currentUserContext;
             _db = db;
             _logService = logService;
+            _visualizationUrls = visualizationUrls;
         }
 
         [HttpGet("projects")]
@@ -291,35 +294,27 @@ namespace HousePlanner.API.Controllers
 
         [HttpGet("requests/{requestId:guid}")]
         [Authorize(Roles = "Constructor")]
-        public async Task<IActionResult> GetConstructorRequest(Guid requestId)
+        public async Task<IActionResult> GetConstructorRequest(
+            Guid requestId, CancellationToken cancellationToken = default)
         {
             var user = await _currentUserContext.GetAsync(HttpContext);
             if (user?.Id == null) return Unauthorized();
 
             var rawReq = await _db.ConstructorProjectRequests.AsNoTracking()
                 .Where(req => req.Id == requestId && req.ConstructorId == user.Id.Value)
-                .Select(req => new
-                {
-                    req.Id,
-                    req.ProjectId,
-                    req.HouseDesignId,
-                    req.Status,
-                    RequestedAt = req.CreatedAt,
-                    CustomerName = req.Customer != null ? req.Customer.FullName : "Unknown",
-                    DesignVersion = req.HouseDesign != null ? (int?)req.HouseDesign.Version : null,
-                    Area = req.HouseDesign != null ? req.HouseDesign.TotalBuiltUpAreaSqft : 0m,
-                    FloorCount = req.HouseDesign != null ? req.HouseDesign.FloorCount : 0,
-                    LayoutJson = req.HouseDesign != null ? req.HouseDesign.LayoutJson : null,
-                    Cost = req.HouseDesign != null ? req.HouseDesign.CostEstimates.OrderByDescending(c => c.CreatedAt).FirstOrDefault() : null,
-                    req.DeclineReason,
-                    TerrainType = req.HouseDesign != null ? req.HouseDesign.TerrainType : null,
-                    BasePreDesignedPlanCode = req.HouseDesign != null && req.HouseDesign.BasePreDesignedPlan != null ? req.HouseDesign.BasePreDesignedPlan.DesignCode : null,
-                    TemplateId = req.HouseDesign != null ? req.HouseDesign.TemplateId : null,
-                    BasePreDesignedPlanId = req.HouseDesign != null ? req.HouseDesign.BasePreDesignedPlanId : null
-                })
+                .Include(req => req.Customer)
+                .Include(req => req.HouseDesign).ThenInclude(design => design!.CostEstimates)
+                .Include(req => req.HouseDesign).ThenInclude(design => design!.BasePreDesignedPlan)
                 .FirstOrDefaultAsync();
 
             if (rawReq == null) return NotFound();
+
+            var design = rawReq.HouseDesign;
+            var cost = design?.CostEstimates.OrderByDescending(c => c.CreatedAt).FirstOrDefault();
+            var aiVisualizationUrl = design?.AIVisualizationStatus == "completed"
+                ? await _visualizationUrls.GetReadUrlAsync(
+                    design.AIVisualizationImage, cancellationToken)
+                : null;
 
             return Ok(new
             {
@@ -327,33 +322,34 @@ namespace HousePlanner.API.Controllers
                 projectId = rawReq.ProjectId,
                 houseDesignId = rawReq.HouseDesignId,
                 status = rawReq.Status,
-                requestedAt = rawReq.RequestedAt,
-                customerName = rawReq.CustomerName,
-                designVersion = rawReq.DesignVersion,
-                area = rawReq.Area,
-                floorCount = rawReq.FloorCount,
-                cost = rawReq.Cost == null ? null : CostBreakdownBuilder.ToSummary(new CostEstimate
+                requestedAt = rawReq.CreatedAt,
+                customerName = rawReq.Customer?.FullName ?? "Unknown",
+                designVersion = design?.Version,
+                area = design?.TotalBuiltUpAreaSqft ?? 0m,
+                floorCount = design?.FloorCount ?? 0,
+                cost = cost == null ? null : CostBreakdownBuilder.ToSummary(new CostEstimate
                 {
-                    MaterialCostLkr = rawReq.Cost.MaterialCostLkr,
-                    LabourCostLkr = rawReq.Cost.LabourCostLkr,
-                    TotalCostLkr = rawReq.Cost.TotalCostLkr,
-                    BudgetDeltaPercent = rawReq.Cost.BudgetDeltaPercent,
-                    PricingSnapshotJson = rawReq.Cost.PricingSnapshotJson,
-                    BreakdownJson = rawReq.Cost.BreakdownJson,
-                    FormulaVersion = rawReq.Cost.FormulaVersion,
-                    AppliedAreaSqft = rawReq.Cost.AppliedAreaSqft,
-                    TerrainType = rawReq.Cost.TerrainType,
-                    CreatedAt = rawReq.Cost.CreatedAt
+                    MaterialCostLkr = cost.MaterialCostLkr,
+                    LabourCostLkr = cost.LabourCostLkr,
+                    TotalCostLkr = cost.TotalCostLkr,
+                    BudgetDeltaPercent = cost.BudgetDeltaPercent,
+                    PricingSnapshotJson = cost.PricingSnapshotJson,
+                    BreakdownJson = cost.BreakdownJson,
+                    FormulaVersion = cost.FormulaVersion,
+                    AppliedAreaSqft = cost.AppliedAreaSqft,
+                    TerrainType = cost.TerrainType,
+                    CreatedAt = cost.CreatedAt
                 }),
                 declineReason = rawReq.DeclineReason,
-                title = DesignTitle(rawReq.LayoutJson, rawReq.DesignVersion ?? 0),
-                bedrooms = CountRooms(rawReq.LayoutJson, "bedroom"),
-                bathrooms = CountRooms(rawReq.LayoutJson, "bathroom"),
-                layoutJson = rawReq.LayoutJson,
-                terrainType = rawReq.TerrainType,
-                planReference = rawReq.BasePreDesignedPlanCode ?? rawReq.TemplateId,
-                layoutType = !string.IsNullOrEmpty(rawReq.LayoutJson) && rawReq.LayoutJson.Contains("topology") ? "See JSON" : "Standard",
-                basePreDesignedPlanId = rawReq.BasePreDesignedPlanId
+                title = DesignTitle(design?.LayoutJson, design?.Version ?? 0),
+                bedrooms = CountRooms(design?.LayoutJson, "bedroom"),
+                bathrooms = CountRooms(design?.LayoutJson, "bathroom"),
+                aiVisualizationUrl,
+                aiVisualizationStatus = design?.AIVisualizationStatus,
+                terrainType = design?.TerrainType,
+                planReference = design?.BasePreDesignedPlan?.DesignCode ?? design?.TemplateId,
+                layoutType = !string.IsNullOrEmpty(design?.LayoutJson) && design.LayoutJson.Contains("topology") ? "See JSON" : "Standard",
+                basePreDesignedPlanId = design?.BasePreDesignedPlanId
             });
         }
 

@@ -3,7 +3,6 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { constructorWorkflowService } from '../../../services/constructorWorkflowService';
 import CostBreakdownCard from '../../../components/cost/CostBreakdownCard';
 import { ArrowLeft, Check, X } from 'lucide-react';
-import { FloorPlanViewer } from '../../../components/floorplan/FloorPlanViewer';
 
 export const ConstructorRequestDetails: React.FC = () => {
  const { requestId } = useParams<{ requestId: string }>();
@@ -72,8 +71,6 @@ export const ConstructorRequestDetails: React.FC = () => {
   );
  }
 
- const parsedLayout = request.layoutJson ? JSON.parse(request.layoutJson) : null;
-
  return (
   <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
    <Link to="/constructor/dashboard" className="inline-flex items-center gap-2 text-sm text-text-muted hover:text-gray-900 dark:hover:text-text-primary mb-6">
@@ -81,16 +78,21 @@ export const ConstructorRequestDetails: React.FC = () => {
    </Link>
 
    <div className="flex flex-col lg:flex-row gap-8">
-    {/* Left Column: Floor Plan */}
+    {/* Left Column: AI Visualization */}
     <div className="flex-1 space-y-6">
      <div className="rounded-2xl border bg-surface p-6 bg-surface dark:border-border-strong">
-      <h2 className="text-xl font-bold text-gray-900 dark:text-text-primary mb-4">Floor Plan</h2>
+      <h2 className="text-xl font-bold text-gray-900 dark:text-text-primary mb-4">AI Visualization</h2>
       <div className="aspect-square w-full rounded-xl border border-gray-100 bg-gray-50/50 dark:border-border-strong bg-surface/50 overflow-hidden">
-       {parsedLayout ? (
-        <FloorPlanViewer data={parsedLayout} />
+       {request.aiVisualizationUrl ? (
+        <img
+         src={request.aiVisualizationUrl}
+         alt="AI visualization of the approved house design"
+         className="h-full w-full object-contain"
+        />
        ) : (
-        <div className="flex h-full items-center justify-center text-text-muted">
-         No layout geometry available.
+        <div className="flex h-full flex-col items-center justify-center gap-2 p-6 text-center text-text-muted">
+         <p className="font-semibold text-gray-700 dark:text-gray-300">AI visualization not generated</p>
+         <p className="text-sm">The AI visualization for this design is not available.</p>
         </div>
        )}
       </div>
