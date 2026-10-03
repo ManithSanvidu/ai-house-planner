@@ -14,8 +14,10 @@ public class PreDesignedPlansController : ControllerBase
 {
     private readonly ApplicationDbContext _db;
     private readonly ICurrentUserContextService _users;
-    public PreDesignedPlansController(ApplicationDbContext db, ICurrentUserContextService users)
-    { _db = db; _users = users; }
+    private readonly IPlanImageStorage _images;
+    public PreDesignedPlansController(ApplicationDbContext db, ICurrentUserContextService users,
+        IPlanImageStorage images)
+    { _db = db; _users = users; _images = images; }
 
     private async Task<bool> Authenticated() => await _users.GetAsync(HttpContext) is not null;
 
@@ -41,7 +43,7 @@ public class PreDesignedPlansController : ControllerBase
         if (!string.IsNullOrWhiteSpace(category)) query = query.Where(x => x.Category != null && x.Category.ToLower() == category.ToLower());
         if (!string.IsNullOrWhiteSpace(search)) { var term = search.ToLower(); query = query.Where(x => x.Name.ToLower().Contains(term) || x.Style.ToLower().Contains(term) || (x.Category != null && x.Category.ToLower().Contains(term)) || x.TagsJson.ToLower().Contains(term)); }
         var plans = await query.OrderBy(x => x.Bedrooms).ThenBy(x => x.Name).ToListAsync();
-        return Ok(plans.Select(MapSummary));
+        return Ok(plans.Select(x => MapSummary(x, _images)));
     }
 
     [HttpGet("{id:guid}")]
@@ -53,7 +55,7 @@ public class PreDesignedPlansController : ControllerBase
 
         var pricingItems = await _db.PricingItems.AsNoTracking().Where(p => p.IsActive).ToListAsync();
         var cost = CalculateCost(plan, pricingItems);
-        return Ok(MapDetail(plan, cost));
+        return Ok(MapDetail(plan, _images, cost));
     }
 
     [HttpPost("{id:guid}/check-compatibility")]
@@ -98,11 +100,11 @@ public class PreDesignedPlansController : ControllerBase
             project.LandSizePerches, plan.MinimumLandSizePerches));
     }
 
-    internal static PreDesignedPlanSummaryDto MapSummary(PreDesignedHousePlan x) => new(x.Id, x.Name, x.Slug, x.DesignCode, x.Style, x.Bedrooms, x.Bathrooms, x.FloorCount, x.TotalBuiltUpAreaSqft, x.MinimumLandSizePerches, x.SuitableTerrain, x.ParkingSpaces, x.HasBalcony, x.HasVeranda, x.HasOffice, x.IsAccessibleFriendly, x.Category, ParseTags(x.TagsJson), x.ThumbnailUrl, x.IsActive, x.UpdatedAt, x.EstimatedConstructionCost);
-    internal static PreDesignedPlanDetailDto MapDetail(PreDesignedHousePlan x, CostSummaryDto? cost = null)
+    internal static PreDesignedPlanSummaryDto MapSummary(PreDesignedHousePlan x, IPlanImageStorage images) => new(x.Id, x.Name, x.Slug, x.DesignCode, x.Style, x.Bedrooms, x.Bathrooms, x.FloorCount, x.TotalBuiltUpAreaSqft, x.MinimumLandSizePerches, x.SuitableTerrain, x.ParkingSpaces, x.HasBalcony, x.HasVeranda, x.HasOffice, x.IsAccessibleFriendly, x.Category, ParseTags(x.TagsJson), images.GetPublicUrl(x.ThumbnailUrl), x.IsActive, x.UpdatedAt, x.EstimatedConstructionCost);
+    internal static PreDesignedPlanDetailDto MapDetail(PreDesignedHousePlan x, IPlanImageStorage images, CostSummaryDto? cost = null)
     {
         using var document = JsonDocument.Parse(x.LayoutJson);
-        return new(x.Id, x.Name, x.Slug, x.DesignCode, x.Description, x.Style, x.Bedrooms, x.Bathrooms, x.FloorCount, x.TotalBuiltUpAreaSqft, x.MinimumLandSizePerches, x.MinimumPlotWidthFt, x.MinimumPlotLengthFt, x.SuitableTerrain, x.ParkingSpaces, x.HasBalcony, x.HasVeranda, x.HasOffice, x.HasUtilityRoom, x.IsAccessibleFriendly, x.Category, ParseTags(x.TagsJson), x.ThumbnailUrl, document.RootElement.Clone(), x.IsActive, x.CreatedAt, x.UpdatedAt, "Architect-validated design. Construction estimates may vary based on site conditions, materials, and final contractor pricing.", cost, x.EstimatedConstructionCost);
+        return new(x.Id, x.Name, x.Slug, x.DesignCode, x.Description, x.Style, x.Bedrooms, x.Bathrooms, x.FloorCount, x.TotalBuiltUpAreaSqft, x.MinimumLandSizePerches, x.MinimumPlotWidthFt, x.MinimumPlotLengthFt, x.SuitableTerrain, x.ParkingSpaces, x.HasBalcony, x.HasVeranda, x.HasOffice, x.HasUtilityRoom, x.IsAccessibleFriendly, x.Category, ParseTags(x.TagsJson), images.GetPublicUrl(x.ThumbnailUrl), document.RootElement.Clone(), x.IsActive, x.CreatedAt, x.UpdatedAt, "Architect-validated design. Construction estimates may vary based on site conditions, materials, and final contractor pricing.", cost, x.EstimatedConstructionCost);
     }
     internal static IReadOnlyList<string> ParseTags(string json) { try { return JsonSerializer.Deserialize<string[]>(json) ?? []; } catch { return []; } }
 

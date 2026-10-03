@@ -92,7 +92,7 @@ public class RevisionBathroomTests
         currentUser.Setup(x => x.GetAsync(It.IsAny<HttpContext>()))
             .ReturnsAsync(new CurrentUserContext(submission.ClientId, "customer@example.com", "Customer"));
         var controller = new WorkflowController(db, Mock.Of<ILogger<WorkflowController>>(), factory.Object,
-            workflowService.Object, currentUser.Object);
+            workflowService.Object, currentUser.Object, Mock.Of<IAIVisualizationUrlService>());
 
         var result = await controller.ApproveWorkflow(workflow.Id,
             new ApprovalRequestDto("request_revision", "make living room bigger"));

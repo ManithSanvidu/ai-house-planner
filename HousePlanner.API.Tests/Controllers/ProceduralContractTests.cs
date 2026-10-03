@@ -40,7 +40,7 @@ public class ProceduralContractTests
             return new CurrentUserContext(clientId, "customer@example.com", "Customer");
         });
         return new WorkflowController(db, NullLogger<WorkflowController>.Instance, clients.Object,
-            Mock.Of<IWorkflowService>(), currentUser.Object);
+            Mock.Of<IWorkflowService>(), currentUser.Object, Mock.Of<IAIVisualizationUrlService>());
     }
 
     [Fact]
