@@ -291,6 +291,82 @@ const ValidationRequestDetails: React.FC = () => {
 
     <CostBreakdownCard cost={request.cost} />
 
+    {/* Planning / Feasibility Validation */}
+    <div className="bg-surface border border-border dark:border-border-strong rounded-2xl shadow-sm p-6">
+      <h2 className="text-lg font-bold text-gray-900 dark:text-text-primary flex items-center gap-2 mb-4">
+        <CheckCircle className="text-indigo-600" size={20} />
+        Planning / Feasibility Validation
+      </h2>
+      
+      {!request.validationResult ? (
+        <div className="text-sm text-text-secondary bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-border dark:border-border-strong">
+          Detailed validation evidence is not available for this older workflow.
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {/* Overall Result */}
+          <div className={`p-4 rounded-xl border flex items-center justify-between ${
+            request.validationResult.passed 
+              ? 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800/50' 
+              : 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800/50'
+          }`}>
+            <span className="font-semibold text-gray-900 dark:text-text-primary">Overall Result</span>
+            <span className={`px-2.5 py-1 rounded-full text-xs font-bold border ${
+              request.validationResult.passed 
+                ? 'bg-green-100 text-green-800 border-green-300 dark:bg-green-900/50 dark:text-green-400 dark:border-green-700' 
+                : 'bg-red-100 text-red-800 border-red-300 dark:bg-red-900/50 dark:text-red-400 dark:border-red-700'
+            }`}>
+              {request.validationResult.passed ? 'PASS' : 'FAIL'}
+            </span>
+          </div>
+
+          {/* Rules */}
+          {request.validationResult.rules && request.validationResult.rules.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-text-primary">Rule Breakdown</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {request.validationResult.rules.map((rule, idx) => (
+                  <div key={idx} className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-border dark:border-border-strong flex flex-col gap-2 relative overflow-hidden">
+                    <div className={`absolute top-0 left-0 w-1 h-full ${rule.passed ? 'bg-green-500' : 'bg-red-500'}`} />
+                    
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="font-semibold text-sm text-gray-900 dark:text-text-primary capitalize">
+                        {(rule.ruleName || '').replace(/_/g, ' ')}
+                      </span>
+                      <span className={`text-xs font-bold ${rule.passed ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                        {rule.passed ? 'PASS' : 'FAIL'}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-xs mt-1">
+                      <div>
+                        <span className="text-text-secondary block mb-0.5">Expected:</span>
+                        <span className="font-mono text-gray-900 dark:text-text-primary break-words">
+                          {rule.expected !== null ? String(rule.expected) : '—'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-text-secondary block mb-0.5">Actual:</span>
+                        <span className="font-mono text-gray-900 dark:text-text-primary break-words">
+                          {rule.actual !== null ? String(rule.actual) : '—'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {rule.reason && (
+                      <div className="text-xs text-text-secondary mt-1 pt-2 border-t border-border dark:border-border-strong">
+                        {rule.reason}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+
     {/* Architect Validation / Review Decision */}
     <div className="bg-surface border border-border dark:border-border-strong rounded-2xl shadow-sm p-6">
       <h2 className="text-lg font-bold text-gray-900 dark:text-text-primary mb-4">Architect Validation</h2>
