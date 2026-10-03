@@ -23,8 +23,18 @@ def test_runtime_no_legacy_fields():
         "design_result": {
             "ground_coverage_sqft": 2000,
             "bedrooms": 3,
+            "bathrooms": 2,
             "floors": 1,
-            "foundation_type": "slab"
+            "foundation_type": "slab",
+            "rooms": [
+                {"room_id": "r1", "room_type": "living", "floor": 1, "x": 0, "y": 0, "width": 10, "length": 10, "area_sqft": 100},
+                {"room_id": "r2", "room_type": "bathroom", "floor": 1, "x": 10, "y": 0, "width": 5, "length": 5, "area_sqft": 25},
+                {"room_id": "r3", "room_type": "bathroom", "floor": 1, "x": 15, "y": 0, "width": 5, "length": 5, "area_sqft": 25},
+                {"room_id": "r4", "room_type": "kitchen", "floor": 1, "x": 0, "y": 10, "width": 10, "length": 10, "area_sqft": 100},
+                {"room_id": "r5", "room_type": "bedroom", "floor": 1, "x": 10, "y": 10, "width": 10, "length": 10, "area_sqft": 100},
+                {"room_id": "r6", "room_type": "bedroom", "floor": 1, "x": 20, "y": 10, "width": 10, "length": 10, "area_sqft": 100},
+                {"room_id": "r7", "room_type": "bedroom", "floor": 1, "x": 30, "y": 10, "width": 10, "length": 10, "area_sqft": 100}
+            ]
         },
         "cost_result": {
             "total_cost_lkr": 10000000

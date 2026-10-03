@@ -47,9 +47,9 @@ def test_revision_sequence():
         current_step_id=None
     )
     
-    # Coordinator should select S5 (Construction Planning)
+    # Coordinator should select S3 (Design)
     state = coordinator_node(state)
-    assert state.current_step_id == "S5"
+    assert state.current_step_id == "S3"
     assert state.plan.steps[2].status == PlanStepStatus.RUNNING
 
 def test_step_status_transitions():

@@ -1,6 +1,6 @@
 import apiClient from './apiClient';
 
-const API_BASE_URL = 'http://localhost:5265/api/validation-requests';
+const API_BASE_URL = '/architect/validation-requests';
 
 export const validationRequestService = {
  getAll: async (statuses?: string[], page: number = 1, pageSize: number = 50) => {
@@ -38,8 +38,8 @@ export const validationRequestService = {
   return response.data;
  },
 
- create: async (workflowStateId: string) => {
-  const response = await apiClient.post(`${API_BASE_URL}`, { workflowStateId });
+ requestRevision: async (id: string, review: string) => {
+  const response = await apiClient.patch(`${API_BASE_URL}/${id}/request-revision`, { review });
   return response.data;
  }
 };

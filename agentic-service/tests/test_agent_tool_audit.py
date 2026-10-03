@@ -199,7 +199,11 @@ def _visualization_common(monkeypatch, result):
     monkeypatch.setattr(module.VisualizationAgent, "process", lambda *_args, **_kwargs: dict(result))
     monkeypatch.setattr(module, "_persist_visualization_status", lambda *_args: None)
     monkeypatch.setattr(module, "_persist_visualization", lambda *_args: None)
-    monkeypatch.setattr(module, "_save_generated_image", lambda _result: "http://local/stable.png")
+    monkeypatch.setattr(
+        module,
+        "_save_generated_image",
+        lambda _result, _workflow_id: "visualizations/workflow/stable.png",
+    )
     return module
 
 
@@ -265,7 +269,11 @@ def test_visualization_edit_generate_fallback_is_one_logical_event(monkeypatch):
     monkeypatch.setattr(module, "_existing_visualization", lambda _wid: None)
     monkeypatch.setattr(module, "ENABLE_AI_VISUALIZATION", True)
     monkeypatch.setattr(module, "execute_once", lambda _wid, _purpose, operation: (operation(), False))
-    monkeypatch.setattr(module, "_save_generated_image", lambda _result: "http://local/stable.png")
+    monkeypatch.setattr(
+        module,
+        "_save_generated_image",
+        lambda _result, _workflow_id: "visualizations/workflow/stable.png",
+    )
     monkeypatch.setattr(module, "_persist_visualization", lambda *_args: None)
 
     state = module.visualization_node(_visualization_state())

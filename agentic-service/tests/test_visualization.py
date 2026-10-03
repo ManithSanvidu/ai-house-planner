@@ -1,4 +1,5 @@
 import pytest
+import base64
 from app.design.visualization.visualization_agent import VisualizationAgent
 from app.design.visualization.openai_visualization_service import OpenAIVisualizationService
 import json
@@ -8,6 +9,7 @@ from unittest.mock import MagicMock, patch
 from app.design.visualization.visualization_agent import visualization_node
 from app.design.visualization.visualization_agent import _save_generated_image
 from app.design.visualization.visualization_agent import _persist_visualization
+from app.services.visualization_image_storage import VisualizationStorageError
 
 def test_visualization_uses_generated_layout(monkeypatch):
     # Test that the visualization service receives the layout and produces a valid mock response
@@ -60,10 +62,12 @@ def test_visualization_node_reuses_persisted_image():
     state = _make_state()
     with patch("app.design.visualization.visualization_agent._existing_visualization",
                return_value="https://example.com/existing.png"), \
-         patch("app.design.visualization.visualization_agent.VisualizationAgent") as agent:
+         patch("app.design.visualization.visualization_agent.VisualizationAgent") as agent, \
+         patch("app.design.visualization.visualization_agent._save_generated_image") as upload:
         visualization_node(state)
 
     agent.assert_not_called()
+    upload.assert_not_called()
     assert state.design_result["ai_visualization"]["image_url"].endswith("existing.png")
 
 
@@ -75,11 +79,11 @@ def test_visualization_node_persists_new_image():
          patch("app.design.visualization.visualization_agent.ENABLE_AI_VISUALIZATION", True), \
          patch("app.design.visualization.visualization_agent.VisualizationAgent", return_value=agent), \
          patch("app.design.visualization.visualization_agent.execute_once", lambda wf, purp, fn: (fn(), False)), \
-         patch("app.design.visualization.visualization_agent._save_generated_image", return_value="http://localhost:8001/visualizations/stable.png"), \
+         patch("app.design.visualization.visualization_agent._save_generated_image", return_value="visualizations/workflow-1/stable.png"), \
          patch("app.design.visualization.visualization_agent._persist_visualization") as persist:
         visualization_node(state)
 
-    persist.assert_called_once_with("workflow-1", "http://localhost:8001/visualizations/stable.png")
+    persist.assert_called_once_with("workflow-1", "visualizations/workflow-1/stable.png")
     agent.process.assert_called_once_with(
         state.design_result,
         1,
@@ -101,18 +105,53 @@ def test_visualization_disabled_never_calls_openai():
     assert state.design_result["ai_visualization"]["status"] == "disabled"
 
 
-def test_generated_url_is_downloaded_to_uuid_file(tmp_path):
+def test_temporary_provider_url_is_downloaded_and_uploaded_to_storage():
     response = MagicMock(content=b"png-bytes")
     response.raise_for_status.return_value = None
-    with patch("app.design.visualization.visualization_agent.VISUALIZATIONS_DIR", tmp_path), \
-         patch("app.design.visualization.visualization_agent.AGENTIC_PUBLIC_BASE_URL", "http://localhost:8001"), \
-         patch("app.design.visualization.visualization_agent.requests.get", return_value=response):
-        public_url = _save_generated_image({"image_url": "https://temporary.example/image.png"})
+    storage = MagicMock()
+    storage.upload_image.return_value = "visualizations/workflow-1/generated.png"
+    with patch("app.design.visualization.visualization_agent.requests.get", return_value=response):
+        object_key = _save_generated_image(
+            {"image_url": "https://temporary.example/image.png"}, "workflow-1", storage
+        )
 
-    filename = public_url.rsplit("/", 1)[-1]
-    assert public_url == f"http://localhost:8001/visualizations/{filename}"
-    assert filename.endswith(".png")
-    assert (tmp_path / filename).read_bytes() == b"png-bytes"
+    assert object_key == "visualizations/workflow-1/generated.png"
+    storage.upload_image.assert_called_once_with("workflow-1", b"png-bytes", extension="png")
+
+
+def test_base64_provider_image_is_uploaded_without_local_or_network_download():
+    storage = MagicMock()
+    storage.upload_image.return_value = "visualizations/workflow-2/generated.png"
+    encoded = base64.b64encode(b"base64-png-bytes").decode()
+
+    with patch("app.design.visualization.visualization_agent.requests.get") as download:
+        object_key = _save_generated_image({"image_b64": encoded}, "workflow-2", storage)
+
+    assert object_key == "visualizations/workflow-2/generated.png"
+    assert "localhost" not in object_key
+    storage.upload_image.assert_called_once_with(
+        "workflow-2", b"base64-png-bytes", extension="png"
+    )
+    download.assert_not_called()
+
+
+def test_storage_upload_failure_marks_visualization_failed_without_persisting_key():
+    state = _make_state("workflow-storage-failure")
+    agent = MagicMock()
+    agent.process.return_value = {"status": "validated", "image_b64": "cG5n"}
+    with patch("app.design.visualization.visualization_agent._existing_visualization", return_value=None), \
+         patch("app.design.visualization.visualization_agent.ENABLE_AI_VISUALIZATION", True), \
+         patch("app.design.visualization.visualization_agent.VisualizationAgent", return_value=agent), \
+         patch("app.design.visualization.visualization_agent.execute_once", lambda wf, purp, fn: (fn(), False)), \
+         patch("app.design.visualization.visualization_agent._save_generated_image", side_effect=VisualizationStorageError("safe failure")), \
+         patch("app.design.visualization.visualization_agent._persist_visualization") as persist, \
+         patch("app.design.visualization.visualization_agent._persist_visualization_status") as persist_status:
+        visualization_node(state)
+
+    persist.assert_not_called()
+    persist_status.assert_called_once_with("workflow-storage-failure", "failed")
+    assert state.design_result["ai_visualization"]["status"] == "failed"
+    assert state.design_result["ai_visualization"]["image_url"] is None
 
 
 def test_fastapi_mounts_visualization_storage():
@@ -135,9 +174,9 @@ def test_fastapi_mounts_visualization_storage():
 def test_stable_url_is_persisted_as_completed():
     response = MagicMock(ok=True)
     with patch("app.design.visualization.visualization_agent.requests.patch", return_value=response) as request:
-        _persist_visualization("workflow-1", "http://localhost:8001/visualizations/stable.png")
+        _persist_visualization("workflow-1", "visualizations/workflow-1/stable.png")
 
     assert request.call_args.kwargs["json"] == {
-        "imageUrl": "http://localhost:8001/visualizations/stable.png",
+        "imageUrl": "visualizations/workflow-1/stable.png",
         "status": "completed",
     }

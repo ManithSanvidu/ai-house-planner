@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using HousePlanner.API.Data;
 using HousePlanner.API.DTOs;
 using HousePlanner.API.Entities;
@@ -189,16 +189,34 @@ public class InternalWorkflowController : ControllerBase
 
     /// <summary>
     /// Internal endpoint for the Validation Agent to update validation status.
+    /// Persists the complete structured ValidationResult (rules[], actual, expected, summary)
+    /// to WorkflowState.ValidationResultJson in addition to existing status fields.
     /// </summary>
     [HttpPatch("{id:guid}/validation")]
     public async Task<IActionResult> UpdateValidationStatus(Guid id, [FromBody] JsonElement validationData)
     {
+        // ── Payload safety guards ─────────────────────────────────────────────
+        const int MaxValidationPayloadBytes = 65_536; // 64 KB upper bound
+        var rawJson = validationData.GetRawText();
+        if (rawJson.Length > MaxValidationPayloadBytes)
+            return BadRequest(new { message = "Validation payload exceeds maximum allowed size." });
+
+        // `passed` must be a boolean — its presence and type are required
+        if (!validationData.TryGetProperty("passed", out var pProp)
+            || (pProp.ValueKind != JsonValueKind.True && pProp.ValueKind != JsonValueKind.False))
+            return BadRequest(new { message = "Validation payload must include a boolean 'passed' field." });
+
+        // `rules` must be an array when present
+        if (validationData.TryGetProperty("rules", out var rulesProp) && rulesProp.ValueKind != JsonValueKind.Array)
+            return BadRequest(new { message = "Validation payload 'rules' field must be an array." });
+
+        // ── Persist ──────────────────────────────────────────────────────────
         try
         {
             var workflow = await FindWorkflowState(id);
             if (workflow is null) return NotFound(new { message = $"Unknown workflow {id}." });
 
-            bool passed = validationData.TryGetProperty("passed", out var pProp) && pProp.GetBoolean();
+            bool passed = pProp.GetBoolean();
             if (passed)
             {
                 workflow.Status = "awaiting_approval";
@@ -208,14 +226,23 @@ public class InternalWorkflowController : ControllerBase
             else
             {
                 string? reason = validationData.TryGetProperty("summary", out var sProp) ? sProp.GetString() :
-                                 validationData.TryGetProperty("revision_reason", out var rProp) ? rProp.GetString() : "Validation failed";
+                                 validationData.TryGetProperty("revision_reason", out var revProp) ? revProp.GetString() : "Validation failed";
                 workflow.FailureReason = reason?[..Math.Min(reason.Length, 1000)];
             }
+
+            // Persist the full rule-level evidence for architect review.
+            // Re-serialise through JsonDocument to guarantee canonical JSON (no extra whitespace/BOM).
+            using var doc = JsonDocument.Parse(rawJson);
+            workflow.ValidationResultJson = JsonSerializer.Serialize(
+                doc.RootElement,
+                new JsonSerializerOptions { WriteIndented = false });
 
             workflow.UpdatedAt = DateTimeOffset.UtcNow;
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation("Validation status updated for workflow {WorkflowId}: passed={Passed}, status={Status}", id, passed, workflow.Status);
+            _logger.LogInformation(
+                "Validation status updated for workflow {WorkflowId}: passed={Passed}, status={Status}",
+                id, passed, workflow.Status);
             return Ok(new { message = "Validation status updated.", status = workflow.Status, approvalStatus = workflow.ApprovalStatus });
         }
         catch (Exception ex)
