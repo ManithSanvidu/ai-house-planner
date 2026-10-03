@@ -221,6 +221,8 @@ builder.Services.AddScoped<IStaffAccountService, StaffAccountService>();
 builder.Services.AddScoped<ApplicationRoleSeeder>();
 builder.Services.AddScoped<ICurrentUserContextService, CurrentUserContextService>();
 builder.Services.AddScoped<IPreDesignedPlanLayoutValidator, PreDesignedPlanLayoutValidator>();
+builder.Services.AddHttpClient<IPlanImageStorage, SupabasePlanImageStorage>();
+builder.Services.AddHttpClient<IAIVisualizationUrlService, SupabaseAIVisualizationUrlService>();
 builder.Services.AddScoped<PreDesignedPlanSeeder>();
 builder.Services.AddScoped<IWorkflowService, WorkflowService>();
 builder.Services.AddScoped<IDesignOptionsService, DesignOptionsService>();

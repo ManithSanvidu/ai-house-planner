@@ -75,7 +75,7 @@ public sealed class CustomerOwnershipTests
         var clients = new Mock<IHttpClientFactory>();
         clients.Setup(x => x.CreateClient(It.IsAny<string>())).Returns(new HttpClient());
         return new WorkflowController(_db, NullLogger<WorkflowController>.Instance, clients.Object,
-            _workflowService.Object, current.Object);
+            _workflowService.Object, current.Object, Mock.Of<IAIVisualizationUrlService>());
     }
 
     [Fact]
@@ -154,7 +154,7 @@ public sealed class CustomerOwnershipTests
         var clients = new Mock<IHttpClientFactory>();
         clients.Setup(x => x.CreateClient(It.IsAny<string>())).Returns(new HttpClient());
         var controller = new WorkflowController(_db, NullLogger<WorkflowController>.Instance, clients.Object,
-            _workflowService.Object, current.Object);
+            _workflowService.Object, current.Object, Mock.Of<IAIVisualizationUrlService>());
 
         Assert.IsType<NotFoundObjectResult>(await controller.ApproveWorkflow(_workflowA.Id,
             new ApprovalRequestDto("approve", null)));

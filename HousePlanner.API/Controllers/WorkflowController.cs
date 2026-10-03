@@ -19,19 +19,22 @@ public class WorkflowController : ControllerBase
     private readonly HttpClient _agenticServiceClient;
     private readonly IWorkflowService _workflowService;
     private readonly ICurrentUserContextService _currentUserService;
+    private readonly IAIVisualizationUrlService _visualizationUrls;
 
     public WorkflowController(
         ApplicationDbContext context,
         ILogger<WorkflowController> logger,
         IHttpClientFactory httpClientFactory,
         IWorkflowService workflowService,
-        ICurrentUserContextService currentUserService)
+        ICurrentUserContextService currentUserService,
+        IAIVisualizationUrlService visualizationUrls)
     {
         _context = context;
         _logger = logger;
         _agenticServiceClient = httpClientFactory.CreateClient("AgenticService");
         _workflowService = workflowService;
         _currentUserService = currentUserService;
+        _visualizationUrls = visualizationUrls;
     }
 
     /// <summary>
@@ -898,12 +901,15 @@ public class WorkflowController : ControllerBase
             } catch { }
         }
         
+        var imageUrl = await _visualizationUrls.GetReadUrlAsync(
+            design.AIVisualizationImage, HttpContext.RequestAborted);
+
         return Ok(new
         {
             designId = design.Id.ToString(),
             layout = layoutRoot,
             technicalImage = design.TechnicalPlanImage,
-            imageUrl = design.AIVisualizationImage,
+            imageUrl,
             status = design.AIVisualizationStatus
         });
     }

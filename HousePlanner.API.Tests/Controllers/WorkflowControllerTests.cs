@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text.Json;
 using System.Threading.Tasks;
 using HousePlanner.API.Controllers;
 using HousePlanner.API.Data;
@@ -49,7 +50,7 @@ public partial class WorkflowControllerTests
             return new CurrentUserContext(_clientId, "customer@example.com", "Customer");
         });
         _controller = new WorkflowController(_dbContext, _loggerMock.Object, clients.Object,
-            Mock.Of<IWorkflowService>(), currentUser.Object);
+            Mock.Of<IWorkflowService>(), currentUser.Object, Mock.Of<IAIVisualizationUrlService>());
     }
 
     [Fact]
@@ -60,6 +61,53 @@ public partial class WorkflowControllerTests
 
         // Assert
         Assert.IsType<NotFoundObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task GetDesignVisualization_ReturnsSignedUrlWithoutExposingServiceCredential()
+    {
+        var submission = new LandSubmission
+        {
+            Id = Guid.NewGuid(), ClientId = _clientId, LandSizePerches = 10,
+            PreferredBedrooms = 1, PreferredFloors = 1
+        };
+        var workflow = new WorkflowState
+        {
+            Id = Guid.NewGuid(), LandSubmissionId = submission.Id, LandSubmission = submission
+        };
+        var design = new HouseDesign
+        {
+            Id = Guid.NewGuid(), WorkflowStateId = workflow.Id, Version = 1, IsCurrent = true,
+            FloorCount = 1, FoundationType = "slab", LayoutJson = "{}",
+            AIVisualizationImage = $"visualizations/{workflow.Id:D}/image.png",
+            AIVisualizationStatus = "completed"
+        };
+        workflow.HouseDesigns.Add(design);
+        _dbContext.Add(workflow);
+        await _dbContext.SaveChangesAsync();
+        const string signedUrl = "https://project.supabase.co/storage/v1/object/sign/ai-visualizations/image.png?token=signed-token";
+        var urls = new Mock<IAIVisualizationUrlService>();
+        urls.Setup(x => x.GetReadUrlAsync(design.AIVisualizationImage, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(signedUrl);
+        var clients = new Mock<IHttpClientFactory>();
+        clients.Setup(x => x.CreateClient(It.IsAny<string>())).Returns(new HttpClient());
+        var currentUser = new Mock<ICurrentUserContextService>();
+        currentUser.Setup(x => x.GetAsync(It.IsAny<HttpContext>()))
+            .ReturnsAsync(new CurrentUserContext(_clientId, "customer@example.com", "Customer"));
+        var controller = new WorkflowController(
+            _dbContext, _loggerMock.Object, clients.Object, Mock.Of<IWorkflowService>(),
+            currentUser.Object, urls.Object)
+        {
+            ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
+        };
+
+        var result = Assert.IsType<OkObjectResult>(await controller.GetDesignVisualization(design.Id));
+        var json = JsonSerializer.Serialize(result.Value);
+
+        Assert.Contains(signedUrl, json);
+        Assert.DoesNotContain("server-secret", json);
+        urls.Verify(x => x.GetReadUrlAsync(
+            design.AIVisualizationImage, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]

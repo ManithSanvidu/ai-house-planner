@@ -65,6 +65,11 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "dummy-key-for-tests")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o")
 ENABLE_AI_VISUALIZATION = os.getenv("ENABLE_AI_VISUALIZATION", "true").strip().lower() in {"1", "true", "yes", "on"}
 AGENTIC_PUBLIC_BASE_URL = os.getenv("AGENTIC_PUBLIC_BASE_URL", "http://localhost:8001").rstrip("/")
+SUPABASE_URL = os.getenv("SUPABASE_URL", "").strip().rstrip("/")
+SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "").strip()
+SUPABASE_AI_VISUALIZATION_BUCKET = os.getenv(
+    "SUPABASE_AI_VISUALIZATION_BUCKET", "ai-visualizations"
+).strip()
 
 # OpenAI cost protection
 ENABLE_OPENAI = os.getenv("ENABLE_OPENAI", "true").strip().lower() not in {"0", "false", "no", "off"}

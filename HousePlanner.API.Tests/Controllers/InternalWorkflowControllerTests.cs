@@ -37,6 +37,38 @@ public class InternalWorkflowControllerTests
     }
 
     [Fact]
+    public async Task SaveCurrentVisualization_PersistsPrivateStorageObjectKey()
+    {
+        var workflowId = Guid.NewGuid();
+        const string objectKey = "visualizations/workflow-1/image.png";
+        _dbContext.WorkflowStates.Add(new WorkflowState
+        {
+            Id = workflowId,
+            LandSubmissionId = Guid.NewGuid(),
+            HouseDesigns =
+            [
+                new HouseDesign
+                {
+                    WorkflowStateId = workflowId,
+                    Version = 1,
+                    IsCurrent = true,
+                    FloorCount = 1,
+                    FoundationType = "slab",
+                    LayoutJson = "{}"
+                }
+            ]
+        });
+        await _dbContext.SaveChangesAsync();
+
+        Assert.IsType<OkObjectResult>(await _controller.SaveCurrentVisualization(
+            workflowId, new InternalWorkflowController.VisualizationUpdateRequest(objectKey)));
+
+        var design = await _dbContext.HouseDesigns.SingleAsync();
+        Assert.Equal(objectKey, design.AIVisualizationImage);
+        Assert.Equal("completed", design.AIVisualizationStatus);
+    }
+
+    [Fact]
     public async Task UpdateTerrain_UpdatesWorkflow_Successfully()
     {
         // Arrange
