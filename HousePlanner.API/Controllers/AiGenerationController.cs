@@ -17,14 +17,17 @@ public class AiGenerationController : ControllerBase
     private readonly HttpClient _agenticServiceClient;
     private readonly IDesignOptionsService _designOptionsService;
     private readonly ICurrentUserContextService _currentUser;
+    private readonly ILogger<AiGenerationController> _logger;
 
     public AiGenerationController(ApplicationDbContext context, IHttpClientFactory httpClientFactory,
-        IDesignOptionsService designOptionsService, ICurrentUserContextService currentUser)
+        IDesignOptionsService designOptionsService, ICurrentUserContextService currentUser,
+        ILogger<AiGenerationController> logger)
     {
         _context = context;
         _agenticServiceClient = httpClientFactory.CreateClient("AgenticService");
         _designOptionsService = designOptionsService;
         _currentUser = currentUser;
+        _logger = logger;
     }
 
     [HttpPost("generate")]
@@ -110,13 +113,79 @@ public class AiGenerationController : ControllerBase
         {
             var response = await _agenticServiceClient.PostAsync("/workflows/start", content, cancellationToken);
             if (!response.IsSuccessStatusCode)
-                return BadRequest(new { Message = $"Agentic service returned an error: {response.StatusCode}" });
+            {
+                var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
+                var safeDetails = ExtractSafeAgenticDetails(responseBody);
+                var failureReason = $"Agentic service rejected the workflow request (HTTP {(int)response.StatusCode}).";
+                await MarkWorkflowFailedAsync(workflow, failureReason, cancellationToken);
+                _logger.LogWarning(
+                    "Agentic workflow start rejected for {WorkflowId} with HTTP {Status}: {Details}",
+                    workflow.Id, (int)response.StatusCode, safeDetails);
+                return StatusCode(StatusCodes.Status502BadGateway, new
+                {
+                    message = "Agentic service rejected the workflow request.",
+                    status = (int)response.StatusCode,
+                    details = safeDetails
+                });
+            }
         }
-        catch (HttpRequestException ex)
+        catch (HttpRequestException)
         {
-            return BadRequest(new { Message = "Cannot connect to the AI Agentic Service. Please make sure it is running and accessible.", Details = ex.Message });
+            const string failureReason = "Could not connect to the AI agentic service.";
+            await MarkWorkflowFailedAsync(workflow, failureReason, cancellationToken);
+            _logger.LogWarning("Agentic workflow start connection failed for {WorkflowId}", workflow.Id);
+            return StatusCode(StatusCodes.Status503ServiceUnavailable, new
+            {
+                message = "Cannot connect to the AI agentic service.",
+                details = "The workflow was recorded as failed and can be retried."
+            });
         }
 
         return Ok(new { Message = "Workflow started successfully", WorkflowId = workflow.Id });
     }
+
+    private async Task MarkWorkflowFailedAsync(
+        WorkflowState workflow,
+        string failureReason,
+        CancellationToken cancellationToken)
+    {
+        workflow.Status = "failed";
+        workflow.ApprovalStatus = "not_requested";
+        workflow.FailureReason = failureReason;
+        workflow.UpdatedAt = DateTimeOffset.UtcNow;
+        await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    private static string ExtractSafeAgenticDetails(string responseBody)
+    {
+        if (string.IsNullOrWhiteSpace(responseBody)) return "No validation details were returned.";
+        try
+        {
+            using var document = JsonDocument.Parse(responseBody);
+            if (!document.RootElement.TryGetProperty("detail", out var detail))
+                return "The agentic service rejected the request.";
+            if (detail.ValueKind == JsonValueKind.String)
+                return Limit(detail.GetString());
+            if (detail.ValueKind != JsonValueKind.Array)
+                return "The agentic service rejected the request.";
+
+            var messages = detail.EnumerateArray().Select(item =>
+            {
+                var field = item.TryGetProperty("loc", out var location) && location.ValueKind == JsonValueKind.Array
+                    ? string.Join('.', location.EnumerateArray().Select(x => x.ToString()).Where(x => x != "body"))
+                    : "request";
+                var message = item.TryGetProperty("msg", out var msg) ? msg.GetString() : "Invalid value.";
+                return $"{field}: {message}";
+            });
+            return Limit(string.Join("; ", messages));
+        }
+        catch (JsonException)
+        {
+            return "The agentic service returned an unreadable error response.";
+        }
+    }
+
+    private static string Limit(string? value) => string.IsNullOrWhiteSpace(value)
+        ? "The agentic service rejected the request."
+        : value[..Math.Min(value.Length, 1000)];
 }

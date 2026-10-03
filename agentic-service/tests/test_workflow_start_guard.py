@@ -25,6 +25,21 @@ def _request(workflow_id):
     )
 
 
+def test_start_contract_accepts_null_target_duration():
+    request = workflow_routes.StartWorkflowRequest.model_validate({
+        "workflow_id": str(uuid4()),
+        "submission_id": str(uuid4()),
+        "land_size_category": "medium",
+        "land_size_perches": 25,
+        "bedrooms": 2,
+        "bathrooms": 1,
+        "house_type": "modern",
+        "target_duration_days": None,
+    })
+
+    assert request.target_duration_days is None
+
+
 def test_same_workflow_is_scheduled_only_once_while_running():
     workflow_id = uuid4()
     first_tasks = BackgroundTasks()
