@@ -114,7 +114,7 @@ public class AiGenerationController : ControllerBase
         }
         catch (HttpRequestException ex)
         {
-            return BadRequest(new { Message = "Cannot connect to the AI Agentic Service. Please make sure it is running on port 8001.", Details = ex.Message });
+            return BadRequest(new { Message = "Cannot connect to the AI Agentic Service. Please make sure it is running and accessible.", Details = ex.Message });
         }
 
         return Ok(new { Message = "Workflow started successfully", WorkflowId = workflow.Id });

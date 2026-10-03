@@ -7,6 +7,12 @@ import { ArrowLeft, CheckCircle, XCircle, Clock, Home, Bed, User, Map, FileText 
 import CostBreakdownCard from '../../components/cost/CostBreakdownCard';
 import { formatRoomName } from '../../utils/presentation';
 
+const safeDisplayValue = (val: any): string => {
+  if (val === null || val === undefined) return '—';
+  if (typeof val === 'object') return JSON.stringify(val);
+  return String(val);
+};
+
 const ValidationRequestDetails: React.FC = () => {
  const { id } = useParams<{ id: string }>();
  const navigate = useNavigate();
@@ -342,13 +348,13 @@ const ValidationRequestDetails: React.FC = () => {
                       <div>
                         <span className="text-text-secondary block mb-0.5">Expected:</span>
                         <span className="font-mono text-gray-900 dark:text-text-primary break-words">
-                          {rule.expected !== null ? String(rule.expected) : '—'}
+                          {safeDisplayValue(rule.expected)}
                         </span>
                       </div>
                       <div>
                         <span className="text-text-secondary block mb-0.5">Actual:</span>
                         <span className="font-mono text-gray-900 dark:text-text-primary break-words">
-                          {rule.actual !== null ? String(rule.actual) : '—'}
+                          {safeDisplayValue(rule.actual)}
                         </span>
                       </div>
                     </div>
