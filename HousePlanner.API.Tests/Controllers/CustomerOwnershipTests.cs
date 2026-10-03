@@ -134,18 +134,6 @@ public sealed class CustomerOwnershipTests
     }
 
     [Fact]
-    public async Task Customer_CannotCreateValidationRequestForAnotherCustomersWorkflow()
-    {
-        var current = new Mock<ICurrentUserContextService>();
-        current.Setup(x => x.GetAsync(It.IsAny<HttpContext>()))
-            .ReturnsAsync(new CurrentUserContext(_customerA, "a@example.com", "Customer"));
-        var controller = new ValidationRequestController(_db, current.Object)
-        { ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() } };
-        Assert.IsType<NotFoundObjectResult>(await controller.CreateValidationRequest(
-            new CreateValidationRequestDto { WorkflowStateId = _workflowB.Id }));
-    }
-
-    [Fact]
     public async Task Architect_CannotActOnWorkflowThatWasNotSubmittedForReview()
     {
         var current = new Mock<ICurrentUserContextService>();

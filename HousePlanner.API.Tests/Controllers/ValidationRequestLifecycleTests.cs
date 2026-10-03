@@ -12,7 +12,25 @@ namespace HousePlanner.API.Tests.Controllers;
 
 public sealed class ValidationRequestLifecycleTests
 {
-    private static async Task<(ApplicationDbContext Db, ValidationRequestController Controller, ValidationRequest Request)> Setup(bool includeCost = true)
+    [Theory]
+    [InlineData("Customer")]
+    [InlineData("Constructor")]
+    [InlineData("Admin")]
+    public async Task NonArchitectRolesCannotAccessArchitectValidationEndpoints(string role)
+    {
+        await using var db = new ApplicationDbContext(
+            new DbContextOptionsBuilder<ApplicationDbContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options);
+        var current = new Mock<ICurrentUserContextService>();
+        current.Setup(x => x.GetAsync(It.IsAny<HttpContext>()))
+            .ReturnsAsync(new CurrentUserContext(Guid.NewGuid(), "user@example.com", role));
+        var controller = new ArchitectValidationRequestsController(db, current.Object)
+        { ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() } };
+
+        Assert.IsType<ForbidResult>(await controller.GetSummary());
+    }
+
+    private static async Task<(ApplicationDbContext Db, ArchitectValidationRequestsController Controller, ValidationRequest Request)> Setup(bool includeCost = true)
     {
         var db = new ApplicationDbContext(new DbContextOptionsBuilder<ApplicationDbContext>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options);
         var customer = Guid.NewGuid(); var architect = Guid.NewGuid(); var workflowId = Guid.NewGuid();
@@ -36,17 +54,17 @@ public sealed class ValidationRequestLifecycleTests
         });
         if (includeCost) await db.SaveChangesAsync();
         var current = new Mock<ICurrentUserContextService>(); current.Setup(x => x.GetAsync(It.IsAny<HttpContext>())).ReturnsAsync(new CurrentUserContext(architect, "architect@example.com", "Architect"));
-        var controller = new ValidationRequestController(db, current.Object) { ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() } };
+        var controller = new ArchitectValidationRequestsController(db, current.Object) { ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() } };
         return (db, controller, request);
     }
 
     [Fact]
     public async Task RejectRequiresReasonAndFinalizedRequestCannotChangeDecision()
-    { var (db, c, r) = await Setup(); Assert.IsType<BadRequestObjectResult>(await c.RejectRequest(r.Id, new ArchitectReviewDto())); Assert.IsType<OkObjectResult>(await c.RejectRequest(r.Id, new ArchitectReviewDto { Review = "Circulation needs improvement." })); Assert.Equal("revision_requested", (await db.WorkflowStates.SingleAsync()).Status); Assert.IsType<ConflictObjectResult>(await c.ApproveRequest(r.Id, new ArchitectReviewDto())); }
+    { var (db, c, r) = await Setup(); Assert.IsType<BadRequestObjectResult>(await c.RequestRevision(r.Id, new ArchitectReviewDto())); Assert.IsType<OkObjectResult>(await c.RequestRevision(r.Id, new ArchitectReviewDto("Circulation needs improvement."))); Assert.Equal("revision_requested", (await db.WorkflowStates.SingleAsync()).Status); Assert.IsType<ConflictObjectResult>(await c.Approve(r.Id, new ArchitectReviewDto())); }
 
     [Fact]
     public async Task ApprovedRequestCannotBeApprovedOrRejectedAgain()
-    { var (_, c, r) = await Setup(); Assert.IsType<OkObjectResult>(await c.ApproveRequest(r.Id, new ArchitectReviewDto { Review = "Approved" })); Assert.IsType<ConflictObjectResult>(await c.ApproveRequest(r.Id, new ArchitectReviewDto())); Assert.IsType<ConflictObjectResult>(await c.RejectRequest(r.Id, new ArchitectReviewDto { Review = "Changed mind" })); }
+    { var (_, c, r) = await Setup(); Assert.IsType<OkObjectResult>(await c.Approve(r.Id, new ArchitectReviewDto("Approved"))); Assert.IsType<ConflictObjectResult>(await c.Approve(r.Id, new ArchitectReviewDto())); Assert.IsType<ConflictObjectResult>(await c.Reject(r.Id, new ArchitectReviewDto("Changed mind"))); }
 
     [Fact]
     public async Task ArchitectDetailsIncludeCostForTheSubmittedDesign()
@@ -71,6 +89,6 @@ public sealed class ValidationRequestLifecycleTests
         Assert.True(json.RootElement.GetProperty("approvalEligibility").GetProperty("canApprove").GetBoolean());
         Assert.Equal(JsonValueKind.Null, json.RootElement.GetProperty("approvalEligibility").GetProperty("reason").ValueKind);
 
-        Assert.IsType<OkObjectResult>(await controller.ApproveRequest(request.Id, new ArchitectReviewDto { Review = "Approved without estimate." }));
+        Assert.IsType<OkObjectResult>(await controller.Approve(request.Id, new ArchitectReviewDto("Approved without estimate.")));
     }
 }

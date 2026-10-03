@@ -18,7 +18,7 @@ namespace HousePlanner.API.Tests.Controllers;
 
 public class ValidationRequestDetailsTests
 {
-    private static (ApplicationDbContext db, ValidationRequestController ctrl) Build()
+    private static (ApplicationDbContext db, ArchitectValidationRequestsController ctrl) Build()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
@@ -29,7 +29,7 @@ public class ValidationRequestDetailsTests
         userCtxMock.Setup(x => x.GetAsync(It.IsAny<HttpContext>()))
             .ReturnsAsync(new CurrentUserContext(Guid.NewGuid(), "architect@test.com", "Architect"));
             
-        var ctrl = new ValidationRequestController(db, userCtxMock.Object);
+        var ctrl = new ArchitectValidationRequestsController(db, userCtxMock.Object);
         var httpContext = new DefaultHttpContext();
         ctrl.ControllerContext = new ControllerContext { HttpContext = httpContext };
         
