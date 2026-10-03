@@ -278,7 +278,7 @@ def test_compiled_graph_reaches_human_approval_boundary(monkeypatch, tmp_path):
     assert result.validation_result["is_valid"] is True
     assert result.validation_result["errors"] == []
     assert result.validation_result["summary"]
-    assert len(result.validation_result["rules"]) == 4
+    assert len(result.validation_result["rules"]) == 5
 
     validation_persistence_spy.assert_called_once()
     timeline_spy.assert_called_once()

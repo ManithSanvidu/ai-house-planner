@@ -285,5 +285,35 @@ namespace HousePlanner.API.Tests.Controllers
             var unauthorizedResult = Assert.IsType<UnauthorizedObjectResult>(result);
             Assert.Empty(_dbContext.LandSubmissions);
         }
+        [Fact]
+        public async Task Generate_RegressionTest_UserPayloadIsAccepted()
+        {
+            // The exact user request that previously resulted in a 400
+            // due to port misconfiguration masking as Bad Request
+            var request = new StartDesignRequest
+            {
+                LandSizeCategory = "medium",
+                LandSizePerches = 25,
+                Bedrooms = 3,
+                Bathrooms = 1,
+                HouseType = "simple",
+                TargetDurationDays = null
+            };
+
+            // Setup successful validation
+            _mockDesignOptionsService.Setup(s => s.ValidateFinalSelectionAsync(It.IsAny<HouseRequirement>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new DesignOptionsValidationResult { IsValid = true });
+
+            // Mock successful Fast API response
+            _mockHttpMessageHandler.Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK));
+
+            // Act
+            var result = await _controller.Generate(request, CancellationToken.None);
+
+            // Assert
+            Assert.IsType<OkObjectResult>(result); // Verify not 400
+        }
     }
 }

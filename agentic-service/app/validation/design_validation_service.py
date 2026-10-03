@@ -28,6 +28,8 @@ from app.schemas.validation_schemas import (
     ValidationResult,
 )
 from app.schemas.workflow_state import WorkflowState
+from app.schemas.design_result import RoomLayout
+from app.validation.geometry_validator import validate_geometry
 
 # ---------------------------------------------------------------------------
 # Business Rule Constants & Configuration Defaults
@@ -199,7 +201,8 @@ def validate_budget(
         return RuleValidationResult(
             rule_name=rule_name,
             passed=True,
-            reason="Budget validation skipped: budget or estimated cost was not specified.",
+            status="NOT_APPLICABLE",
+            reason="Budget validation not applicable because no budget was provided.",
             actual=f"budget={budget_lkr}, estimated_cost={estimated_cost_lkr}",
             expected=f"Estimated cost <= Budget + {tolerance_ratio:.1%}",
         )
@@ -261,6 +264,8 @@ def validate_budget(
 def validate_preferences(
     requested_bedrooms: int | None,
     actual_bedrooms: int | None,
+    requested_bathrooms: int | None,
+    actual_bathrooms: int | None,
     requested_floors: int | None,
     actual_floors: int | None,
 ) -> RuleValidationResult:
@@ -273,6 +278,14 @@ def validate_preferences(
         elif actual_bedrooms != requested_bedrooms:
             failures.append(
                 f"Bedroom count mismatch: client requested {requested_bedrooms} bedroom(s), but design provides {actual_bedrooms}."
+            )
+
+    if requested_bathrooms is not None:
+        if actual_bathrooms is None:
+            failures.append(f"Design output missing bathroom count (requested: {requested_bathrooms}).")
+        elif actual_bathrooms != requested_bathrooms:
+            failures.append(
+                f"Bathroom count mismatch: client requested {requested_bathrooms} bathroom(s), but design provides {actual_bathrooms}."
             )
 
     if requested_floors is not None:
@@ -289,6 +302,7 @@ def validate_preferences(
         reason = (
             f"All specified client preferences matched successfully "
             f"(Bedrooms: {actual_bedrooms if actual_bedrooms is not None else 'N/A'}, "
+            f"Bathrooms: {actual_bathrooms if actual_bathrooms is not None else 'N/A'}, "
             f"Floors: {actual_floors if actual_floors is not None else 'N/A'})."
         )
     else:
@@ -298,8 +312,8 @@ def validate_preferences(
         rule_name=rule_name,
         passed=is_passed,
         reason=reason,
-        actual=f"Bedrooms={actual_bedrooms}, Floors={actual_floors}",
-        expected=f"Bedrooms={requested_bedrooms}, Floors={requested_floors}",
+        actual=f"Bedrooms={actual_bedrooms}, Bathrooms={actual_bathrooms}, Floors={actual_floors}",
+        expected=f"Bedrooms={requested_bedrooms}, Bathrooms={requested_bathrooms}, Floors={requested_floors}",
     )
 
 
@@ -351,6 +365,7 @@ def extract_validation_input_from_state(state: Any) -> HousePlanValidationInput:
     rooms_list = design_result.get("rooms") or state_dict.get("rooms") or []
     computed_footprint = None
     computed_bedroom_count = None
+    computed_bathroom_count = None
     if rooms_list and isinstance(rooms_list, list):
         floor1_rooms = [
             r for r in rooms_list
@@ -364,6 +379,10 @@ def extract_validation_input_from_state(state: Any) -> HousePlanValidationInput:
         computed_bedroom_count = len([
             r for r in rooms_list
             if ("bedroom" in (r.get("room_type", "") if isinstance(r, dict) else getattr(r, "room_type", "")).lower())
+        ])
+        computed_bathroom_count = len([
+            r for r in rooms_list
+            if ("bath" in (r.get("room_type", "") if isinstance(r, dict) else getattr(r, "room_type", "")).lower())
         ])
 
     ground_coverage = (
@@ -384,6 +403,12 @@ def extract_validation_input_from_state(state: Any) -> HousePlanValidationInput:
         or computed_bedroom_count
         or state_dict.get("actual_bedrooms")
     )
+    actual_bathrooms = (
+        design_result.get("bathrooms")
+        or design_result.get("bathroom_count")
+        or computed_bathroom_count
+        or state_dict.get("actual_bathrooms")
+    )
     actual_floors = (
         design_result.get("floors")
         or design_result.get("floor_count")
@@ -400,13 +425,16 @@ def extract_validation_input_from_state(state: Any) -> HousePlanValidationInput:
     )
 
     requested_bedrooms = None
+    requested_bathrooms = None
     requested_floors = None
     if input_data:
         requested_bedrooms = getattr(input_data, "bedrooms", None) or (input_data.get("bedrooms") if isinstance(input_data, dict) else None)
+        requested_bathrooms = getattr(input_data, "bathrooms", None) or (input_data.get("bathrooms") if isinstance(input_data, dict) else None)
         # Floors are now implicitly 1 in the new deterministic pipeline, but let's check if requested_floors exists
         requested_floors = getattr(input_data, "floors", None) or (input_data.get("floors") if isinstance(input_data, dict) else 1)
         
     requested_bedrooms = requested_bedrooms or state_dict.get("requested_bedrooms")
+    requested_bathrooms = requested_bathrooms or state_dict.get("requested_bathrooms")
     requested_floors = requested_floors or state_dict.get("requested_floors") or 1
 
     return HousePlanValidationInput(
@@ -419,8 +447,11 @@ def extract_validation_input_from_state(state: Any) -> HousePlanValidationInput:
         estimated_cost_lkr=float(estimated_cost) if estimated_cost is not None else None,
         requested_bedrooms=int(requested_bedrooms) if requested_bedrooms is not None else None,
         actual_bedrooms=int(actual_bedrooms) if actual_bedrooms is not None else None,
+        requested_bathrooms=int(requested_bathrooms) if requested_bathrooms is not None else None,
+        actual_bathrooms=int(actual_bathrooms) if actual_bathrooms is not None else None,
         requested_floors=int(requested_floors) if requested_floors is not None else None,
         actual_floors=int(actual_floors) if actual_floors is not None else None,
+        rooms=rooms_list,
     )
 
 
@@ -453,10 +484,43 @@ def validate_house_plan(
         validate_preferences(
             requested_bedrooms=val_input.requested_bedrooms,
             actual_bedrooms=val_input.actual_bedrooms,
+            requested_bathrooms=val_input.requested_bathrooms,
+            actual_bathrooms=val_input.actual_bathrooms,
             requested_floors=val_input.requested_floors,
             actual_floors=val_input.actual_floors,
         ),
     ]
+
+    try:
+        rooms_parsed = []
+        if val_input.rooms:
+            for r in val_input.rooms:
+                if isinstance(r, dict):
+                    rooms_parsed.append(RoomLayout(**r))
+                else:
+                    rooms_parsed.append(r)
+        
+        geom_result = validate_geometry(
+            rooms=rooms_parsed,
+            expected_bedrooms=val_input.requested_bedrooms or val_input.actual_bedrooms or 0,
+            expected_floors=val_input.requested_floors or val_input.actual_floors or 1,
+            land_size_perches=val_input.land_size_perches or 0.0,
+        )
+        rule_results.append(RuleValidationResult(
+            rule_name="geometry",
+            passed=geom_result.passed,
+            reason="Geometry validation passed." if geom_result.passed else "; ".join(geom_result.failures),
+            actual="Valid geometry" if geom_result.passed else f"Failures: {geom_result.failures}",
+            expected="Valid layout, correct dimensions, within bounds, no overlap"
+        ))
+    except Exception as e:
+        rule_results.append(RuleValidationResult(
+            rule_name="geometry",
+            passed=False,
+            reason=f"Geometry validation encountered an error: {e}",
+            actual="Error",
+            expected="Valid layout, correct dimensions, within bounds, no overlap"
+        ))
 
     overall_passed = all(r.passed for r in rule_results)
     errors = [r.reason for r in rule_results if not r.passed]
