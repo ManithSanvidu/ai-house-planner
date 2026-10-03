@@ -40,6 +40,8 @@ class HousePlanValidationInput(BaseModel):
     estimated_cost_lkr: float | None = Field(None, description="Total estimated construction cost in LKR")
     requested_bedrooms: int | None = Field(None, description="Bedrooms requested by the client")
     actual_bedrooms: int | None = Field(None, description="Bedrooms provided in the architectural design")
+    requested_bathrooms: int | None = Field(None, description="Bathrooms requested by the client")
+    actual_bathrooms: int | None = Field(None, description="Bathrooms provided in the architectural design")
     requested_floors: int | None = Field(None, description="Floors requested by the client")
     actual_floors: int | None = Field(None, description="Floors provided in the architectural design")
     additional_data: dict[str, Any] | None = Field(default_factory=dict, description="Any extra metadata")
