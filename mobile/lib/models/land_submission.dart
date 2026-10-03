@@ -1,4 +1,3 @@
-import 'dart:io';
 
 class LandSubmission {
   final String? landSizeCategory;
