@@ -141,4 +141,35 @@ describe('ValidationRequestDetails', () => {
     const notApp = screen.getAllByText('NOT APPLICABLE');
     expect(notApp.length).toBeGreaterThan(0);
   });
+
+  test('Test F: Hides legacy Geometry and derives overall result from remaining rules', async () => {
+    (validationRequestService.getById as any).mockResolvedValue({
+      id: '123',
+      status: 'Pending',
+      clientName: 'Test Client',
+      approvalEligibility: { canApprove: true, budgetStatus: 'within_budget', rulesPassed: true },
+      cost: null,
+      validationResult: {
+        passed: false,
+        summary: 'Legacy geometry failure',
+        rules: [
+          { ruleName: 'coverage', passed: true, status: 'PASS' },
+          { ruleName: 'terrain_foundation', passed: true, status: 'PASS' },
+          { ruleName: 'budget', passed: true, status: 'NOT_APPLICABLE' },
+          { ruleName: 'preferences', passed: true, status: 'PASS' },
+          { ruleName: 'geometry', passed: false, status: 'FAIL', reason: 'Floor 1 has disconnected room components.' }
+        ]
+      }
+    });
+
+    renderComponent();
+
+    await waitFor(() => expect(screen.getByText('coverage')).toBeInTheDocument());
+    expect(screen.getByText('terrain foundation')).toBeInTheDocument();
+    expect(screen.getByText('budget')).toBeInTheDocument();
+    expect(screen.getByText('preferences')).toBeInTheDocument();
+    expect(screen.queryByText('geometry')).not.toBeInTheDocument();
+    expect(screen.queryByText('Floor 1 has disconnected room components.')).not.toBeInTheDocument();
+    expect(screen.queryByText('FAIL')).not.toBeInTheDocument();
+  });
 });

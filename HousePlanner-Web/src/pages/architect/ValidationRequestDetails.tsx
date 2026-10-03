@@ -147,6 +147,11 @@ const ValidationRequestDetails: React.FC = () => {
 
  const isPending = request.status === 'Pending' || request.status === 'Under Review';
  const canApprove = request.approvalEligibility.canApprove;
+ const finalValidationRules = (request.validationResult?.rules || [])
+  .filter(rule => rule.ruleName?.toLowerCase() !== 'geometry');
+ const finalValidationPassed = finalValidationRules.every(
+  rule => rule.status ? rule.status !== 'FAIL' : rule.passed
+ );
 
  return (
   <div className="p-6 md:p-8 max-w-5xl mx-auto space-y-6">
@@ -312,26 +317,26 @@ const ValidationRequestDetails: React.FC = () => {
         <div className="space-y-4">
           {/* Overall Result */}
           <div className={`p-4 rounded-xl border flex items-center justify-between ${
-            request.validationResult.passed 
+            finalValidationPassed
               ? 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800/50' 
               : 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800/50'
           }`}>
             <span className="font-semibold text-gray-900 dark:text-text-primary">Overall Result</span>
             <span className={`px-2.5 py-1 rounded-full text-xs font-bold border ${
-              request.validationResult.passed 
+              finalValidationPassed
                 ? 'bg-green-100 text-green-800 border-green-300 dark:bg-green-900/50 dark:text-green-400 dark:border-green-700' 
                 : 'bg-red-100 text-red-800 border-red-300 dark:bg-red-900/50 dark:text-red-400 dark:border-red-700'
             }`}>
-              {request.validationResult.passed ? 'PASS' : 'FAIL'}
+              {finalValidationPassed ? 'PASS' : 'FAIL'}
             </span>
           </div>
 
           {/* Rules */}
-          {request.validationResult.rules && request.validationResult.rules.length > 0 && (
+          {finalValidationRules.length > 0 && (
             <div className="space-y-3">
               <h3 className="text-sm font-semibold text-gray-900 dark:text-text-primary">Rule Breakdown</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {request.validationResult.rules.map((rule, idx) => (
+                {finalValidationRules.map((rule, idx) => (
                   <div key={idx} className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-border dark:border-border-strong flex flex-col gap-2 relative overflow-hidden">
                     <div className={`absolute top-0 left-0 w-1 h-full ${rule.status === 'NOT_APPLICABLE' ? 'bg-slate-400' : rule.passed ? 'bg-green-500' : 'bg-red-500'}`} />
                     
