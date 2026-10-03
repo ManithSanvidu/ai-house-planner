@@ -31,10 +31,10 @@ const RegisterPage: React.FC = () => {
 
 
  const fieldClass = 'block w-full pl-11 pr-4 py-3.5 bg-surface-elevated border border-border dark:border-border-strong rounded-xl text-text-primary focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none';
- return <div className="min-h-screen bg-background flex items-center justify-center p-6 relative overflow-hidden">
+ return <div className="min-h-screen bg-background flex items-center justify-center p-4 md:p-6 relative overflow-hidden">
   <div className="absolute inset-0 pointer-events-none"><div className="absolute -top-[10%] -right-[5%] w-[40%] h-[40%] rounded-full bg-violet-100/50 dark:bg-violet-900/20 blur-3xl"/><div className="absolute top-[60%] -left-[10%] w-[30%] h-[30%] rounded-full bg-blue-100/40 dark:bg-blue-900/20 blur-3xl"/></div>
   <Link to="/" className="absolute top-8 left-8 flex items-center gap-3 z-10"><div className="w-8 h-8 relative flex items-center justify-center"><Box size={24}/><Sparkles className="absolute text-yellow-600 -top-1 -right-1" size={12}/></div><span className="text-sm font-bold tracking-[0.2em]">HOMEPLANNER<span className="text-text-secondary">AI</span></span></Link>
-  <main className="w-full max-w-md relative z-10 bg-surface rounded-3xl p-8 sm:p-10 custom-shadow-xl border border-gray-100 dark:border-border-strong">
+  <main className="w-full max-w-md relative z-10 bg-surface rounded-3xl p-4 md:p-8 sm:p-10 custom-shadow-xl border border-gray-100 dark:border-border-strong">
    <h1 className="text-2xl font-bold text-text-primary">Create your HousePlanner account</h1>
    <p className="text-sm text-text-secondary mt-2 mb-7">Create a customer account to explore plans and manage your home design.</p>
    {error && <div role="alert" className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-sm text-red-600 dark:text-red-400 text-center">{error}</div>}

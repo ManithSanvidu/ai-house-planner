@@ -42,10 +42,10 @@ const AdminWorkflowsPage: React.FC = () => {
  };
 
  return (
-  <div className="p-8 max-w-7xl mx-auto min-h-screen">
+  <div className="p-4 md:p-8 max-w-7xl mx-auto min-h-screen">
    <div className="flex justify-between items-center mb-8">
     <div>
-     <h1 className="text-3xl font-bold text-slate-800 dark:text-text-primary flex items-center gap-3">
+     <h1 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-text-primary flex items-center gap-3">
       <FolderKanban className="text-indigo-600" />
       Customer Workflows
      </h1>
@@ -55,19 +55,19 @@ const AdminWorkflowsPage: React.FC = () => {
 
    <div className="bg-surface rounded-2xl shadow-sm border border-slate-200 dark:border-border-strong overflow-hidden">
     {loading ? (
-     <div className="p-8 text-center text-text-muted">Loading workflows...</div>
+     <div className="p-4 md:p-8 text-center text-text-muted">Loading workflows...</div>
     ) : workflows.length === 0 ? (
-     <div className="p-8 text-center text-text-muted">No workflows found.</div>
+     <div className="p-4 md:p-8 text-center text-text-muted">No workflows found.</div>
     ) : (
      <div className="overflow-x-auto">
       <table className="w-full text-left border-collapse">
        <thead>
         <tr className="bg-slate-50 bg-surface-elevated/50 border-b border-slate-200 dark:border-border-strong">
-         <th className="px-6 py-4 text-xs font-bold text-text-muted uppercase tracking-wider">Client</th>
-         <th className="px-6 py-4 text-xs font-bold text-text-muted uppercase tracking-wider">Status</th>
-         <th className="px-6 py-4 text-xs font-bold text-text-muted uppercase tracking-wider">Approval</th>
-         <th className="px-6 py-4 text-xs font-bold text-text-muted uppercase tracking-wider">Date</th>
-         <th className="px-6 py-4 text-xs font-bold text-text-muted uppercase tracking-wider text-right">Actions</th>
+         <th className="px-4 md:px-6 py-4 text-xs font-bold text-text-muted uppercase tracking-wider">Client</th>
+         <th className="px-4 md:px-6 py-4 text-xs font-bold text-text-muted uppercase tracking-wider">Status</th>
+         <th className="px-4 md:px-6 py-4 text-xs font-bold text-text-muted uppercase tracking-wider">Approval</th>
+         <th className="px-4 md:px-6 py-4 text-xs font-bold text-text-muted uppercase tracking-wider">Date</th>
+         <th className="px-4 md:px-6 py-4 text-xs font-bold text-text-muted uppercase tracking-wider text-right">Actions</th>
         </tr>
        </thead>
        <tbody className="divide-y divide-slate-200 dark:divide-gray-800">
@@ -78,24 +78,24 @@ const AdminWorkflowsPage: React.FC = () => {
           animate={{ opacity: 1 }}
           className="hover:bg-slate-50/50 dark:hover:bg-gray-800/30 transition-colors"
          >
-          <td className="px-6 py-4">
+          <td className="px-4 md:px-6 py-4">
            <div className="font-semibold text-slate-800 dark:text-text-primary">{workflow.clientName}</div>
            <div className="text-sm text-text-muted">{workflow.clientEmail}</div>
           </td>
-          <td className="px-6 py-4">
+          <td className="px-4 md:px-6 py-4">
            <span className="px-3 py-1 rounded-full text-xs font-bold bg-indigo-100 text-indigo-800">
             {workflow.status.replace(/_/g, ' ')}
            </span>
           </td>
-          <td className="px-6 py-4">
+          <td className="px-4 md:px-6 py-4">
            <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
             {workflow.approvalStatus.replace(/_/g, ' ')}
            </span>
           </td>
-          <td className="px-6 py-4 text-sm text-text-muted">
+          <td className="px-4 md:px-6 py-4 text-sm text-text-muted">
            {new Date(workflow.createdAt).toLocaleDateString()}
           </td>
-          <td className="px-6 py-4 text-right">
+          <td className="px-4 md:px-6 py-4 text-right">
            <div className="flex items-center justify-end gap-3">
             <Link 
              to={`/dashboard/workflows/${workflow.workflowId}`}

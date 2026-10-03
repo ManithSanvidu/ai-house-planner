@@ -49,9 +49,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     />
    )}
    <aside className={`
-    fixed inset-y-0 left-0 z-50 w-64 transform transition-transform duration-300 md:relative md:translate-x-0
+    fixed inset-y-0 left-0 z-50 w-full max-w-64 transform transition-transform duration-300 md:relative md:translate-x-0
     ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-    border-r border-border/50 dark:border-border-strong/50 bg-surface bg-background/90 md:bg-surface/80 md:bg-background/80 md:backdrop-blur-xl min-h-[calc(100vh-65px)] p-4 flex flex-col gap-6 shadow-2xl md:shadow-[4px_0_24px_-12px_rgba(0,0,0,0.1)] transition-colors
+    border-r border-border/50 dark:border-border-strong/50 bg-surface bg-background/90 md:bg-surface/80 md:bg-background/80 md:backdrop-blur-xl min-h-[calc(100vh-65px)] p-4 flex flex-col gap-4 md:gap-6 shadow-2xl md:shadow-[4px_0_24px_-12px_rgba(0,0,0,0.1)] transition-colors
    `}>
     <div>
      <div className="flex items-center justify-between px-3 mb-1">

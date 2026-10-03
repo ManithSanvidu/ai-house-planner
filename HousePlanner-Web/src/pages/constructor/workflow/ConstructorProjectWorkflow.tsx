@@ -55,7 +55,7 @@ export const ConstructorProjectWorkflow: React.FC = () => {
  }
 
  return (
-  <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+  <div className="mx-auto max-w-7xl px-4 py-4 md:py-8 sm:px-6 lg:px-8">
    <Link
     to="/constructor/dashboard"
     className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-text-muted hover:text-gray-700 text-text-secondary dark:hover:text-gray-300"
@@ -86,13 +86,13 @@ export const ConstructorProjectWorkflow: React.FC = () => {
     </button>
    </div>
 
-   <div className="mb-8 grid grid-cols-1 gap-6 xl:grid-cols-2">
+   <div className="mb-8 grid grid-cols-1 gap-4 md:gap-6 xl:grid-cols-2">
     <CostBreakdownCard cost={project.cost} />
-    <section className="rounded-2xl border border-gray-100 bg-surface p-6 shadow-sm dark:border-border-strong bg-surface">
+    <section className="rounded-2xl border border-gray-100 bg-surface p-4 md:p-6 shadow-sm dark:border-border-strong bg-surface">
      <h2 className="text-lg font-semibold text-gray-900 dark:text-text-primary">Approved Design</h2>
      {project.design ? (
       <>
-       <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+       <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
         <div className="rounded-xl bg-gray-50 p-3 bg-surface-elevated/50"><span className="text-text-muted">Version</span><p className="font-semibold">{project.design.version}</p></div>
         <div className="rounded-xl bg-gray-50 p-3 bg-surface-elevated/50"><span className="text-text-muted">Floors</span><p className="font-semibold">{project.design.floorCount}</p></div>
         <div className="rounded-xl bg-gray-50 p-3 bg-surface-elevated/50"><span className="text-text-muted">Area</span><p className="font-semibold">{project.design.totalBuiltUpAreaSqft.toLocaleString()} sq ft</p></div>
@@ -110,9 +110,9 @@ export const ConstructorProjectWorkflow: React.FC = () => {
     </section>
    </div>
 
-   <div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
+   <div className="mb-8 grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-3">
     {/* Progress Overview Card */}
-    <div className="col-span-1 rounded-2xl border border-gray-100 bg-surface p-6 shadow-sm dark:border-border-strong bg-surface lg:col-span-3 xl:col-span-1">
+    <div className="col-span-1 rounded-2xl border border-gray-100 bg-surface p-4 md:p-6 shadow-sm dark:border-border-strong bg-surface lg:col-span-3 xl:col-span-1">
      <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-text-primary">Planned vs Actual</h2>
      
      <div className="mb-6">
@@ -128,7 +128,7 @@ export const ConstructorProjectWorkflow: React.FC = () => {
       </div>
      </div>
 
-     <div className="grid grid-cols-2 gap-4">
+     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div className="rounded-xl bg-gray-50 p-4 bg-surface-elevated/50">
        <p className="text-sm text-text-secondary">Planned Days</p>
        <p className="text-xl font-bold text-gray-900 dark:text-text-primary">{progress.totalEstimatedDays}</p>
@@ -146,7 +146,7 @@ export const ConstructorProjectWorkflow: React.FC = () => {
     </div>
 
     {/* Construction Timeline */}
-    <div className="col-span-1 rounded-2xl border border-gray-100 bg-surface p-6 shadow-sm dark:border-border-strong bg-surface lg:col-span-2 xl:col-span-2">
+    <div className="col-span-1 rounded-2xl border border-gray-100 bg-surface p-4 md:p-6 shadow-sm dark:border-border-strong bg-surface lg:col-span-2 xl:col-span-2">
      <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-text-primary">Construction Phases</h2>
      <div className="relative border-l border-border dark:border-border-strong ml-3">
       {project.constructionPhases.map((phase) => (
@@ -172,7 +172,7 @@ export const ConstructorProjectWorkflow: React.FC = () => {
    </div>
 
    {showAddForm && progress.totalEstimatedDays > 0 && (
-    <div className="mb-8 rounded-2xl border border-gray-100 bg-surface p-6 shadow-sm dark:border-border-strong bg-surface">
+    <div className="mb-8 rounded-2xl border border-gray-100 bg-surface p-4 md:p-6 shadow-sm dark:border-border-strong bg-surface">
      <h2 className="mb-6 text-lg font-semibold text-gray-900 dark:text-text-primary flex items-center gap-2">
       <FileText className="h-5 w-5 text-indigo-600" />
       New Daily Log
@@ -190,10 +190,10 @@ export const ConstructorProjectWorkflow: React.FC = () => {
 
    {progress.totalEstimatedDays > 0 ? (
     <div className="rounded-2xl border border-gray-100 bg-surface shadow-sm dark:border-border-strong bg-surface">
-     <div className="border-b border-border px-6 py-4 dark:border-border-strong">
+     <div className="border-b border-border px-4 md:px-6 py-4 dark:border-border-strong">
       <h2 className="text-lg font-semibold text-gray-900 dark:text-text-primary">Logbook History</h2>
      </div>
-     <div className="p-6">
+     <div className="p-4 md:p-6">
       <WorkflowHistory logs={logs} />
      </div>
     </div>
@@ -225,7 +225,7 @@ const ProjectSetupScreen: React.FC<{ projectId: string, onSuccess: () => void }>
  };
 
  return (
-  <div className="rounded-2xl border border-border bg-surface p-8 shadow-sm dark:border-border-strong bg-surface">
+  <div className="rounded-2xl border border-border bg-surface p-4 md:p-8 shadow-sm dark:border-border-strong bg-surface">
    <div className="mx-auto max-w-lg text-center">
     <h2 className="text-2xl font-bold text-gray-900 dark:text-text-primary">Project Setup Required</h2>
     <p className="mt-4 text-text-secondary">
@@ -249,7 +249,7 @@ const ProjectSetupScreen: React.FC<{ projectId: string, onSuccess: () => void }>
      <button
       type="submit"
       disabled={loading || estimatedDays < 1}
-      className="w-full flex justify-center rounded-xl bg-indigo-600 px-8 py-3 text-sm font-semibold text-text-primary shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50"
+      className="w-full flex justify-center rounded-xl bg-indigo-600 px-4 md:px-8 py-3 text-sm font-semibold text-text-primary shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50"
      >
       {loading ? 'Saving...' : 'Set Estimate & Continue'}
      </button>

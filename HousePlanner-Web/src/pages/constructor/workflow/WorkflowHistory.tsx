@@ -9,7 +9,7 @@ interface WorkflowHistoryProps {
 export const WorkflowHistory: React.FC<WorkflowHistoryProps> = ({ logs }) => {
  if (logs.length === 0) {
   return (
-   <div className="text-center py-8">
+   <div className="text-center py-4 md:py-8">
     <p className="text-text-secondary">No logs recorded for this project yet.</p>
    </div>
   );

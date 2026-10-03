@@ -54,7 +54,7 @@ const ApprovalPage: React.FC = () => {
  if (!workflowId) {
   return (
    <div className="flex items-center justify-center min-h-[calc(100vh-65px)] bg-slate-50">
-    <div className="bg-surface p-8 rounded-2xl shadow-sm border border-red-100 max-w-md text-center">
+    <div className="bg-surface p-4 md:p-8 rounded-2xl shadow-sm border border-red-100 max-w-md text-center">
      <h2 className="text-xl font-bold text-red-600 mb-2">Workflow ID is missing</h2>
      <p className="text-text-secondary">Please return to the workflow review page.</p>
     </div>
@@ -115,7 +115,7 @@ const ApprovalPage: React.FC = () => {
  const terrainType = workflow?.terrainType || design?.terrainType || 'Flat';
 
  return (
-  <div className="min-h-[calc(100vh-65px)] bg-gray-50 flex flex-col items-center py-12 px-6">
+  <div className="min-h-[calc(100vh-65px)] bg-gray-50 flex flex-col items-center py-4 md:py-12 px-4 md:px-6">
    <motion.div
     initial={{ opacity: 0, y: 10 }}
     animate={{ opacity: 1, y: 0 }}
@@ -124,7 +124,7 @@ const ApprovalPage: React.FC = () => {
    >
     <div className="flex items-center justify-between">
      <div>
-      <h1 className="text-3xl font-bold text-gray-900">Project Approval</h1>
+      <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Project Approval</h1>
       <p className="text-xs text-text-muted mt-1">Workflow ID: {workflowId}</p>
      </div>
      <span className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider ${
@@ -175,7 +175,7 @@ const ApprovalPage: React.FC = () => {
        </span>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 text-xs">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
        <div className="p-3 bg-surface-elevated rounded border border-zinc-100 flex items-center justify-between">
         <span className="text-text-secondary">1. Ground Coverage Rule (&le; 65%)</span>
         <span className="font-semibold text-emerald-600">✓ PASS</span>
@@ -208,7 +208,7 @@ const ApprovalPage: React.FC = () => {
         const parent = e.currentTarget.parentElement;
         if (parent) {
          const div = document.createElement('div');
-         div.className = 'flex items-center justify-center w-full h-full p-12 text-text-secondary font-medium text-sm';
+         div.className = 'flex items-center justify-center w-full h-full p-4 md:p-12 text-text-secondary font-medium text-sm';
          div.innerText = 'Image rendering in progress or not available.';
          parent.appendChild(div);
         }

@@ -52,7 +52,7 @@ import { Eye } from 'lucide-react';
  }
 
  return (
-  <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-8">
+  <div className="p-4 md:p-6 md:p-8 max-w-7xl mx-auto space-y-8">
    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
     <div>
      <h1 className="text-2xl font-bold text-gray-900 dark:text-text-primary">Validation Requests</h1>
@@ -65,24 +65,24 @@ import { Eye } from 'lucide-react';
      <table className="w-full text-sm text-left text-text-secondary">
       <thead className="text-xs text-gray-700 dark:text-gray-300 uppercase bg-gray-50 dark:bg-gray-800/30 border-b border-border dark:border-border-strong">
        <tr>
-        <th scope="col" className="px-6 py-4 font-semibold">Client Name</th>
-        <th scope="col" className="px-6 py-4 font-semibold">Submission Date</th>
-        <th scope="col" className="px-6 py-4 font-semibold">Status</th>
-        <th scope="col" className="px-6 py-4 font-semibold">Budget (LKR)</th>
-        <th scope="col" className="px-6 py-4 font-semibold">Land Size</th>
-        <th scope="col" className="px-6 py-4 text-right font-semibold">Actions</th>
+        <th scope="col" className="px-4 md:px-6 py-4 font-semibold">Client Name</th>
+        <th scope="col" className="px-4 md:px-6 py-4 font-semibold">Submission Date</th>
+        <th scope="col" className="px-4 md:px-6 py-4 font-semibold">Status</th>
+        <th scope="col" className="px-4 md:px-6 py-4 font-semibold">Budget (LKR)</th>
+        <th scope="col" className="px-4 md:px-6 py-4 font-semibold">Land Size</th>
+        <th scope="col" className="px-4 md:px-6 py-4 text-right font-semibold">Actions</th>
        </tr>
       </thead>
       <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
        {requests.map((req) => (
         <tr key={req.id} className="bg-surface hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-         <td className="px-6 py-4 font-medium text-gray-900 dark:text-text-primary">
+         <td className="px-4 md:px-6 py-4 font-medium text-gray-900 dark:text-text-primary">
           {req.clientName || 'Anonymous Client'}
          </td>
-         <td className="px-6 py-4 text-text-secondary">
+         <td className="px-4 md:px-6 py-4 text-text-secondary">
           {formatDate(req.submissionDate)}
          </td>
-         <td className="px-6 py-4">
+         <td className="px-4 md:px-6 py-4">
           <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${
            req.status === 'Pending' 
             ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800'
@@ -91,13 +91,13 @@ import { Eye } from 'lucide-react';
            {req.status}
           </span>
          </td>
-         <td className="px-6 py-4 text-text-secondary">
+         <td className="px-4 md:px-6 py-4 text-text-secondary">
           {req.budget ? req.budget.toLocaleString() : 'N/A'}
          </td>
-         <td className="px-6 py-4 text-text-secondary">
+         <td className="px-4 md:px-6 py-4 text-text-secondary">
           {req.landSize ? `${req.landSize} perches` : 'N/A'}
          </td>
-         <td className="px-6 py-4 text-right">
+         <td className="px-4 md:px-6 py-4 text-right">
           <button 
            onClick={() => navigate(`/architect/requests/${req.id}`)}
            className="inline-flex items-center gap-1.5 text-text-primary bg-indigo-600 hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-300 font-medium rounded-lg text-xs px-4 py-2 transition-colors dark:focus:ring-indigo-800"
@@ -111,7 +111,7 @@ import { Eye } from 'lucide-react';
        
        {requests.length === 0 && (
         <tr>
-         <td colSpan={6} className="px-6 py-12 text-center">
+         <td colSpan={6} className="px-4 md:px-6 py-4 md:py-12 text-center">
           <div className="flex flex-col items-center justify-center text-text-secondary">
            <div className="bg-gray-50 dark:bg-gray-800/50 p-3 rounded-full mb-3">
             <svg className="w-6 h-6 text-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -127,7 +127,7 @@ import { Eye } from 'lucide-react';
      </table>
     </div>
     
-    <div className="px-6 py-4 border-t border-border dark:border-border-strong flex items-center justify-between">
+    <div className="px-4 md:px-6 py-4 border-t border-border dark:border-border-strong flex items-center justify-between">
      <div className="text-sm text-text-secondary">
       Page {page} of {Math.max(1, totalPages)}
      </div>

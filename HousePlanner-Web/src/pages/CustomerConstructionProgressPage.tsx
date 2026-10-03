@@ -10,11 +10,11 @@ export default function CustomerConstructionProgressPage() {
  useEffect(()=>{void load();},[load]);
  const days=useMemo(()=>{const result=[];const end=new Date();const start=new Date(end);start.setDate(end.getDate()-83);for(let d=new Date(start);d<=end;d.setDate(d.getDate()+1))result.push(new Date(d));return result;},[]);
  const activity=new Map<string,any>((data?.activity||[]).map((x:any)=>[String(x.date),x]));
- if(error)return <div role="alert" className="p-8">{error}</div>; if(!data)return <div className="p-8">Loading construction progress…</div>;
+ if(error)return <div role="alert" className="p-4 md:p-8">{error}</div>; if(!data)return <div className="p-4 md:p-8">Loading construction progress…</div>;
  return <main className="mx-auto max-w-6xl p-4 sm:p-8 space-y-7"><Link to="/dashboard/construction" className="inline-flex gap-2"><ArrowLeft size={18}/>Construction</Link>
  <header className="flex justify-between items-center">
    <div>
-     <h1 className="text-3xl font-bold">Construction Progress</h1>
+     <h1 className="text-2xl md:text-3xl font-bold">Construction Progress</h1>
      <p>Approved design v{data.project.designVersion} · {data.project.constructorName}</p>
    </div>
    <div className="flex gap-2">
