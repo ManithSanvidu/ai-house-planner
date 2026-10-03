@@ -201,7 +201,8 @@ def validate_budget(
         return RuleValidationResult(
             rule_name=rule_name,
             passed=True,
-            reason="Budget validation skipped: budget or estimated cost was not specified.",
+            status="NOT_APPLICABLE",
+            reason="Budget validation not applicable because no budget was provided.",
             actual=f"budget={budget_lkr}, estimated_cost={estimated_cost_lkr}",
             expected=f"Estimated cost <= Budget + {tolerance_ratio:.1%}",
         )

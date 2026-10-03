@@ -13,10 +13,11 @@ export interface ValidationRequest {
  area?: number | null;
 }
 
-export interface ValidationResultRule {
- ruleName: string | null;
- passed: boolean;
- reason: string | null;
+ export interface ValidationResultRule {
+  ruleName: string | null;
+  passed: boolean;
+  status?: "PASS" | "FAIL" | "NOT_APPLICABLE";
+  reason: string | null;
  expected: any;
  actual: any;
 }

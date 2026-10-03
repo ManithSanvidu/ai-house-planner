@@ -116,4 +116,29 @@ describe('ValidationRequestDetails', () => {
       expect(screen.getByRole('button', { name: /Reject \/ Request Changes/i })).toBeInTheDocument();
     });
   });
+
+  test('Test E: Renders NOT APPLICABLE status when rule status is NOT_APPLICABLE', async () => {
+    (validationRequestService.getById as any).mockResolvedValue({
+      id: '123',
+      status: 'Pending',
+      clientName: 'Test Client',
+      approvalEligibility: { canApprove: true, budgetStatus: 'within_budget', rulesPassed: true },
+      cost: null,
+      validationResult: {
+        passed: true,
+        summary: 'All good',
+        rules: [
+          { ruleName: 'budget', passed: true, status: 'NOT_APPLICABLE', expected: 'none', actual: 'none', reason: 'Skipped' }
+        ]
+      }
+    });
+
+    renderComponent();
+
+    await waitFor(() => {
+      expect(screen.getByText('Planning / Feasibility Validation')).toBeInTheDocument();
+    });
+    const notApp = screen.getAllByText('NOT APPLICABLE');
+    expect(notApp.length).toBeGreaterThan(0);
+  });
 });

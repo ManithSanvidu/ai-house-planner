@@ -333,14 +333,14 @@ const ValidationRequestDetails: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {request.validationResult.rules.map((rule, idx) => (
                   <div key={idx} className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-border dark:border-border-strong flex flex-col gap-2 relative overflow-hidden">
-                    <div className={`absolute top-0 left-0 w-1 h-full ${rule.passed ? 'bg-green-500' : 'bg-red-500'}`} />
+                    <div className={`absolute top-0 left-0 w-1 h-full ${rule.status === 'NOT_APPLICABLE' ? 'bg-slate-400' : rule.passed ? 'bg-green-500' : 'bg-red-500'}`} />
                     
                     <div className="flex items-start justify-between gap-2">
                       <span className="font-semibold text-sm text-gray-900 dark:text-text-primary capitalize">
                         {(rule.ruleName || '').replace(/_/g, ' ')}
                       </span>
-                      <span className={`text-xs font-bold ${rule.passed ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                        {rule.passed ? 'PASS' : 'FAIL'}
+                      <span className={`text-xs font-bold ${rule.status === 'NOT_APPLICABLE' ? 'text-slate-500 dark:text-slate-400' : rule.passed ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                        {rule.status === 'NOT_APPLICABLE' ? 'NOT APPLICABLE' : rule.status || (rule.passed ? 'PASS' : 'FAIL')}
                       </span>
                     </div>
 
