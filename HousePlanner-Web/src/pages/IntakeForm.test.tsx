@@ -33,6 +33,8 @@ test('submits the five-field simplified payload', async () => {
   fireEvent.click(screen.getByRole('button', { name: /Generate AI Plan/ }));
   await waitFor(() => expect(startDesign).toHaveBeenCalledOnce());
   expect(startDesign).toHaveBeenCalledWith({ landSizeCategory: 'small', landSizePerches: 15, bedrooms: 3, bathrooms: 2, houseType: 'modern' });
+  const serialized = JSON.stringify(startDesign.mock.calls[0][0]);
+  expect(serialized).not.toContain('targetDurationDays');
 });
 
 test('blocks two immediate generation submissions', async () => {

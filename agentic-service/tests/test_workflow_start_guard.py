@@ -25,6 +25,21 @@ def _request(workflow_id):
     )
 
 
+def test_start_contract_accepts_null_target_duration():
+    request = workflow_routes.StartWorkflowRequest.model_validate({
+        "workflow_id": str(uuid4()),
+        "submission_id": str(uuid4()),
+        "land_size_category": "medium",
+        "land_size_perches": 25,
+        "bedrooms": 2,
+        "bathrooms": 1,
+        "house_type": "modern",
+        "target_duration_days": None,
+    })
+
+    assert request.target_duration_days is None
+
+
 def test_same_workflow_is_scheduled_only_once_while_running():
     workflow_id = uuid4()
     first_tasks = BackgroundTasks()
@@ -53,3 +68,28 @@ def test_running_guard_is_released_when_execution_finishes(monkeypatch):
     restarted = workflow_routes.start_workflow(request, next_tasks, api_key="test")
     assert restarted["duplicate"] is False
     assert len(next_tasks.tasks) == 1
+
+
+def test_terminal_execution_exception_persists_failure_and_releases_guard(monkeypatch):
+    workflow_id = uuid4()
+    tasks = BackgroundTasks()
+    workflow_routes.start_workflow(_request(workflow_id), tasks, api_key="test")
+    monkeypatch.setattr(
+        workflow_routes.app_graph, "invoke",
+        lambda _state: (_ for _ in ()).throw(RuntimeError("private terminal details")),
+    )
+    response = type("Response", (), {"raise_for_status": lambda self: None})()
+    captured = {}
+    def fake_patch(url, **kwargs):
+        captured.update(url=url, **kwargs)
+        return response
+    monkeypatch.setattr(workflow_routes.requests, "patch", fake_patch)
+
+    with pytest.raises(RuntimeError, match="private terminal details"):
+        workflow_routes.execute_workflow(tasks.tasks[0].args[0])
+
+    assert str(workflow_id) not in workflow_routes._running_workflows
+    assert captured["url"].endswith(f"/internal/workflows/{workflow_id}/status")
+    assert captured["json"] == {
+        "status": "failed", "reason": "Workflow execution did not complete."
+    }
