@@ -14,6 +14,9 @@ import 'package:mobile/views/workflow_status_view.dart';
 import 'package:mobile/views/design_preview_view.dart';
 import 'package:mobile/views/construction_timeline_view.dart';
 import 'package:mobile/views/profile_view.dart';
+import 'package:mobile/views/my_designs_view.dart';
+import 'package:mobile/views/construction_view.dart';
+import 'package:mobile/views/readiness_view.dart';
 import 'package:mobile/widgets/main_scaffold.dart';
 final routerProvider = Provider<GoRouter>((ref) {
   final authStateListenable = ValueNotifier<bool>(false);
@@ -108,6 +111,18 @@ final routerProvider = Provider<GoRouter>((ref) {
               final workflowId = state.pathParameters['workflowId']!;
               return ConstructionTimelineView(workflowId: workflowId);
             },
+          ),
+          GoRoute(
+            path: '/designs',
+            builder: (context, state) => const MyDesignsView(),
+          ),
+          GoRoute(
+            path: '/construction',
+            builder: (context, state) => const ConstructionView(),
+          ),
+          GoRoute(
+            path: '/readiness',
+            builder: (context, state) => const ReadinessView(),
           ),
         ],
       ),
