@@ -302,6 +302,51 @@ namespace HousePlanner.API.Controllers
             var design = req.HouseDesign ?? req.WorkflowState?.HouseDesigns?.OrderByDescending(d => d.Version).FirstOrDefault();
             var cost = design?.CostEstimates.OrderByDescending(c => c.CreatedAt).FirstOrDefault();
             var canApprove = design is not null && req.Status is ("Pending" or "Under Review");
+
+            object? validationResult = null;
+            if (!string.IsNullOrEmpty(req.WorkflowState?.ValidationResultJson))
+            {
+                try
+                {
+                    using var vDoc = JsonDocument.Parse(req.WorkflowState.ValidationResultJson);
+                    var vRoot = vDoc.RootElement;
+                    var passed = vRoot.TryGetProperty("passed", out var p) && p.ValueKind == JsonValueKind.True;
+                    var rulesList = new List<object>();
+                    if (vRoot.TryGetProperty("rules", out var r) && r.ValueKind == JsonValueKind.Array)
+                    {
+                        foreach (var rule in r.EnumerateArray())
+                        {
+                            rulesList.Add(new
+                            {
+                                ruleName = rule.TryGetProperty("rule_name", out var rn) && rn.ValueKind != JsonValueKind.Null ? rn.GetString() : null,
+                                passed = rule.TryGetProperty("passed", out var rp) && rp.ValueKind == JsonValueKind.True,
+                                reason = rule.TryGetProperty("reason", out var rr) && rr.ValueKind != JsonValueKind.Null ? rr.GetString() : null,
+                                expected = rule.TryGetProperty("expected", out var re) && re.ValueKind != JsonValueKind.Null ? GetFlexibleValue(re) : null,
+                                actual = rule.TryGetProperty("actual", out var ra) && ra.ValueKind != JsonValueKind.Null ? GetFlexibleValue(ra) : null
+                            });
+                        }
+                    }
+                    var errors = new List<string>();
+                    if (vRoot.TryGetProperty("errors", out var errs) && errs.ValueKind == JsonValueKind.Array)
+                    {
+                        foreach (var err in errs.EnumerateArray()) { if (err.ValueKind == JsonValueKind.String) errors.Add(err.GetString()!); }
+                    }
+                    validationResult = new
+                    {
+                        passed,
+                        rules = rulesList,
+                        errors,
+                        summary = vRoot.TryGetProperty("summary", out var summ) && summ.ValueKind != JsonValueKind.Null ? summ.GetString() : null,
+                        revisionReason = vRoot.TryGetProperty("revision_reason", out var rev) && rev.ValueKind != JsonValueKind.Null ? rev.GetString() : null
+                    };
+                }
+                catch
+                {
+                    // Malformed historical data -> do not crash, return null
+                    validationResult = null;
+                }
+            }
+
             return new
             {
                 id = req.Id,
@@ -312,11 +357,14 @@ namespace HousePlanner.API.Controllers
                 budget = req.WorkflowState?.LandSubmission?.BudgetLkr,
                 landSize = req.WorkflowState?.LandSubmission?.LandSizePerches,
                 bedrooms = req.WorkflowState?.LandSubmission?.PreferredBedrooms,
+                bathrooms = req.WorkflowState?.LandSubmission?.PreferredBathrooms ?? 1, // Exposed bathrooms
                 floors = req.WorkflowState?.LandSubmission?.PreferredFloors,
                 style = req.WorkflowState?.LandSubmission?.StylePreference,
                 terrainType = req.WorkflowState?.TerrainType,
+                foundationType = design?.FoundationType, // Exposed foundation
                 architectReview = req.ArchitectReview,
                 decisionAt = req.DecisionAt,
+                validationResult, // Exposed validation evidence
                 approvalEligibility = new
                 {
                     canApprove,
@@ -351,6 +399,18 @@ namespace HousePlanner.API.Controllers
                     rooms = ExtractRoomsWithOpenings(design)
                 } : null
             };
+        }
+
+        private static object? GetFlexibleValue(JsonElement el)
+        {
+            switch (el.ValueKind)
+            {
+                case JsonValueKind.String: return el.GetString();
+                case JsonValueKind.Number: return el.GetDecimal();
+                case JsonValueKind.True: return true;
+                case JsonValueKind.False: return false;
+                default: return null;
+            }
         }
 
         private static List<object> ExtractRoomsWithOpenings(HouseDesign design)
