@@ -9,8 +9,6 @@ const IntakeForm: React.FC = () => {
 
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
-  const [workflowId, setWorkflowId] = useState<string | null>(null);
   const submitLockRef = useRef(false);
 
   // Step 1: Land Information
@@ -78,8 +76,7 @@ const IntakeForm: React.FC = () => {
       console.log('Frontend payload before POST:', payload);
 
       const result = await workflowService.startDesign(payload);
-      setWorkflowId(result.workflowId);
-      setIsSuccess(true);
+      navigate(`/dashboard/workflows/${result.workflowId}`);
     } catch (err: any) {
       console.error('Failed to generate plan.', err);
     } finally {
@@ -87,28 +84,6 @@ const IntakeForm: React.FC = () => {
       setIsSubmitting(false);
     }
   };
-
-  if (isSuccess) {
-    return (
-      <div className="min-h-[calc(100vh-65px)] flex items-center justify-center p-4 md:p-6 bg-background">
-        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-surface rounded-[2rem] p-4 md:p-10 max-w-md w-full text-center shadow-xl border border-border">
-          <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
-            <CheckCircle2 size={40} className="text-green-600 dark:text-green-400" />
-          </div>
-          <h2 className="text-2xl md:text-3xl font-bold text-text-primary mb-4">Project Created!</h2>
-          <p className="text-text-muted mb-8 leading-relaxed">
-            AI will optimize the design based on your land size.
-          </p>
-          <button 
-            onClick={() => navigate(`/dashboard/workflows/${workflowId}`)}
-            className="w-full py-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl font-bold hover:bg-black dark:hover:bg-gray-200 transition-colors"
-          >
-            Go to Project Dashboard
-          </button>
-        </motion.div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-[calc(100vh-65px)] bg-background p-4 sm:p-8 flex items-start justify-center transition-colors">

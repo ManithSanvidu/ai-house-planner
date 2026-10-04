@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using HousePlanner.API.Data;
 using HousePlanner.API.DTOs;
 using HousePlanner.API.Entities;
@@ -164,7 +164,7 @@ public class InternalWorkflowController : ControllerBase
             _context.HouseDesigns.Add(newDesign);
 
             // Update workflow status and terrain
-            workflow.Status = "design_generated";
+            workflow.Status = "running";
             workflow.FailureReason = null;
             if (terrainType != null)
                 workflow.TerrainType ??= terrainType;
