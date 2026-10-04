@@ -239,7 +239,7 @@ builder.Services.AddHttpClient("AgenticService", client =>
         builder.Configuration["AgenticService:BaseUrl"]
         ?? "https://ai-house-planner-0u8o.onrender.com");
 
-    client.Timeout = TimeSpan.FromSeconds(35);
+    client.Timeout = TimeSpan.FromSeconds(120);
     client.DefaultRequestHeaders.Add("X-Internal-API-Key", internalApiKey);
 });
 

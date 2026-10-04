@@ -173,13 +173,13 @@ const IntakeForm: React.FC = () => {
                         onClick={() => { setBedrooms(num); if (num === 1 && bathrooms === null) setBathrooms(1); }}
                         className={`p-4 border rounded-xl font-bold transition-all ${bedrooms === num ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 ring-2 ring-blue-200 dark:ring-blue-800' : 'border-border text-text-primary hover:border-blue-300 dark:hover:border-blue-700 bg-surface'}`}
                       >
-                        {num} Bedroom{num > 1 ? 's' : ''}
+                        <span>{num} Bedroom{num > 1 ? 's' : ''}</span>
                       </button>
                     ))}
                   </div>
                   <h3 className="text-lg font-bold text-text-primary mt-8 mb-3">How many bathrooms do you need?</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {[1, 2].map(num => <button key={num} type="button" onClick={() => setBathrooms(num)} className={`p-4 border rounded-xl font-bold transition-all ${bathrooms === num ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 ring-2 ring-blue-200 dark:ring-blue-800' : 'border-border text-text-primary hover:border-blue-300 dark:hover:border-blue-700 bg-surface'}`}>{num} Bathroom{num > 1 ? 's' : ''}{bedrooms === 1 && num === 1 ? ' (Recommended)' : ''}</button>)}
+                    {[1, 2].map(num => <button key={num} type="button" onClick={() => setBathrooms(num)} className={`p-4 border rounded-xl font-bold transition-all ${bathrooms === num ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 ring-2 ring-blue-200 dark:ring-blue-800' : 'border-border text-text-primary hover:border-blue-300 dark:hover:border-blue-700 bg-surface'}`}><span>{num} Bathroom{num > 1 ? 's' : ''}{bedrooms === 1 && num === 1 ? ' (Recommended)' : ''}</span></button>)}
                   </div>
                 </div>
               </motion.div>
