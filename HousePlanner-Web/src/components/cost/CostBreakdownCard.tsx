@@ -1,9 +1,10 @@
-import type { CostSummaryDto } from '../../services/workflowService';
+import type { CostEstimationRunSummaryDto, CostSummaryDto } from '../../services/workflowService';
 import Card from '../common/Card';
 
 interface CostBreakdownCardProps {
  cost: CostSummaryDto | null;
  hideTitle?: boolean;
+ run?: CostEstimationRunSummaryDto | null;
 }
 
 const formatLkr = (value: number) => `LKR ${value.toLocaleString()}`;
@@ -16,12 +17,13 @@ const hasValidCostSummary = (cost: CostSummaryDto | null): cost is CostSummaryDt
  && Number.isFinite(cost.labourCostLkr)
  && Number.isFinite(cost.totalCostLkr);
 
-export const CostBreakdownCard = ({ cost, hideTitle }: CostBreakdownCardProps) => {
+export const CostBreakdownCard = ({ cost, hideTitle, run }: CostBreakdownCardProps) => {
  if (!hasValidCostSummary(cost)) {
   return (
    <Card title={hideTitle ? undefined : "Cost Estimate"} subtitle={hideTitle ? undefined : "Current construction cost breakdown for this design."}>
     <div className="rounded-lg border border-border bg-surface-elevated px-5 py-4 md:py-8 text-center">
      <p className="text-sm text-text-secondary">Cost estimate is not available yet.</p>
+     {run?.status === 'failed' && <p className="mt-2 text-xs text-red-600">Calculation failed: {run.failureReason || 'Pricing or design data could not be validated.'}</p>}
     </div>
    </Card>
   );
@@ -72,6 +74,15 @@ export const CostBreakdownCard = ({ cost, hideTitle }: CostBreakdownCardProps) =
      {cost.terrainType && <span>Terrain: <strong className="capitalize">{cost.terrainType}</strong></span>}
      {cost.estimatedAt && <span>Estimated: <strong>{new Date(cost.estimatedAt).toLocaleDateString()}</strong></span>}
     </div>
+    {run && <details className="rounded-lg border border-border bg-surface-elevated px-4 py-3 text-xs text-text-secondary">
+     <summary className="cursor-pointer font-semibold text-zinc-700">Calculation run details</summary>
+     <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1">
+      <span>Status: {run.status}</span>
+      <span>Pricing records: {run.pricingRecordCount}</span>
+      <span>Formula: {run.formulaVersion}</span>
+      <span>Duration: {Math.max(0, new Date(run.completedAt).getTime() - new Date(run.startedAt).getTime())} ms</span>
+     </div>
+    </details>}
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
      {summaryItems.map((item) => (
       <div
