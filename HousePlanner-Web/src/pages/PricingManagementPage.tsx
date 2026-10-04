@@ -841,6 +841,7 @@ const PricingManagementPage: React.FC = () => {
  // ── UI state ──
  const [search, setSearch] = useState('');
  const [selectedCategory, setSelectedCategory] = useState<'All' | 'material' | 'labour'>('All');
+ const [selectedStatus, setSelectedStatus] = useState<'active' | 'inactive' | 'all'>('active');
  const [editingItem, setEditingItem] = useState<PricingItem | null>(null);
  const [isCreateOpen, setIsCreateOpen] = useState(false);
  const [bannerMessage, setBannerMessage] = useState<string | null>(null);
@@ -880,9 +881,15 @@ const PricingManagementPage: React.FC = () => {
     item.unit.toLowerCase().includes(q);
    const matchCategory =
     selectedCategory === 'All' || item.category === selectedCategory;
-   return matchSearch && matchCategory;
+   const matchStatus =
+    selectedStatus === 'all' ||
+    (selectedStatus === 'active' ? item.isActive : !item.isActive);
+   return matchSearch && matchCategory && matchStatus;
   });
- }, [items, search, selectedCategory]);
+ }, [items, search, selectedCategory, selectedStatus]);
+
+ const activeCount = useMemo(() => items.filter((item) => item.isActive).length, [items]);
+ const inactiveCount = useMemo(() => items.filter((item) => !item.isActive).length, [items]);
 
  const materialCount = useMemo(
   () => items.filter((i) => i.isActive && i.category === 'material').length,
@@ -1058,7 +1065,7 @@ const PricingManagementPage: React.FC = () => {
    {/* ── Filters & Table Card ── */}
    <div className="bg-surface rounded-2xl border border-border-strong custom-shadow-sm overflow-hidden">
     {/* Toolbar */}
-    <div className="px-6 py-4 border-b border-slate-50 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+    <div className="px-6 py-4 border-b border-slate-50 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
      {/* Search */}
      <div className="relative w-full sm:max-w-xs">
       <Search
@@ -1084,38 +1091,76 @@ const PricingManagementPage: React.FC = () => {
       )}
      </div>
 
-     {/* Machine Category filter buttons */}
-     <div className="flex items-center gap-1.5 flex-wrap">
-      <button
-       onClick={() => setSelectedCategory('All')}
-       className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-        selectedCategory === 'All'
-         ? 'bg-purple-600 text-text-primary shadow-sm'
-         : 'bg-surface-elevated text-text-secondary border border-border hover:bg-surface-muted hover:text-text-secondary'
-       }`}
-      >
-       All Items ({items.length})
-      </button>
-      <button
-       onClick={() => setSelectedCategory('material')}
-       className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-        selectedCategory === 'material'
-         ? 'bg-purple-600 text-text-primary shadow-sm'
-         : 'bg-surface-elevated text-text-secondary border border-border hover:bg-surface-muted hover:text-text-secondary'
-       }`}
-      >
-       Materials ({materialCount})
-      </button>
-      <button
-       onClick={() => setSelectedCategory('labour')}
-       className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-        selectedCategory === 'labour'
-         ? 'bg-amber-600 text-text-primary shadow-sm'
-         : 'bg-surface-elevated text-text-secondary border border-border hover:bg-surface-muted hover:text-text-secondary'
-       }`}
-      >
-       Labour ({labourCount})
-      </button>
+     <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center">
+      {/* Lifecycle status filters. Active pricing is the default working catalogue. */}
+      <div className="flex items-center gap-1.5 flex-wrap" aria-label="Pricing status filters">
+       <button
+        onClick={() => setSelectedStatus('active')}
+        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+         selectedStatus === 'active'
+          ? 'bg-emerald-600 text-white shadow-sm'
+          : 'bg-surface-elevated text-text-secondary border border-border hover:bg-surface-muted'
+        }`}
+       >
+        Active ({activeCount})
+       </button>
+       <button
+        onClick={() => setSelectedStatus('inactive')}
+        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+         selectedStatus === 'inactive'
+          ? 'bg-slate-600 text-white shadow-sm'
+          : 'bg-surface-elevated text-text-secondary border border-border hover:bg-surface-muted'
+        }`}
+       >
+        Inactive ({inactiveCount})
+       </button>
+       <button
+        onClick={() => setSelectedStatus('all')}
+        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+         selectedStatus === 'all'
+          ? 'bg-purple-600 text-white shadow-sm'
+          : 'bg-surface-elevated text-text-secondary border border-border hover:bg-surface-muted'
+        }`}
+       >
+        All ({items.length})
+       </button>
+      </div>
+
+      <div className="hidden h-6 w-px bg-border sm:block" aria-hidden="true" />
+
+      {/* Machine category filters */}
+      <div className="flex items-center gap-1.5 flex-wrap" aria-label="Pricing category filters">
+       <button
+        onClick={() => setSelectedCategory('All')}
+        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+         selectedCategory === 'All'
+          ? 'bg-purple-600 text-text-primary shadow-sm'
+          : 'bg-surface-elevated text-text-secondary border border-border hover:bg-surface-muted hover:text-text-secondary'
+        }`}
+       >
+        All Categories
+       </button>
+       <button
+        onClick={() => setSelectedCategory('material')}
+        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+         selectedCategory === 'material'
+          ? 'bg-purple-600 text-text-primary shadow-sm'
+          : 'bg-surface-elevated text-text-secondary border border-border hover:bg-surface-muted hover:text-text-secondary'
+        }`}
+       >
+        Materials ({materialCount})
+       </button>
+       <button
+        onClick={() => setSelectedCategory('labour')}
+        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+         selectedCategory === 'labour'
+          ? 'bg-amber-600 text-text-primary shadow-sm'
+          : 'bg-surface-elevated text-text-secondary border border-border hover:bg-surface-muted hover:text-text-secondary'
+        }`}
+       >
+        Labour ({labourCount})
+       </button>
+      </div>
      </div>
     </div>
 
@@ -1169,9 +1214,9 @@ const PricingManagementPage: React.FC = () => {
             <Box size={20} className="text-text-secondary" />
            </div>
            <p className="text-sm font-medium text-text-secondary">No matching pricing items found</p>
-           <p className="text-xs text-text-secondary">Try adjusting your search or category filter.</p>
+           <p className="text-xs text-text-secondary">Try adjusting your search, status, or category filter.</p>
            <button
-            onClick={() => { setSearch(''); setSelectedCategory('All'); }}
+            onClick={() => { setSearch(''); setSelectedStatus('active'); setSelectedCategory('All'); }}
             className="mt-1 text-xs font-semibold text-purple-400 hover:text-purple-300 transition-colors"
            >
             Clear filters
