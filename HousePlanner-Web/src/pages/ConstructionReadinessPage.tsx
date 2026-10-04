@@ -322,7 +322,7 @@ export const ConstructionReadinessPage: React.FC = () => {
                           className="px-5 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold rounded-xl shadow-sm hover:shadow-md transition-all disabled:opacity-50 flex items-center gap-2 text-sm"
                         >
                           <Zap size={16} />
-                          {loading ? 'Generating...' : 'AI Generate Materials'}
+                          {loading ? <span key="btn-gen-materials-loading">Generating...</span> : <span key="btn-gen-materials">AI Generate Materials</span>}
                         </motion.button>
                       )}
                     </div>
@@ -457,7 +457,7 @@ export const ConstructionReadinessPage: React.FC = () => {
                         <p className="text-text-secondary font-semibold mb-6">No procurement plan generated yet.</p>
                         <div className="flex flex-col items-center">
                           <motion.button disabled={isGenerating} whileHover={!isGenerating ? { scale: 1.02 } : {}} whileTap={!isGenerating ? { scale: 0.98 } : {}} onClick={generatePlan} className={`px-4 md:px-8 py-3.5 bg-surface border border-border dark:border-border-strong text-text-primary font-bold rounded-xl shadow-sm transition-colors text-sm tracking-wide ${isGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                            {isGenerating ? 'Generating...' : 'Generate Construction Plan'}
+                            {isGenerating ? <span key="btn-gen-plan-loading">Generating...</span> : <span key="btn-gen-plan">Generate Construction Plan</span>}
                           </motion.button>
                           <p className="text-xs text-text-secondary mt-2">AI construction planning uses resources. Generate only when required.</p>
                         </div>

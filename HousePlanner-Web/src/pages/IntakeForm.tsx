@@ -255,7 +255,7 @@ const IntakeForm: React.FC = () => {
                 disabled={isSubmitting || !validateStep(3)}
                 className="flex items-center justify-center gap-3 px-4 md:px-8 py-3 bg-green-600 dark:bg-green-500 hover:bg-green-700 dark:hover:bg-green-600 text-white rounded-xl font-bold text-sm transition-colors shadow-sm disabled:opacity-70 disabled:cursor-not-allowed min-w-[200px]"
               >
-                {isSubmitting ? 'Generating...' : 'Generate AI Plan'}
+                {isSubmitting ? <span key="generating">Generating...</span> : <span key="generate">Generate AI Plan</span>}
               </button>
             )}
           </div>
