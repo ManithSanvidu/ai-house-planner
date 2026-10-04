@@ -7,7 +7,8 @@ import { customerConstructionService } from '../services/customerConstructionSer
 
 vi.mock('../services/customerConstructionService', () => ({
  customerConstructionService: {
-  overview: vi.fn(), approvedDesigns: vi.fn(), constructors: vi.fn(), request: vi.fn(), project: vi.fn()
+  overview: vi.fn(), approvedDesigns: vi.fn(), constructors: vi.fn(), request: vi.fn(),
+  cancelProject: vi.fn(), project: vi.fn()
  }
 }));
 
@@ -21,14 +22,50 @@ describe('customer construction lifecycle', () => {
   service.constructors.mockResolvedValue([{ id:'c1', name:'Real Builder' }]);
  });
 
- it('lists approved designs and real constructors and sends a request', async () => {
+ it('keeps setup collapsed, reveals the three steps, and sends the existing request', async () => {
   service.request.mockResolvedValue({});
   render(<BrowserRouter><CustomerConstructionPage/></BrowserRouter>);
-  expect((await screen.findAllByText(/Central Core Home/)).length).toBeGreaterThan(0);
-  expect(screen.getByText('LKR 11,340,000')).toBeTruthy();
+  expect(await screen.findByRole('heading', { name: 'Start New Construction' })).toBeTruthy();
+  expect(screen.queryByText('Step 1 — Select Design')).toBeNull();
+
+  fireEvent.click(screen.getByRole('button', { name: 'Start New Construction' }));
+  expect(screen.getByText('Step 1 — Select Design')).toBeTruthy();
+  expect(screen.getByText('3 Bedrooms • 2 Bathrooms • 1 Floor')).toBeTruthy();
+  fireEvent.click(screen.getByRole('button', { name: 'Continue to Estimate' }));
+  expect(screen.getByText('LKR 11,340,000.00')).toBeTruthy();
+  fireEvent.click(screen.getByRole('button', { name: 'Choose Constructor' }));
   expect(screen.getByText('Real Builder')).toBeTruthy();
-  fireEvent.click(screen.getByRole('button', { name: 'Approve & Request Construction' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Send Request' }));
   await waitFor(() => expect(service.request).toHaveBeenCalledWith('d1','c1'));
+ });
+
+ it('renders compact active cards and pending request rows', async () => {
+  service.overview.mockResolvedValue({
+   declinedRequests: [], completedProjects: [],
+   activeProjects: [{ id:'p1',status:'in_progress',createdAt:'2026-09-20',updatedAt:'2026-09-21',houseDesignId:'d1',constructorName:'Real Builder',designVersion:1,currentPhase:'Foundation',cost:null }],
+   pendingRequests: [{ id:'r1',projectId:'p2',houseDesignId:'d1',constructorName:'Second Builder',status:'Pending',requestedAt:'2026-09-22',designVersion:1 }],
+  });
+
+  const { container } = render(<BrowserRouter><CustomerConstructionPage/></BrowserRouter>);
+  expect(await screen.findByRole('heading', { name: 'Active Projects' })).toBeTruthy();
+  expect(screen.getByText('Constructor: Real Builder')).toBeTruthy();
+  expect(screen.getByText('Current phase:').parentElement?.textContent).toContain('Foundation');
+  expect(screen.getByRole('link', { name: 'View Progress' })).toBeTruthy();
+  expect(screen.getByText('Second Builder')).toBeTruthy();
+  expect(screen.getByText('Status: Pending')).toBeTruthy();
+  expect(container.querySelector('main')?.className).toContain('overflow-x-hidden');
+  expect(container.querySelector('.md\\:grid-cols-2')).toBeTruthy();
+ });
+
+ it('renders friendly empty states, including no-approved-design guidance', async () => {
+  service.approvedDesigns.mockResolvedValue([]);
+  render(<BrowserRouter><CustomerConstructionPage/></BrowserRouter>);
+
+  expect(await screen.findByText('No active projects')).toBeTruthy();
+  expect(screen.getByText('No pending requests')).toBeTruthy();
+  fireEvent.click(screen.getByRole('button', { name: 'Start New Construction' }));
+  expect(screen.getByText('No approved designs')).toBeTruthy();
+  expect(screen.getByText('You need an approved design before starting construction.')).toBeTruthy();
  });
 
  it('renders customer progress and activity from stored logs', async () => {

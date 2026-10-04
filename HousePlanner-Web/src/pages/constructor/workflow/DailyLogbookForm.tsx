@@ -100,7 +100,7 @@ export const DailyLogbookForm: React.FC<DailyLogbookFormProps> = ({ projectId, p
     </div>
    )}
 
-   <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+   <div className="grid grid-cols-1 gap-4 md:gap-6 md:grid-cols-2">
     <div>
      <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Date *</label>
      <input
@@ -263,7 +263,7 @@ export const DailyLogbookForm: React.FC<DailyLogbookFormProps> = ({ projectId, p
      <button
       type="submit"
       disabled={loading}
-      className="inline-flex justify-center rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-text-primary shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50"
+      className="inline-flex justify-center rounded-xl bg-indigo-600 px-4 md:px-6 py-2.5 text-sm font-semibold text-text-primary shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50"
      >
       {loading ? 'Saving...' : 'Save Log'}
      </button>

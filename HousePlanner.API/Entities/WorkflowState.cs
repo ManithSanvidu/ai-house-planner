@@ -63,6 +63,13 @@ public class WorkflowState
     [Column(TypeName = "jsonb")]
     public string? ToolAuditLogJson { get; set; }
 
+    /// <summary>
+    /// Full structured result from the Python Validation/Safety Agent (passed, rules[], errors[],
+    /// summary, revision_reason). Null for workflows predating validation persistence (legacy-safe).
+    /// </summary>
+    [Column(TypeName = "jsonb")]
+    public string? ValidationResultJson { get; set; }
+
     // Navigation properties
     public virtual ICollection<HouseDesign> HouseDesigns { get; set; } = new List<HouseDesign>();
 }

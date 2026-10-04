@@ -5,7 +5,7 @@ Provides strongly typed Pydantic models for rule-by-rule and overall validation 
 
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class RuleValidationResult(BaseModel):
@@ -15,6 +15,13 @@ class RuleValidationResult(BaseModel):
     reason: str = Field(..., description="Human-readable explanation of the validation result")
     actual: Any | None = Field(None, description="Actual value extracted from design/cost/terrain data")
     expected: Any | None = Field(None, description="Expected value or acceptable range/threshold")
+    status: str | None = Field(None, description="Detailed status: PASS, FAIL, or NOT_APPLICABLE")
+
+    @model_validator(mode='after')
+    def set_default_status(self) -> 'RuleValidationResult':
+        if self.status is None:
+            self.status = "PASS" if self.passed else "FAIL"
+        return self
 
 
 class ValidationResult(BaseModel):
@@ -40,6 +47,9 @@ class HousePlanValidationInput(BaseModel):
     estimated_cost_lkr: float | None = Field(None, description="Total estimated construction cost in LKR")
     requested_bedrooms: int | None = Field(None, description="Bedrooms requested by the client")
     actual_bedrooms: int | None = Field(None, description="Bedrooms provided in the architectural design")
+    requested_bathrooms: int | None = Field(None, description="Bathrooms requested by the client")
+    actual_bathrooms: int | None = Field(None, description="Bathrooms provided in the architectural design")
     requested_floors: int | None = Field(None, description="Floors requested by the client")
     actual_floors: int | None = Field(None, description="Floors provided in the architectural design")
+    rooms: list[Any] = Field(default_factory=list, description="List of generated rooms")
     additional_data: dict[str, Any] | None = Field(default_factory=dict, description="Any extra metadata")

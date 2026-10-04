@@ -194,13 +194,13 @@ def test_compiled_graph_reaches_human_approval_boundary(monkeypatch, tmp_path):
     workflow_id = initial_state.workflow_id
     result = WorkflowState.model_validate(app_graph.invoke(initial_state))
 
-    expected_step_ids = ["S1", "S2", "S5", "S3", "S4", "S6", "S7"]
+    expected_step_ids = ["S1", "S2", "S3", "S4", "S5", "S6", "S7"]
     expected_agents = [
         "requirement_analysis",
         "land_analysis",
-        "construction_planning",
         "design",
         "visualization",
+        "construction_planning",
         "cost_estimation",
         "validation",
     ]
@@ -279,6 +279,9 @@ def test_compiled_graph_reaches_human_approval_boundary(monkeypatch, tmp_path):
     assert result.validation_result["errors"] == []
     assert result.validation_result["summary"]
     assert len(result.validation_result["rules"]) == 4
+    assert {rule["rule_name"] for rule in result.validation_result["rules"]} == {
+        "coverage", "terrain_foundation", "budget", "preferences"
+    }
 
     validation_persistence_spy.assert_called_once()
     timeline_spy.assert_called_once()
@@ -306,7 +309,7 @@ def test_compiled_graph_stops_safely_when_pricing_lookup_fails(monkeypatch, tmp_
     assert result.approval_status == "not_requested"
     assert result.approval_status not in {"pending", "approved"}
     assert result.current_step_id is None
-    assert result.completed_step_ids == ["S1", "S2", "S5", "S3", "S4"]
+    assert result.completed_step_ids == ["S1", "S2", "S3", "S4", "S5"]
     assert result.plan is not None
     assert [step.status for step in result.plan.steps] == [
         PlanStepStatus.COMPLETED,
@@ -373,7 +376,7 @@ def test_compiled_graph_stops_safely_when_pricing_lookup_fails(monkeypatch, tmp_
     ]
     assert any(
         snapshot["current_step_id"] is None
-        and snapshot["completed_step_ids"] == ["S1", "S2", "S5", "S3", "S4"]
+        and snapshot["completed_step_ids"] == ["S1", "S2", "S3", "S4", "S5"]
         and [step["status"] for step in snapshot["steps"]] == expected_statuses
         for snapshot in plan_snapshots
     )

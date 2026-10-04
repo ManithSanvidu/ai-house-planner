@@ -7,6 +7,12 @@ import { ArrowLeft, CheckCircle, XCircle, Clock, Home, Bed, User, Map, FileText 
 import CostBreakdownCard from '../../components/cost/CostBreakdownCard';
 import { formatRoomName } from '../../utils/presentation';
 
+const safeDisplayValue = (val: any): string => {
+  if (val === null || val === undefined) return '—';
+  if (typeof val === 'object') return JSON.stringify(val);
+  return String(val);
+};
+
 const ValidationRequestDetails: React.FC = () => {
  const { id } = useParams<{ id: string }>();
  const navigate = useNavigate();
@@ -80,13 +86,16 @@ const ValidationRequestDetails: React.FC = () => {
 
  const handleApprove = async () => {
   if (!id) return;
-  if (!window.confirm('Approve this submitted design? This decision is final.')) return;
   setIsSubmitting(true);
   setActionError(null);
   try {
    await validationRequestService.approve(id, reviewNote);
    navigate('/architect/requests');
   } catch (err: any) {
+   console.error('[Architect Validation] Approval request failed', {
+    status: err.response?.status,
+    message: err.response?.data?.message || err.message,
+   });
    setActionError(err.response?.data?.message || 'Failed to approve request.');
   } finally {
    setIsSubmitting(false);
@@ -128,7 +137,7 @@ const ValidationRequestDetails: React.FC = () => {
 
  if (error || !request) {
   return (
-   <div className="p-6 max-w-5xl mx-auto">
+   <div className="p-4 md:p-6 max-w-5xl mx-auto">
     <div className="p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 border border-red-200">
      {error || 'Request not found'}
     </div>
@@ -141,9 +150,14 @@ const ValidationRequestDetails: React.FC = () => {
 
  const isPending = request.status === 'Pending' || request.status === 'Under Review';
  const canApprove = request.approvalEligibility.canApprove;
+ const finalValidationRules = (request.validationResult?.rules || [])
+  .filter(rule => rule.ruleName?.toLowerCase() !== 'geometry');
+ const finalValidationPassed = finalValidationRules.every(
+  rule => rule.status ? rule.status !== 'FAIL' : rule.passed
+ );
 
  return (
-  <div className="p-6 md:p-8 max-w-5xl mx-auto space-y-6">
+  <div className="p-4 md:p-6 md:p-8 max-w-5xl mx-auto space-y-6">
    
    {/* Header */}
    <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
@@ -169,13 +183,13 @@ const ValidationRequestDetails: React.FC = () => {
 
    <div className="space-y-6">
     {/* Client & Land Details Card */}
-     <div className="bg-surface border border-border dark:border-border-strong rounded-2xl shadow-sm p-6">
+     <div className="bg-surface border border-border dark:border-border-strong rounded-2xl shadow-sm p-4 md:p-6">
       <h2 className="text-lg font-bold text-gray-900 dark:text-text-primary flex items-center gap-2 mb-6">
        <FileText className="text-indigo-600" size={20} />
        Project Constraints
       </h2>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
        
        <div className="space-y-4">
         <div className="flex items-start gap-3">
@@ -232,7 +246,7 @@ const ValidationRequestDetails: React.FC = () => {
     <div className="space-y-6">
      {/* Architectural Visualization */}
      {request.design && (
-      <div className="bg-white dark:bg-white border border-slate-200 dark:border-slate-200 rounded-2xl shadow-sm p-6 md:p-8">
+      <div className="bg-white dark:bg-white border border-slate-200 dark:border-slate-200 rounded-2xl shadow-sm p-4 md:p-6 md:p-8">
        <h2 className="text-lg font-bold text-slate-900 dark:text-slate-900 mb-5">Architectural Visualization</h2>
        <div className="bg-white rounded-xl overflow-hidden min-h-[420px] md:min-h-[520px] flex items-center justify-center">
         {visualizationData?.status === 'completed' && visualizationData?.imageUrl ? (
@@ -247,7 +261,7 @@ const ValidationRequestDetails: React.FC = () => {
           <span className="text-sm font-medium">Generating AI visualization…</span>
          </div>
         ) : (
-         <div className="text-zinc-400 flex flex-col items-center gap-2 text-center p-6">
+         <div className="text-zinc-400 flex flex-col items-center gap-2 text-center p-4 md:p-6">
           <span className="text-base font-bold text-zinc-300">AI visualization unavailable</span>
           <span className="text-sm">The floor plan below is the validated deterministic layout.</span>
          </div>
@@ -256,7 +270,7 @@ const ValidationRequestDetails: React.FC = () => {
       </div>
      )}
 
-     <section className="bg-white dark:bg-white border border-slate-200 dark:border-slate-200 rounded-2xl shadow-sm p-6 md:p-8">
+     <section className="bg-white dark:bg-white border border-slate-200 dark:border-slate-200 rounded-2xl shadow-sm p-4 md:p-6 md:p-8">
       <h2 className="text-lg font-bold text-slate-900 dark:text-slate-900 mb-1">Generated Floor Plan</h2>
       <p className="text-sm text-slate-500 dark:text-slate-500 mb-4">Created by deterministic spatial planning engine</p>
 
@@ -282,7 +296,7 @@ const ValidationRequestDetails: React.FC = () => {
         </table>
        </div>
       ) : (
-       <div className="p-8 text-center text-slate-500 border border-dashed border-slate-200 rounded-xl">
+       <div className="p-4 md:p-8 text-center text-slate-500 border border-dashed border-slate-200 rounded-xl">
         No active design generated for this request yet.
        </div>
       )}
@@ -291,8 +305,84 @@ const ValidationRequestDetails: React.FC = () => {
 
     <CostBreakdownCard cost={request.cost} />
 
-    {/* Architect Validation / Review Decision */}
+    {/* Planning / Feasibility Validation */}
     <div className="bg-surface border border-border dark:border-border-strong rounded-2xl shadow-sm p-6">
+      <h2 className="text-lg font-bold text-gray-900 dark:text-text-primary flex items-center gap-2 mb-4">
+        <CheckCircle className="text-indigo-600" size={20} />
+        Planning / Feasibility Validation
+      </h2>
+      
+      {!request.validationResult ? (
+        <div className="text-sm text-text-secondary bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-border dark:border-border-strong">
+          Detailed validation evidence is not available for this older workflow.
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {/* Overall Result */}
+          <div className={`p-4 rounded-xl border flex items-center justify-between ${
+            finalValidationPassed
+              ? 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800/50' 
+              : 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800/50'
+          }`}>
+            <span className="font-semibold text-gray-900 dark:text-text-primary">Overall Result</span>
+            <span className={`px-2.5 py-1 rounded-full text-xs font-bold border ${
+              finalValidationPassed
+                ? 'bg-green-100 text-green-800 border-green-300 dark:bg-green-900/50 dark:text-green-400 dark:border-green-700' 
+                : 'bg-red-100 text-red-800 border-red-300 dark:bg-red-900/50 dark:text-red-400 dark:border-red-700'
+            }`}>
+              {finalValidationPassed ? 'PASS' : 'FAIL'}
+            </span>
+          </div>
+
+          {/* Rules */}
+          {finalValidationRules.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-text-primary">Rule Breakdown</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {finalValidationRules.map((rule, idx) => (
+                  <div key={idx} className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-border dark:border-border-strong flex flex-col gap-2 relative overflow-hidden">
+                    <div className={`absolute top-0 left-0 w-1 h-full ${rule.status === 'NOT_APPLICABLE' ? 'bg-slate-400' : rule.passed ? 'bg-green-500' : 'bg-red-500'}`} />
+                    
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="font-semibold text-sm text-gray-900 dark:text-text-primary capitalize">
+                        {(rule.ruleName || '').replace(/_/g, ' ')}
+                      </span>
+                      <span className={`text-xs font-bold ${rule.status === 'NOT_APPLICABLE' ? 'text-slate-500 dark:text-slate-400' : rule.passed ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                        {rule.status === 'NOT_APPLICABLE' ? 'NOT APPLICABLE' : rule.status || (rule.passed ? 'PASS' : 'FAIL')}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-xs mt-1">
+                      <div>
+                        <span className="text-text-secondary block mb-0.5">Expected:</span>
+                        <span className="font-mono text-gray-900 dark:text-text-primary break-words">
+                          {safeDisplayValue(rule.expected)}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-text-secondary block mb-0.5">Actual:</span>
+                        <span className="font-mono text-gray-900 dark:text-text-primary break-words">
+                          {safeDisplayValue(rule.actual)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {rule.reason && (
+                      <div className="text-xs text-text-secondary mt-1 pt-2 border-t border-border dark:border-border-strong">
+                        {rule.reason}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+
+    {/* Architect Validation / Review Decision */}
+    <div className="bg-surface border border-border dark:border-border-strong rounded-2xl shadow-sm p-4 md:p-6">
       <h2 className="text-lg font-bold text-gray-900 dark:text-text-primary mb-4">Architect Validation</h2>
 
       {isPending && (
@@ -350,6 +440,7 @@ const ValidationRequestDetails: React.FC = () => {
 
         <div className="pt-2 flex flex-col gap-3">
          <button
+          type="button"
           onClick={handleApprove}
           disabled={isSubmitting || !canApprove}
           className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-transparent rounded-xl shadow-sm text-sm font-bold text-text-primary bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
@@ -357,6 +448,7 @@ const ValidationRequestDetails: React.FC = () => {
           {isSubmitting ? 'Processing...' : <><CheckCircle size={18} /> Approve Design</>}
          </button>
          <button
+          type="button"
           onClick={handleReject}
           disabled={isSubmitting}
           className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-border dark:border-border-strong rounded-xl shadow-sm text-sm font-bold text-gray-700 dark:text-gray-300 bg-surface-elevated hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"

@@ -43,14 +43,14 @@ export const ProjectSearch: React.FC = () => {
 
  return (
   <div className="rounded-2xl border border-border bg-surface shadow-sm dark:border-border-strong bg-surface mb-8 overflow-hidden">
-   <div className="border-b border-border bg-gray-50 px-6 py-4 dark:border-border-strong bg-surface-elevated/50">
+   <div className="border-b border-border bg-gray-50 px-4 md:px-6 py-4 dark:border-border-strong bg-surface-elevated/50">
     <h2 className="text-lg font-semibold text-gray-900 dark:text-text-primary">Search & Request Project</h2>
     <p className="text-sm text-text-secondary">
      Enter a Project ID provided by a client to request construction assignment.
     </p>
    </div>
    
-   <div className="p-6">
+   <div className="p-4 md:p-6">
     <form onSubmit={handleSearch} className="flex gap-4">
      <div className="relative flex-1">
       <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
@@ -67,7 +67,7 @@ export const ProjectSearch: React.FC = () => {
      <button
       type="submit"
       disabled={loading || !projectId.trim()}
-      className="flex items-center justify-center rounded-lg bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-text-primary shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50"
+      className="flex items-center justify-center rounded-lg bg-indigo-600 px-4 md:px-6 py-2.5 text-sm font-semibold text-text-primary shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50"
      >
       {loading ? 'Searching...' : 'Search'}
      </button>

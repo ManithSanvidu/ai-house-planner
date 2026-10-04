@@ -15,9 +15,9 @@ namespace HousePlanner.API.Controllers;
 public class AdminPreDesignedPlansController : ControllerBase
 {
     private static readonly HashSet<string> Terrains = new(StringComparer.OrdinalIgnoreCase) { "flat", "urban", "hillside", "coastal", "all" };
-    private readonly ApplicationDbContext _db; private readonly ICurrentUserContextService _users; private readonly IPreDesignedPlanLayoutValidator _layouts;
-    public AdminPreDesignedPlansController(ApplicationDbContext db, ICurrentUserContextService users, IPreDesignedPlanLayoutValidator layouts)
-    { _db = db; _users = users; _layouts = layouts; }
+    private readonly ApplicationDbContext _db; private readonly ICurrentUserContextService _users; private readonly IPreDesignedPlanLayoutValidator _layouts; private readonly IPlanImageStorage _images;
+    public AdminPreDesignedPlansController(ApplicationDbContext db, ICurrentUserContextService users, IPreDesignedPlanLayoutValidator layouts, IPlanImageStorage images)
+    { _db = db; _users = users; _layouts = layouts; _images = images; }
     private async Task<IActionResult?> RequireAdminOrArchitect() { var user = await _users.GetAsync(HttpContext); return user is null ? Unauthorized() : (!string.Equals(user.Role, "Admin", StringComparison.OrdinalIgnoreCase) && !string.Equals(user.Role, "Architect", StringComparison.OrdinalIgnoreCase)) ? Forbid() : null; }
 
     [HttpGet]
@@ -26,12 +26,13 @@ public class AdminPreDesignedPlansController : ControllerBase
         if (await RequireAdminOrArchitect() is { } denied) return denied;
         var query = _db.PreDesignedHousePlans.AsNoTracking();
         if (status == "active") query = query.Where(x => x.IsActive); else if (status == "inactive") query = query.Where(x => !x.IsActive);
-        return Ok((await query.OrderBy(x => x.DesignCode).ToListAsync()).Select(PreDesignedPlansController.MapSummary));
+        return Ok((await query.OrderBy(x => x.DesignCode).ToListAsync())
+            .Select(x => PreDesignedPlansController.MapSummary(x, _images)));
     }
 
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> Detail(Guid id)
-    { if (await RequireAdminOrArchitect() is { } denied) return denied; var plan = await _db.PreDesignedHousePlans.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id); return plan is null ? NotFound() : Ok(PreDesignedPlansController.MapDetail(plan)); }
+    { if (await RequireAdminOrArchitect() is { } denied) return denied; var plan = await _db.PreDesignedHousePlans.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id); return plan is null ? NotFound() : Ok(PreDesignedPlansController.MapDetail(plan, _images)); }
 
     [HttpPost]
     public async Task<IActionResult> Create(SavePreDesignedPlanDto input)
@@ -40,7 +41,7 @@ public class AdminPreDesignedPlansController : ControllerBase
         var invalid = await Validate(input); if (invalid is not null) return invalid;
         var plan = new PreDesignedHousePlan { CreatedAt = DateTimeOffset.UtcNow }; Apply(plan, input);
         _db.Add(plan); await _db.SaveChangesAsync();
-        return CreatedAtAction(nameof(Detail), new { id = plan.Id }, PreDesignedPlansController.MapDetail(plan));
+        return CreatedAtAction(nameof(Detail), new { id = plan.Id }, PreDesignedPlansController.MapDetail(plan, _images));
     }
 
     [HttpPut("{id:guid}")]
@@ -49,7 +50,7 @@ public class AdminPreDesignedPlansController : ControllerBase
         if (await RequireAdminOrArchitect() is { } denied) return denied;
         var plan = await _db.PreDesignedHousePlans.FindAsync(id); if (plan is null) return NotFound();
         var invalid = await Validate(input, id); if (invalid is not null) return invalid;
-        Apply(plan, input); await _db.SaveChangesAsync(); return Ok(PreDesignedPlansController.MapDetail(plan));
+        Apply(plan, input); await _db.SaveChangesAsync(); return Ok(PreDesignedPlansController.MapDetail(plan, _images));
     }
 
     [HttpDelete("{id:guid}")]
@@ -89,30 +90,18 @@ public class AdminPreDesignedPlansController : ControllerBase
         if (ext != ".jpg" && ext != ".jpeg" && ext != ".png" && ext != ".webp")
             return BadRequest(new { errors = new[] { "Only JPG, PNG, and WebP are supported." } });
 
-        var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
-        Directory.CreateDirectory(uploadsPath);
-
-        // Remove old images
-        var extensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
-        foreach (var e in extensions)
-        {
-            var oldPath = Path.Combine(uploadsPath, $"{id}{e}");
-            if (System.IO.File.Exists(oldPath)) System.IO.File.Delete(oldPath);
-        }
-
-        var fileName = $"{id}{ext}";
-        var filePath = Path.Combine(uploadsPath, fileName);
-
-        using (var stream = new FileStream(filePath, FileMode.Create))
-        {
-            await image.CopyToAsync(stream);
-        }
-
-        plan.ThumbnailUrl = $"/uploads/{fileName}";
+        var previousReference = plan.ThumbnailUrl;
+        await using var stream = image.OpenReadStream();
+        var objectKey = await _images.UploadAsync(
+            id, stream, ext, image.ContentType ?? "application/octet-stream", HttpContext.RequestAborted);
+        plan.ThumbnailUrl = objectKey;
         plan.UpdatedAt = DateTimeOffset.UtcNow;
         await _db.SaveChangesAsync();
 
-        return Ok(new { url = plan.ThumbnailUrl });
+        if (!string.IsNullOrWhiteSpace(previousReference))
+            await _images.DeleteAsync(previousReference, HttpContext.RequestAborted);
+
+        return Ok(new { url = _images.GetPublicUrl(plan.ThumbnailUrl) });
     }
 
     [HttpDelete("{id:guid}/image")]
@@ -124,13 +113,7 @@ public class AdminPreDesignedPlansController : ControllerBase
         var plan = await _db.PreDesignedHousePlans.FindAsync(id);
         if (plan is null) return NotFound();
 
-        var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
-        var extensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
-        foreach (var e in extensions)
-        {
-            var oldPath = Path.Combine(uploadsPath, $"{id}{e}");
-            if (System.IO.File.Exists(oldPath)) System.IO.File.Delete(oldPath);
-        }
+        await _images.DeleteAsync(plan.ThumbnailUrl, HttpContext.RequestAborted);
 
         plan.ThumbnailUrl = null;
         plan.UpdatedAt = DateTimeOffset.UtcNow;
@@ -139,8 +122,8 @@ public class AdminPreDesignedPlansController : ControllerBase
         return Ok();
     }
 
-    private static void Apply(PreDesignedHousePlan p, SavePreDesignedPlanDto x)
+    private void Apply(PreDesignedHousePlan p, SavePreDesignedPlanDto x)
     {
-        p.Name = x.Name.Trim(); p.Slug = x.Slug.Trim().ToLowerInvariant(); p.DesignCode = x.DesignCode.Trim().ToUpperInvariant(); p.Description = x.Description; p.Style = x.Style.Trim(); p.Bedrooms = x.Bedrooms; p.Bathrooms = x.Bathrooms; p.FloorCount = x.FloorCount; p.TotalBuiltUpAreaSqft = x.TotalBuiltUpAreaSqft; p.MinimumLandSizePerches = x.MinimumLandSizePerches; p.MinimumPlotWidthFt = x.MinimumPlotWidthFt; p.MinimumPlotLengthFt = x.MinimumPlotLengthFt; p.SuitableTerrain = x.SuitableTerrain.ToLowerInvariant(); p.ParkingSpaces = x.ParkingSpaces; p.EstimatedConstructionCost = x.EstimatedConstructionCost; p.HasBalcony = x.HasBalcony; p.HasVeranda = x.HasVeranda; p.HasOffice = x.HasOffice; p.HasUtilityRoom = x.HasUtilityRoom; p.IsAccessibleFriendly = x.IsAccessibleFriendly; p.Category = x.Category; p.TagsJson = JsonSerializer.Serialize(x.Tags); p.ThumbnailUrl = x.ThumbnailUrl; p.LayoutJson = x.Layout.GetRawText(); p.IsActive = x.IsActive; p.UpdatedAt = DateTimeOffset.UtcNow;
+        p.Name = x.Name.Trim(); p.Slug = x.Slug.Trim().ToLowerInvariant(); p.DesignCode = x.DesignCode.Trim().ToUpperInvariant(); p.Description = x.Description; p.Style = x.Style.Trim(); p.Bedrooms = x.Bedrooms; p.Bathrooms = x.Bathrooms; p.FloorCount = x.FloorCount; p.TotalBuiltUpAreaSqft = x.TotalBuiltUpAreaSqft; p.MinimumLandSizePerches = x.MinimumLandSizePerches; p.MinimumPlotWidthFt = x.MinimumPlotWidthFt; p.MinimumPlotLengthFt = x.MinimumPlotLengthFt; p.SuitableTerrain = x.SuitableTerrain.ToLowerInvariant(); p.ParkingSpaces = x.ParkingSpaces; p.EstimatedConstructionCost = x.EstimatedConstructionCost; p.HasBalcony = x.HasBalcony; p.HasVeranda = x.HasVeranda; p.HasOffice = x.HasOffice; p.HasUtilityRoom = x.HasUtilityRoom; p.IsAccessibleFriendly = x.IsAccessibleFriendly; p.Category = x.Category; p.TagsJson = JsonSerializer.Serialize(x.Tags); p.ThumbnailUrl = _images.NormalizeReference(x.ThumbnailUrl); p.LayoutJson = x.Layout.GetRawText(); p.IsActive = x.IsActive; p.UpdatedAt = DateTimeOffset.UtcNow;
     }
 }

@@ -90,12 +90,12 @@ const IntakeForm: React.FC = () => {
 
   if (isSuccess) {
     return (
-      <div className="min-h-[calc(100vh-65px)] flex items-center justify-center p-6 bg-background">
-        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-surface rounded-[2rem] p-10 max-w-md w-full text-center shadow-xl border border-border">
+      <div className="min-h-[calc(100vh-65px)] flex items-center justify-center p-4 md:p-6 bg-background">
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-surface rounded-[2rem] p-4 md:p-10 max-w-md w-full text-center shadow-xl border border-border">
           <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
             <CheckCircle2 size={40} className="text-green-600 dark:text-green-400" />
           </div>
-          <h2 className="text-3xl font-bold text-text-primary mb-4">Project Created!</h2>
+          <h2 className="text-2xl md:text-3xl font-bold text-text-primary mb-4">Project Created!</h2>
           <p className="text-text-muted mb-8 leading-relaxed">
             AI will optimize the design based on your land size.
           </p>
@@ -115,7 +115,7 @@ const IntakeForm: React.FC = () => {
       <div className="max-w-3xl w-full">
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-surface rounded-[2rem] shadow-sm border border-border overflow-hidden flex flex-col min-h-[500px]">
           
-          <div className="p-6 sm:p-10 flex-1 relative">
+          <div className="p-4 md:p-6 sm:p-10 flex-1 relative">
             {/* Step Indicator */}
             <div className="flex items-center justify-between mb-8 max-w-2xl mx-auto px-2 relative">
               <div className="absolute top-1/2 left-0 right-0 h-[2px] bg-border -z-10 -translate-y-1/2"></div>
@@ -229,12 +229,12 @@ const IntakeForm: React.FC = () => {
           </div>
 
           {/* FOOTER NAVIGATION */}
-          <div className="p-6 sm:p-10 bg-surface-elevated border-t border-border flex items-center justify-between">
+          <div className="p-4 md:p-6 sm:p-10 bg-surface-elevated border-t border-border flex items-center justify-between">
             <button 
               type="button" 
               onClick={handleBack} 
               disabled={currentStep === 1 || isSubmitting}
-              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-colors ${currentStep === 1 || isSubmitting ? 'opacity-0 pointer-events-none' : 'text-text-primary hover:bg-surface border border-border-strong'}`}
+              className={`flex items-center gap-2 px-4 md:px-6 py-3 rounded-xl font-bold text-sm transition-colors ${currentStep === 1 || isSubmitting ? 'opacity-0 pointer-events-none' : 'text-text-primary hover:bg-surface border border-border-strong'}`}
             >
               <ChevronLeft size={18} /> Back
             </button>
@@ -244,7 +244,7 @@ const IntakeForm: React.FC = () => {
                 type="button" 
                 onClick={handleNext}
                 disabled={!validateStep(currentStep)}
-                className="flex items-center gap-2 px-8 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-black dark:hover:bg-gray-200 rounded-xl font-bold text-sm transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 px-4 md:px-8 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-black dark:hover:bg-gray-200 rounded-xl font-bold text-sm transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Next <ChevronRight size={18} />
               </button>
@@ -253,7 +253,7 @@ const IntakeForm: React.FC = () => {
                 type="button" 
                 onClick={handleSubmit}
                 disabled={isSubmitting || !validateStep(3)}
-                className="flex items-center justify-center gap-3 px-8 py-3 bg-green-600 dark:bg-green-500 hover:bg-green-700 dark:hover:bg-green-600 text-white rounded-xl font-bold text-sm transition-colors shadow-sm disabled:opacity-70 disabled:cursor-not-allowed min-w-[200px]"
+                className="flex items-center justify-center gap-3 px-4 md:px-8 py-3 bg-green-600 dark:bg-green-500 hover:bg-green-700 dark:hover:bg-green-600 text-white rounded-xl font-bold text-sm transition-colors shadow-sm disabled:opacity-70 disabled:cursor-not-allowed min-w-[200px]"
               >
                 {isSubmitting ? 'Generating...' : 'Generate AI Plan'}
               </button>

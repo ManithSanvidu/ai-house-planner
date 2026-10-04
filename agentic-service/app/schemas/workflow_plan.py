@@ -124,14 +124,6 @@ def create_default_house_planning_plan(objective: str = "Generate a complete hou
                 produced_outputs=["terrain_result"],
             ),
             WorkflowPlanStep(
-                step_id="S5",
-                name="Construction Planning",
-                assigned_agent="construction_planning",
-                dependencies=["S1", "S2"],
-                required_inputs=["terrain_result", "input_data"],
-                produced_outputs=["construction_plan_result"],
-            ),
-            WorkflowPlanStep(
                 step_id="S3",
                 name="Design",
                 assigned_agent="design",
@@ -146,6 +138,14 @@ def create_default_house_planning_plan(objective: str = "Generate a complete hou
                 dependencies=["S3"],
                 required_inputs=["design_result", "input_data"],
                 produced_outputs=["ai_visualization"],
+            ),
+            WorkflowPlanStep(
+                step_id="S5",
+                name="Construction Planning",
+                assigned_agent="construction_planning",
+                dependencies=["S2", "S3"],
+                required_inputs=["design_result", "terrain_result", "input_data"],
+                produced_outputs=["construction_plan_result"],
             ),
             WorkflowPlanStep(
                 step_id="S6",
