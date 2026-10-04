@@ -241,6 +241,7 @@ const IntakeForm: React.FC = () => {
             
             {currentStep < 3 ? (
               <button 
+                key="next-btn"
                 type="button" 
                 onClick={handleNext}
                 disabled={!validateStep(currentStep)}
@@ -250,6 +251,7 @@ const IntakeForm: React.FC = () => {
               </button>
             ) : (
               <button 
+                key="submit-btn"
                 type="button" 
                 onClick={handleSubmit}
                 disabled={isSubmitting || !validateStep(3)}
