@@ -10,6 +10,12 @@ using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var port = Environment.GetEnvironmentVariable("PORT");
+if (!string.IsNullOrEmpty(port))
+{
+    builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+}
+
 var isTesting = builder.Environment.IsEnvironment("Testing");
 if (isTesting)
 {
@@ -239,7 +245,7 @@ builder.Services.AddHttpClient("AgenticService", client =>
         builder.Configuration["AgenticService:BaseUrl"]
         ?? "http://localhost:8001");
 
-    client.Timeout = TimeSpan.FromSeconds(35);
+    client.Timeout = TimeSpan.FromSeconds(300);
     client.DefaultRequestHeaders.Add("X-Internal-API-Key", internalApiKey);
 });
 

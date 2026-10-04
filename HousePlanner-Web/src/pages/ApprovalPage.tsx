@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Button from '../components/common/Button';
@@ -200,7 +200,7 @@ const ApprovalPage: React.FC = () => {
     <Card title="Generated Floor Plan" subtitle="The AI's rendering of your floor plan design.">
      <div className="flex justify-center bg-surface-elevated rounded-lg border border-border overflow-hidden min-h-[300px]">
       <img
-       src={`http://localhost:8001/plans/plan_${workflowId}.png`}
+       src={`https://ai-house-planner-0u8o.onrender.com/plans/plan_${workflowId}.png`}
        alt="Generated Floor Plan"
        className="max-w-full h-auto object-contain"
        onError={(e) => {

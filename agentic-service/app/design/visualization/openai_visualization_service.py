@@ -190,7 +190,7 @@ class OpenAIVisualizationService:
             return {
                 "visualization_id": str(uuid.uuid4()),
                 "image_url": None,
-                "model": "gpt-image-1",
+                "model": "dall-e-2",
                 "status": "disabled",
                 "error": "OpenAI globally disabled (ENABLE_OPENAI=false).",
                 "timestamp": datetime.utcnow().isoformat(),
@@ -206,7 +206,7 @@ class OpenAIVisualizationService:
                 return {
                     "visualization_id": str(uuid.uuid4()),
                     "image_url": None,
-                    "model": "gpt-image-1",
+                    "model": "dall-e-2",
                     "status": "failed",
                     "error": str(exc),
                     "timestamp": datetime.utcnow().isoformat(),
@@ -233,7 +233,7 @@ class OpenAIVisualizationService:
                 return {
                     "visualization_id": str(uuid.uuid4()),
                     "image_url": None,
-                    "model": "gpt-image-1",
+                    "model": "dall-e-2",
                     "status": "failed",
                     "error": "Generated layout failed room requirement validation.",
                     "timestamp": datetime.utcnow().isoformat(),
@@ -263,12 +263,12 @@ class OpenAIVisualizationService:
                 f"[AI Request] purpose=visualization workflow={self.workflow_id or 'n/a'} "
                 f"characters={char_count} estimated_tokens={char_count // 4}"
             )
-            print("[Visualization Agent] Sending prompt to OpenAI gpt-image-1")
+            print("[Visualization Agent] Sending prompt to OpenAI dall-e-2")
             logger.info("[Visualization Agent] Sending prompt to OpenAI")
 
             try:
                 response = openai.images.edit(
-                    model="gpt-image-1",
+                    model="dall-e-2",
                     image=img_bytes,
                     prompt=prompt,
                     n=1,
@@ -285,7 +285,7 @@ class OpenAIVisualizationService:
                     "[Visualization] Image edit is incompatible; using one fresh-generation fallback."
                 )
                 response = openai.images.generate(
-                    model="gpt-image-1",
+                    model="dall-e-2",
                     prompt=prompt,
                     n=1,
                     size="1024x1024",
@@ -306,7 +306,7 @@ class OpenAIVisualizationService:
             # ---- Cost logging for image generation -----------------------
             try:
                 from app.services.ai_guard_db import log_ai_cost
-                log_ai_cost(self.workflow_id, "visualization", "gpt-image-1", 0, 0)
+                log_ai_cost(self.workflow_id, "visualization", "dall-e-2", 0, 0)
             except Exception:
                 pass
 
@@ -317,7 +317,7 @@ class OpenAIVisualizationService:
                 "visualization_id": str(uuid.uuid4()),
                 "image_url": image_url,
                 "image_b64": image_b64,
-                "model": "gpt-image-1",
+                "model": "dall-e-2",
                 "prompt": prompt,
                 "status": "validated",
                 "timestamp": datetime.utcnow().isoformat()
@@ -327,7 +327,7 @@ class OpenAIVisualizationService:
             return {
                 "visualization_id": str(uuid.uuid4()),
                 "image_url": None,
-                "model": "gpt-image-1",
+                "model": "dall-e-2",
                 "prompt": prompt,
                 "status": "failed",
                 "error": str(e),
