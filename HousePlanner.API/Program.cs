@@ -43,10 +43,8 @@ if (string.IsNullOrWhiteSpace(defaultConnection))
 if (!isTesting)
     Console.WriteLine("[Database Configuration] Connection string loaded successfully.");
 
-// An empty placeholder in appsettings.json must not mask the environment variable.
-var internalApiKey = builder.Configuration["AgenticService:InternalApiKey"];
-if (string.IsNullOrWhiteSpace(internalApiKey))
-    internalApiKey = Environment.GetEnvironmentVariable("AGENTIC_INTERNAL_API_KEY");
+var internalApiKey = builder.Configuration["AgenticService:InternalApiKey"]
+    ?? Environment.GetEnvironmentVariable("AGENTIC_INTERNAL_API_KEY");
 if (internalApiKey != null)
 {
     internalApiKey = internalApiKey.Trim();
@@ -56,10 +54,7 @@ if (string.IsNullOrWhiteSpace(internalApiKey))
     if (!isTesting)
         throw new InvalidOperationException(
             "AgenticService:InternalApiKey must be configured through user secrets or environment variables.");
-    internalApiKey = "integration-test-only-key";
 }
-// Controllers read the key from configuration, so expose the resolved value there.
-builder.Configuration["AgenticService:InternalApiKey"] = internalApiKey;
 
 // Add PostgreSQL DbContext
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -76,20 +71,15 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
         }));
 
 // CORS
+var allowedOriginsStr = Environment.GetEnvironmentVariable("ALLOWED_ORIGINS") ?? "http://localhost:5173";
+var allowedOrigins = allowedOriginsStr.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(o => o.Trim()).ToArray();
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp", policy =>
     {
-        // ALLOWED_ORIGINS is a comma-separated list; when unset, any origin is allowed.
-        var allowedOrigins = (Environment.GetEnvironmentVariable("ALLOWED_ORIGINS") ?? string.Empty)
-            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-
-        if (allowedOrigins.Length > 0)
-            policy.WithOrigins(allowedOrigins);
-        else
-            policy.AllowAnyOrigin();
-
-        policy.AllowAnyHeader()
+        policy.WithOrigins(allowedOrigins)
+              .AllowAnyHeader()
               .AllowAnyMethod();
     });
 });
@@ -385,9 +375,7 @@ app.UseWhen(
             if (!context.Request.Headers.TryGetValue(
                     "X-Internal-API-Key",
                     out var actual)
-                || !System.Security.Cryptography.CryptographicOperations.FixedTimeEquals(
-                    System.Text.Encoding.UTF8.GetBytes(actual.ToString()),
-                    System.Text.Encoding.UTF8.GetBytes(internalApiKey)))
+                || actual != internalApiKey)
             {
                 context.Response.StatusCode =
                     StatusCodes.Status403Forbidden;
