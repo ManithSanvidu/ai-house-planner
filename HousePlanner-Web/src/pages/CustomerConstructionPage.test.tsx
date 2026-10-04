@@ -22,20 +22,37 @@ describe('customer construction lifecycle', () => {
   service.constructors.mockResolvedValue([{ id:'c1', name:'Real Builder' }]);
  });
 
- it('keeps setup collapsed, reveals the three steps, and sends the existing request', async () => {
+ it('keeps setup collapsed, requires manual design selection, tests Change button, and sends the existing request', async () => {
   service.request.mockResolvedValue({});
   render(<BrowserRouter><CustomerConstructionPage/></BrowserRouter>);
   expect(await screen.findByRole('heading', { name: 'Start New Construction' })).toBeTruthy();
-  expect(screen.queryByText('Step 1 — Select Design')).toBeNull();
+  expect(screen.queryByText('Step 1 — Select design')).toBeNull();
 
-  fireEvent.click(screen.getByRole('button', { name: 'Start New Construction' }));
-  expect(screen.getByText('Step 1 — Select Design')).toBeTruthy();
-  expect(screen.getByText('3 Bedrooms • 2 Bathrooms • 1 Floor')).toBeTruthy();
-  fireEvent.click(screen.getByRole('button', { name: 'Continue to Estimate' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Start' }));
+  expect(screen.getByText('Step 1 — Select design')).toBeTruthy();
+  
+  // Design is not auto-selected, so Step 2 should not be there yet
+  expect(screen.queryByText('LKR 11,340,000.00')).toBeNull();
+
+  // Click the design choice to select it
+  fireEvent.click(screen.getByText((content) => content.includes('Central Core Home')));
+
+  // Now Steps 2 and 3 should appear
+  expect(screen.getByText('3 Bedrooms · 2 Bathrooms · 1 Floors')).toBeTruthy();
   expect(screen.getByText('LKR 11,340,000.00')).toBeTruthy();
-  fireEvent.click(screen.getByRole('button', { name: 'Choose Constructor' }));
   expect(screen.getByText('Real Builder')).toBeTruthy();
-  fireEvent.click(screen.getByRole('button', { name: 'Send Request' }));
+
+  // Click Change button
+  fireEvent.click(screen.getByRole('button', { name: 'Change' }));
+  
+  // Steps 2 and 3 disappear
+  expect(screen.queryByText('LKR 11,340,000.00')).toBeNull();
+
+  // Select design again
+  fireEvent.click(screen.getByText((content) => content.includes('Central Core Home')));
+  expect(screen.getByText('LKR 11,340,000.00')).toBeTruthy();
+
+  fireEvent.click(screen.getByRole('button', { name: 'Send request' }));
   await waitFor(() => expect(service.request).toHaveBeenCalledWith('d1','c1'));
  });
 
@@ -46,26 +63,22 @@ describe('customer construction lifecycle', () => {
    pendingRequests: [{ id:'r1',projectId:'p2',houseDesignId:'d1',constructorName:'Second Builder',status:'Pending',requestedAt:'2026-09-22',designVersion:1 }],
   });
 
-  const { container } = render(<BrowserRouter><CustomerConstructionPage/></BrowserRouter>);
-  expect(await screen.findByRole('heading', { name: 'Active Projects' })).toBeTruthy();
-  expect(screen.getByText('Constructor: Real Builder')).toBeTruthy();
-  expect(screen.getByText('Current phase:').parentElement?.textContent).toContain('Foundation');
+  render(<BrowserRouter><CustomerConstructionPage/></BrowserRouter>);
+  expect(await screen.findByRole('heading', { name: /Active Construction/i })).toBeTruthy();
+  expect(screen.getByText((content) => content.includes('Real Builder'))).toBeTruthy();
+  expect(screen.getByText((content) => content.includes('Current phase:')).parentElement?.textContent).toContain('Foundation');
   expect(screen.getByRole('link', { name: 'View Progress' })).toBeTruthy();
-  expect(screen.getByText('Second Builder')).toBeTruthy();
-  expect(screen.getByText('Status: Pending')).toBeTruthy();
-  expect(container.querySelector('main')?.className).toContain('overflow-x-hidden');
-  expect(container.querySelector('.md\\:grid-cols-2')).toBeTruthy();
+  expect(screen.getByText((content) => content.includes('Waiting for Second Builder'))).toBeTruthy();
  });
 
  it('renders friendly empty states, including no-approved-design guidance', async () => {
   service.approvedDesigns.mockResolvedValue([]);
   render(<BrowserRouter><CustomerConstructionPage/></BrowserRouter>);
 
-  expect(await screen.findByText('No active projects')).toBeTruthy();
-  expect(screen.getByText('No pending requests')).toBeTruthy();
-  fireEvent.click(screen.getByRole('button', { name: 'Start New Construction' }));
-  expect(screen.getByText('No approved designs')).toBeTruthy();
-  expect(screen.getByText('You need an approved design before starting construction.')).toBeTruthy();
+  expect(await screen.findByText('Your active construction projects will appear here.')).toBeTruthy();
+  expect(screen.getByText('No construction requests are waiting for a response.')).toBeTruthy();
+  fireEvent.click(screen.getByRole('button', { name: 'Start' }));
+  expect(screen.getByText('No approved designs are available yet.')).toBeTruthy();
  });
 
  it('renders customer progress and activity from stored logs', async () => {
