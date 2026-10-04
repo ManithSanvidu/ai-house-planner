@@ -123,7 +123,7 @@ const LoginPage: React.FC = () => {
        onMouseLeave={() => setIsHovered(false)}
        className="w-full bg-gray-900 dark:bg-white hover:bg-black dark:hover:bg-gray-200 text-white dark:text-gray-900 font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all custom-shadow-md group mt-8"
       >
-       Sign In
+       <span>Sign In</span>
        <motion.div
         animate={{ x: isHovered ? 4 : 0 }}
         transition={{ duration: 0.2 }}
