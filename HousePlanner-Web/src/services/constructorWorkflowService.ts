@@ -2,7 +2,7 @@ import axios from 'axios';
 import { supabase } from '../lib/supabase';
 import type { CostSummaryDto } from './workflowService';
 
-const API_URL = 'http://localhost:5265/api/constructor/workflow';
+const API_URL = 'https://ai-house-planner-backend-mryf.onrender.com/api/constructor/workflow';
 
 // Add the auth token to requests
 const getAuthHeaders = async () => {
