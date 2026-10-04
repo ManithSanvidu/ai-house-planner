@@ -36,8 +36,8 @@ public sealed class PricingDataSeederTests
             Assert.Equal("Sri Lanka", item.Region);
             Assert.Equal("Initial contractor benchmark - Sri Lanka construction rates 2026", item.SourceReference);
             Assert.Equal(1.0m, item.TerrainMultiplier.Flat);
-            Assert.Equal(1.15m, item.TerrainMultiplier.Hillside);
-            Assert.Equal(1.10m, item.TerrainMultiplier.Coastal);
+            Assert.Equal(item.Category == "labour" ? 1.0m : 1.15m, item.TerrainMultiplier.Hillside);
+            Assert.Equal(item.Category == "labour" ? 1.0m : 1.10m, item.TerrainMultiplier.Coastal);
             Assert.NotEqual(default, item.UpdatedAt);
             Assert.Null(item.ImportedAt);
         });

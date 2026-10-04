@@ -17,13 +17,34 @@ public record WorkflowStatusResponseDto(
     Guid? PreferredHouseDesignId = null,
     string? ArchitectReviewStatus = null,
     string? ArchitectFeedback = null,
-    System.Text.Json.JsonElement? AgentExecutionLog = null,
+    IReadOnlyList<AgentExecutionEventDto>? AgentExecutionLog = null,
     string? LandSizeCategory = null,
     decimal? LandSizePerches = null,
     int? Bedrooms = null,
     int? Bathrooms = null,
     string? HouseType = null,
-    WorkflowRequirementsDto? Requirements = null
+    WorkflowRequirementsDto? Requirements = null,
+    CostEstimationRunSummaryDto? CostEstimationRun = null
+);
+
+public record AgentExecutionEventDto(
+    string Agent,
+    string Status,
+    string Message,
+    string? ToolCalled,
+    int? DurationMs,
+    DateTimeOffset? CreatedAt
+);
+
+public record CostEstimationRunSummaryDto(
+    string Status,
+    string FormulaVersion,
+    int PricingRecordCount,
+    decimal? AppliedAreaSqft,
+    string? TerrainType,
+    string? FailureReason,
+    DateTimeOffset StartedAt,
+    DateTimeOffset CompletedAt
 );
 
 public class WorkflowRequirementsDto

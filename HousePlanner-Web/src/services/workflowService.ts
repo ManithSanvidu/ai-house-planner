@@ -106,6 +106,20 @@ export interface AgentExecutionLogEntry {
   agent: string;
   status: 'completed' | 'failed' | string;
   message: string;
+  toolCalled?: string | null;
+  durationMs?: number | null;
+  createdAt?: string | null;
+}
+
+export interface CostEstimationRunSummaryDto {
+  status: 'success' | 'failed';
+  formulaVersion: string;
+  pricingRecordCount: number;
+  appliedAreaSqft: number | null;
+  terrainType: string | null;
+  failureReason: string | null;
+  startedAt: string;
+  completedAt: string;
 }
 
 export interface WorkflowRequirementsDto {
@@ -131,6 +145,7 @@ export interface WorkflowStatusResponseDto {
  architectFeedback?: string | null;
  constructionPlan?: ConstructionPlanSummaryDto | null;
  agentExecutionLog?: AgentExecutionLogEntry[] | null;
+ costEstimationRun?: CostEstimationRunSummaryDto | null;
  landSizeCategory?: string;
  landSizePerches?: number;
  bedrooms?: number;

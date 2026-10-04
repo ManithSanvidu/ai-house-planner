@@ -13,6 +13,26 @@ namespace HousePlanner.API.Tests.Controllers;
 
 public class PreDesignedPlanControllerTests
 {
+    [Fact]
+    public async Task Detail_ReturnsArchitectCostWithoutCostAgent()
+    {
+        await using var db = Db();
+        var priced = Plan(code: "HP-T1");
+        priced.EstimatedConstructionCost = 12_500_000m;
+        var unpriced = Plan(code: "HP-T2");
+        db.AddRange(priced, unpriced);
+        await db.SaveChangesAsync();
+        var controller = Context(new PreDesignedPlansController(db, User().Object, Images().Object));
+
+        var pricedDetail = Assert.IsType<PreDesignedPlanDetailDto>(
+            Assert.IsType<OkObjectResult>(await controller.Detail(priced.Id)).Value);
+        var unpricedDetail = Assert.IsType<PreDesignedPlanDetailDto>(
+            Assert.IsType<OkObjectResult>(await controller.Detail(unpriced.Id)).Value);
+
+        Assert.Equal(12_500_000m, pricedDetail.EstimatedConstructionCost);
+        Assert.Null(unpricedDetail.EstimatedConstructionCost);
+    }
+
     private static ApplicationDbContext Db() => new(new DbContextOptionsBuilder<ApplicationDbContext>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options);
     private static Mock<ICurrentUserContextService> User(string? role = "User") { var mock = new Mock<ICurrentUserContextService>(); mock.Setup(x => x.GetAsync(It.IsAny<HttpContext>())).ReturnsAsync(role is null ? null : new CurrentUserContext(null, "test@example.com", role)); return mock; }
     private static Mock<IPlanImageStorage> Images() { var mock = new Mock<IPlanImageStorage>(); mock.Setup(x => x.GetPublicUrl(It.IsAny<string?>())).Returns((string? value) => value); mock.Setup(x => x.NormalizeReference(It.IsAny<string?>())).Returns((string? value) => value); return mock; }

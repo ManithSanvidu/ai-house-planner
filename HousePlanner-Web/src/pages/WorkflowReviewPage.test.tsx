@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { WorkflowReviewPage } from './WorkflowReviewPage';
@@ -44,7 +44,7 @@ describe('WorkflowReviewPage revision refresh', () => {
   vi.stubGlobal('alert', vi.fn());
  });
 
- it('displays Your House Requirements and prevents generating another design to save AI costs', async () => {
+ it('displays current home requirements without offering another design generation', async () => {
   vi.mocked(workflowService.getWorkflowStatus)
    .mockResolvedValueOnce(status(1));
   vi.mocked(workflowService.regenerateDesign).mockResolvedValue({});
@@ -54,16 +54,13 @@ describe('WorkflowReviewPage revision refresh', () => {
   </MemoryRouter>);
 
   expect(await screen.findByText('Architectural Visualization Preview')).toBeDefined();
-  expect(screen.getByText('Customer Requirements')).toBeDefined();
+  expect(screen.getByText('Your Home Requirements')).toBeDefined();
   
   // Checking requirement values
   expect(screen.getAllByText('Bedrooms').length).toBeGreaterThan(0);
   expect(screen.getAllByText('Bathrooms').length).toBeGreaterThan(0);
 
-  const generateBtn = screen.getByRole('button', { name: 'Generate Another Design' });
-  expect(generateBtn.hasAttribute('disabled')).toBe(true);
-
-  fireEvent.click(generateBtn);
+  expect(screen.queryByRole('button', { name: 'Generate Another Design' })).toBeNull();
   expect(workflowService.regenerateDesign).not.toHaveBeenCalled();
  });
 
@@ -73,7 +70,7 @@ describe('WorkflowReviewPage revision refresh', () => {
    <Routes><Route path="/dashboard/workflows/:id" element={<WorkflowReviewPage />} /></Routes>
   </MemoryRouter>);
 
-  expect(await screen.findByText('Ready for Architect Review')).toBeTruthy();
+  expect(await screen.findByText('Your Home Requirements')).toBeTruthy();
   expect(screen.getAllByText('Bedrooms').length).toBeGreaterThan(0);
   expect(screen.getAllByText('Bathrooms').length).toBeGreaterThan(0);
  });

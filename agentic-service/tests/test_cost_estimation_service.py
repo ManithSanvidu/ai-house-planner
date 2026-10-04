@@ -343,10 +343,10 @@ def test_budget_delta_percent_formula():
     assert r["budget_delta_percent"] == pytest.approx(expected, rel=1e-9)
 
 
-def test_room_area_computed_from_dimensions_when_area_sqft_absent():
+def test_room_without_area_sqft_is_accepted_via_dimensions():
     """
-    When area_sqft is absent, the agent must compute width × length.
-    Single room: width=10, length=8 → area=80 sqft.
+    A room without area_sqft is still valid when width × length is present.
+    The priced area is the design's built-up area (80 sqft here).
     material_cost = 80 × 200 × 1.00 = 16 000
     labour_cost   = 16 000 × 0.30   =  4 800
     total_cost    = 20 800
@@ -365,7 +365,7 @@ def test_room_area_computed_from_dimensions_when_area_sqft_absent():
         "windows": [],
     }
     input_state = _make_state(rooms=[room_no_area])
-    input_state.design_result.pop("total_built_up_area_sqft", None)
+    input_state.design_result["total_built_up_area_sqft"] = 80.0
     with patch(PATCH_TARGET, return_value=STANDARD_PRICING):
         state = cost_estimation_node(input_state)
 
@@ -374,6 +374,26 @@ def test_room_area_computed_from_dimensions_when_area_sqft_absent():
     assert r["material_cost_lkr"] == pytest.approx(16_000.00, rel=1e-6)
     assert r["total_cost_lkr"] == pytest.approx(20_800.00, rel=1e-6)
     assert r["total_area_sqft"] == pytest.approx(80.0, rel=1e-6)
+
+
+def test_prices_design_built_up_area_not_room_sum():
+    """The design's built-up area is priced even when it differs from the sum of room areas."""
+    input_state = _make_state()
+    input_state.design_result["total_built_up_area_sqft"] = 500.0
+    with patch(PATCH_TARGET, return_value=STANDARD_PRICING):
+        state = cost_estimation_node(input_state)
+
+    assert state.status == "running"
+    assert state.cost_result["total_area_sqft"] == pytest.approx(500.0, rel=1e-9)
+
+
+def test_missing_built_up_area_fails():
+    """Without the design's built-up area the agent fails instead of summing rooms."""
+    input_state = _make_state()
+    input_state.design_result.pop("total_built_up_area_sqft", None)
+    with patch(PATCH_TARGET, return_value=STANDARD_PRICING):
+        state = cost_estimation_node(input_state)
+    _assert_failed(state)
 
 
 def test_cost_result_stored_in_state():

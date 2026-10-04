@@ -46,3 +46,13 @@ def test_calculator_rejects_non_area_material_unit():
             _item(1, "Cement", "material", "bag", 2500),
             _item(2, "Construction Labour", "labour", "factor", .35),
         ])
+
+
+def test_calculator_rejects_two_rates_for_the_same_cost_head():
+    finishing = _item(1, "Finishing Materials", "material", "per_sqft", 2500)
+    tiles = _item(2, "Tiles", "material", "per_sqft", 500)
+    tiles.display_group = "Finishing"
+    with pytest.raises(CostCalculationError, match="duplicate cost head"):
+        calculate_cost_lines(100, "flat", [
+            finishing, tiles, _item(3, "Construction Labour", "labour", "factor", .35),
+        ])

@@ -21,6 +21,12 @@ public sealed class PricingHistory
     [Column(TypeName = "decimal(18,2)")]
     public decimal NewValue { get; set; }
 
+    [Column(TypeName = "jsonb")]
+    public string? PreviousTerrainMultipliersJson { get; set; }
+
+    [Column(TypeName = "jsonb")]
+    public string? NewTerrainMultipliersJson { get; set; }
+
     [StringLength(100)]
     public string? ChangedByUserId { get; set; }
 

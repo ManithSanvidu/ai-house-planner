@@ -54,5 +54,5 @@ test('blocks two immediate generation submissions', async () => {
 
   expect(startDesign).toHaveBeenCalledOnce();
   resolveRequest({ workflowId: 'workflow-1' });
-  await waitFor(() => expect(screen.getByText('Project Created!')).toBeTruthy());
+  await waitFor(() => expect(window.location.pathname).toBe('/dashboard/workflows/workflow-1'));
 });

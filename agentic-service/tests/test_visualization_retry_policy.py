@@ -43,6 +43,22 @@ def test_successful_edit_uses_one_image_api_call(service):
     fake_openai.images.generate.assert_not_called()
 
 
+@pytest.mark.parametrize(("model", "quality"), [("dall-e-2", None), ("gpt-image-1", "medium")])
+def test_quality_is_only_sent_to_models_that_support_it(service, monkeypatch, model, quality):
+    visualization, fake_openai = service
+    monkeypatch.setattr(module, "OPENAI_IMAGE_MODEL", model)
+    fake_openai.images.edit.return_value = SimpleNamespace(
+        data=[SimpleNamespace(url="https://example.test/image.png", b64_json=None)]
+    )
+
+    result = visualization.generate_visualization(_layout())
+
+    kwargs = fake_openai.images.edit.call_args.kwargs
+    assert result["model"] == model
+    assert kwargs["model"] == model
+    assert kwargs.get("quality") == quality
+
+
 def test_edit_incompatibility_allows_one_generate_fallback(service):
     visualization, fake_openai = service
     fake_openai.images.edit.side_effect = _status_error(

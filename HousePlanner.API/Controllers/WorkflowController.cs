@@ -231,16 +231,30 @@ public class WorkflowController : ControllerBase
                 }
             }
 
-            JsonElement? parsedExecutionLog = null;
+            IReadOnlyList<AgentExecutionEventDto>? parsedExecutionLog = null;
             if (!string.IsNullOrEmpty(workflow.AgentExecutionLogJson))
             {
                 try
                 {
                     using var logDoc = JsonDocument.Parse(workflow.AgentExecutionLogJson);
-                    parsedExecutionLog = logDoc.RootElement.Clone();
+                    if (logDoc.RootElement.ValueKind == JsonValueKind.Array)
+                        parsedExecutionLog = logDoc.RootElement.EnumerateArray()
+                            .Where(entry => entry.ValueKind == JsonValueKind.Object)
+                            .Select(MapExecutionEvent)
+                            .ToList();
                 }
                 catch (JsonException) { /* best-effort */ }
             }
+
+            var latestCostRun = await _context.CostEstimationRuns.AsNoTracking()
+                .Where(run => run.WorkflowStateId == id &&
+                    (designDto == null || run.HouseDesignId == designDto.DesignId))
+                .OrderByDescending(run => run.StartedAt)
+                .Select(run => new CostEstimationRunSummaryDto(
+                    run.Status, run.FormulaVersion, run.PricingRecordCount,
+                    run.AppliedAreaSqft, run.TerrainType, run.FailureReason,
+                    run.StartedAt, run.CompletedAt))
+                .FirstOrDefaultAsync();
 
             var responseDto = new WorkflowStatusResponseDto(
                 WorkflowId: workflow.Id,
@@ -265,6 +279,7 @@ public class WorkflowController : ControllerBase
                 Bedrooms: workflow.PreferredBedrooms,
                 Bathrooms: workflow.PreferredBathrooms,
                 HouseType: workflow.StylePreference,
+                CostEstimationRun: latestCostRun,
                 Requirements: new WorkflowRequirementsDto
                 {
                     LandSizeCategory = workflow.LandSizeCategory,
@@ -287,6 +302,29 @@ public class WorkflowController : ControllerBase
             _logger.LogError(ex, "Error retrieving status for workflow {WorkflowId}", id);
             return StatusCode(StatusCodes.Status500InternalServerError, new { message = "An error occurred retrieving workflow status." });
         }
+    }
+
+    private static AgentExecutionEventDto MapExecutionEvent(JsonElement entry)
+    {
+        static string? ReadString(JsonElement value, string name) =>
+            value.TryGetProperty(name, out var property) && property.ValueKind == JsonValueKind.String
+                ? property.GetString() : null;
+        var agent = ReadString(entry, "agent") ?? ReadString(entry, "agent_name") ?? "unknown";
+        var action = ReadString(entry, "action") ?? "step";
+        var tool = ReadString(entry, "toolCalled") ?? ReadString(entry, "tool_called");
+        var result = ReadString(entry, "result");
+        var failed = ReadString(entry, "status") == "failed" ||
+            ReadString(entry, "event_status") == "failed" ||
+            result == "failed" || action.Contains("failed", StringComparison.OrdinalIgnoreCase);
+        var message = ReadString(entry, "message") ?? ReadString(entry, "error_summary") ??
+            (tool is null ? action.Replace('_', ' ') : $"{tool.Replace('_', ' ')}: {result ?? action}");
+        int? duration = (entry.TryGetProperty("durationMs", out var durationValue) ||
+            entry.TryGetProperty("duration_ms", out durationValue)) &&
+            durationValue.TryGetInt32(out var milliseconds) ? milliseconds : null;
+        DateTimeOffset? createdAt = DateTimeOffset.TryParse(
+            ReadString(entry, "createdAt") ?? ReadString(entry, "created_at_utc"), out var parsed)
+            ? parsed : null;
+        return new AgentExecutionEventDto(agent, failed ? "failed" : "completed", message, tool, duration, createdAt);
     }
 
     /// <summary>

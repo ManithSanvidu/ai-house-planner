@@ -161,7 +161,8 @@ public class InternalWorkflowControllerTests
             .ThenInclude(d => d.Rooms)
             .FirstOrDefaultAsync(w => w.Id == workflowId);
 
-        Assert.Equal("design_generated", dbWorkflow!.Status);
+        // Saving a design keeps the workflow running until validation completes.
+        Assert.Equal("running", dbWorkflow!.Status);
         Assert.Equal("hillside", dbWorkflow.TerrainType);
 
         var oldDbDesign = dbWorkflow.HouseDesigns.FirstOrDefault(d => d.Id == oldDesign.Id);

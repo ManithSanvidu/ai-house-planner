@@ -15,8 +15,7 @@ public class PreDesignedPlansController : ControllerBase
     private readonly ApplicationDbContext _db;
     private readonly ICurrentUserContextService _users;
     private readonly IPlanImageStorage _images;
-    public PreDesignedPlansController(ApplicationDbContext db, ICurrentUserContextService users,
-        IPlanImageStorage images)
+    public PreDesignedPlansController(ApplicationDbContext db, ICurrentUserContextService users, IPlanImageStorage images)
     { _db = db; _users = users; _images = images; }
 
     private async Task<bool> Authenticated() => await _users.GetAsync(HttpContext) is not null;
@@ -53,9 +52,8 @@ public class PreDesignedPlansController : ControllerBase
         var plan = await _db.PreDesignedHousePlans.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id && x.IsActive);
         if (plan is null) return NotFound();
 
-        var pricingItems = await _db.PricingItems.AsNoTracking().Where(p => p.IsActive).ToListAsync();
-        var cost = CalculateCost(plan, pricingItems);
-        return Ok(MapDetail(plan, _images, cost));
+        // Pre-designed plans carry the architect's own cost; the cost agent is not involved.
+        return Ok(MapDetail(plan, _images));
     }
 
     [HttpPost("{id:guid}/check-compatibility")]
@@ -101,33 +99,10 @@ public class PreDesignedPlansController : ControllerBase
     }
 
     internal static PreDesignedPlanSummaryDto MapSummary(PreDesignedHousePlan x, IPlanImageStorage images) => new(x.Id, x.Name, x.Slug, x.DesignCode, x.Style, x.Bedrooms, x.Bathrooms, x.FloorCount, x.TotalBuiltUpAreaSqft, x.MinimumLandSizePerches, x.SuitableTerrain, x.ParkingSpaces, x.HasBalcony, x.HasVeranda, x.HasOffice, x.IsAccessibleFriendly, x.Category, ParseTags(x.TagsJson), images.GetPublicUrl(x.ThumbnailUrl), x.IsActive, x.UpdatedAt, x.EstimatedConstructionCost);
-    internal static PreDesignedPlanDetailDto MapDetail(PreDesignedHousePlan x, IPlanImageStorage images, CostSummaryDto? cost = null)
+    internal static PreDesignedPlanDetailDto MapDetail(PreDesignedHousePlan x, IPlanImageStorage images)
     {
         using var document = JsonDocument.Parse(x.LayoutJson);
-        return new(x.Id, x.Name, x.Slug, x.DesignCode, x.Description, x.Style, x.Bedrooms, x.Bathrooms, x.FloorCount, x.TotalBuiltUpAreaSqft, x.MinimumLandSizePerches, x.MinimumPlotWidthFt, x.MinimumPlotLengthFt, x.SuitableTerrain, x.ParkingSpaces, x.HasBalcony, x.HasVeranda, x.HasOffice, x.HasUtilityRoom, x.IsAccessibleFriendly, x.Category, ParseTags(x.TagsJson), images.GetPublicUrl(x.ThumbnailUrl), document.RootElement.Clone(), x.IsActive, x.CreatedAt, x.UpdatedAt, "Architect-validated design. Construction estimates may vary based on site conditions, materials, and final contractor pricing.", cost, x.EstimatedConstructionCost);
+        return new(x.Id, x.Name, x.Slug, x.DesignCode, x.Description, x.Style, x.Bedrooms, x.Bathrooms, x.FloorCount, x.TotalBuiltUpAreaSqft, x.MinimumLandSizePerches, x.MinimumPlotWidthFt, x.MinimumPlotLengthFt, x.SuitableTerrain, x.ParkingSpaces, x.HasBalcony, x.HasVeranda, x.HasOffice, x.HasUtilityRoom, x.IsAccessibleFriendly, x.Category, ParseTags(x.TagsJson), images.GetPublicUrl(x.ThumbnailUrl), document.RootElement.Clone(), x.IsActive, x.CreatedAt, x.UpdatedAt, "Architect-validated design. Construction estimates may vary based on site conditions, materials, and final contractor pricing.", x.EstimatedConstructionCost);
     }
     internal static IReadOnlyList<string> ParseTags(string json) { try { return JsonSerializer.Deserialize<string[]>(json) ?? []; } catch { return []; } }
-
-    private static CostSummaryDto? CalculateCost(PreDesignedHousePlan plan, List<PricingData> pricingItems)
-    {
-        var materials = pricingItems.Where(p => string.Equals(p.Category, "material", StringComparison.OrdinalIgnoreCase)).ToList();
-        var labour = pricingItems.FirstOrDefault(p => string.Equals(p.Category, "labour", StringComparison.OrdinalIgnoreCase));
-        if (materials.Count == 0 || labour == null) return null;
-
-        decimal materialTotal = 0;
-        var breakdown = new List<CostBreakdownItemDto>();
-        foreach (var m in materials)
-        {
-            decimal multiplier = 1.0m;
-            if (string.Equals(plan.SuitableTerrain, "hillside", StringComparison.OrdinalIgnoreCase)) multiplier = m.TerrainMultiplier.Hillside;
-            else if (string.Equals(plan.SuitableTerrain, "coastal", StringComparison.OrdinalIgnoreCase)) multiplier = m.TerrainMultiplier.Coastal;
-            else multiplier = m.TerrainMultiplier.Flat;
-
-            var amount = Math.Round(plan.TotalBuiltUpAreaSqft * m.UnitCostLkr * multiplier, 2);
-            materialTotal += amount;
-        }
-        var labourTotal = Math.Round(materialTotal * labour.UnitCostLkr, 2);
-        var total = materialTotal + labourTotal;
-        return new CostSummaryDto(materialTotal, labourTotal, total, null, new List<CostBreakdownItemDto>(), "category-area-v1", plan.TotalBuiltUpAreaSqft, plan.SuitableTerrain, DateTimeOffset.UtcNow);
-    }
 }

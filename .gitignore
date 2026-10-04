@@ -89,3 +89,28 @@ agentic-service/scratch/print_rooms.py
 agentic-service/scratch/reproduce_4b3b.py
 agentic-service/scratch/test_runner.py
 HousePlanner.API/wwwroot/uploads/
+
+# Stray lockfile from running npm at the repo root (the web app has its own)
+/package-lock.json
+
+# AI coding assistants (local settings, memory, and instructions)
+.claude/
+CLAUDE.md
+CLAUDE.local.md
+.codex/
+AGENTS.md
+.cursor/
+.cursorrules
+.cursorignore
+.windsurf/
+.windsurfrules
+.aider*
+.gemini/
+GEMINI.md
+.continue/
+.cline/
+.clinerules
+.roo/
+.kiro/
+.github/copilot-instructions.md
+.mcp.json
