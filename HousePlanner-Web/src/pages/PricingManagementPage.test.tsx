@@ -99,6 +99,28 @@ test('shows the updater name instead of the stored user ID', async () => {
  expect(screen.queryByText('constructor-1')).toBeNull();
 });
 
+test('hides inactive prices by default and exposes them through the status filter', async () => {
+ const inactiveTiles: PricingItem = {
+  ...mockItems[0],
+  id: 3,
+  itemName: 'Tiles',
+  displayGroup: 'Finishing',
+  isActive: false,
+ };
+ mockGetAll.mockResolvedValue([...mockItems, inactiveTiles]);
+
+ render(<PricingManagementPage />);
+
+ await screen.findByText('Foundation & Substructure Materials');
+ expect(screen.queryByText('Tiles')).toBeNull();
+
+ fireEvent.click(screen.getByRole('button', { name: 'Inactive (1)' }));
+
+ expect(await screen.findByText('Tiles')).toBeTruthy();
+ expect(screen.queryByText('Foundation & Substructure Materials')).toBeNull();
+ expect(screen.getByText('Inactive')).toBeTruthy();
+});
+
 test('2. "Add Pricing Item" button opens create modal', async () => {
  render(<PricingManagementPage />);
  await screen.findByText('Foundation & Substructure Materials');
