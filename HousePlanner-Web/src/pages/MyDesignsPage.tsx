@@ -4,6 +4,7 @@ import { RefreshCw } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { workflowService, type DesignHistoryDto, type WorkflowDesignHistoryDto } from '../services/workflowService';
 import { countLabel, formatArea, formatGenerationMode, formatRoomName, formatTopology, formatWorkflowStatus } from '../utils/presentation';
+import { formatDesignRef } from '../utils/referenceCode';
 import { SHOW_TECHNICAL_PLAN } from '../config/features';
 
 type PendingRemoval = { workflow: WorkflowDesignHistoryDto; design: DesignHistoryDto };
@@ -87,7 +88,7 @@ const DesignCard = ({ design, workflow, onSubmit, onRemove }: { design: DesignHi
  const rejected = workflow.architectReviewStatus === 'Rejected' && design.isPreferred;
  const managementLocked = workflow.status === 'approved' || workflow.status === 'awaiting_architect_review' || rejected;
  return <article className={`flex flex-col h-full rounded-xl bg-surface bg-background border p-3 border-border`}>
-  <div className="mb-2"><span className="text-xs uppercase text-text-secondary font-bold">Version {design.version}</span><h3 className="font-bold leading-tight">{formatTopology(design.topology)}</h3></div>
+  <div className="mb-2"><span className="text-xs uppercase text-text-secondary font-bold">Version {design.version} · {formatDesignRef(design.designId)}</span><h3 className="font-bold leading-tight">{formatTopology(design.topology)}</h3></div>
   {SHOW_TECHNICAL_PLAN && <MiniPlan design={design}/>}
   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-2 gap-y-1 text-sm mb-3"><span>{countLabel(design.bedrooms,'Bedroom')}</span><span>{countLabel(design.bathrooms,'Bathroom')}</span><span>{countLabel(design.floorCount,'Floor')}</span><span>{formatArea(design.totalBuiltUpAreaSqft)}</span><span className="col-span-2 text-text-secondary">{formatGenerationMode(design.generationMode)}</span></div>
 

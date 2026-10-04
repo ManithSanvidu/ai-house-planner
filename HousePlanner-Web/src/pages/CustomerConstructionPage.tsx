@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { Building2, Clock, RefreshCw, CheckCircle2, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { customerConstructionService, type ApprovedDesign, type ConstructorProfile, type CustomerConstruction } from '../services/customerConstructionService';
 import CostBreakdownCard from '../components/cost/CostBreakdownCard';
+import { formatDesignRef, formatProjectRef, formatRequestRef } from '../utils/referenceCode';
 
 export default function CustomerConstructionPage() {
   const [params] = useSearchParams();
@@ -94,8 +95,8 @@ export default function CustomerConstructionPage() {
           <Clock className="text-amber-600 mt-0.5" size={20} />
           <div>
             <h3 className="font-bold text-amber-900 text-lg">Construction request pending</h3>
-            <p className="text-amber-800 mt-1">Your request with <strong>{pendingRequests[0].constructorName}</strong> is waiting for a response.</p>
-            <p className="text-sm text-amber-700/80 mt-2">Requested on {new Date(pendingRequests[0].requestedAt).toLocaleDateString()}</p>
+            <p className="text-amber-800 mt-1">Your request with <strong>{pendingRequests[0].constructorName}</strong> is waiting for a response. <span className="text-sm ml-1 opacity-80">({formatRequestRef(pendingRequests[0].id)})</span></p>
+            <p className="text-sm text-amber-700/80 mt-2">Requested on {new Date(pendingRequests[0].requestedAt).toLocaleDateString()} · {formatDesignRef(pendingRequests[0].houseDesignId)}</p>
           </div>
         </div>
       )}
@@ -127,8 +128,8 @@ export default function CustomerConstructionPage() {
                 <article key={p.id} className="rounded-2xl border bg-surface p-5 shadow-sm">
                   <div className="flex justify-between items-start mb-4">
                     <div>
-                      <h3 className="font-bold text-lg">{projDesign.title}</h3>
-                      <p className="text-text-muted">{p.constructorName}</p>
+                      <h3 className="font-bold text-lg">{projDesign.title} <span className="text-sm font-normal text-text-muted ml-1">({formatDesignRef(p.houseDesignId)})</span></h3>
+                      <p className="text-text-muted">{p.constructorName} <span className="text-sm ml-1">({formatProjectRef(p.id)})</span></p>
                     </div>
                     <span className="bg-indigo-50 text-indigo-700 text-xs font-semibold px-2.5 py-1 rounded-full border border-indigo-100">
                       In Progress
@@ -167,8 +168,8 @@ export default function CustomerConstructionPage() {
                   <div className="flex items-center gap-3">
                     <div className="bg-amber-100 p-2 rounded-lg text-amber-700"><Clock size={18} /></div>
                     <div>
-                      <p className="font-medium">Waiting for {r.constructorName}</p>
-                      <p className="text-sm text-text-muted">{reqDesign.title} · Requested {new Date(r.requestedAt).toLocaleDateString()}</p>
+                      <p className="font-medium">Waiting for {r.constructorName} <span className="text-xs text-text-muted font-normal ml-1">({formatRequestRef(r.id)})</span></p>
+                      <p className="text-sm text-text-muted">{reqDesign.title} <span className="ml-1">({formatDesignRef(r.houseDesignId)})</span> · Requested {new Date(r.requestedAt).toLocaleDateString()}</p>
                     </div>
                   </div>
                 </div>
@@ -195,7 +196,7 @@ export default function CustomerConstructionPage() {
               <div className="rounded-2xl border bg-gray-50 dark:bg-gray-900/50 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">Selected Design</p>
-                  <h3 className="text-lg font-bold">{design.title}</h3>
+                  <h3 className="text-lg font-bold">{design.title} <span className="text-sm font-normal text-text-muted ml-1">({formatDesignRef(design.designId)})</span></h3>
                   <p className="text-sm text-text-muted mt-1">{design.bedrooms} Bedrooms · {design.bathrooms} Bathrooms · {design.floorCount} Floors</p>
                 </div>
                 <button onClick={() => setSelectedDesign('')} className="shrink-0 text-sm font-semibold text-indigo-600 hover:bg-indigo-50 px-4 py-2 rounded-xl transition-colors border border-indigo-100 bg-white dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-800/80">
