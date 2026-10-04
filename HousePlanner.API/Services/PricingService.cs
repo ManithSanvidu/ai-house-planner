@@ -2,6 +2,7 @@ using HousePlanner.API.Data;
 using HousePlanner.API.DTOs;
 using HousePlanner.API.Entities;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace HousePlanner.API.Services;
 
@@ -41,8 +42,16 @@ public class PricingService : IPricingService
                 (item.Region.ToLower() == regionKey || item.Region.ToLower() == defaultRegionKey))
             .ToListAsync();
 
+        var ambiguousHead = candidates
+            .Where(item => item.Category == "material")
+            .GroupBy(item => $"{item.Region}|{item.DisplayGroup ?? item.ItemName}", StringComparer.OrdinalIgnoreCase)
+            .FirstOrDefault(group => group.Count() > 1);
+        if (ambiguousHead is not null)
+            throw new InvalidOperationException($"Multiple active material rates exist for cost head '{ambiguousHead.First().DisplayGroup ?? ambiguousHead.First().ItemName}' in region '{ambiguousHead.First().Region}'. Deactivate the overlapping rate before estimating costs.");
+
         var selected = candidates
-            .GroupBy(item => item.ItemName, StringComparer.OrdinalIgnoreCase)
+            .GroupBy(item => item.Category == "labour" ? "labour" : item.DisplayGroup ?? item.ItemName,
+                StringComparer.OrdinalIgnoreCase)
             .Select(group => group
                 .OrderByDescending(item => item.Region.Equals(requestedRegion, StringComparison.OrdinalIgnoreCase))
                 .ThenByDescending(item => item.Region.Equals("Sri Lanka", StringComparison.OrdinalIgnoreCase))
@@ -115,6 +124,20 @@ public class PricingService : IPricingService
             ? (category == "labour" ? "Labour" : null)
             : createDto.DisplayGroup.Trim();
 
+        if (category == "material")
+        {
+            var allowedHeads = new[] { "Foundation", "Structural", "Roofing", "Finishing", "MEP" };
+            displayGroup = allowedHeads.FirstOrDefault(head =>
+                head.Equals(displayGroup, StringComparison.OrdinalIgnoreCase))
+                ?? throw new ArgumentException("Material pricing requires one of these cost heads: Foundation, Structural, Roofing, Finishing, MEP.");
+            var duplicateHead = await _context.PricingItems.AnyAsync(p => p.IsActive &&
+                p.Category == "material" && p.DisplayGroup != null &&
+                p.DisplayGroup.ToLower() == displayGroup.ToLower() &&
+                p.Region.ToLower() == region.ToLower() && p.QualityLevel == qualityLevel);
+            if (duplicateHead)
+                throw new InvalidOperationException($"An active material rate already exists for cost head '{displayGroup}' in region '{region}' and quality '{qualityLevel}'. Update that rate instead.");
+        }
+
         var now = _timeProvider.GetUtcNow();
         var item = new PricingData
         {
@@ -125,9 +148,9 @@ public class PricingService : IPricingService
             DisplayGroup = displayGroup,
             TerrainMultiplier = new TerrainMultiplierData
             {
-                Flat = createDto.TerrainMultiplier.Flat,
-                Hillside = createDto.TerrainMultiplier.Hillside,
-                Coastal = createDto.TerrainMultiplier.Coastal
+                Flat = category == "labour" ? 1m : createDto.TerrainMultiplier.Flat,
+                Hillside = category == "labour" ? 1m : createDto.TerrainMultiplier.Hillside,
+                Coastal = category == "labour" ? 1m : createDto.TerrainMultiplier.Coastal
             },
             Provider = "Manual",
             Region = region,
@@ -162,6 +185,10 @@ public class PricingService : IPricingService
             PricingDataId = item.Id,
             PreviousValue = item.UnitCostLkr,
             NewValue = updateDto.UnitCostLkr,
+            PreviousTerrainMultipliersJson = JsonSerializer.Serialize(item.TerrainMultiplier),
+            NewTerrainMultipliersJson = JsonSerializer.Serialize(item.Category == "labour"
+                ? new TerrainMultiplierData { Flat = 1m, Hillside = 1m, Coastal = 1m }
+                : updateDto.TerrainMultiplier ?? item.TerrainMultiplier),
             ChangedByUserId = NormalizeUserId(updatedByUserId),
             ChangedAt = now,
             Reason = NormalizeReason(updateDto.Reason)
@@ -170,9 +197,9 @@ public class PricingService : IPricingService
         item.UnitCostLkr = updateDto.UnitCostLkr;
         if (updateDto.TerrainMultiplier != null)
         {
-            item.TerrainMultiplier.Flat = updateDto.TerrainMultiplier.Flat;
-            item.TerrainMultiplier.Hillside = updateDto.TerrainMultiplier.Hillside;
-            item.TerrainMultiplier.Coastal = updateDto.TerrainMultiplier.Coastal;
+            item.TerrainMultiplier.Flat = item.Category == "labour" ? 1m : updateDto.TerrainMultiplier.Flat;
+            item.TerrainMultiplier.Hillside = item.Category == "labour" ? 1m : updateDto.TerrainMultiplier.Hillside;
+            item.TerrainMultiplier.Coastal = item.Category == "labour" ? 1m : updateDto.TerrainMultiplier.Coastal;
         }
 
         item.UpdatedAt = now;
@@ -196,9 +223,11 @@ public class PricingService : IPricingService
             PricingDataId = item.Id,
             PreviousValue = item.UnitCostLkr,
             NewValue = item.UnitCostLkr,
+            PreviousTerrainMultipliersJson = JsonSerializer.Serialize(item.TerrainMultiplier),
+            NewTerrainMultipliersJson = JsonSerializer.Serialize(item.TerrainMultiplier),
             ChangedByUserId = NormalizeUserId(updatedByUserId),
             ChangedAt = now,
-            Reason = string.IsNullOrWhiteSpace(reason) ? "Pricing record deactivated." : $"Deactivated: {reason.Trim()}"
+            Reason = string.IsNullOrWhiteSpace(reason) ? "Pricing record deactivated." : NormalizeReason($"Deactivated: {reason.Trim()}")
         });
         await _context.SaveChangesAsync();
         return MapToDto(item, await GetUserNameAsync(item.UpdatedByUserId));
@@ -218,6 +247,8 @@ public class PricingService : IPricingService
             PricingDataId = history.PricingDataId,
             PreviousValue = history.PreviousValue,
             NewValue = history.NewValue,
+            PreviousTerrainMultiplier = DeserializeMultipliers(history.PreviousTerrainMultipliersJson),
+            NewTerrainMultiplier = DeserializeMultipliers(history.NewTerrainMultipliersJson),
             ChangedByUserId = history.ChangedByUserId,
             ChangedByName = GetUserName(userNames, history.ChangedByUserId),
             ChangedAt = history.ChangedAt,
@@ -261,6 +292,9 @@ public class PricingService : IPricingService
 
     private static string? NormalizeReason(string? reason) =>
         string.IsNullOrWhiteSpace(reason) ? null : reason.Trim()[..Math.Min(reason.Trim().Length, 500)];
+
+    private static TerrainMultiplierData? DeserializeMultipliers(string? json) =>
+        string.IsNullOrWhiteSpace(json) ? null : JsonSerializer.Deserialize<TerrainMultiplierData>(json);
 
     private async Task<string?> GetUserNameAsync(string? userId)
     {

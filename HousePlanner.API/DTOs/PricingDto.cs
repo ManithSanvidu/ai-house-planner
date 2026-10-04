@@ -61,6 +61,8 @@ namespace HousePlanner.API.DTOs
         public int PricingDataId { get; set; }
         public decimal PreviousValue { get; set; }
         public decimal NewValue { get; set; }
+        public TerrainMultiplierData? PreviousTerrainMultiplier { get; set; }
+        public TerrainMultiplierData? NewTerrainMultiplier { get; set; }
         public string? ChangedByUserId { get; set; }
         public string? ChangedByName { get; set; }
         public DateTimeOffset ChangedAt { get; set; }
