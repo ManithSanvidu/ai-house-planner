@@ -59,6 +59,12 @@ export const AgentTimeline: React.FC<AgentTimelineProps> = ({ agentExecutionLog 
                   {formatAgentName(log.agent)}
                 </p>
                 <p className="text-xs text-text-secondary mt-0.5 leading-relaxed">{log.message}</p>
+                {(log.toolCalled || log.durationMs != null) && (
+                  <p className="mt-1 text-[11px] text-text-muted">
+                    {[log.toolCalled ? `Tool: ${log.toolCalled.replace(/_/g, ' ')}` : null,
+                      log.durationMs != null ? `${log.durationMs} ms` : null].filter(Boolean).join(' · ')}
+                  </p>
+                )}
               </div>
             </div>
           );
