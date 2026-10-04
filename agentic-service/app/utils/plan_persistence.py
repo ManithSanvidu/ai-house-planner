@@ -13,7 +13,7 @@ class PlanPersistenceError(Exception):
 
 @retry(stop=stop_after_attempt(2), wait=wait_fixed(1), reraise=True)
 def _do_persist_plan(workflow_id: str, payload: dict) -> None:
-    endpoint = f"{ASPNET_API_URL.rstrip('/')}/internal/workflows/{workflow_id}/plan"
+    endpoint = f"{ASPNET_API_URL.strip().rstrip('/')}/internal/workflows/{workflow_id}/plan"
     headers = {"X-Internal-API-Key": INTERNAL_API_KEY}
     
     with httpx.Client(timeout=10.0) as client:
