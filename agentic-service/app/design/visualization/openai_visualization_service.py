@@ -9,7 +9,7 @@ except ImportError:
     openai = None
     AuthenticationError = PermissionDeniedError = RateLimitError = BadRequestError = Exception
 
-from app.config import ENABLE_OPENAI
+from app.config import ENABLE_OPENAI, OPENAI_IMAGE_MODEL
 
 logger = logging.getLogger(__name__)
 
@@ -147,6 +147,11 @@ def _build_visualization_prompt(
     return prefix + "\n".join(included)
 
 
+def _image_quality_options() -> dict:
+    """low/medium/high quality is gpt-image only; dall-e-2 rejects any value but standard."""
+    return {"quality": "medium"} if OPENAI_IMAGE_MODEL.startswith("gpt-image") else {}
+
+
 def _is_edit_incompatibility(error: BadRequestError) -> bool:
     """Allow generate fallback only when the edit-specific input/feature is incompatible."""
     code = str(getattr(error, "code", "") or "").lower()
@@ -190,7 +195,7 @@ class OpenAIVisualizationService:
             return {
                 "visualization_id": str(uuid.uuid4()),
                 "image_url": None,
-                "model": "dall-e-2",
+                "model": OPENAI_IMAGE_MODEL,
                 "status": "disabled",
                 "error": "OpenAI globally disabled (ENABLE_OPENAI=false).",
                 "timestamp": datetime.utcnow().isoformat(),
@@ -206,7 +211,7 @@ class OpenAIVisualizationService:
                 return {
                     "visualization_id": str(uuid.uuid4()),
                     "image_url": None,
-                    "model": "dall-e-2",
+                    "model": OPENAI_IMAGE_MODEL,
                     "status": "failed",
                     "error": str(exc),
                     "timestamp": datetime.utcnow().isoformat(),
@@ -233,7 +238,7 @@ class OpenAIVisualizationService:
                 return {
                     "visualization_id": str(uuid.uuid4()),
                     "image_url": None,
-                    "model": "dall-e-2",
+                    "model": OPENAI_IMAGE_MODEL,
                     "status": "failed",
                     "error": "Generated layout failed room requirement validation.",
                     "timestamp": datetime.utcnow().isoformat(),
@@ -263,17 +268,17 @@ class OpenAIVisualizationService:
                 f"[AI Request] purpose=visualization workflow={self.workflow_id or 'n/a'} "
                 f"characters={char_count} estimated_tokens={char_count // 4}"
             )
-            print("[Visualization Agent] Sending prompt to OpenAI dall-e-2")
+            print(f"[Visualization Agent] Sending prompt to OpenAI {OPENAI_IMAGE_MODEL}")
             logger.info("[Visualization Agent] Sending prompt to OpenAI")
 
             try:
                 response = openai.images.edit(
-                    model="dall-e-2",
+                    model=OPENAI_IMAGE_MODEL,
                     image=img_bytes,
                     prompt=prompt,
                     n=1,
                     size="1024x1024",
-                    quality="medium",
+                    **_image_quality_options(),
                 )
             except BadRequestError as exc:
                 if not _is_edit_incompatibility(exc):
@@ -285,11 +290,11 @@ class OpenAIVisualizationService:
                     "[Visualization] Image edit is incompatible; using one fresh-generation fallback."
                 )
                 response = openai.images.generate(
-                    model="dall-e-2",
+                    model=OPENAI_IMAGE_MODEL,
                     prompt=prompt,
                     n=1,
                     size="1024x1024",
-                    quality="medium",
+                    **_image_quality_options(),
                 )
             except (RateLimitError, AuthenticationError, PermissionDeniedError):
                 logger.warning(
@@ -306,7 +311,7 @@ class OpenAIVisualizationService:
             # ---- Cost logging for image generation -----------------------
             try:
                 from app.services.ai_guard_db import log_ai_cost
-                log_ai_cost(self.workflow_id, "visualization", "dall-e-2", 0, 0)
+                log_ai_cost(self.workflow_id, "visualization", OPENAI_IMAGE_MODEL, 0, 0)
             except Exception:
                 pass
 
@@ -317,7 +322,7 @@ class OpenAIVisualizationService:
                 "visualization_id": str(uuid.uuid4()),
                 "image_url": image_url,
                 "image_b64": image_b64,
-                "model": "dall-e-2",
+                "model": OPENAI_IMAGE_MODEL,
                 "prompt": prompt,
                 "status": "validated",
                 "timestamp": datetime.utcnow().isoformat()
@@ -327,7 +332,7 @@ class OpenAIVisualizationService:
             return {
                 "visualization_id": str(uuid.uuid4()),
                 "image_url": None,
-                "model": "dall-e-2",
+                "model": OPENAI_IMAGE_MODEL,
                 "prompt": prompt,
                 "status": "failed",
                 "error": str(e),
