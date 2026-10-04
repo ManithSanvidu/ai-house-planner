@@ -86,7 +86,6 @@ const DISPLAY_GROUPS = [
   'Finishing',
   'MEP',
   'Labour',
-  'General',
 ] as const;
 
 // ─────────────────────────────────────────────
@@ -472,7 +471,7 @@ const CreateModal: React.FC<CreateModalProps> = ({ onClose, onCreateSuccess }) =
           </div>
 
           {/* Terrain Multipliers */}
-          <div className="pt-1">
+          {form.category === 'material' && <div className="pt-1">
             <label className="block text-xs font-semibold text-text-secondary mb-1.5">
               Terrain Multipliers
             </label>
@@ -487,8 +486,11 @@ const CreateModal: React.FC<CreateModalProps> = ({ onClose, onCreateSuccess }) =
                   value={form.flatMultiplier}
                   onChange={handleChange('flatMultiplier')}
                   disabled={submitting}
-                  className="w-full bg-surface-elevated border border-border rounded-xl px-3 py-1.5 text-xs text-text-primary outline-none focus:bg-surface focus:border-purple-500"
+                  className={`w-full bg-surface-elevated border rounded-xl px-3 py-1.5 text-xs text-text-primary outline-none focus:bg-surface ${errors.flatMultiplier ? 'border-red-300 ring-1 ring-red-200' : 'border-border focus:border-purple-500'}`}
                 />
+                {errors.flatMultiplier && (
+                  <p className="mt-1 text-[11px] text-red-500 font-medium">{errors.flatMultiplier}</p>
+                )}
               </div>
               <div>
                 <label htmlFor="create-hillsideMultiplier" className="block text-[11px] text-text-secondary mb-1 font-medium">Hillside</label>
@@ -500,8 +502,11 @@ const CreateModal: React.FC<CreateModalProps> = ({ onClose, onCreateSuccess }) =
                   value={form.hillsideMultiplier}
                   onChange={handleChange('hillsideMultiplier')}
                   disabled={submitting}
-                  className="w-full bg-surface-elevated border border-border rounded-xl px-3 py-1.5 text-xs text-text-primary outline-none focus:bg-surface focus:border-purple-500"
+                  className={`w-full bg-surface-elevated border rounded-xl px-3 py-1.5 text-xs text-text-primary outline-none focus:bg-surface ${errors.hillsideMultiplier ? 'border-red-300 ring-1 ring-red-200' : 'border-border focus:border-purple-500'}`}
                 />
+                {errors.hillsideMultiplier && (
+                  <p className="mt-1 text-[11px] text-red-500 font-medium">{errors.hillsideMultiplier}</p>
+                )}
               </div>
               <div>
                 <label htmlFor="create-coastalMultiplier" className="block text-[11px] text-text-secondary mb-1 font-medium">Coastal</label>
@@ -513,11 +518,14 @@ const CreateModal: React.FC<CreateModalProps> = ({ onClose, onCreateSuccess }) =
                   value={form.coastalMultiplier}
                   onChange={handleChange('coastalMultiplier')}
                   disabled={submitting}
-                  className="w-full bg-surface-elevated border border-border rounded-xl px-3 py-1.5 text-xs text-text-primary outline-none focus:bg-surface focus:border-purple-500"
+                  className={`w-full bg-surface-elevated border rounded-xl px-3 py-1.5 text-xs text-text-primary outline-none focus:bg-surface ${errors.coastalMultiplier ? 'border-red-300 ring-1 ring-red-200' : 'border-border focus:border-purple-500'}`}
                 />
+                {errors.coastalMultiplier && (
+                  <p className="mt-1 text-[11px] text-red-500 font-medium">{errors.coastalMultiplier}</p>
+                )}
               </div>
             </div>
-          </div>
+          </div>}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
@@ -722,7 +730,7 @@ const EditModal: React.FC<EditModalProps> = ({ item, onClose, onSaveSuccess }) =
             )}
           </div>
 
-          <div className="pt-2">
+          {item.category === 'material' && <div className="pt-2">
             <label className="block text-xs font-semibold text-text-secondary mb-1.5">
               Terrain Multipliers
             </label>
@@ -737,8 +745,11 @@ const EditModal: React.FC<EditModalProps> = ({ item, onClose, onSaveSuccess }) =
                   value={form.flatMultiplier}
                   onChange={handleChange('flatMultiplier')}
                   disabled={saving}
-                  className="w-full bg-surface-elevated border border-border rounded-xl px-3 py-2 text-xs text-text-primary outline-none focus:bg-surface focus:border-purple-500"
+                  className={`w-full bg-surface-elevated border rounded-xl px-3 py-2 text-xs text-text-primary outline-none focus:bg-surface ${errors.flatMultiplier ? 'border-red-300 ring-1 ring-red-200' : 'border-border focus:border-purple-500'}`}
                 />
+                {errors.flatMultiplier && (
+                  <p className="mt-1 text-[11px] text-red-500 font-medium">{errors.flatMultiplier}</p>
+                )}
               </div>
               <div>
                 <span className="block text-[11px] text-text-secondary mb-1 font-medium">Hillside Multiplier</span>
@@ -750,8 +761,11 @@ const EditModal: React.FC<EditModalProps> = ({ item, onClose, onSaveSuccess }) =
                   value={form.hillsideMultiplier}
                   onChange={handleChange('hillsideMultiplier')}
                   disabled={saving}
-                  className="w-full bg-surface-elevated border border-border rounded-xl px-3 py-2 text-xs text-text-primary outline-none focus:bg-surface focus:border-purple-500"
+                  className={`w-full bg-surface-elevated border rounded-xl px-3 py-2 text-xs text-text-primary outline-none focus:bg-surface ${errors.hillsideMultiplier ? 'border-red-300 ring-1 ring-red-200' : 'border-border focus:border-purple-500'}`}
                 />
+                {errors.hillsideMultiplier && (
+                  <p className="mt-1 text-[11px] text-red-500 font-medium">{errors.hillsideMultiplier}</p>
+                )}
               </div>
               <div>
                 <span className="block text-[11px] text-text-secondary mb-1 font-medium">Coastal Multiplier</span>
@@ -763,11 +777,14 @@ const EditModal: React.FC<EditModalProps> = ({ item, onClose, onSaveSuccess }) =
                   value={form.coastalMultiplier}
                   onChange={handleChange('coastalMultiplier')}
                   disabled={saving}
-                  className="w-full bg-surface-elevated border border-border rounded-xl px-3 py-2 text-xs text-text-primary outline-none focus:bg-surface focus:border-purple-500"
+                  className={`w-full bg-surface-elevated border rounded-xl px-3 py-2 text-xs text-text-primary outline-none focus:bg-surface ${errors.coastalMultiplier ? 'border-red-300 ring-1 ring-red-200' : 'border-border focus:border-purple-500'}`}
                 />
+                {errors.coastalMultiplier && (
+                  <p className="mt-1 text-[11px] text-red-500 font-medium">{errors.coastalMultiplier}</p>
+                )}
               </div>
             </div>
-          </div>
+          </div>}
           <div>
             <label className="block text-xs font-semibold text-text-secondary mb-1" htmlFor="modal-reason">Reason for change</label>
             <input
@@ -1283,13 +1300,13 @@ const PricingManagementPage: React.FC = () => {
                     </td>
 
                     {/* Flat Multiplier */}
-                    <td className="px-4 py-4"><MultiplierBadge value={item.flatMultiplier} /></td>
+                    <td className="px-4 py-4">{item.category === 'labour' ? '—' : <MultiplierBadge value={item.flatMultiplier} />}</td>
 
                     {/* Hillside Multiplier */}
-                    <td className="px-4 py-4"><MultiplierBadge value={item.hillsideMultiplier} /></td>
+                    <td className="px-4 py-4">{item.category === 'labour' ? '—' : <MultiplierBadge value={item.hillsideMultiplier} />}</td>
 
                     {/* Coastal Multiplier */}
-                    <td className="px-4 py-4"><MultiplierBadge value={item.coastalMultiplier} /></td>
+                    <td className="px-4 py-4">{item.category === 'labour' ? '—' : <MultiplierBadge value={item.coastalMultiplier} />}</td>
 
                     <td className="px-4 py-4">
                       <span className="text-xs text-text-secondary font-medium">{formatDate(item.createdAt)}</span>
@@ -1384,6 +1401,13 @@ const PricingManagementPage: React.FC = () => {
                       <time className="text-xs text-text-secondary">{new Date(entry.changedAt).toLocaleString()}</time>
                     </div>
                     <p className="mt-1 text-xs text-text-secondary">{entry.reason || 'No reason provided'}</p>
+                    {entry.previousTerrainMultiplier && entry.newTerrainMultiplier && historyItem.category === 'material' && (
+                      <p className="mt-1 text-xs text-text-secondary">
+                        Terrain (flat / hillside / coastal):{' '}
+                        {Object.values(entry.previousTerrainMultiplier).join(' / ')} →{' '}
+                        {Object.values(entry.newTerrainMultiplier).join(' / ')}
+                      </p>
+                    )}
                     <p className="mt-1 text-[10px] text-text-secondary">Updated by: {entry.changedByName || (entry.changedByUserId ? 'Unknown user' : 'System')}</p>
                   </div>
                 ))}
