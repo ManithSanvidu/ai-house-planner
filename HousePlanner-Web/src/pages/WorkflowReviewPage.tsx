@@ -372,14 +372,14 @@ export const WorkflowReviewPage: React.FC = () => {
 
               <div className="bg-zinc-950 rounded-2xl overflow-hidden shadow-inner min-h-[400px] flex items-center justify-center relative">
                 {visualizationData?.status === 'completed' && visualizationData?.imageUrl ? (
-                  <img src={visualizationData.imageUrl} alt="AI Visualization" className="w-full max-h-[600px] object-contain" />
+                  <img key="vis-completed" src={visualizationData.imageUrl} alt="AI Visualization" className="w-full max-h-[600px] object-contain" />
                 ) : visualizationData?.status === 'generating' || visualizationData === null ? (
-                  <div className="text-zinc-500 flex flex-col items-center gap-4">
+                  <div key="vis-generating" className="text-zinc-500 flex flex-col items-center gap-4">
                     <div className="w-10 h-10 border-4 border-zinc-800 border-t-indigo-500 rounded-full animate-spin"></div>
                     <span className="text-sm font-medium">Generating AI visualization...</span>
                   </div>
                 ) : (
-                  <div className="text-zinc-400 flex flex-col items-center gap-2 text-center p-4 md:p-6">
+                  <div key="vis-unavailable" className="text-zinc-400 flex flex-col items-center gap-2 text-center p-4 md:p-6">
                     <span className="text-lg font-bold text-zinc-300">AI visualization unavailable</span>
                     <span className="text-sm">Your validated deterministic floor plan is available below.</span>
                   </div>

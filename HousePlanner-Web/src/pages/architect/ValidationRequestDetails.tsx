@@ -250,18 +250,17 @@ const ValidationRequestDetails: React.FC = () => {
        <h2 className="text-lg font-bold text-slate-900 dark:text-slate-900 mb-5">Architectural Visualization</h2>
        <div className="bg-white rounded-xl overflow-hidden min-h-[420px] md:min-h-[520px] flex items-center justify-center">
         {visualizationData?.status === 'completed' && visualizationData?.imageUrl ? (
-         <img
-          src={visualizationData.imageUrl}
+         <img key="vis-completed" src={visualizationData.imageUrl}
           alt="AI Architectural Visualization"
           className="w-full max-h-[720px] object-contain"
          />
         ) : visualizationData?.status === 'generating' || visualizationData === null ? (
-         <div className="text-zinc-500 flex flex-col items-center gap-3">
+         <div key="vis-generating" className="text-zinc-500 flex flex-col items-center gap-3">
           <div className="w-8 h-8 border-4 border-zinc-800 border-t-indigo-500 rounded-full animate-spin" />
           <span className="text-sm font-medium">Generating AI visualization…</span>
          </div>
         ) : (
-         <div className="text-zinc-400 flex flex-col items-center gap-2 text-center p-4 md:p-6">
+         <div key="vis-unavailable" className="text-zinc-400 flex flex-col items-center gap-2 text-center p-4 md:p-6">
           <span className="text-base font-bold text-zinc-300">AI visualization unavailable</span>
           <span className="text-sm">The floor plan below is the validated deterministic layout.</span>
          </div>
