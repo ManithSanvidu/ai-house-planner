@@ -1,4 +1,6 @@
 using System.Text.Json;
+using System.Net;
+using System.Net.Http.Json;
 using HousePlanner.API.Controllers;
 using HousePlanner.API.Data;
 using HousePlanner.API.DTOs;
@@ -13,6 +15,55 @@ namespace HousePlanner.API.Tests.Controllers;
 
 public class PreDesignedPlanControllerTests
 {
+    private sealed class PreviewHandler(Func<HttpRequestMessage, Task<HttpResponseMessage>> respond) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) => respond(request);
+    }
+
+    [Fact]
+    public async Task Detail_UsesCostAgentPreviewContract()
+    {
+        await using var db = Db();
+        var plan = Plan();
+        db.Add(plan);
+        await db.SaveChangesAsync();
+        var pricing = new Mock<IPricingService>();
+        pricing.Setup(service => service.GetActivePricingAsync("Sri Lanka", "Standard"))
+            .ReturnsAsync([new PricingDto
+            {
+                Id = 1, ItemName = "Foundation Materials", Category = "material", DisplayGroup = "Foundation",
+                Unit = "per_sqft", UnitCostLkr = 3000m, Region = "Sri Lanka",
+                TerrainMultiplier = new TerrainMultiplierData { Flat = 1m, Hillside = 1.15m, Coastal = 1.1m }
+            }]);
+        string? sent = null;
+        var client = new HttpClient(new PreviewHandler(async request =>
+        {
+            Assert.Equal("/cost/preview", request.RequestUri!.AbsolutePath);
+            sent = await request.Content!.ReadAsStringAsync();
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = JsonContent.Create(new
+                {
+                    materialCostLkr = 1_800_000m, labourCostLkr = 630_000m,
+                    totalCostLkr = 2_430_000m, budgetDeltaPercent = (decimal?)null,
+                    breakdown = Array.Empty<object>(), formulaVersion = "category-area-v1",
+                    appliedAreaSqft = 600m, terrainType = "flat", estimatedAt = DateTimeOffset.UtcNow
+                })
+            };
+        })) { BaseAddress = new Uri("http://localhost:8001") };
+        var clients = new Mock<IHttpClientFactory>();
+        clients.Setup(factory => factory.CreateClient("AgenticService")).Returns(client);
+        var controller = Context(new PreDesignedPlansController(db, User().Object, Images().Object,
+            pricing.Object, clients.Object));
+
+        var result = Assert.IsType<OkObjectResult>(await controller.Detail(plan.Id));
+        var detail = Assert.IsType<PreDesignedPlanDetailDto>(result.Value);
+        Assert.NotNull(sent);
+        Assert.Contains("\"areaSqft\":600", sent);
+        Assert.Equal(2_430_000m, detail.EstimatedCost!.TotalCostLkr);
+        Assert.Equal("category-area-v1", detail.EstimatedCost.FormulaVersion);
+    }
+
     private static ApplicationDbContext Db() => new(new DbContextOptionsBuilder<ApplicationDbContext>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options);
     private static Mock<ICurrentUserContextService> User(string? role = "User") { var mock = new Mock<ICurrentUserContextService>(); mock.Setup(x => x.GetAsync(It.IsAny<HttpContext>())).ReturnsAsync(role is null ? null : new CurrentUserContext(null, "test@example.com", role)); return mock; }
     private static Mock<IPlanImageStorage> Images() { var mock = new Mock<IPlanImageStorage>(); mock.Setup(x => x.GetPublicUrl(It.IsAny<string?>())).Returns((string? value) => value); mock.Setup(x => x.NormalizeReference(It.IsAny<string?>())).Returns((string? value) => value); return mock; }
