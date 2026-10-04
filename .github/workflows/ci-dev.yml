@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [ "Dev" ]
 
+permissions:
+  contents: read
+
 jobs:
   web-frontend:
     name: Build Web Frontend
