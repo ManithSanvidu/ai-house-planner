@@ -273,7 +273,6 @@ class OpenAIVisualizationService:
                     prompt=prompt,
                     n=1,
                     size="1024x1024",
-                    quality="medium",
                 )
             except BadRequestError as exc:
                 if not _is_edit_incompatibility(exc):
@@ -289,7 +288,6 @@ class OpenAIVisualizationService:
                     prompt=prompt,
                     n=1,
                     size="1024x1024",
-                    quality="medium",
                 )
             except (RateLimitError, AuthenticationError, PermissionDeniedError):
                 logger.warning(
