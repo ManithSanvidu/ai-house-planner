@@ -236,7 +236,7 @@ const ApprovalPage: React.FC = () => {
      </div>
     </Card>
 
-    <CostBreakdownCard cost={workflow?.cost ?? null} />
+    <CostBreakdownCard cost={workflow?.cost ?? null} run={workflow?.costEstimationRun} />
 
     {/* Approval Actions */}
     <Card title="Approval Actions" subtitle="Submit an authorized decision on this house planning proposal.">
