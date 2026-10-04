@@ -19,17 +19,6 @@ const hasValidCostSummary = (cost: CostSummaryDto | null): cost is CostSummaryDt
  && Number.isFinite(cost.totalCostLkr);
 
 export const CostBreakdownCard = ({ cost, hideTitle, run }: CostBreakdownCardProps) => {
- if (!hasValidCostSummary(cost)) {
-  return (
-   <Card title={hideTitle ? undefined : "Cost Estimate"} subtitle={hideTitle ? undefined : "Current construction cost breakdown for this design."}>
-    <div className="rounded-lg border border-border bg-surface-elevated px-5 py-4 md:py-8 text-center">
-     <p className="text-sm text-text-secondary">Cost estimate is not available yet.</p>
-     {run?.status === 'failed' && <p className="mt-2 text-xs text-red-600">Calculation failed: {run.failureReason || 'Pricing or design data could not be validated.'}</p>}
-    </div>
-   </Card>
-  );
- }
-
  const [currency, setCurrency] = useState<'LKR' | 'USD'>('LKR');
  const [exchangeRate, setExchangeRate] = useState<number | null>(null);
  const [currencyError, setCurrencyError] = useState<string | null>(null);
@@ -45,6 +34,17 @@ export const CostBreakdownCard = ({ cost, hideTitle, run }: CostBreakdownCardPro
    });
   return () => { isMounted = false; };
  }, []);
+
+ if (!hasValidCostSummary(cost)) {
+  return (
+   <Card title={hideTitle ? undefined : "Cost Estimate"} subtitle={hideTitle ? undefined : "Current construction cost breakdown for this design."}>
+    <div className="rounded-lg border border-border bg-surface-elevated px-5 py-4 md:py-8 text-center">
+     <p className="text-sm text-text-secondary">Cost estimate is not available yet.</p>
+     {run?.status === 'failed' && <p className="mt-2 text-xs text-red-600">Calculation failed: {run.failureReason || 'Pricing or design data could not be validated.'}</p>}
+    </div>
+   </Card>
+  );
+ }
 
  const handleCurrencyChange = (newCurrency: 'LKR' | 'USD') => {
   if (newCurrency === 'USD' && !exchangeRate) {
