@@ -333,3 +333,5 @@ class OpenAIVisualizationService:
                 "error": str(e),
                 "timestamp": datetime.utcnow().isoformat()
             }
+
+
