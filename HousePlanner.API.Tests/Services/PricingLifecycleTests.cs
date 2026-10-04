@@ -48,7 +48,7 @@ public sealed class PricingLifecycleTests
         await service.UpdatePricingAsync(item.Id, new UpdatePricingDto
         {
             UnitCostLkr = 4500m,
-            TerrainMultiplier = Multipliers(),
+            TerrainMultiplier = new TerrainMultiplierData { Flat = 1m, Hillside = 1.2m, Coastal = 1.1m },
             Reason = "October contractor review"
         }, "constructor-123");
 
@@ -57,6 +57,8 @@ public sealed class PricingLifecycleTests
         Assert.Equal(4500m, history.NewValue);
         Assert.Equal("constructor-123", history.ChangedByUserId);
         Assert.Equal("October contractor review", history.Reason);
+        Assert.Equal(1.15m, System.Text.Json.JsonSerializer.Deserialize<TerrainMultiplierData>(history.PreviousTerrainMultipliersJson!)!.Hillside);
+        Assert.Equal(1.2m, System.Text.Json.JsonSerializer.Deserialize<TerrainMultiplierData>(history.NewTerrainMultipliersJson!)!.Hillside);
     }
 
     [Fact]
@@ -170,7 +172,7 @@ public sealed class PricingLifecycleTests
         Category = "material",
         Unit = "per_sqft",
         UnitCostLkr = value,
-        DisplayGroup = "Structural",
+        DisplayGroup = name.StartsWith("Foundation", StringComparison.OrdinalIgnoreCase) ? "Foundation" : "Structural",
         Region = region,
         QualityLevel = "Standard",
         IsActive = true,
