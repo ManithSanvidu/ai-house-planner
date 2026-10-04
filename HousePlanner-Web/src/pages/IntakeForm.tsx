@@ -236,7 +236,7 @@ const IntakeForm: React.FC = () => {
               disabled={currentStep === 1 || isSubmitting}
               className={`flex items-center gap-2 px-4 md:px-6 py-3 rounded-xl font-bold text-sm transition-colors ${currentStep === 1 || isSubmitting ? 'opacity-0 pointer-events-none' : 'text-text-primary hover:bg-surface border border-border-strong'}`}
             >
-              <ChevronLeft size={18} /> Back
+              <ChevronLeft size={18} /> <span>Back</span>
             </button>
             
             {currentStep < 3 ? (
@@ -247,7 +247,7 @@ const IntakeForm: React.FC = () => {
                 disabled={!validateStep(currentStep)}
                 className="flex items-center gap-2 px-4 md:px-8 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-black dark:hover:bg-gray-200 rounded-xl font-bold text-sm transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Next <ChevronRight size={18} />
+                <span>Next</span> <ChevronRight size={18} />
               </button>
             ) : (
               <button 
@@ -257,7 +257,7 @@ const IntakeForm: React.FC = () => {
                 disabled={isSubmitting || !validateStep(3)}
                 className="flex items-center justify-center gap-3 px-4 md:px-8 py-3 bg-green-600 dark:bg-green-500 hover:bg-green-700 dark:hover:bg-green-600 text-white rounded-xl font-bold text-sm transition-colors shadow-sm disabled:opacity-70 disabled:cursor-not-allowed min-w-[200px]"
               >
-                {isSubmitting ? 'Generating...' : 'Generate AI Plan'}
+                <span>{isSubmitting ? 'Generating...' : 'Generate AI Plan'}</span>
               </button>
             )}
           </div>
