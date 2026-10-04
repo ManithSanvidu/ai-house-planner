@@ -168,7 +168,7 @@ export const AIArchitectChat: React.FC<AIArchitectChatProps> = ({ isOpen, setIsO
             disabled={isGenerating || !prompt}
             className="bg-gray-900 dark:bg-white hover:bg-black dark:hover:bg-gray-200 text-white dark:text-gray-900 w-12 h-12 flex-shrink-0 rounded-xl flex items-center justify-center transition-colors disabled:opacity-50 shadow-sm"
            >
-            {isGenerating ? <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div> : <ArrowRight size={18} />}
+            {isGenerating ? <div key="gen-spinner" className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div> : <ArrowRight key="gen-arrow" size={18} />}
            </button>
           </form>
          </motion.div>
