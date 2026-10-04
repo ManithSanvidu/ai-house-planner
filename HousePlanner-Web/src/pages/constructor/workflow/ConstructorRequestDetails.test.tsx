@@ -28,10 +28,10 @@ const renderPage = () => render(
   </MemoryRouter>,
 );
 
-describe('ConstructorRequestDetails visualization', () => {
+describe('ConstructorRequestDetails approved design', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('renders only the signed AI visualization', async () => {
+  it('renders the saved floor plan without using a legacy image URL', async () => {
     const signedUrl = 'https://project.supabase.co/storage/v1/object/sign/ai-visualizations/file.png?token=x';
     vi.mocked(constructorWorkflowService.getConstructorRequest).mockResolvedValue({
       ...baseRequest,
@@ -43,15 +43,12 @@ describe('ConstructorRequestDetails visualization', () => {
 
     renderPage();
 
-    const image = await screen.findByRole('img', { name: /AI visualization of the approved house design/i });
-    expect(image).toHaveAttribute('src', signedUrl);
-    expect(screen.getByText('AI Visualization')).toBeInTheDocument();
-    expect(screen.queryByText('Floor Plan')).not.toBeInTheDocument();
+    expect(await screen.findByText('Floor Plan')).toBeInTheDocument();
+    expect(screen.queryByRole('img', { name: /AI visualization of the approved house design/i })).not.toBeInTheDocument();
     expect(document.querySelector(`[src="http://localhost:8001/plans/legacy.png"]`)).toBeNull();
-    expect(document.querySelector('svg[data-floor-plan]')).toBeNull();
   });
 
-  it('keeps the page available when AI generation failed without rendering a fallback', async () => {
+  it('keeps design information available when AI visualization failed', async () => {
     vi.mocked(constructorWorkflowService.getConstructorRequest).mockResolvedValue({
       ...baseRequest,
       aiVisualizationUrl: null,
@@ -62,8 +59,8 @@ describe('ConstructorRequestDetails visualization', () => {
 
     renderPage();
 
-    await waitFor(() => expect(screen.getByText('AI visualization not generated')).toBeInTheDocument());
-    expect(screen.getByText('The AI visualization for this design is not available.')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText('Design Information')).toBeInTheDocument());
+    expect(screen.getByText('Floor Plan')).toBeInTheDocument();
     expect(screen.queryByRole('img')).not.toBeInTheDocument();
     expect(screen.getByText('Design Information')).toBeInTheDocument();
     expect(screen.queryByText('No layout geometry available.')).not.toBeInTheDocument();
