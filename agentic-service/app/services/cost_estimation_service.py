@@ -2,15 +2,15 @@
 Cost Estimation Service — LangGraph node (Component C).
 
 Implements a fully deterministic cost calculation driven by:
-  - Room geometry from state.design_result  (Component B output)
+  - The design's total built-up area from state.design_result (Component B output)
   - Live pricing from pricing_lookup_tool()  (ASP.NET pricing catalog)
   - Validated terrain from state.design_result, with state.terrain_result kept
     as a backward-compatible fallback
   - Project budget from state.input_data.budget_lkr
 
-Formula
+Formula (app.cost.calculator, category-area-v1)
 -------
-  material_cost = Σ(room_area_sqft × material_unit_cost × terrain_multiplier)
+  material_cost = Σ per cost head (built_up_area_sqft × unit_cost_per_sqft × terrain_multiplier)
   labour_cost   = material_cost × labour_rate_factor
   total_cost    = material_cost + labour_cost
   budget_delta_percent = (total_cost / budget_lkr) × 100 when a budget is supplied
@@ -47,14 +47,6 @@ logger = logging.getLogger(__name__)
 
 # Terrain types the agent accepts.  "unknown" is explicitly unsupported.
 _SUPPORTED_TERRAINS = frozenset({"flat", "hillside", "coastal"})
-
-# Units that express a per-square-foot cost and are therefore compatible with the
-# room-area multiplication formula.
-_AREA_COMPATIBLE_UNITS = frozenset({"per_sqft", "sqft"})
-
-# Units that a labour-factor record must carry for the value to be treated as a
-# dimensionless multiplier (not an LKR/day figure).
-_LABOUR_FACTOR_UNITS = frozenset({"factor", "ratio"})
 
 
 # ---------------------------------------------------------------------------
@@ -214,10 +206,14 @@ def _run_estimation(state: WorkflowState) -> CostResult:
         area = _extract_room_area(room, idx)
         room_areas.append(area)
 
-    calculated_room_area = sum(room_areas)
-    authoritative_area = state.design_result.get("total_built_up_area_sqft")
+    # The design's built-up area is the only area that is priced.
+    built_up_area = state.design_result.get("total_built_up_area_sqft")
+    if built_up_area is None:
+        raise _CostEstimationFailure(
+            "Design total_built_up_area_sqft is missing: cost estimation prices the design's built-up area."
+        )
     try:
-        total_area_sqft = float(authoritative_area) if authoritative_area is not None else calculated_room_area
+        total_area_sqft = float(built_up_area)
     except (TypeError, ValueError):
         raise _CostEstimationFailure("Design total_built_up_area_sqft is not a valid number.")
     if total_area_sqft <= 0:
@@ -422,90 +418,3 @@ def _resolve_terrain(state: WorkflowState) -> str:
         )
 
     return terrain_norm
-
-
-# ---------------------------------------------------------------------------
-# Labour factor resolution
-# ---------------------------------------------------------------------------
-
-
-def _resolve_labour_factor(pricing_items: list[PricingItem]) -> float:
-    """
-    Find exactly one labour pricing item whose unit is 'factor' or 'ratio'.
-
-    Returns the dimensionless multiplier value.
-    Raises _CostEstimationFailure if the result is ambiguous or missing.
-    """
-    labour_items = [
-        item for item in pricing_items if item.category.strip().lower() == "labour"
-    ]
-
-    factor_items = [
-        item
-        for item in labour_items
-        if item.unit.strip().lower().replace(" ", "_").replace("-", "_")
-        in _LABOUR_FACTOR_UNITS
-    ]
-
-    if not factor_items:
-        non_factor_units = [i.unit for i in labour_items]
-        raise _CostEstimationFailure(
-            f"No labour pricing item with a dimensionless unit ({sorted(_LABOUR_FACTOR_UNITS)}) "
-            f"found. Labour items present have units: {non_factor_units}. "
-            "A single 'factor' or 'ratio' record is required to compute labour cost."
-        )
-
-    if len(factor_items) > 1:
-        names = [i.item_name for i in factor_items]
-        raise _CostEstimationFailure(
-            f"Ambiguous labour factor: {len(factor_items)} items qualify ({names}). "
-            "Exactly one labour-factor pricing record is required."
-        )
-
-    factor_item = factor_items[0]
-    factor_value = factor_item.unit_cost_lkr
-    if factor_value <= 0:
-        raise _CostEstimationFailure(
-            f"Labour factor item '{factor_item.item_name}' has unit_cost_lkr={factor_value}, "
-            "which is not a positive multiplier."
-        )
-
-    return factor_value
-
-
-# ---------------------------------------------------------------------------
-# Terrain multiplier value access (PricingItem is a Pydantic model)
-# ---------------------------------------------------------------------------
-
-
-def _terrain_multiplier_value(item: PricingItem, terrain_type: str) -> float:
-    """
-    Return the terrain multiplier for the given terrain_type from a PricingItem.
-
-    item.terrain_multiplier is a TerrainMultiplier Pydantic model instance,
-    so attributes are accessed directly (not via dict subscript).
-    """
-    tm = item.terrain_multiplier  # TerrainMultiplier instance
-    if terrain_type == "flat":
-        return tm.flat
-    elif terrain_type == "hillside":
-        return tm.hillside
-    elif terrain_type == "coastal":
-        return tm.coastal
-    else:
-        # Should never reach here because terrain was validated before this call
-        raise _CostEstimationFailure(
-            f"Internal error: terrain_type='{terrain_type}' reached multiplier lookup "
-            "but was not caught by earlier validation."
-        )
-
-
-def _get_terrain_multiplier_for_items(
-    material_items: list[PricingItem], terrain_type: str
-) -> float:
-    """
-    Not used in the summation loop (each item has its own multiplier),
-    but kept as a sanity-check helper for tests that want a single scalar.
-    Returns the terrain multiplier of the first material item.
-    """
-    return _terrain_multiplier_value(material_items[0], terrain_type)

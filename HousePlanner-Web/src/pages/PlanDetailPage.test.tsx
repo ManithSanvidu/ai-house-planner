@@ -37,12 +37,7 @@ const plan = {
  isActive: true,
  layout: { floor_count: 1, rooms: [], connections: [], entrances: [] },
  conceptualDisclaimer: 'Architect-validated design.',
- estimatedCost: {
-  totalCostLkr: 5500000,
-  materialCostLkr: 3000000,
-  labourCostLkr: 2500000,
-  budgetDeltaPercent: 0
- }
+ estimatedConstructionCost: 5500000
 };
 
 const renderPage = () => render(
@@ -86,6 +81,12 @@ test('PlanDetail_DoesNotShowUseThisPlan', async () => {
 test('ValidatedPlan_ShowsEstimatedCost', async () => {
  renderPage();
  expect(await screen.findByText(/LKR 5,500,000/)).toBeTruthy();
+});
+
+test('PlanWithoutArchitectCost_ShowsNotProvided', async () => {
+ vi.mocked(preDesignedPlanService.detail).mockResolvedValue({ ...plan, estimatedConstructionCost: undefined } as any);
+ renderPage();
+ expect(await screen.findByText(/Cost not provided by the architect yet/)).toBeTruthy();
 });
 
 test('customer plan detail hides coordinate floor-plan preview', async () => {

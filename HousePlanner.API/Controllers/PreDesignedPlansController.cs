@@ -1,5 +1,4 @@
 using System.Text.Json;
-using System.Net.Http.Json;
 using HousePlanner.API.Data;
 using HousePlanner.API.DTOs;
 using HousePlanner.API.Entities;
@@ -16,11 +15,8 @@ public class PreDesignedPlansController : ControllerBase
     private readonly ApplicationDbContext _db;
     private readonly ICurrentUserContextService _users;
     private readonly IPlanImageStorage _images;
-    private readonly IPricingService? _pricing;
-    private readonly HttpClient? _costClient;
-    public PreDesignedPlansController(ApplicationDbContext db, ICurrentUserContextService users,
-        IPlanImageStorage images, IPricingService? pricing = null, IHttpClientFactory? clients = null)
-    { _db = db; _users = users; _images = images; _pricing = pricing; _costClient = clients?.CreateClient("AgenticService"); }
+    public PreDesignedPlansController(ApplicationDbContext db, ICurrentUserContextService users, IPlanImageStorage images)
+    { _db = db; _users = users; _images = images; }
 
     private async Task<bool> Authenticated() => await _users.GetAsync(HttpContext) is not null;
 
@@ -56,8 +52,8 @@ public class PreDesignedPlansController : ControllerBase
         var plan = await _db.PreDesignedHousePlans.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id && x.IsActive);
         if (plan is null) return NotFound();
 
-        var cost = await PreviewCostAsync(plan);
-        return Ok(MapDetail(plan, _images, cost));
+        // Pre-designed plans carry the architect's own cost; the cost agent is not involved.
+        return Ok(MapDetail(plan, _images));
     }
 
     [HttpPost("{id:guid}/check-compatibility")]
@@ -103,37 +99,10 @@ public class PreDesignedPlansController : ControllerBase
     }
 
     internal static PreDesignedPlanSummaryDto MapSummary(PreDesignedHousePlan x, IPlanImageStorage images) => new(x.Id, x.Name, x.Slug, x.DesignCode, x.Style, x.Bedrooms, x.Bathrooms, x.FloorCount, x.TotalBuiltUpAreaSqft, x.MinimumLandSizePerches, x.SuitableTerrain, x.ParkingSpaces, x.HasBalcony, x.HasVeranda, x.HasOffice, x.IsAccessibleFriendly, x.Category, ParseTags(x.TagsJson), images.GetPublicUrl(x.ThumbnailUrl), x.IsActive, x.UpdatedAt, x.EstimatedConstructionCost);
-    internal static PreDesignedPlanDetailDto MapDetail(PreDesignedHousePlan x, IPlanImageStorage images, CostSummaryDto? cost = null)
+    internal static PreDesignedPlanDetailDto MapDetail(PreDesignedHousePlan x, IPlanImageStorage images)
     {
         using var document = JsonDocument.Parse(x.LayoutJson);
-        return new(x.Id, x.Name, x.Slug, x.DesignCode, x.Description, x.Style, x.Bedrooms, x.Bathrooms, x.FloorCount, x.TotalBuiltUpAreaSqft, x.MinimumLandSizePerches, x.MinimumPlotWidthFt, x.MinimumPlotLengthFt, x.SuitableTerrain, x.ParkingSpaces, x.HasBalcony, x.HasVeranda, x.HasOffice, x.HasUtilityRoom, x.IsAccessibleFriendly, x.Category, ParseTags(x.TagsJson), images.GetPublicUrl(x.ThumbnailUrl), document.RootElement.Clone(), x.IsActive, x.CreatedAt, x.UpdatedAt, "Architect-validated design. Construction estimates may vary based on site conditions, materials, and final contractor pricing.", cost, x.EstimatedConstructionCost);
+        return new(x.Id, x.Name, x.Slug, x.DesignCode, x.Description, x.Style, x.Bedrooms, x.Bathrooms, x.FloorCount, x.TotalBuiltUpAreaSqft, x.MinimumLandSizePerches, x.MinimumPlotWidthFt, x.MinimumPlotLengthFt, x.SuitableTerrain, x.ParkingSpaces, x.HasBalcony, x.HasVeranda, x.HasOffice, x.HasUtilityRoom, x.IsAccessibleFriendly, x.Category, ParseTags(x.TagsJson), images.GetPublicUrl(x.ThumbnailUrl), document.RootElement.Clone(), x.IsActive, x.CreatedAt, x.UpdatedAt, "Architect-validated design. Construction estimates may vary based on site conditions, materials, and final contractor pricing.", x.EstimatedConstructionCost);
     }
     internal static IReadOnlyList<string> ParseTags(string json) { try { return JsonSerializer.Deserialize<string[]>(json) ?? []; } catch { return []; } }
-
-    private async Task<CostSummaryDto?> PreviewCostAsync(PreDesignedHousePlan plan)
-    {
-        if (_pricing is null || _costClient is null || plan.TotalBuiltUpAreaSqft <= 0)
-            return null;
-        try
-        {
-            var prices = (await _pricing.GetActivePricingAsync("Sri Lanka", "Standard")).ToList();
-            if (prices.Count == 0) return null;
-            var terrain = plan.SuitableTerrain?.Trim().ToLowerInvariant() is "hillside" or "coastal"
-                ? plan.SuitableTerrain.Trim().ToLowerInvariant() : "flat";
-            using var response = await _costClient.PostAsJsonAsync("cost/preview", new
-            {
-                areaSqft = plan.TotalBuiltUpAreaSqft,
-                terrainType = terrain,
-                pricingItems = prices
-            });
-            return response.IsSuccessStatusCode
-                ? await response.Content.ReadFromJsonAsync<CostSummaryDto>()
-                : null;
-        }
-        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException or InvalidOperationException)
-        {
-            // A catalogue preview must not prevent browsing an approved plan.
-            return null;
-        }
-    }
 }
