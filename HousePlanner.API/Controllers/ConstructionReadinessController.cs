@@ -220,7 +220,7 @@ namespace HousePlanner.API.Controllers
                 .ToListAsync();
 
             var client = _httpClientFactory.CreateClient();
-            var agenticServiceUrl = _configuration["AgenticService:BaseUrl"] ?? "http://localhost:8000";
+            var agenticServiceUrl = _configuration["AgenticService:BaseUrl"] ?? "https://ai-house-planner-0u8o.onrender.com";
 
             object projectData;
             IEnumerable<object> phasesData;
