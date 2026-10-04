@@ -26,12 +26,32 @@ jobs:
           cache-dependency-path: ./HousePlanner-Web/package-lock.json
       - name: Install dependencies
         run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Test
+        run: npm test -- --run
       - name: Build
         run: npm run build
 
   api-backend:
     name: Build and Test ASP.NET API
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      TEST_DATABASE_CONNECTION_STRING: "Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=password;"
     defaults:
       run:
         working-directory: ./HousePlanner.API
@@ -45,8 +65,10 @@ jobs:
         run: dotnet restore
       - name: Build
         run: dotnet build --no-restore --configuration Release
+      - name: Build API tests
+        run: dotnet build ../HousePlanner.API.Tests/HousePlanner.API.Tests.csproj --configuration Release
       - name: Test
-        run: dotnet test --no-build --verbosity normal --configuration Release
+        run: dotnet vstest bin/Release/net8.0/HousePlanner.API.Tests.dll
         working-directory: ./HousePlanner.API.Tests
 
   agentic-service:
@@ -71,6 +93,7 @@ jobs:
         working-directory: ./agentic-service
     env:
       DATABASE_CONNECTION_STRING: "Host=localhost;Port=5432;Database=agentic_test;Username=postgres;Password=password;"
+      TEST_DATABASE_CONNECTION_STRING: "Host=localhost;Port=5432;Database=agentic_test;Username=postgres;Password=password;"
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python

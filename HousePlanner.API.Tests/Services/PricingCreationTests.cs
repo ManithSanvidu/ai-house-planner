@@ -14,6 +14,41 @@ namespace HousePlanner.API.Tests.Services;
 public class PricingCreationTests
 {
     [Fact]
+    public async Task CreatePricing_OverlappingMaterialHead_IsRejected()
+    {
+        await using var context = CreateContext();
+        var service = CreateService(context);
+        await service.CreatePricingAsync(new CreatePricingDto
+        {
+            ItemName = "Finishing Materials", Category = "material", DisplayGroup = "Finishing",
+            UnitCostLkr = 2500m,
+            TerrainMultiplier = new TerrainMultiplierData { Flat = 1m, Hillside = 1.15m, Coastal = 1.1m }
+        });
+
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => service.CreatePricingAsync(new CreatePricingDto
+        {
+            ItemName = "Tiles", Category = "material", DisplayGroup = "Finishing",
+            UnitCostLkr = 500m,
+            TerrainMultiplier = new TerrainMultiplierData { Flat = 1m, Hillside = 1.15m, Coastal = 1.1m }
+        }));
+        Assert.Contains("active material rate already exists", error.Message);
+        Assert.Single(await context.PricingItems.ToListAsync());
+    }
+
+    [Fact]
+    public async Task CreatePricing_MaterialWithoutCanonicalHead_IsRejected()
+    {
+        await using var context = CreateContext();
+        var service = CreateService(context);
+        await Assert.ThrowsAsync<ArgumentException>(() => service.CreatePricingAsync(new CreatePricingDto
+        {
+            ItemName = "Tiles", Category = "material", DisplayGroup = "General",
+            UnitCostLkr = 500m,
+            TerrainMultiplier = new TerrainMultiplierData { Flat = 1m, Hillside = 1.15m, Coastal = 1.1m }
+        }));
+    }
+
+    [Fact]
     public async Task CreatePricing_ValidMaterialItem_DerivesCanonicalUnitAndProvider()
     {
         await using var context = CreateContext();
@@ -109,6 +144,7 @@ public class PricingCreationTests
         {
             ItemName = "Concrete Block",
             Category = "material",
+            DisplayGroup = "Structural",
             UnitCostLkr = 5000m,
             TerrainMultiplier = new TerrainMultiplierData { Flat = 1.0m, Hillside = 1.25m, Coastal = 1.35m }
         });
@@ -117,6 +153,7 @@ public class PricingCreationTests
         {
             ItemName = "concrete block", // case-insensitive duplicate
             Category = "material",
+            DisplayGroup = "Structural",
             UnitCostLkr = 6000m,
             TerrainMultiplier = new TerrainMultiplierData { Flat = 1.0m, Hillside = 1.25m, Coastal = 1.35m }
         }));

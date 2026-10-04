@@ -138,6 +138,45 @@ public partial class WorkflowControllerTests
     }
 
     [Fact]
+    public async Task GetWorkflowStatus_MapsSimplifiedAndDetailedExecutionLogs()
+    {
+        var workflowId = Guid.NewGuid();
+        _dbContext.WorkflowStates.Add(new WorkflowState
+        {
+            Id = workflowId,
+            LandSubmissionId = Guid.NewGuid(),
+            Status = "completed",
+            AgentExecutionLogJson = """
+                [
+                  {"agent":"cost_estimation","status":"completed","message":"Cost estimate saved"},
+                  {"agent_name":"CostEstimationAgent","action":"pricing_lookup","tool_called":"pricing_lookup_tool","result":"failed","event_status":"failed","error_summary":"Pricing catalogue is incomplete","duration_ms":15,"created_at_utc":"2026-10-04T08:00:00Z"}
+                ]
+                """
+        });
+        await _dbContext.SaveChangesAsync();
+
+        var result = await _controller.GetWorkflowStatus(workflowId);
+        var response = Assert.IsType<WorkflowStatusResponseDto>(
+            Assert.IsType<OkObjectResult>(result.Result).Value);
+
+        Assert.Collection(response.AgentExecutionLog!,
+            entry =>
+            {
+                Assert.Equal("cost_estimation", entry.Agent);
+                Assert.Equal("completed", entry.Status);
+                Assert.Equal("Cost estimate saved", entry.Message);
+            },
+            entry =>
+            {
+                Assert.Equal("CostEstimationAgent", entry.Agent);
+                Assert.Equal("failed", entry.Status);
+                Assert.Equal("Pricing catalogue is incomplete", entry.Message);
+                Assert.Equal("pricing_lookup_tool", entry.ToolCalled);
+                Assert.Equal(15, entry.DurationMs);
+            });
+    }
+
+    [Fact]
     public async Task GetWorkflowStatus_MarksOrphanedRunningWorkflowFailed()
     {
         var submission = new LandSubmission

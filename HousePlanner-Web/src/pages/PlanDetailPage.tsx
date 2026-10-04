@@ -5,14 +5,13 @@ import { preDesignedPlanService, type PreDesignedPlanDetail } from '../services/
 import { customerConstructionService, type ConstructorProfile } from '../services/customerConstructionService';
 import { countLabel, formatArea, formatFloorName, formatTerrain, formatTopology, getCustomerPlanName, getPlanTopology } from '../utils/presentation';
 import { getImageUrl } from '../utils/imageUtils';
-import type { CostSummaryDto } from '../services/workflowService';
 import { SHOW_TECHNICAL_PLAN } from '../config/features';
 
 export default function PlanDetailPage() {
  const { id = '' } = useParams();
  const navigate = useNavigate();
 
- const [plan, setPlan] = useState<PreDesignedPlanDetail & { estimatedCost?: CostSummaryDto | null } | null>(null);
+ const [plan, setPlan] = useState<PreDesignedPlanDetail | null>(null);
  const [floor, setFloor] = useState(1);
  const [error, setError] = useState('');
 
@@ -80,7 +79,7 @@ export default function PlanDetailPage() {
  if (!plan) return <p className="p-4 md:p-10 text-text-muted">Loading plan...</p>;
 
  const topology = getPlanTopology(plan);
- const displayCostLkr = plan.estimatedConstructionCost ?? plan.estimatedCost?.totalCostLkr;
+ const displayCostLkr = plan.estimatedConstructionCost;
 
  return (
   <main className="p-4 md:p-8 lg:p-10 max-w-7xl mx-auto text-zinc-900 dark:text-text-primary space-y-8">
@@ -180,12 +179,12 @@ export default function PlanDetailPage() {
          LKR {displayCostLkr.toLocaleString()}
         </p>
         <p className="text-xs text-text-muted mt-2 leading-relaxed">
-         Estimated project cost based on the current design.
+         Estimated by the architect for this plan.
         </p>
        </div>
       ) : (
        <p className="text-sm text-text-muted dark:text-text-secondary">
-        Cost estimate currently unavailable.
+        Cost not provided by the architect yet.
        </p>
       )}
      </section>

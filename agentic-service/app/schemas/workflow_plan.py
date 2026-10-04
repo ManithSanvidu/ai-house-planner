@@ -152,7 +152,7 @@ def create_default_house_planning_plan(objective: str = "Generate a complete hou
                 name="Cost Estimation",
                 assigned_agent="cost_estimation",
                 dependencies=["S2", "S3"],
-                required_inputs=["design_result", "terrain_result", "budget"],
+                required_inputs=["design_result", "terrain_result"],
                 produced_outputs=["cost_result"],
             ),
             WorkflowPlanStep(

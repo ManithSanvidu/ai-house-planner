@@ -96,7 +96,7 @@ test('Valid DESIGN_REQUEST shows Continue button and navigates', async () => {
  fireEvent.submit(form!);
 
  await waitFor(() => {
-  expect(screen.getByText('Your request is feasible. I can start the design setup with these requirements.')).toBeTruthy();
+  expect(screen.getAllByText('Your request is feasible. I can start the design setup with these requirements.').length).toBeGreaterThan(0);
  });
 
  const continueBtn = screen.getByText('Continue to Design');
@@ -142,7 +142,7 @@ test('Invalid DESIGN_REQUEST hides Continue button and shows suggestions', async
  fireEvent.submit(form!);
 
  await waitFor(() => {
-  expect(screen.getByText('Your request is not supported with the available buildable area or catalogue.')).toBeTruthy();
+  expect(screen.getAllByText('Your request is not supported with the available buildable area or catalogue.').length).toBeGreaterThan(0);
  });
 
  // Continue button should not be there

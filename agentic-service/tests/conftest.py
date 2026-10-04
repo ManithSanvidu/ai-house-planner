@@ -1,5 +1,17 @@
+"""Unit tests never call paid APIs or write workflow state to a local server."""
+
+import os
 import pytest
 from unittest.mock import patch
+
+# Set the database before test modules import app.config or ai_guard_db. Local
+# developer credentials must never be used by the test process.
+os.environ["DATABASE_CONNECTION_STRING"] = os.environ.get(
+    "TEST_DATABASE_CONNECTION_STRING",
+    "Host=127.0.0.1;Port=5432;Database=agentic_test;Username=postgres;Password=password;",
+)
+os.environ.setdefault("INTERNAL_API_KEY", "test-only-internal-api-key")
+
 
 @pytest.fixture(autouse=True)
 def mock_plan_persistence(request):
@@ -8,14 +20,6 @@ def mock_plan_persistence(request):
         return
     with patch("app.orchestration.workflow_router.persist_workflow_plan_state") as m:
         yield m
-
-
-"""Unit tests never call paid APIs or write workflow state to a local server."""
-import os
-
-import pytest
-
-os.environ.setdefault("INTERNAL_API_KEY", "test-only-internal-api-key")
 
 
 @pytest.fixture(autouse=True)

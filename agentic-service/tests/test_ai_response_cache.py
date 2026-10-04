@@ -1,4 +1,6 @@
 from unittest.mock import MagicMock, patch
+import os
+import pytest
 
 from app.schemas.workflow_state import WorkflowState
 from app.agents.design_agent import design_node
@@ -43,6 +45,8 @@ def test_cost_guard_reuses_existing_estimate_without_ai_or_persistence():
 
 
 def test_ai_guard_reuses_one_successful_call_per_workflow_and_purpose(capsys):
+    if not os.getenv("TEST_DATABASE_CONNECTION_STRING"):
+        pytest.skip("A disposable PostgreSQL test database is required for this integration test")
     reset_ai_guard()
     operation = MagicMock(return_value={"result": "cached"})
 

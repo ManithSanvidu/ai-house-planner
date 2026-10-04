@@ -71,7 +71,7 @@
       "displayGroup": "Labour",
       "unit": "factor",
       "unitCostLkr": 0.35,
-      "terrainMultiplier": { "flat": 1.0, "hillside": 1.15, "coastal": 1.10 },
+      "terrainMultiplier": { "flat": 1.0, "hillside": 1.0, "coastal": 1.0 },
       "provider": "Manual",
       "region": "Sri Lanka",
       "qualityLevel": "Standard",

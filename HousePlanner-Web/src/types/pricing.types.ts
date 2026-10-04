@@ -60,6 +60,8 @@ export interface PricingHistoryItem {
  pricingDataId: number;
  previousValue: number;
  newValue: number;
+ previousTerrainMultiplier?: TerrainMultiplier | null;
+ newTerrainMultiplier?: TerrainMultiplier | null;
  changedByUserId?: string | null;
  changedByName?: string | null;
  changedAt: string;

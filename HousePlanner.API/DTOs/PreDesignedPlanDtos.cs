@@ -16,7 +16,7 @@ public record PreDesignedPlanDetailDto(Guid Id, string Name, string Slug, string
     bool HasVeranda, bool HasOffice, bool HasUtilityRoom, bool IsAccessibleFriendly,
     string? Category, IReadOnlyList<string> Tags, string? ThumbnailUrl, JsonElement Layout,
     bool IsActive, DateTimeOffset CreatedAt, DateTimeOffset UpdatedAt, string ConceptualDisclaimer,
-    CostSummaryDto? EstimatedCost = null, decimal? EstimatedConstructionCost = null);
+    decimal? EstimatedConstructionCost = null);
 
 public class SavePreDesignedPlanDto
 {

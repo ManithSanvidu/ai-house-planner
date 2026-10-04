@@ -27,6 +27,14 @@ def calculate_cost_lines(
             raise CostCalculationError(
                 f"Material pricing item '{item.item_name}' has incompatible unit '{item.unit}'."
             )
+    seen_heads: set[str] = set()
+    for item in materials:
+        head = (item.display_group or item.item_name.replace(" Materials", "")).strip().casefold()
+        if not head or head in seen_heads:
+            raise CostCalculationError(
+                f"Material pricing has a missing or duplicate cost head '{head}'."
+            )
+        seen_heads.add(head)
     labour = [
         i for i in items
         if i.category.strip().lower() == "labour" and _unit(i.unit) in {"factor", "ratio"}
