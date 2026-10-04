@@ -135,15 +135,16 @@ public class AiGenerationController : ControllerBase
                 });
             }
         }
-        catch (HttpRequestException)
+        catch (Exception ex)
         {
-            const string failureReason = "Could not connect to the AI agentic service.";
+            var failureReason = $"Could not connect to the AI agentic service. Error: {ex.Message}";
             await MarkWorkflowFailedAsync(workflow, failureReason, cancellationToken);
-            _logger.LogWarning("Agentic workflow start connection failed for {WorkflowId}", workflow.Id);
-            return StatusCode(StatusCodes.Status503ServiceUnavailable, new
+            _logger.LogError(ex, "Agentic workflow start connection failed for {WorkflowId}. Called URL: {Url}", workflow.Id, _agenticServiceClient.BaseAddress);
+            return StatusCode(StatusCodes.Status504GatewayTimeout, new
             {
                 message = "Cannot connect to the AI agentic service.",
-                details = "The workflow was recorded as failed and can be retried."
+                details = ex.Message,
+                suggestion = "The workflow was recorded as failed and can be retried. The agentic service might be experiencing a cold start."
             });
         }
 
