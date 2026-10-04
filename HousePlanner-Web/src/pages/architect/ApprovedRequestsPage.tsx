@@ -69,7 +69,6 @@ import { Eye, CheckCircle2 } from 'lucide-react';
         <th scope="col" className="px-4 md:px-6 py-4 font-semibold">Client Name</th>
         <th scope="col" className="px-4 md:px-6 py-4 font-semibold">Submission Date</th>
         <th scope="col" className="px-4 md:px-6 py-4 font-semibold">Status</th>
-        <th scope="col" className="px-4 md:px-6 py-4 font-semibold">Budget (LKR)</th>
         <th scope="col" className="px-4 md:px-6 py-4 font-semibold">Land Size</th>
         <th scope="col" className="px-4 md:px-6 py-4 text-right font-semibold">Actions</th>
        </tr>
@@ -93,9 +92,6 @@ import { Eye, CheckCircle2 } from 'lucide-react';
           </span>
          </td>
          <td className="px-4 md:px-6 py-4 text-text-secondary">
-          {req.budget ? req.budget.toLocaleString() : 'N/A'}
-         </td>
-         <td className="px-4 md:px-6 py-4 text-text-secondary">
           {req.landSize ? `${req.landSize} perches` : 'N/A'}
          </td>
          <td className="px-4 md:px-6 py-4 text-right">
@@ -112,7 +108,7 @@ import { Eye, CheckCircle2 } from 'lucide-react';
        
        {requests.length === 0 && (
         <tr>
-         <td colSpan={6} className="px-4 md:px-6 py-4 md:py-12 text-center">
+         <td colSpan={5} className="px-4 md:px-6 py-4 md:py-12 text-center">
           <div className="flex flex-col items-center justify-center text-text-secondary">
            <div className="bg-gray-50 dark:bg-gray-800/50 p-3 rounded-full mb-3">
             <CheckCircle2 className="w-6 h-6 text-text-secondary" />
