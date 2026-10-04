@@ -43,8 +43,11 @@ if (string.IsNullOrWhiteSpace(defaultConnection))
 if (!isTesting)
     Console.WriteLine("[Database Configuration] Connection string loaded successfully.");
 
-var internalApiKey = builder.Configuration["AgenticService:InternalApiKey"]
-    ?? Environment.GetEnvironmentVariable("AGENTIC_INTERNAL_API_KEY");
+var internalApiKey = builder.Configuration["AgenticService:InternalApiKey"];
+if (string.IsNullOrWhiteSpace(internalApiKey))
+{
+    internalApiKey = Environment.GetEnvironmentVariable("AGENTIC_INTERNAL_API_KEY");
+}
 if (internalApiKey != null)
 {
     internalApiKey = internalApiKey.Trim();
