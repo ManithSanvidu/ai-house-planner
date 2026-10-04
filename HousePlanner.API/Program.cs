@@ -243,6 +243,10 @@ builder.Services.AddScoped<IPricingService, PricingService>();
 builder.Services.AddScoped<IConstructorWorkflowService, ConstructorWorkflowService>();
 builder.Services.AddScoped<IDailyConstructionLogService, DailyConstructionLogService>();
 
+// Currency Service
+builder.Services.AddMemoryCache();
+builder.Services.AddHttpClient<ICurrencyService, CurrencyService>();
+
 // AgenticService HTTP client — internalApiKey validated and injected at startup (never falls back to a plain default)
 builder.Services.AddHttpClient("AgenticService", client =>
 {
