@@ -63,7 +63,7 @@ DESIGN_PROVIDER_ORDER = [
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "dummy-key-for-tests")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o")
-OPENAI_IMAGE_MODEL = os.getenv("OPENAI_IMAGE_MODEL", "dall-e-2").strip()
+OPENAI_IMAGE_MODEL = os.getenv("OPENAI_IMAGE_MODEL", "gpt-image-1").strip()
 ENABLE_AI_VISUALIZATION = os.getenv("ENABLE_AI_VISUALIZATION", "true").strip().lower() in {"1", "true", "yes", "on"}
 AGENTIC_PUBLIC_BASE_URL = os.getenv("AGENTIC_PUBLIC_BASE_URL", "http://localhost:8001").rstrip("/")
 SUPABASE_URL = os.getenv("SUPABASE_URL", "").strip().rstrip("/")
